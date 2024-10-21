@@ -1,7 +1,7 @@
 "use client"
 
 import { X } from "lucide-react";
-import { Button } from "./Button";
+import { Button } from "@components/ui/button";
 import { useRouter } from "next/navigation";
 
 const CloseModal = () => {
