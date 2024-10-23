@@ -7,7 +7,7 @@ import { signIn } from "next-auth/react"
 import { Icons } from "./Icons";
 import { useToast } from "@/hooks/use-toast";
 
-interface UserAuthFormProps extends React.HTMLAttributes<HTMLDivElement>{}
+type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>
 
 const UserAuthForm: FC<UserAuthFormProps> = ({className, ...props}) => {
 
@@ -25,6 +25,8 @@ const UserAuthForm: FC<UserAuthFormProps> = ({className, ...props}) => {
                 description: 'There  was an error loggin in with Google',
                 variant: 'destructive',
             })
+            // ! SHOULD REMOVE CONSOLE LOG HERE
+            console.log(error);
         } finally{
             setIsloading(false)
         }
@@ -42,6 +44,8 @@ const UserAuthForm: FC<UserAuthFormProps> = ({className, ...props}) => {
                 description: 'There  was an error loggin in with Github',
                 variant: 'destructive',
             })
+            // ! SHOULD REMOVE CONSOLE LOG HERE
+            console.log(error);
         } finally{
             setIsloading(false)
         }
