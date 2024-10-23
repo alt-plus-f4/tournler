@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "./ui/button"
 import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
 export function MainNav({
   className,
@@ -8,19 +9,13 @@ export function MainNav({
 }: React.HTMLAttributes<HTMLElement>) {
   return (
     <div
-      className={cn("md:flex items-center", className)}
+      className={cn("items-center", className)}
       {...props}
     >
       <div className="mx-auto">
-        <Button variant={'ghost'} className="text-xs px-3 lg:text-sm xl:px-7 xl:mx-2" asChild>
-          <Link href="/information">Информация</Link>
-        </Button>
-        <Button variant={'ghost'} className="text-xs px-3 lg:text-sm xl:px-7 xl:mx-2" asChild>
-          <Link href="/">Турнири</Link>
-        </Button>
-        <Button variant={'ghost'} className="text-xs px-3 lg:text-sm xl:px-7 xl:mx-2" asChild>
-          <Link href="/login">Отбори</Link>
-        </Button>
+        <Link href="/information" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Информация</Link>
+        <Link href="/" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Турнири</Link>
+        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Отбори</Link>
       </div>
     </div>
   )
