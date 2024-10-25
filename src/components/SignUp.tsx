@@ -16,7 +16,7 @@ const SignUp = () => {
 
             <p className="px-8 text-center text-sm text-zinc-500">
                 Already in?{' '}
-                <Link href="/sign-up" className="hover:text-zinc-700 text-sm underline underline-offset-4">Sign Up</Link>
+                <Link href="/sign-in" className="hover:text-zinc-700 text-sm underline underline-offset-4">Sign In</Link>
             </p>
 
         </div>

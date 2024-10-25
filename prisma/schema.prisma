@@ -48,3 +48,11 @@ model User {
   Account       Account[]
   Session       Session[]
 }
+
+model VerificationToken {
+  identifier String
+  token      String 
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

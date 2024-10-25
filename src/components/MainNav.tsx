@@ -11,10 +11,10 @@ export function MainNav({
       className={cn("items-center", className)}
       {...props}
     >
-      <div className="mx-auto">
-        <Link href="/information" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Информация</Link>
-        <Link href="/" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Турнири</Link>
-        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7 xl:mx-2")}>Отбори</Link>
+      <div className="mx-auto flex justify-between w-full">
+        <Link href="/information" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7")}>Информация</Link>
+        <Link href="/tournaments" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7")}>Турнири</Link>
+        <Link href="/teams" className={cn(buttonVariants({ variant: "ghost" }), "text-xs px-3 lg:text-sm xl:px-7")}>Отбори</Link>
       </div>
     </div>
   )
