@@ -78,10 +78,14 @@ model SteamAccount {
 }
 
 model DiscordAccount {
-  id        String @id @default(cuid()) @db.Uuid
-  userId    String @unique @db.Uuid
-  discordId String @unique @db.VarChar
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid()) @db.Uuid
+  userId String @unique @db.Uuid
+
+  discordId    String @unique @db.VarChar
+  discordName  String @db.VarChar
+  discordImage String @db.VarChar
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // EMAIL verification

@@ -1,10 +1,12 @@
 import { signIn } from 'next-auth/react';
 import { getAuthSession } from '@/lib/auth';
+import Image from 'next/image';
 
 const Profile = async () => {
     const session = await getAuthSession();
 
-    const isDiscordLinked = session?.user?.discordId;
+    const discordName = session?.user?.discordName;
+    const discordImage = session?.user?.discordImage;
 
     const handleLinkDiscord = () => {
         signIn('discord');
@@ -14,9 +16,21 @@ const Profile = async () => {
         <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md space-y-4">
             <h1 className="text-2xl font-bold">Welcome, {session?.user?.name}</h1>
             <p className="text-gray-700">Email: {session?.user?.email}</p>
-            <p className="text-gray-700">Role: {session?.user?.role === 0 ? 'User' : 'Admin'}</p>
 
-            {!isDiscordLinked && (
+            {discordName ? (
+                <div className="mt-4">
+                    <p className="text-gray-700">Discord Name: {discordName}</p>
+                    {discordImage && (
+                        <Image
+                            src={discordImage}
+                            alt="Discord Avatar"
+                            className="rounded-full mt-2"
+                            width={64}
+                            height={64}
+                        />
+                    )}
+                </div>
+            ) : (
                 <div className="mt-4">
                     <p className="text-gray-500 mb-2">Link your Discord account for additional features:</p>
                     <button
