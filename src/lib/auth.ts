@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
+import DiscordProvider from 'next-auth/providers/discord';
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
@@ -53,6 +54,10 @@ export const authOptions: NextAuthOptions = {
       from: process.env.EMAIL_FROM!,
       sendVerificationRequest,
     }),
+    DiscordProvider({
+      clientId: process.env.DISCORD_CLIENT_ID!,
+      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+    }),
   ],
   callbacks: {
     async session({ token, session }) {
@@ -65,10 +70,34 @@ export const authOptions: NextAuthOptions = {
         } as User;
       }
 
+      const discordAccount = await db.discordAccount.findUnique({
+        where: { userId: token.id as string | undefined },
+      });
+
+      if (discordAccount) {
+        // user name, image into session
+      }
+
       return session;
     },
 
-    async jwt({ token }) {
+    async jwt({ token, account }) {
+      if (account && account.provider === 'discord') {
+        const discordId = account.providerAccountId;
+        const existingDiscordAccount = await db.discordAccount.findUnique({
+          where: { discordId },
+        });
+
+        if (!existingDiscordAccount && token.id) {
+          await db.discordAccount.create({
+            data: {
+              userId: token.id as string,
+              discordId,
+            },
+          });
+        }
+      }
+
       let dbUser = await db.user.findFirst({
         where: {
           email: token.email || '',
@@ -95,6 +124,26 @@ export const authOptions: NextAuthOptions = {
 
       return token;
     },
+
+    async signIn({ user, account }) {
+      if (account?.provider === 'discord') {
+        const discordId = account.providerAccountId;
+        const existingDiscordAccount = await db.discordAccount.findUnique({
+          where: { discordId },
+        });
+
+        if (!existingDiscordAccount) {
+          await db.discordAccount.create({
+            data: {
+              userId: user.id,
+              discordId,
+            },
+          });
+        }
+      }
+      return true;
+    },
+
     redirect() {
       return '/';
     },
