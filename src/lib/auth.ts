@@ -3,19 +3,8 @@ import { NextAuthOptions, getServerSession } from "next-auth";
 import EmailProvider from "next-auth/providers/email";
 import DiscordProvider from "next-auth/providers/discord";
 import nodemailer from "nodemailer";
-import { db } from "@/lib/db"; // Adjust the import based on your project structure
+import { db } from "@/lib/db";
 
-// Define the User type
-interface User {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  discordName?: string | null;
-  discordImage?: string | null;
-}
-
-// Configure nodemailer
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST!,
   port: parseInt(process.env.EMAIL_SERVER_PORT!),
@@ -25,7 +14,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Send verification request
 const sendVerificationRequest = ({
   identifier,
   url,
@@ -44,7 +32,6 @@ const sendVerificationRequest = ({
   });
 };
 
-// NextAuth options
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: {
@@ -75,23 +62,19 @@ export const authOptions: NextAuthOptions = {
     async session({ token, session }) {
       if (token) {
         session.user = {
-          id: token.id || '',
+          id: token.id as string || '',
           name: token.name,
           email: token.email,
           image: token.picture,
-          discordName: token.discordName,
-          discordImage: token.discordImage,
-        } as User;
+          discordId: token.discordId as string || '',
+        };
       }
-
       return session;
     },
 
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account }) {
       if (account?.provider === 'discord') {
         const discordId = account.providerAccountId;
-        const discordName = profile?.username as string;
-        const discordImage = profile?.image_url as string;
 
         const existingDiscordAccount = await db.discordAccount.findUnique({
           where: { discordId },
@@ -102,27 +85,17 @@ export const authOptions: NextAuthOptions = {
             data: {
               userId: token.id as string,
               discordId,
-              discordName,
-              discordImage,
             },
-          });
-        } else if (existingDiscordAccount) {
-          await db.discordAccount.update({
-            where: { discordId },
-            data: { discordName, discordImage },
           });
         }
 
-        token.discordName = discordName;
-        token.discordImage = discordImage;
+        token.discordId = discordId;
       }
 
-      // Check if user exists in db
       let dbUser = await db.user.findUnique({
         where: { email: token.email || '' },
       });
 
-      // Create user if none found
       if (!dbUser && token.email) {
         dbUser = await db.user.create({
           data: {
@@ -142,39 +115,6 @@ export const authOptions: NextAuthOptions = {
       }
 
       return token;
-    },
-
-    async signIn({ user, account, profile }) {
-      if (account?.provider === 'discord') {
-        const discordId = account.providerAccountId;
-        const discordName = profile?.username as string;
-        const discordImage = profile?.image_url as string;
-
-        const existingDiscordAccount = await db.discordAccount.findUnique({
-          where: { discordId },
-        });
-
-        if (!existingDiscordAccount) {
-          await db.discordAccount.create({
-            data: {
-              userId: user.id,
-              discordId,
-              discordName,
-              discordImage,
-            },
-          });
-        } else {
-          await db.discordAccount.update({
-            where: { discordId },
-            data: { discordName, discordImage },
-          });
-        }
-      }
-      return true;
-    },
-
-    redirect() {
-      return '/';
     },
   },
 };

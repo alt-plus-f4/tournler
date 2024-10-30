@@ -10,3 +10,5 @@ EMAIL_FROM=noreply@example.com
 
 DISCORD_CLIENT_ID=asdasdasdas
 DISCORD_CLIENT_SECRET=dasdasdasdas
+DISCORD_BOT_TOKEN=your_bot_token
+DISCORD_GUILD_ID=your_guild_id
