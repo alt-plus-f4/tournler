@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/toaster"
+import { OnboardingStatus } from "@/components/OnboardingStatus";
 
 const uncage = localFont({
 	src: "/fonts/Raleway-Regular.ttf",
@@ -31,6 +32,8 @@ export default function RootLayout({
 				{authModal}
 
 				{children}
+				
+				<OnboardingStatus />
 
 				<Toaster />
 

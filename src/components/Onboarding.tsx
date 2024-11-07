@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { WelcomeStep } from './components/welcome-step';
-import { AvatarStep } from './components/avatar-step';
-import { DiscordStep } from './components/discord-step';
-import { SteamStep } from './components/steam-step';
-import { CompletedStep } from './components/completed-step';
-import { Dialog, DialogContent, toast, Toaster } from '../../common/client';
-import { useSession } from 'next-auth/react';
-import { getBearerToken } from '@/lib/auth';
+import { WelcomeStep } from './onboarding/WelcomeStep';
+import { AvatarStep } from './onboarding/AvatarStep';
+import { DiscordStep } from './onboarding/DiscordStep';
+import { SteamStep } from './onboarding/SteamStep';
+import { CompletedStep } from './onboarding/CompletedStep';
+import { Dialog, DialogContent } from './ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { completeOnboarding } from '@/lib/apifuncs';
 
 interface OnboardingDialogProps {
     isOpen: boolean;
@@ -23,9 +23,9 @@ enum OnboardingDialogSteps {
 }
 
 export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
-    const { data: session } = useSession();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState(OnboardingDialogSteps.Welcome);
+    const { toast } = useToast();
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -59,8 +59,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                     method: 'PATCH',
                     body: formData,
                     headers: {
-                        'Accept-Language': 'en',
-                        Authorization: await getBearerToken(),
+                        'Content-Type': 'application/json',
                     },
                 },
             );
@@ -81,6 +80,8 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                 title: 'An error occurred.',
                 description: 'Please try again.',
             });
+            //! #REMOVE
+            console.log(error);
         }
     }
 
@@ -94,7 +95,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                 return (
                     <AvatarStep
                         previousStep={() => setStep(OnboardingDialogSteps.Welcome)}
-                        nextStep={(avatar) => setAvatar(avatar)}
+                        nextStep={(avatar: File) => setAvatar(avatar)}
                     />
                 );
             case OnboardingDialogSteps.Discord:
@@ -125,7 +126,6 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 
     return (
         <>
-            <Toaster />
             <Dialog open={open}>
                 <DialogContent className="max-w-2xl">{renderStep()}</DialogContent>
             </Dialog>

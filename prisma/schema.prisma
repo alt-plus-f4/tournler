@@ -9,20 +9,18 @@ datasource db {
   relationMode = "prisma"
 }
 
-// Used for NEXT_AUTH
-
 model Account {
-  id                String  @id @default(cuid()) @db.Uuid
+  id                String  @id @default(uuid()) @db.Uuid
   userId            String  @db.Uuid
   type              String  @db.VarChar
   provider          String  @db.VarChar
   providerAccountId String  @db.VarChar
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?    @db.Integer
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
   token_type        String? @db.VarChar
   scope             String? @db.VarChar
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String? @db.VarChar
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -31,67 +29,47 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(cuid()) @db.Uuid
+  id           String   @id @default(uuid()) @db.Uuid
   sessionToken String   @unique @db.VarChar
   userId       String   @db.Uuid
-  expires      DateTime @db.Timestamp
+  expires      DateTime @db.Timestamp(6)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-// Mine
-
 model User {
-  id    String  @id @default(cuid()) @db.Uuid
-  email String  @unique @db.VarChar
-  name  String? @db.VarChar
-
-  // Avatar
-  image String? @map("image") @db.VarChar
-
-  // Onboarding
-  isOnboardingCompleted Boolean @default(false) @map("is_onboarding_completed")
-
-  // Email Verification
-  emailVerified DateTime? @map("email_verified") @db.Timestamp
-
-  // User role stuff
-  role Int @default(0) @db.Integer
-
-  // External accounts
-  discord DiscordAccount?
-  steam   SteamAccount?
-
-  // Used for NextAuth
-  Account Account[]
-  Session Session[]
+  id                    String          @id @default(uuid()) @db.Uuid
+  email                 String          @unique @db.VarChar
+  name                  String?         @db.VarChar
+  image                 String?         @map("image") @db.VarChar
+  isOnboardingCompleted Boolean         @default(false) @map("is_onboarding_completed")
+  emailVerified         DateTime?       @map("email_verified") @db.Timestamp(6)
+  role                  Int             @default(0)
+  discord               DiscordAccount?
+  steam                 SteamAccount?
+  Account               Account[]
+  Session               Session[]
 }
 
-// EXTERNAL accounts linking 
-
 model SteamAccount {
-  id      String @id @default(cuid()) @db.Uuid
+  id      String @id @default(uuid()) @db.Uuid
   userId  String @unique @db.Uuid
   steamId String @unique @db.VarChar
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DiscordAccount {
-  id     String @id @default(cuid()) @db.Uuid
-  userId String @unique @db.Uuid
-
-  discordId String @unique @db.VarChar
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @unique @db.Uuid
+  discordId    String @unique @db.VarChar
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-// EMAIL verification
 
 model VerificationToken {
   identifier String   @db.VarChar
   token      String   @db.VarChar
-  expires    DateTime @db.Timestamp
+  expires    DateTime @db.Timestamp(6)
 
   @@unique([identifier, token])
 }
