@@ -75,6 +75,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account }) {
       if (account?.provider === 'discord') {
         const discordId = account.providerAccountId;
+        const accessToken = account.access_token;
 
         const existingDiscordAccount = await db.discordAccount.findUnique({
           where: { discordId },
@@ -85,11 +86,13 @@ export const authOptions: NextAuthOptions = {
             data: {
               userId: token.id as string,
               discordId,
+              accessToken,
             },
           });
         }
 
         token.discordId = discordId;
+        token.accessToken = accessToken;
       }
 
       let dbUser = await db.user.findUnique({

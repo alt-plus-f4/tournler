@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Icons } from '../Icons';
-import { DialogFooter } from '../ui/dialog';
+import { DialogDescription, DialogFooter, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 
 interface WelcomeStepProps {
@@ -13,13 +13,13 @@ export function WelcomeStep({ nextStep }: WelcomeStepProps) {
   return (
     <>
       <div className="flex flex-col items-center text-center w-full">
-        <Icons.logo size={208} />
-        <h1 className="text-lg font-semibold uppercase">welcome to Tues gaming</h1>
-        <p>First you have to complete the onboarding</p>
+        <Icons.logo size={128} />
+        <DialogTitle className='text-xl font-bold mt-4 mb-2'>Добре Дошли в Tues gaming</DialogTitle>
+        <DialogDescription className='text-base italic'>Първо трябва да минеш през няколко стъпки</DialogDescription>
       </div>
-      <DialogFooter>
-        <Button type="button" onClick={nextStep}>
-          Continue
+      <DialogFooter className='flex justify-end'>
+        <Button variant={'default'} onClick={nextStep}>
+          Продължи
         </Button>
       </DialogFooter>
     </>

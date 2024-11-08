@@ -355,12 +355,12 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         </ScrollArea>
       </div>
 
-      <DialogFooter className="flex mt-2 gap-y-1 sm:gap-y-0 content-center">
-        <Button onClick={previousStep} variant="secondary">
-          Previous
+      <DialogFooter className="flex mt-4 justify-between">
+        <Button onClick={previousStep} variant="secondary" className='sm:w-56'>
+          Предишно
         </Button>
-        <Button onClick={() => nextStep(dataURLtoFile(avatar.toDataUri()))}>
-          Continue
+        <Button onClick={() => nextStep(dataURLtoFile(avatar.toDataUri()))} className='sm:w-56'>
+          Следващо
         </Button>
       </DialogFooter>
     </div>

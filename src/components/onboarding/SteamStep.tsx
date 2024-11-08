@@ -1,82 +1,82 @@
+'use client';
+
+import { FaCheck, FaSteamSymbol } from 'react-icons/fa6';
+import React, { useEffect, useState } from 'react';
+import { DialogTitle } from '@radix-ui/react-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '../ui/button';
+import { DialogFooter } from '../ui/dialog';
+import { signIn } from 'next-auth/react';
+
 interface SteamStepProps {
   previousStep: () => void;
   nextStep: () => void;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
-    return (<></>);
+  const [isSteamAccountLinked, setIsSteamAccountLinked] = useState<object | undefined>();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function updateSteamAccountStatus() {
+      try {
+        const response = await fetch('/api/user/steam');
+        const data = await response.json();
+
+        if (response.ok) {
+          setIsSteamAccountLinked(data.hasLinkedSteam);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: data.error || 'Failed to fetch Steam account status.',
+          });
+        }
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'An unexpected error occurred.',
+        });
+        // ! #REMOVE
+        console.error(error);
+      }
+    }
+
+    updateSteamAccountStatus();
+  }, []);
+
+  return (
+    <>
+      <div className="flex flex-col items-center text-center w-full">
+        {isSteamAccountLinked ? (
+          <FaCheck className="w-52 h-52" />
+        ) : (<></>)}
+        <DialogTitle className="text-2xl font-semibold">Steam account linking</DialogTitle>
+        <Button
+          onClick={() => signIn('steam')}
+          rel="opener"
+          className='mt-6 p-8 text-white bg-steamColor'
+        >
+          <FaSteamSymbol className="mr-2 h-4 w-4 " />
+          Login with Steam
+        </Button>
+      </div>
+
+      <DialogFooter className="flex mt-8 justify-around">
+        <Button onClick={previousStep} variant="secondary" className='sm:w-48'>
+          Назад
+        </Button>
+        {isSteamAccountLinked ? (
+          <Button onClick={nextStep} className='sm:w-48'>Продължи</Button>
+        ) : (
+          <>
+            <Button onClick={nextStep} variant="secondary" className='sm:w-48'>
+              Skip
+            </Button>
+          </>
+        )}
+      </DialogFooter>
+    </>
+  );
 }
-
-// 'use client';
-
-// import Link from 'next/link';
-// import { FaCheck, FaSteam, FaSteamSymbol } from 'react-icons/fa6';
-// import React, { useEffect, useState } from 'react';
-// import { getUser } from '@sugaming/sugaming-api-client/next';
-// import { DialogFooter } from '../../../common/client';
-// import { Button } from '../../../common/server';
-
-// interface SteamStepProps {
-//   previousStep: () => void;
-//   nextStep: () => void;
-// }
-
-// export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
-//   const [isSteamAccountLinked, setIsSteamAccountLinked] = useState<
-//     object | undefined
-//   >();
-
-//   useEffect(() => {
-//     async function updateSteamAccountStatus() {
-//       const user = await getUser();
-//       setIsSteamAccountLinked(user?.steam);
-//     }
-
-//     updateSteamAccountStatus();
-//     window.addEventListener('focus', updateSteamAccountStatus);
-
-//     return () => {
-//       window.removeEventListener('focus', updateSteamAccountStatus);
-//     };
-//   }, []);
-
-//   return (
-//     <>
-//       <div className="flex flex-col items-center text-center w-full">
-//         {isSteamAccountLinked ? (
-//           <FaCheck className="w-52 h-52" />
-//         ) : (
-//           <FaSteam className="w-52 h-52" />
-//         )}
-//         <h1 className="text-lg font-semibold">{t('title')}</h1>
-//         <p>{t('description')}</p>
-//       </div>
-
-//       <DialogFooter className="flex mt-2 gap-y-1 sm:gap-y-0 content-center">
-//         <Button onClick={previousStep} variant="secondary">
-//           {t('previous')}
-//         </Button>
-//         {isSteamAccountLinked ? (
-//           <Button onClick={nextStep}>{t('continue')}</Button>
-//         ) : (
-//           <>
-//             <Button onClick={nextStep} variant="secondary">
-//               {t('skip')}
-//             </Button>
-//             <Button type="button" asChild>
-//               <Link
-//                 href={`${process.env.NEXT_PUBLIC_API_BASE}/api/v1/auth/login/steam`}
-//                 target="_blank"
-//                 rel="opener" // Required, so that the new tab can go back to this window
-//               >
-//                 <FaSteamSymbol className="mr-2 h-4 w-4" />
-//                 {t('continue-with-steam')}
-//               </Link>
-//             </Button>
-//           </>
-//         )}
-//       </DialogFooter>
-//     </>
-//   );
-// }

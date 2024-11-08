@@ -39,17 +39,20 @@ model Session {
 }
 
 model User {
-  id                    String          @id @default(uuid()) @db.Uuid
-  email                 String          @unique @db.VarChar
-  name                  String?         @db.VarChar
-  image                 String?         @map("image") @db.VarChar
-  isOnboardingCompleted Boolean         @default(false) @map("is_onboarding_completed")
-  emailVerified         DateTime?       @map("email_verified") @db.Timestamp(6)
-  role                  Int             @default(0)
-  discord               DiscordAccount?
-  steam                 SteamAccount?
-  Account               Account[]
-  Session               Session[]
+  id    String  @id @default(uuid()) @db.Uuid
+  email String  @unique @db.VarChar
+  name  String? @db.VarChar
+  image String? @map("image") @db.Xml
+
+  isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
+  emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
+  role                  Int       @default(0)
+
+  discord DiscordAccount?
+  steam   SteamAccount?
+
+  Account Account[]
+  Session Session[]
 }
 
 model SteamAccount {
@@ -60,10 +63,13 @@ model SteamAccount {
 }
 
 model DiscordAccount {
-  id           String @id @default(uuid()) @db.Uuid
-  userId       String @unique @db.Uuid
-  discordId    String @unique @db.VarChar
-  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid()) @db.Uuid
+  userId String @unique @db.Uuid
+
+  discordId   String @unique @db.VarChar
+  accessToken String @db.VarChar
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {

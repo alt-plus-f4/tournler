@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { Toaster } from "@/components/ui/toaster"
 import { OnboardingStatus } from "@/components/OnboardingStatus";
+import { Roboto } from 'next/font/google'
 
-const uncage = localFont({
-	src: "/fonts/Raleway-Regular.ttf",
-	variable: "--font-main-font",
-	weight: "100 900",
-});
+const roboto = Roboto({
+	weight: '400',
+	subsets: ['latin'],
+	display: 'swap',
+})
 
 export const metadata: Metadata = {
 	title: "Tournler",
@@ -25,14 +25,14 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en">
-			<body className={`${uncage.variable} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
+			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
 
 				<Navbar />
 
 				{authModal}
 
 				{children}
-				
+
 				<OnboardingStatus />
 
 				<Toaster />

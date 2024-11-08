@@ -49,20 +49,17 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
     }
 
     async function setAvatar(avatar: File) {
-        const formData = new FormData();
-        formData.append('avatar', avatar);
+        const avatarText = await avatar.text();
+        console.log('avatar', avatar);
 
         try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_BASE}/api/v1/users/current/avatar`,
-                {
-                    method: 'PATCH',
-                    body: formData,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+            const response = await fetch('/api/user/avatar', {
+                method: 'PATCH',
+                body: JSON.stringify({ avatar: avatarText }),
+                headers: {
+                    'Content-Type': 'application/json',
                 },
-            );
+            });
             const json = await response.json();
 
             if (response.ok) {
@@ -81,7 +78,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                 description: 'Please try again.',
             });
             //! #REMOVE
-            console.log(error);
+            console.error(error);
         }
     }
 
@@ -126,7 +123,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 
     return (
         <>
-            <Dialog open={open}>
+            <Dialog open={open} onOpenChange={() => setOpen(false)}>
                 <DialogContent className="max-w-2xl">{renderStep()}</DialogContent>
             </Dialog>
         </>
