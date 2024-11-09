@@ -13,6 +13,7 @@ const config: Config = {
                 popupcolor: '#0000009e',
                 discordColor: '#5865F2',
                 steamColor: '#171a21',
+                grey: '#2f3136',
                 // footercolor: '#ffffffb0',
 
 

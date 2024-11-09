@@ -14,7 +14,7 @@ interface SteamStepProps {
 }
 
 export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
-  const [isSteamAccountLinked, setIsSteamAccountLinked] = useState<object | undefined>();
+  const [isSteamAccountLinked, setIsSteamAccountLinked] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -51,14 +51,16 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
       <div className="flex flex-col items-center text-center w-full">
         {isSteamAccountLinked ? (
           <FaCheck className="w-52 h-52" />
-        ) : (<></>)}
+        ) : (
+          <FaSteamSymbol className="w-52 h-52" />
+        )}
         <DialogTitle className="text-2xl font-semibold">Steam account linking</DialogTitle>
         <Button
           onClick={() => signIn('steam')}
           rel="opener"
           className='mt-6 p-8 text-white bg-steamColor'
         >
-          <FaSteamSymbol className="mr-2 h-4 w-4 " />
+          <FaSteamSymbol className="mr-2 h-4 w-4" />
           Login with Steam
         </Button>
       </div>
@@ -70,11 +72,9 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
         {isSteamAccountLinked ? (
           <Button onClick={nextStep} className='sm:w-48'>Продължи</Button>
         ) : (
-          <>
-            <Button onClick={nextStep} variant="secondary" className='sm:w-48'>
-              Skip
-            </Button>
-          </>
+          <Button onClick={nextStep} variant="secondary" className='sm:w-48'>
+            Skip
+          </Button>
         )}
       </DialogFooter>
     </>

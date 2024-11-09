@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { WelcomeStep } from './onboarding/WelcomeStep';
+import { NicknameStep } from './onboarding/NicknameStep';
 import { AvatarStep } from './onboarding/AvatarStep';
 import { DiscordStep } from './onboarding/DiscordStep';
 import { SteamStep } from './onboarding/SteamStep';
@@ -9,6 +10,10 @@ import { CompletedStep } from './onboarding/CompletedStep';
 import { Dialog, DialogContent } from './ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
+import { useDispatch, useSelector } from 'react-redux';
+import { setCurrentStep } from '@/lib/onboarding-slice';
+import Step from './Steps';
+import { DialogDescription } from '@radix-ui/react-dialog';
 
 interface OnboardingDialogProps {
     isOpen: boolean;
@@ -16,15 +21,26 @@ interface OnboardingDialogProps {
 
 enum OnboardingDialogSteps {
     Welcome,
+    Nickname,
     Avatar,
     Discord,
     Steam,
     Completed,
 }
 
+const steps = [
+    { number: 0, title: 'Welcome' },
+    { number: 1, title: 'Nickname' },
+    { number: 2, title: 'Avatar' },
+    { number: 3, title: 'Discord' },
+    { number: 4, title: 'Steam' },
+    { number: 5, title: 'Completed' },
+];
+
 export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
     const [open, setOpen] = useState(false);
-    const [step, setStep] = useState(OnboardingDialogSteps.Welcome);
+    const currentStep = useSelector((store: any) => store.onboarding.currentStep);
+    const dispatch = useDispatch();
     const { toast } = useToast();
 
     useEffect(() => {
@@ -63,7 +79,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
             const json = await response.json();
 
             if (response.ok) {
-                setStep(OnboardingDialogSteps.Discord);
+                dispatch(setCurrentStep(OnboardingDialogSteps.Discord));
             } else {
                 toast({
                     variant: 'destructive',
@@ -83,36 +99,43 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
     }
 
     const renderStep = () => {
-        switch (step) {
+        switch (currentStep) {
             case OnboardingDialogSteps.Welcome:
                 return (
-                    <WelcomeStep nextStep={() => setStep(OnboardingDialogSteps.Avatar)} />
+                    <WelcomeStep nextStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))} />
+                );
+            case OnboardingDialogSteps.Nickname:
+                return (
+                    <NicknameStep
+                        previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Welcome))}
+                        nextStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))}
+                    />
                 );
             case OnboardingDialogSteps.Avatar:
                 return (
                     <AvatarStep
-                        previousStep={() => setStep(OnboardingDialogSteps.Welcome)}
+                        previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))}
                         nextStep={(avatar: File) => setAvatar(avatar)}
                     />
                 );
             case OnboardingDialogSteps.Discord:
                 return (
                     <DiscordStep
-                        previousStep={() => setStep(OnboardingDialogSteps.Avatar)}
-                        nextStep={() => setStep(OnboardingDialogSteps.Steam)}
+                        previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))}
+                        nextStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Steam))}
                     />
                 );
             case OnboardingDialogSteps.Steam:
                 return (
                     <SteamStep
-                        previousStep={() => setStep(OnboardingDialogSteps.Discord)}
-                        nextStep={() => setStep(OnboardingDialogSteps.Completed)}
+                        previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Discord))}
+                        nextStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Completed))}
                     />
                 );
             case OnboardingDialogSteps.Completed:
                 return (
                     <CompletedStep
-                        previousStep={() => setStep(OnboardingDialogSteps.Steam)}
+                        previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Steam))}
                         close={() => close()}
                     />
                 );
@@ -123,8 +146,20 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 
     return (
         <>
-            <Dialog open={open} onOpenChange={() => setOpen(false)}>
-                <DialogContent className="max-w-2xl">{renderStep()}</DialogContent>
+        
+            <Dialog open={open}>
+                <DialogContent className="max-w-max">
+                <DialogDescription></DialogDescription>
+                <div className="flex flex-row py-5">
+                    <div className='flex flex-col space-between py-8 align-middle bg-white bg-opacity-[0.01] rounded-lg'>
+                        {steps.map((step) => (
+                            <Step key={step.number} step={step} />
+                        ))}
+                    </div>
+                    
+                    <div className="flex flex-col m-auto">{renderStep()}</div>
+                </div>            
+                </DialogContent>
             </Dialog>
         </>
     );

@@ -1,10 +1,11 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { FaCheck, FaDiscord } from 'react-icons/fa';
-import { DialogTitle } from '@radix-ui/react-dialog';
-import { DialogFooter } from '../ui/dialog';
+import { DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 interface DiscordStepProps {
   previousStep: () => void;
@@ -49,7 +50,8 @@ export function DiscordStep({ previousStep, nextStep }: DiscordStepProps) {
       <div className="flex flex-col items-center text-center w-full">
         {isDiscordAccountLinked ? (
           <FaCheck className="w-52 h-52" />
-        ) : (<></>
+        ) : (
+          <FaDiscord className="w-52 h-52" />
         )}
         <DialogTitle className="text-2xl font-semibold">Discord account linking</DialogTitle>
         <Button
@@ -64,17 +66,14 @@ export function DiscordStep({ previousStep, nextStep }: DiscordStepProps) {
 
       <DialogFooter className="flex mt-8 justify-around">
         <Button onClick={previousStep} variant="secondary" className='sm:w-48'>
-          Назад
+          Previous
         </Button>
         {isDiscordAccountLinked ? (
-          <Button onClick={nextStep} className='sm:w-48'>Продължи</Button>
+          <Button onClick={nextStep} className='sm:w-48'>Continue</Button>
         ) : (
-          <>
-            <Button onClick={nextStep} variant="secondary" className='sm:w-48'>
-              Skip
-            </Button>
-
-          </>
+          <Button onClick={nextStep} variant="secondary" className='sm:w-48'>
+            Skip
+          </Button>
         )}
       </DialogFooter>
     </>

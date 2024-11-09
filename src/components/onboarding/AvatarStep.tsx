@@ -4,10 +4,12 @@ import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import React, { useState } from 'react';
 import { avataaars } from '@dicebear/collection';
 import { createAvatar } from '@dicebear/core';
-import { Button } from '../ui/button';
-import { DialogFooter } from '../ui/dialog';
-import { ScrollArea } from '../ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
+import { useDispatch } from 'react-redux';
+import { updateFormData } from '@/lib/onboarding-slice';
 
 const options = {
   mouth: [
@@ -160,9 +162,10 @@ interface CustomizationOptions {
   clothing: number;
 }
 
+
 interface AvatarStepProps {
-  previousStep: () => void;
-  nextStep: (avatar: File) => void;
+    previousStep: () => void;
+    nextStep: (avatar: File) => void;
 }
 
 interface CustomizationOptionProps {
@@ -217,6 +220,7 @@ function dataURLtoFile(dataURL: string) {
 }
 
 export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
+  const dispatch = useDispatch();
   const [customization, setCustomization] = useState<CustomizationOptions>({
     mouth: 0,
     top: 0,
@@ -256,7 +260,7 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
       Object.entries(customization).map(([key, value]) => [
         key,
         [options[key as keyof CustomizationOptions][value]],
-      ]),
+      ])
     ),
     accessoriesProbability: 100,
     facialHairProbability: 100,
@@ -265,16 +269,16 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
   return (
     <div className="px-12 flex flex-col justify-center">
       <div className="flex justify-center items-center">
-        <Image src={avatar.toDataUri()} alt="" width={150} height={150} />
+        <Image src={avatar.toDataUri()} alt="" width={120} height={120} />
       </div>
       <div>
         <div className="flex flex-col items-center text-center w-full">
           <h1 className="text-lg font-semibold">Make your own avatar</h1>
           <p>Customize it here</p>
         </div>
-        <ScrollArea className="h-72 px-2 mt-2 text-center">
-          <div className="flex flex-col sm:flex-row justify-between">
-            <div className="flex flex-col">
+        <ScrollArea className="px-2 mt-2 text-center">
+          <div className="flex flex-col sm:flex-row">
+            <div className="flex flex-col w-[220px] xl:w-[250px] mr-1">
               <CustomizationOption
                 category="skinColor"
                 label="Skin color"
@@ -313,7 +317,7 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
               />
             </div>
 
-            <div className="flex flex-col">
+            <div className="flex flex-col w-[220px] xl:w-[250px] ml-1">
               <CustomizationOption
                 category="top"
                 label="Top"
@@ -355,12 +359,18 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         </ScrollArea>
       </div>
 
-      <DialogFooter className="flex mt-4 justify-between">
-        <Button onClick={previousStep} variant="secondary" className='sm:w-56'>
-          Предишно
+      <DialogFooter className="flex mt-2 justify-between">
+        <Button onClick={previousStep} variant="secondary">
+          Previous
         </Button>
-        <Button onClick={() => nextStep(dataURLtoFile(avatar.toDataUri()))} className='sm:w-56'>
-          Следващо
+        <Button
+          onClick={() => {
+            const avatarFile = dataURLtoFile(avatar.toDataUri());
+            dispatch(updateFormData({ avatar: avatarFile }));
+            nextStep(avatarFile);
+          }}
+        >
+          Continue
         </Button>
       </DialogFooter>
     </div>
