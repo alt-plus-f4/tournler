@@ -12,16 +12,17 @@ export async function GET() {
 	const user = await db.user.findUnique({
 		where: { email: session?.user?.email || '' },
 		include: {
-			discord: true,
+			steam: true,
 		},
 	});
 
-	if (!user)
+	if (!user) {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	}
 
-	const hasLinkedDiscord = !!user.discord;
+	const hasLinkedSteam = !!user.steam;
 
-	return NextResponse.json({ hasLinkedDiscord }, { status: 200 });
+	return NextResponse.json({ hasLinkedSteam }, { status: 200 });
 }
 
 export async function PATCH(request: Request) {
@@ -36,28 +37,27 @@ export async function PATCH(request: Request) {
 	if (!user)
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-	const { discord } = await request.json();
+	const { steamId } = await request.json();
 
-	if (!discord || typeof discord !== 'string')
+	if (!steamId || typeof steamId !== 'string')
 		return NextResponse.json(
-			{ error: 'Invalid Discord ID' },
+			{ error: 'Invalid Steam ID' },
 			{ status: 400 }
 		);
 
-	await db.discordAccount.upsert({
+	await db.steamAccount.upsert({
 		where: { userId: user.id },
 		update: {
-			discordId: discord,
+			steamId: steamId,
 		},
 		create: {
 			userId: user.id,
-			discordId: discord,
-			accessToken: discord,
+			steamId: steamId,
 		},
 	});
 
 	return NextResponse.json(
-		{ message: 'Discord account linked successfully' },
+		{ message: 'Steam account linked successfully' },
 		{ status: 200 }
 	);
 }
