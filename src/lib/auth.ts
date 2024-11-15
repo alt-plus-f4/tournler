@@ -63,7 +63,7 @@ export const authOptions: NextAuthOptions = {
 			if (token) {
 				session.user = {
 					id: (token.id as string) || '',
-					name: token.name,
+					nickname: (token.nickname as string) || '',
 					email: token.email,
 					image: token.picture,
 					discordId: (token.discordId as string) || '',
@@ -104,7 +104,7 @@ export const authOptions: NextAuthOptions = {
 				dbUser = await db.user.create({
 					data: {
 						email: token.email,
-						name: token.name || '',
+						nickname: (token.nickname as string) || '',
 						image: token.picture || '',
 						emailVerified: new Date(),
 					},
@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
 
 			if (dbUser) {
 				token.id = dbUser.id;
-				token.name = dbUser.name;
+				token.nickname = dbUser.nickname;
 				token.email = dbUser.email;
 				token.picture = dbUser.image;
 			}

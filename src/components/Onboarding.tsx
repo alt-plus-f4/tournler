@@ -44,6 +44,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	);
 	const dispatch = useDispatch();
 	const { toast } = useToast();
+	const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -52,6 +53,43 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 
 		return () => clearTimeout(timer);
 	}, [isOpen]);
+
+	useEffect(() => {
+		async function checkUserStatus() {
+			try {
+				const response = await fetch('/api/user/status');
+				const data = await response.json();
+
+				if (response.ok) {
+					const completed = [];
+					if (data.hasName)
+						completed.push(OnboardingDialogSteps.Nickname);
+					if (data.hasImage)
+						completed.push(OnboardingDialogSteps.Avatar);
+					if (data.hasLinkedDiscord)
+						completed.push(OnboardingDialogSteps.Discord);
+					if (data.hasLinkedSteam)
+						completed.push(OnboardingDialogSteps.Steam);
+					setCompletedSteps(completed);
+				} else {
+					toast({
+						variant: 'destructive',
+						title: 'Error',
+						description:
+							data.error || 'Failed to fetch user status.',
+					});
+				}
+			} catch (error) {
+				toast({
+					variant: 'destructive',
+					title: 'Error',
+					description: 'An unexpected error occurred.' + error,
+				});
+			}
+		}
+
+		checkUserStatus();
+	}, [toast]);
 
 	async function close() {
 		const response = await completeOnboarding();
@@ -64,6 +102,9 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		} else {
 			setOpen(false);
 		}
+	}
+	async function setName(nickname: string) {
+		console.log('nickname', nickname);
 	}
 
 	async function setAvatar(avatar: File) {
@@ -81,6 +122,10 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 			const json = await response.json();
 
 			if (response.ok) {
+				setCompletedSteps((prev) => [
+					...prev,
+					OnboardingDialogSteps.Avatar,
+				]);
 				dispatch(setCurrentStep(OnboardingDialogSteps.Discord));
 			} else {
 				toast({
@@ -95,7 +140,6 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 				title: 'An error occurred.',
 				description: 'Please try again.',
 			});
-			//! #REMOVE
 			console.error(error);
 		}
 	}
@@ -105,11 +149,15 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 			case OnboardingDialogSteps.Welcome:
 				return (
 					<WelcomeStep
-						nextStep={() =>
+						nextStep={() => {
+							setCompletedSteps((prev) => [
+								...prev,
+								OnboardingDialogSteps.Welcome,
+							]);
 							dispatch(
 								setCurrentStep(OnboardingDialogSteps.Nickname)
-							)
-						}
+							);
+						}}
 					/>
 				);
 			case OnboardingDialogSteps.Nickname:
@@ -120,11 +168,16 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 								setCurrentStep(OnboardingDialogSteps.Welcome)
 							)
 						}
-						nextStep={() =>
+						nextStep={(nickname: string) => {
+							setName(nickname);
+							setCompletedSteps((prev) => [
+								...prev,
+								OnboardingDialogSteps.Nickname,
+							]);
 							dispatch(
 								setCurrentStep(OnboardingDialogSteps.Avatar)
-							)
-						}
+							);
+						}}
 					/>
 				);
 			case OnboardingDialogSteps.Avatar:
@@ -146,11 +199,15 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 								setCurrentStep(OnboardingDialogSteps.Avatar)
 							)
 						}
-						nextStep={() =>
+						nextStep={() => {
+							setCompletedSteps((prev) => [
+								...prev,
+								OnboardingDialogSteps.Discord,
+							]);
 							dispatch(
 								setCurrentStep(OnboardingDialogSteps.Steam)
-							)
-						}
+							);
+						}}
 					/>
 				);
 			case OnboardingDialogSteps.Steam:
@@ -161,11 +218,15 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 								setCurrentStep(OnboardingDialogSteps.Discord)
 							)
 						}
-						nextStep={() =>
+						nextStep={() => {
+							setCompletedSteps((prev) => [
+								...prev,
+								OnboardingDialogSteps.Steam,
+							]);
 							dispatch(
 								setCurrentStep(OnboardingDialogSteps.Completed)
-							)
-						}
+							);
+						}}
 					/>
 				);
 			case OnboardingDialogSteps.Completed:
@@ -192,7 +253,13 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 					<div className='flex flex-row py-5'>
 						<div className='flex flex-col space-between py-8 bg-white bg-opacity-[0.01] rounded-lg'>
 							{steps.map((step) => (
-								<Step key={step.number} step={step} />
+								<Step
+									key={step.number}
+									step={step}
+									completed={completedSteps.includes(
+										step.number
+									)}
+								/>
 							))}
 						</div>
 
