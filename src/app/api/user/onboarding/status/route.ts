@@ -21,7 +21,7 @@ export async function GET() {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 	}
 
-	const hasName = !!user.name;
+	const hasName = !!user.nickname;
 	const hasImage = !!user.image;
 	const hasLinkedDiscord = !!user.discord;
 	const hasLinkedSteam = !!user.steam;

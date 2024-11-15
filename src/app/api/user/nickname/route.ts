@@ -11,17 +11,17 @@ export async function GET() {
 
 	const user = await db.user.findUnique({
 		where: { email: session?.user?.email || '' },
-		include: {
+		select: {
 			nickname: true,
 		},
 	});
 
-	if (!user)
+	if (!user) {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	}
 
-	const hasLinkedDiscord = !!user.discord;
-
-	return NextResponse.json({ hasLinkedDiscord }, { status: 200 });
+	const hasNickname = !!user.nickname;
+	return NextResponse.json({ hasNickname }, { status: 200 });
 }
 
 export async function PATCH(request: Request) {
@@ -36,28 +36,21 @@ export async function PATCH(request: Request) {
 	if (!user)
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-	const { discord } = await request.json();
+	const { nickname } = await request.json();
 
-	if (!discord || typeof discord !== 'string')
+	if (!nickname || typeof nickname !== 'string')
 		return NextResponse.json(
-			{ error: 'Invalid Discord ID' },
+			{ error: 'Invalid nickname' },
 			{ status: 400 }
 		);
 
-	await db.discordAccount.upsert({
-		where: { userId: user.id },
-		update: {
-			discordId: discord,
-		},
-		create: {
-			userId: user.id,
-			discordId: discord,
-			accessToken: discord,
-		},
+	await db.user.update({
+		where: { email: session.user.email || '' },
+		data: { nickname },
 	});
 
 	return NextResponse.json(
-		{ message: 'Discord account linked successfully' },
+		{ message: 'Nickname updated successfully' },
 		{ status: 200 }
 	);
 }

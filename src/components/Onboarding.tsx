@@ -57,7 +57,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	useEffect(() => {
 		async function checkUserStatus() {
 			try {
-				const response = await fetch('/api/user/status');
+				const response = await fetch('/api/user/onboarding/status');
 				const data = await response.json();
 
 				if (response.ok) {
@@ -104,7 +104,38 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		}
 	}
 	async function setName(nickname: string) {
-		console.log('nickname', nickname);
+		console.log('Nickname', nickname);
+		try {
+			const response = await fetch('/api/user/nickname', {
+				method: 'PATCH',
+				body: JSON.stringify({ nickname: nickname }),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+			const json = await response.json();
+
+			if (response.ok) {
+				setCompletedSteps((prev) => [
+					...prev,
+					OnboardingDialogSteps.Nickname,
+				]);
+				dispatch(setCurrentStep(OnboardingDialogSteps.Avatar));
+			} else {
+				toast({
+					variant: 'destructive',
+					title: json.message || 'An error occurred.',
+					description: 'Please try again.',
+				});
+			}
+		} catch (error) {
+			toast({
+				variant: 'destructive',
+				title: 'An error occurred.',
+				description: 'Please try again.',
+			});
+			console.error(error);
+		}
 	}
 
 	async function setAvatar(avatar: File) {
@@ -168,16 +199,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 								setCurrentStep(OnboardingDialogSteps.Welcome)
 							)
 						}
-						nextStep={(nickname: string) => {
-							setName(nickname);
-							setCompletedSteps((prev) => [
-								...prev,
-								OnboardingDialogSteps.Nickname,
-							]);
-							dispatch(
-								setCurrentStep(OnboardingDialogSteps.Avatar)
-							);
-						}}
+						nextStep={(nickname: string) => setName(nickname)}
 					/>
 				);
 			case OnboardingDialogSteps.Avatar:

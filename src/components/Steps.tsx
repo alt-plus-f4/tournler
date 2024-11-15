@@ -24,7 +24,7 @@ export default function Step({ step, completed }: StepProps) {
 					number === currentStep
 						? 'bg-slate-300 border-0'
 						: completed
-						? 'bg-green-500 border-0'
+						? 'bg-slate-300 border-0'
 						: ''
 				}`}
 			>
