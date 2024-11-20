@@ -1,5 +1,5 @@
 import { LuPartyPopper } from 'react-icons/lu';
-import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 interface CompletedStepProps {
