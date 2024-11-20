@@ -8,8 +8,6 @@ import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
-import { useDispatch } from 'react-redux';
-import { updateFormData } from '@/lib/onboarding-slice';
 
 const options = {
   mouth: [
@@ -220,7 +218,6 @@ function dataURLtoFile(dataURL: string) {
 }
 
 export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
-  const dispatch = useDispatch();
   const [customization, setCustomization] = useState<CustomizationOptions>({
     mouth: 0,
     top: 0,
@@ -366,7 +363,6 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         <Button
           onClick={() => {
             const avatarFile = dataURLtoFile(avatar.toDataUri());
-            dispatch(updateFormData({ avatar: avatarFile }));
             nextStep(avatarFile);
           }}
         >

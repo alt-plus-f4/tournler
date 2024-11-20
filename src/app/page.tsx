@@ -1,9 +1,10 @@
+import { OnboardingStatus } from '@/components/OnboardingStatus';
+
 export default function Page() {
-  return (
-    <>
-      <p>
-        asd
-      </p>
-    </>
-  )
+	return (
+		<>
+			<OnboardingStatus />
+			<p>asd</p>
+		</>
+	);
 }

@@ -18,7 +18,7 @@ const UserAuthForm: FC<UserAuthFormProps> = ({ className, ...props }) => {
     setIsLoading(true);
 
     try {
-      await signIn('email', { email });
+      await signIn('email', { email }, { callbackUrl: '/' });
     } catch (error) {
       toast({
         title: 'There was a problem.',

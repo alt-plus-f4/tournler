@@ -56,68 +56,79 @@ export const authOptions: NextAuthOptions = {
 		DiscordProvider({
 			clientId: process.env.DISCORD_CLIENT_ID!,
 			clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+			allowDangerousEmailAccountLinking: true,
 		}),
 	],
 	callbacks: {
 		async session({ token, session }) {
 			if (token) {
 				session.user = {
-					id: (token.id as string) || '',
-					nickname: (token.nickname as string) || '',
-					email: token.email,
-					image: token.picture,
-					discordId: (token.discordId as string) || '',
+					id: token.id as string || '',
+					name: token.name as string || '',
+					email: token.email || '',
+					image: token.picture || '',
+					discordId: token.discordId as string || '',
 				};
 			}
 			return session;
 		},
+	
+		async jwt({ token, account, user }) {
+			if (account?.provider === 'steam') {
+				console.log('Steam');
+				token.steamId = account.providerAccountId;
+			}
 
-		async jwt({ token, account }) {
 			if (account?.provider === 'discord') {
+				console.log('Discord: ', account);
 				const discordId = account.providerAccountId;
 				const accessToken = account.access_token || '';
-
-				const existingDiscordAccount =
-					await db.discordAccount.findUnique({
+	
+				if (user?.id) {
+					console.log('User ID', user.id);
+					const existingDiscordAccount = await db.discordAccount.findUnique({
 						where: { discordId },
 					});
-
-				if (!existingDiscordAccount && token.id) {
-					await db.discordAccount.create({
-						data: {
-							userId: token.id as string,
-							discordId,
-							accessToken,
-						},
-					});
+	
+					if (!existingDiscordAccount) {
+						console.log("Creating Discord Account");
+						await db.discordAccount.create({
+							data: {
+								userId: user.id,
+								discordId,
+								accessToken,
+							},
+						});
+					}
 				}
-
+	
 				token.discordId = discordId;
 				token.accessToken = accessToken;
 			}
-
-			let dbUser = await db.user.findUnique({
-				where: { email: token.email || '' },
-			});
-
-			if (!dbUser && token.email) {
-				dbUser = await db.user.create({
-					data: {
-						email: token.email,
-						nickname: (token.nickname as string) || '',
-						image: token.picture || '',
-						emailVerified: new Date(),
-					},
+	
+			if (user) {
+				console.log('User: ', user);
+				token.id = user.id;
+			} 
+			else if (token.email) {
+				let dbUser = await db.user.findUnique({
+					where: { email: token.email },
 				});
-			}
-
-			if (dbUser) {
+	
+				if (!dbUser) {
+					dbUser = await db.user.create({
+						data: {
+							email: token.email,
+							name: token.name as string || '',
+							image: token.picture || '',
+							emailVerified: new Date(),
+						},
+					});
+				}
+	
 				token.id = dbUser.id;
-				token.nickname = dbUser.nickname;
-				token.email = dbUser.email;
-				token.picture = dbUser.image;
 			}
-
+	
 			return token;
 		},
 	},

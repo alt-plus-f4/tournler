@@ -12,7 +12,7 @@ export async function GET() {
 	const user = await db.user.findUnique({
 		where: { email: session?.user?.email || '' },
 		select: {
-			nickname: true,
+			name: true,
 		},
 	});
 
@@ -20,8 +20,8 @@ export async function GET() {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 	}
 
-	const hasNickname = !!user.nickname;
-	return NextResponse.json({ hasNickname }, { status: 200 });
+	const hasname = !!user.name;
+	return NextResponse.json({ hasname }, { status: 200 });
 }
 
 export async function PATCH(request: Request) {
@@ -36,21 +36,21 @@ export async function PATCH(request: Request) {
 	if (!user)
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-	const { nickname } = await request.json();
+	const { name } = await request.json();
 
-	if (!nickname || typeof nickname !== 'string')
+	if (!name || typeof name !== 'string')
 		return NextResponse.json(
-			{ error: 'Invalid nickname' },
+			{ error: 'Invalid name' },
 			{ status: 400 }
 		);
 
 	await db.user.update({
 		where: { email: session.user.email || '' },
-		data: { nickname },
+		data: { name },
 	});
 
 	return NextResponse.json(
-		{ message: 'Nickname updated successfully' },
+		{ message: 'name updated successfully' },
 		{ status: 200 }
 	);
 }

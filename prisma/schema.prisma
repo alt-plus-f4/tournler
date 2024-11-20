@@ -11,7 +11,7 @@ datasource db {
 
 model Account {
   id                String  @id @default(uuid()) @db.Uuid
-  userId            String  @db.Uuid
+  userId            String? @db.Uuid
   type              String  @db.VarChar
   provider          String  @db.VarChar
   providerAccountId String  @db.VarChar
@@ -22,7 +22,7 @@ model Account {
   scope             String? @db.VarChar
   id_token          String?
   session_state     String? @db.VarChar
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User?   @relation(fields: [userId], references: [id], onDelete: Cascade) // Optional relation to handle orphan accounts
 
   @@unique([provider, providerAccountId])
   @@index([userId])
@@ -39,20 +39,20 @@ model Session {
 }
 
 model User {
-  id    String  @id @default(uuid()) @db.Uuid
-  email String  @unique @db.VarChar
-  nickname  String? @db.VarChar
-  image String? @map("image") @db.VarChar
+  id                    String          @id @default(uuid()) @db.Uuid
+  email                 String          @unique @db.VarChar
+  name                  String?         @db.VarChar
+  image                 String?         @db.VarChar @map("image")
 
-  isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
-  emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
-  role                  Int       @default(0)
+  isOnboardingCompleted Boolean         @default(false) @map("is_onboarding_completed")
+  emailVerified         DateTime?       @map("email_verified") @db.Timestamp(6)
+  role                  Int             @default(0)
 
-  discord DiscordAccount?
-  steam   SteamAccount?
+  discord               DiscordAccount? 
+  steam                 SteamAccount?   
 
-  Account Account[]
-  Session Session[]
+  accounts              Account[]       
+  sessions              Session[]       
 }
 
 model SteamAccount {
@@ -63,13 +63,11 @@ model SteamAccount {
 }
 
 model DiscordAccount {
-  id     String @id @default(uuid()) @db.Uuid
-  userId String @unique @db.Uuid
-
-  discordId   String @unique @db.VarChar
-  accessToken String @db.VarChar
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid()) @db.Uuid
+  userId      String  @unique @db.Uuid
+  discordId   String  @unique @db.VarChar
+  accessToken String  @db.VarChar
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
