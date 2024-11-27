@@ -39,20 +39,56 @@ model Session {
 }
 
 model User {
-  id                    String          @id @default(uuid()) @db.Uuid
-  email                 String          @unique @db.VarChar
-  name                  String?         @db.VarChar
-  image                 String?         @db.VarChar @map("image")
+  id    String  @id @default(uuid()) @db.Uuid
+  email String  @unique @db.VarChar
+  name  String? @db.VarChar
+  image String? @map("image") @db.VarChar
 
-  isOnboardingCompleted Boolean         @default(false) @map("is_onboarding_completed")
-  emailVerified         DateTime?       @map("email_verified") @db.Timestamp(6)
-  role                  Int             @default(0)
+  isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
+  emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
+  role                  Int       @default(0)
 
-  discord               DiscordAccount? 
-  steam                 SteamAccount?   
+  discord DiscordAccount?
+  steam   SteamAccount?
 
-  accounts              Account[]       
-  sessions              Session[]       
+  cs2TeamId          Int?
+  cs2Team            Cs2Team?            @relation(name: "CS2TeamMembers", fields: [cs2TeamId], references: [id], onDelete: SetNull, onUpdate: Restrict)
+  cs2TeamCaptain     Cs2Team?            @relation(name: "CS2TeamCaptain")
+  cs2TeamInvitations Cs2TeamInvitation[]
+
+  accounts Account[]
+  sessions Session[]
+
+  @@index([cs2TeamId])
+}
+
+model Cs2Team {
+  id Int @id @default(autoincrement())
+
+  name String @unique
+
+  members User[] @relation("CS2TeamMembers")
+
+  capitanId String? @unique
+  capitan   User?   @relation("CS2TeamCaptain", fields: [capitanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  teamInvitations Cs2TeamInvitation[] @relation(name: "TeamInvitations")
+
+  @@map("cs2_teams")
+}
+
+model Cs2TeamInvitation {
+  id Int @id @default(autoincrement())
+
+  teamId Int
+  team   Cs2Team @relation(name: "TeamInvitations", fields: [teamId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([teamId])
+  @@index([userId])
+  @@map("cs2_team_invitations")
 }
 
 model SteamAccount {
@@ -63,11 +99,11 @@ model SteamAccount {
 }
 
 model DiscordAccount {
-  id          String  @id @default(uuid()) @db.Uuid
-  userId      String  @unique @db.Uuid
-  discordId   String  @unique @db.VarChar
-  accessToken String  @db.VarChar
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String @id @default(uuid()) @db.Uuid
+  userId      String @unique @db.Uuid
+  discordId   String @unique @db.VarChar
+  accessToken String @db.VarChar
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
