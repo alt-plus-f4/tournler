@@ -1,9 +1,7 @@
 export default function Page() {
-  return (
-    <>
-      <p>
-        teams
-      </p>
-    </>
-  )
+	return (
+		<>
+			<p>Don't have a team?</p>
+		</>
+	);
 }
