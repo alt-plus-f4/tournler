@@ -1,140 +1,117 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { Minus, Plus } from 'lucide-react';
-import { Bar, BarChart, ResponsiveContainer } from 'recharts';
-
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import {
 	Drawer,
 	DrawerClose,
 	DrawerContent,
 	DrawerDescription,
-	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
 	DrawerTrigger,
 } from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
-const data = [
-	{
-		goal: 400,
-	},
-	{
-		goal: 300,
-	},
-	{
-		goal: 200,
-	},
-	{
-		goal: 300,
-	},
-	{
-		goal: 200,
-	},
-	{
-		goal: 278,
-	},
-	{
-		goal: 189,
-	},
-	{
-		goal: 239,
-	},
-	{
-		goal: 300,
-	},
-	{
-		goal: 200,
-	},
-	{
-		goal: 278,
-	},
-	{
-		goal: 189,
-	},
-	{
-		goal: 349,
-	},
-];
+const formSchema = z.object({
+	teamName: z
+		.string()
+		.min(3, 'Team name must be at least 3 characters long')
+		.max(50, 'Team name cannot exceed 50 characters'),
+});
 
-export function TeamDrawer() {
-	const [goal, setGoal] = React.useState(350);
+export function TeamCreationDrawer() {
+	const {
+		register,
+		handleSubmit,
+		formState: { errors, isSubmitting },
+	} = useForm({
+		resolver: zodResolver(formSchema),
+	});
+	const router = useRouter();
+	const { toast } = useToast();
 
-	function onClick(adjustment: number) {
-		setGoal(Math.max(200, Math.min(400, goal + adjustment)));
-	}
+	const onSubmit = async (data : any) => {
+		try {
+			const response = await fetch('/api/teams', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(data),
+			});
+
+			if (response.ok) {
+				toast({
+					title: 'Created Team',
+					description: "You've successfully created a new team.",
+				});
+				router.refresh();
+			} else {
+				const errorData = await response.json();
+				toast({
+					variant: 'destructive',
+					title: 'Error',
+					description: errorData || 'Failed to create team.',
+				});
+			}
+		} catch (error) {
+			toast({
+				variant: 'destructive',
+				title: 'Error',
+				description: 'Failed to create team.',
+			});
+		}
+	};
 
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
-				<Button variant='outline'>Open Drawer</Button>
+				<Button variant="outline">Create Team</Button>
 			</DrawerTrigger>
 			<DrawerContent>
-				<div className='mx-auto w-full max-w-sm'>
+				<div className="mx-auto w-full max-w-sm">
 					<DrawerHeader>
-						<DrawerTitle>Move Goal</DrawerTitle>
-						<DrawerDescription>
-							Set your daily activity goal.
+						<DrawerTitle className="text-center" >Create a New Team</DrawerTitle>
+						<DrawerDescription className="text-center" >
+							Fill in the details below to create a new team.
 						</DrawerDescription>
 					</DrawerHeader>
-					<div className='p-4 pb-0'>
-						<div className='flex items-center justify-center space-x-2'>
-							<Button
-								variant='outline'
-								size='icon'
-								className='h-8 w-8 shrink-0 rounded-full'
-								onClick={() => onClick(-10)}
-								disabled={goal <= 200}
-							>
-								<Minus />
-								<span className='sr-only'>Decrease</span>
-							</Button>
-							<div className='flex-1 text-center'>
-								<div className='text-7xl font-bold tracking-tighter'>
-									{goal}
-								</div>
-								<div className='text-[0.70rem] uppercase text-muted-foreground'>
-									Calories/day
-								</div>
-							</div>
-							<Button
-								variant='outline'
-								size='icon'
-								className='h-8 w-8 shrink-0 rounded-full'
-								onClick={() => onClick(10)}
-								disabled={goal >= 400}
-							>
-								<Plus />
-								<span className='sr-only'>Increase</span>
-							</Button>
+					<form onSubmit={handleSubmit(onSubmit)} className="p-4 pb-0 space-y-4 mb-10">
+						<div>
+							<label htmlFor="team-name" className="block text-sm font-medium">
+								Team Name
+							</label>
+							<Input
+								id="team-name"
+								placeholder="Enter team name"
+								{...register('teamName')}
+								disabled={isSubmitting}
+							/>
+							{errors.teamName && (
+								<p className="text-red-600 text-sm">{String(errors.teamName.message)}</p>
+							)}
 						</div>
-						<div className='mt-3 h-[120px]'>
-							<ResponsiveContainer width='100%' height='100%'>
-								<BarChart data={data}>
-									<Bar
-										dataKey='goal'
-										style={
-											{
-												fill: 'hsl(var(--foreground))',
-												opacity: 0.9,
-											} as React.CSSProperties
-										}
-									/>
-								</BarChart>
-							</ResponsiveContainer>
+						<div className="space-x-2">
+							<Button className='w-[40%]' type="submit" disabled={isSubmitting}>
+								{isSubmitting ? 'Creating...' : 'Create Team'}
+							</Button>
+							<DrawerClose asChild>
+								<Button className='w-[56%] h-[42px]' type="button" variant="outline">
+									Cancel
+								</Button>
+							</DrawerClose>
 						</div>
-					</div>
-					<DrawerFooter>
-						<Button>Submit</Button>
-						<DrawerClose asChild>
-							<Button variant='outline'>Cancel</Button>
-						</DrawerClose>
-					</DrawerFooter>
+					</form>
 				</div>
 			</DrawerContent>
 		</Drawer>
 	);
 }
 
-export default TeamDrawer;
+export default TeamCreationDrawer;
+

@@ -63,16 +63,16 @@ export const authOptions: NextAuthOptions = {
 		async session({ token, session }) {
 			if (token) {
 				session.user = {
-					id: token.id as string || '',
-					name: token.name as string || '',
+					id: (token.id as string) || '',
+					name: (token.name as string) || '',
 					email: token.email || '',
 					image: token.picture || '',
-					discordId: token.discordId as string || '',
+					discordId: (token.discordId as string) || '',
 				};
 			}
 			return session;
 		},
-	
+
 		async jwt({ token, account, user }) {
 			if (account?.provider === 'steam') {
 				console.log('Steam');
@@ -83,15 +83,16 @@ export const authOptions: NextAuthOptions = {
 				console.log('Discord: ', account);
 				const discordId = account.providerAccountId;
 				const accessToken = account.access_token || '';
-	
+
 				if (user?.id) {
 					console.log('User ID', user.id);
-					const existingDiscordAccount = await db.discordAccount.findUnique({
-						where: { discordId },
-					});
-	
+					const existingDiscordAccount =
+						await db.discordAccount.findUnique({
+							where: { discordId },
+						});
+
 					if (!existingDiscordAccount) {
-						console.log("Creating Discord Account");
+						console.log('Creating Discord Account');
 						await db.discordAccount.create({
 							data: {
 								userId: user.id,
@@ -101,34 +102,33 @@ export const authOptions: NextAuthOptions = {
 						});
 					}
 				}
-	
+
 				token.discordId = discordId;
 				token.accessToken = accessToken;
 			}
-	
+
 			if (user) {
 				console.log('User: ', user);
 				token.id = user.id;
-			} 
-			else if (token.email) {
+			} else if (token.email) {
 				let dbUser = await db.user.findUnique({
 					where: { email: token.email },
 				});
-	
+
 				if (!dbUser) {
 					dbUser = await db.user.create({
 						data: {
 							email: token.email,
-							name: token.name as string || '',
+							name: (token.name as string) || '',
 							image: token.picture || '',
 							emailVerified: new Date(),
 						},
 					});
 				}
-	
+
 				token.id = dbUser.id;
 			}
-	
+
 			return token;
 		},
 	},

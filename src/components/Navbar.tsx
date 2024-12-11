@@ -3,8 +3,7 @@ import { MainNav } from "./MainNav"
 import { UserNav } from "./UserNav"
 import Link from "next/link"
 import { getAuthSession } from "@/lib/auth";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import LoginButtons from "./LoginButtons";
 
 export default async function Navbar() {
 
@@ -25,13 +24,8 @@ export default async function Navbar() {
 						<div className="">
 							<UserNav user={session.user} />
 						</div>
-					) :
-						(
-							<>
-								<Link href='/sign-in' className={cn(buttonVariants({ variant: "outline" }), "hidden sm:inline py-3 px-5")}>Sign In</Link>
-								<Link href='/sign-up' className={cn(buttonVariants({ variant: "outline" }), "hidden sm:inline py-3 px-5")}>Sign Up</Link>
-							</>
-						)}
+					) : <LoginButtons className="hidden sm:inline" />
+					}
 				</div >
 			</nav >
 		</>

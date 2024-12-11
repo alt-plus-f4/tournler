@@ -66,6 +66,7 @@ model Cs2Team {
   id Int @id @default(autoincrement())
 
   name String @unique
+  logo String?
 
   members User[] @relation("CS2TeamMembers")
 
