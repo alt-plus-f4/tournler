@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -16,6 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { SiCounterstrike } from 'react-icons/si';
+import { Card, CardHeader, CardContent } from './ui/card';
 
 const formSchema = z.object({
 	teamName: z
@@ -35,7 +37,7 @@ export function TeamCreationDrawer() {
 	const router = useRouter();
 	const { toast } = useToast();
 
-	const onSubmit = async (data : any) => {
+	const onSubmit = async (data: any) => {
 		try {
 			const response = await fetch('/api/teams', {
 				method: 'POST',
@@ -52,14 +54,14 @@ export function TeamCreationDrawer() {
 				});
 				router.refresh();
 			} else {
-				const errorData = await response.json();
 				toast({
 					variant: 'destructive',
 					title: 'Error',
-					description: errorData || 'Failed to create team.',
+					description: 'Failed to create team.',
 				});
 			}
 		} catch (error) {
+			console.log(error);
 			toast({
 				variant: 'destructive',
 				title: 'Error',
@@ -71,37 +73,73 @@ export function TeamCreationDrawer() {
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
-				<Button variant="outline">Create Team</Button>
+				<div>
+					<Card className='w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
+						<CardHeader className='relative p-0 w-full aspect-[21/9] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
+							<div className='absolute inset-0 flex items-center justify-center'>
+								<SiCounterstrike className='w-12 h-12 opacity-80' />
+							</div>
+						</CardHeader>
+						<CardContent className='px-4 text-center'>
+							<div className='flex flex-col items-center justify-center'>
+								<h3 className='text-xl font-extrabold text-white'>
+									Create Team
+								</h3>
+								<p className='text-sm font-medium text-slate-400'>
+									Click to start your journey
+								</p>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 			</DrawerTrigger>
 			<DrawerContent>
-				<div className="mx-auto w-full max-w-sm">
+				<div className='mx-auto w-full max-w-sm'>
 					<DrawerHeader>
-						<DrawerTitle className="text-center" >Create a New Team</DrawerTitle>
-						<DrawerDescription className="text-center" >
+						<DrawerTitle className='text-center'>
+							Create a New Team
+						</DrawerTitle>
+						<DrawerDescription className='text-center'>
 							Fill in the details below to create a new team.
 						</DrawerDescription>
 					</DrawerHeader>
-					<form onSubmit={handleSubmit(onSubmit)} className="p-4 pb-0 space-y-4 mb-10">
+					<form
+						onSubmit={handleSubmit(onSubmit)}
+						className='p-4 pb-0 space-y-4 mb-10'
+					>
 						<div>
-							<label htmlFor="team-name" className="block text-sm font-medium">
+							<label
+								htmlFor='team-name'
+								className='block text-sm font-medium'
+							>
 								Team Name
 							</label>
 							<Input
-								id="team-name"
-								placeholder="Enter team name"
+								id='team-name'
+								placeholder='Enter team name'
 								{...register('teamName')}
 								disabled={isSubmitting}
 							/>
 							{errors.teamName && (
-								<p className="text-red-600 text-sm">{String(errors.teamName.message)}</p>
+								<p className='text-red-600 text-sm'>
+									{String(errors.teamName.message)}
+								</p>
 							)}
 						</div>
-						<div className="space-x-2">
-							<Button className='w-[40%]' type="submit" disabled={isSubmitting}>
+						<div className='space-x-2'>
+							<Button
+								className='w-[40%]'
+								type='submit'
+								disabled={isSubmitting}
+							>
 								{isSubmitting ? 'Creating...' : 'Create Team'}
 							</Button>
 							<DrawerClose asChild>
-								<Button className='w-[56%] h-[42px]' type="button" variant="outline">
+								<Button
+									className='w-[56%] h-[42px]'
+									type='button'
+									variant='outline'
+								>
 									Cancel
 								</Button>
 							</DrawerClose>
@@ -114,4 +152,3 @@ export function TeamCreationDrawer() {
 }
 
 export default TeamCreationDrawer;
-
