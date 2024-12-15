@@ -17,7 +17,6 @@ interface Team {
 
 export default async function Page() {
 	const session = await getAuthSession();
-	console.log('Session:', session);
 	const userTeam = session?.user.email
 		? await getUserTeam(session.user.email)
 		: null;

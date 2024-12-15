@@ -12,7 +12,7 @@ export async function GET() {
 		},
 	});
 
-	console.log(teams);
+	// console.log(teams);
 
 	if (!teams) {
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
