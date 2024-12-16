@@ -1,15 +1,10 @@
 import { SiCounterstrike } from 'react-icons/si';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader } from './ui/card';
-import { BadgeCheck, Check, X } from 'lucide-react';
+import { BadgeCheck, X } from 'lucide-react';
+import { ExtendedCs2Team } from '@/lib/models/team-model';
 
-interface Team {
-	id: string;
-	name: string;
-	members: string[];
-}
-
-export function TeamCard({ team }: { team: Team }) {
+export function TeamCard({ team }: { team: ExtendedCs2Team }) {
 	const isVerified = team.members.length === 5;
 
 	return (

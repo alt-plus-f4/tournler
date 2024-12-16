@@ -8,12 +8,7 @@ import { Card, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 import { TeamCard } from '@/components/TeamCard';
-
-interface Team {
-	id: string;
-	name: string;
-	members: string[];
-}
+import { ExtendedCs2Team } from '@/lib/models/team-model';
 
 export default async function Page() {
 	const session = await getAuthSession();
@@ -95,7 +90,7 @@ async function TeamsCards() {
 
 		return (
 			<>
-				{data.teams.map((team: Team) => (
+				{data.teams.map((team: ExtendedCs2Team) => (
 					<TeamCard key={team.id} team={team} /> // id is unique i hope
 				))}
 			</>

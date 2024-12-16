@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } fr
 import { Button } from './ui/button';
 import { DialogHeader, DialogFooter } from './ui/dialog';
 import { Toaster } from './ui/toaster';
+import { User } from '@prisma/client';
 
 interface InviteButtonProps {
-  user: ApiClient.UserPublicDto;
+  user: User;
   teamId: number;
   completeSuccessfulInviteConfirmation: () => void;
 }
@@ -61,7 +62,7 @@ export function InviteConfirmationDialog({
           <DialogHeader>
             <DialogTitle>Invitation confirmation</DialogTitle>
             <DialogDescription>
-                You are inviting {user.firstName} {user.lastName} to join your team.
+                You are inviting {user.name} to join your team.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -6,10 +6,13 @@ import React, { ReactNode, useState } from 'react';
 import { Button } from './ui/button';
 import { DialogHeader, DialogFooter } from './ui/dialog';
 import { Toaster } from './ui/toaster';
+import { Cs2Team } from '@prisma/client';
+import { ExtendedUser } from '@/lib/models/user-model';
+import { removeMemberRequest } from '@/lib/apifuncs';
 
 interface LeaveTeamDialogProps {
-  team: ApiClient.Cs2TeamDto;
-  user: ApiClient.UserDto;
+  team: Cs2Team;
+  user: ExtendedUser;
   children: ReactNode;
 }
 

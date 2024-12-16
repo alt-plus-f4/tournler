@@ -1,7 +1,9 @@
+import { Icons } from "./Icons";
 import { TeamMemberAvatar } from "./TeamMemberAvatar";
+import { ExtendedCs2Team } from "@/lib/models/team-model";
 
 interface TeamBannerProps {
-  team: ApiClient.Cs2TeamDto;
+  team: ExtendedCs2Team;
   enableTeamCapitanControls?: boolean;
 }
 
@@ -13,21 +15,21 @@ export function TeamBanner({
     <>
       <div
         className="absolute inset-0 flex flex-col w-full h-full pt-5 overflow-ellipsis items-center text-center text-white"
-        style={{ backgroundColor: libConfig.cs2Team.color.mapping[team.color] }}
+        style={{ backgroundColor: 'white' }}
       >
         <span className="w-fit px-2 py-1 text-3xl font-bold bg-white text-black dark:bg-black dark:text-white">
           {team.name.toUpperCase()}
         </span>
-        <Logo className="px-4 py-2 scale-50 -mt-3 bg-white text-black dark:bg-black dark:text-white" />
+        <Icons.logo className="px-4 py-2 scale-50 -mt-3 bg-white text-black dark:bg-black dark:text-white" />
       </div>
       <div
         className="absolute inset-0 w-full h-full grid justify-center items-end"
         style={{
-          padding: `0px ${2 + (libConfig.cs2Team.members.max - team.members.length) * 9.75}%`,
+          padding: `0px ${2 + (5 - team.members.length) * 9.75}%`,
           gridTemplateColumns: `repeat(${team.members.length}, 1fr)`,
         }}
       >
-        {team.members.map((member: ApiClient.UserPublicDto) => (
+        {team.members.map((member) => (
           <TeamMemberAvatar
             key={member.id}
             team={team}

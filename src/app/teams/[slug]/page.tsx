@@ -1,111 +1,47 @@
 import { Suspense } from 'react';
 import { TeamBanner } from '@/components/TeamBanner';
-import { FaArrowLeft, FaUserPlus } from 'react-icons/fa6';
+import { FaArrowLeft, FaUserPlus, FaSignal } from 'react-icons/fa6';
 import Link from 'next/link';
 import { SiCounterstrike } from 'react-icons/si';
-import { FaSignOutAlt } from 'react-icons/fa';
-import { getAuthSession } from '@/lib/auth';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { LeaveTeamDialog } from '@/components/LeaveTeamDialog';
 import { UsersSearch } from '@/components/UsersSearch';
+import useSessionUser from '@/hooks/use-session-user';
+import useFetchUsers from '@/hooks/use-fetch-users';
+import useFetchTeam from '@/hooks/use-fetch-team';
 
 interface CS2TeamPageProps {
-	params: { id: string };
+	params: {
+		slug: string;
+	};
 }
 
-export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
-	const session = await getAuthSession();
-	const user = session?.user;
-	const teamId = parseInt(params.id, 10);
+export default function CS2TeamPage({ params }: CS2TeamPageProps) {
+	const { user, loading: userLoading } = useSessionUser();
+	const { slug } = params;
+	const teamId = parseInt(slug, 10);
+	const { team, loading: teamLoading } = useFetchTeam(teamId);
+	const { users, loading: usersLoading } = useFetchUsers(teamId);
 
-	//TODO GET TEAM
-
-	if (!team) {
-		return null;
-	}
-
-	// TODO: this is requested for each subcategory, refactor to get all users once
-	async function getUsersOutsideOfThisTeam() {
-		const users = await ApiClient.UsersApiService.usersControllerGetAllV1(
-			{}
-		);
-		return users.filter((currentUser) => currentUser.cs2TeamId !== team.id);
-	}
-
-	async function getTeamInvitesSentUserIds() {
-		const invites =
-			await ApiClient.Cs2TeamsApiService.cs2TeamsControllerGetInvitationsSentV1(
-				{
-					teamId,
-					authorization: await getBearerToken(),
-				}
-			);
-		return invites.map((invite) => invite.userId);
-	}
-
-	async function getTeamJoinRequestsUserIds() {
-		const requests =
-			await ApiClient.Cs2TeamsApiService.cs2TeamsControllerGetJoinRequestsV1(
-				{
-					teamId,
-					authorization: await getBearerToken(),
-				}
-			);
-		return requests.map((request) => request.userId);
-	}
-
-	async function getUsersWithoutATeamAndNoRequestAndInvites() {
-		const users = await getUsersOutsideOfThisTeam();
-		const invitesUserIds = await getTeamInvitesSentUserIds();
-		const requestsUserIds = await getTeamJoinRequestsUserIds();
-
-		return users
-			.filter((currentUser) => !currentUser.cs2TeamId)
-			.filter((currentUser) => !invitesUserIds.includes(currentUser.id))
-			.filter((currentUser) => !requestsUserIds.includes(currentUser.id));
-	}
-
-	async function getUsersWithATeamAndNoRequestAndInvites() {
-		const users = await ApiClient.UsersApiService.usersControllerGetAllV1(
-			{}
-		);
-		const invitesUserIds = await getTeamInvitesSentUserIds();
-		const requestsUserIds = await getTeamJoinRequestsUserIds();
-
-		return users
-			.filter((currentUser) => currentUser.cs2TeamId)
-			.filter((currentUser) => !invitesUserIds.includes(currentUser.id))
-			.filter((currentUser) => !requestsUserIds.includes(currentUser.id));
-	}
-
-	async function getUsersRequestedToJoin() {
-		const users = await getUsersOutsideOfThisTeam();
-		const requestsUserIds = await getTeamJoinRequestsUserIds();
-
-		return users.filter((currentUser) =>
-			requestsUserIds.includes(currentUser.id)
-		);
-	}
-
-	async function getUsersAlreadyInvited() {
-		const users = await getUsersOutsideOfThisTeam();
-		const invitesUserIds = await getTeamInvitesSentUserIds();
-
-		return users.filter((currentUser) =>
-			invitesUserIds.includes(currentUser.id)
-		);
-	}
+	if (userLoading || teamLoading || usersLoading) return <p>Loading...</p>;
+	if (!team) return <p>Team not found</p>;
 
 	return (
 		<Card className='w-full mt-12'>
 			<CardHeader className='relative p-0 w-full aspect-[12/3] space-y-0 overflow-hidden rounded-t-xl'>
 				<TeamBanner
 					team={team}
-					enableTeamCapitanControls={user?.id === team.capitanId}
+					enableTeamCapitanControls={team.isUserTeamCaptain}
 				/>
-				<Link className={cn('absolute top-1 left-1 rounded-xl', buttonVariants({variant: 'outline'}))} href={`/${locale}/cs2/teams`}>
+				<Link
+					className={cn(
+						'absolute top-1 left-1 rounded-xl',
+						buttonVariants({ variant: 'outline' })
+					)}
+					href='/cs2/teams'
+				>
 					<FaArrowLeft className='h-4 w-4' />
 				</Link>
 			</CardHeader>
@@ -116,22 +52,22 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 						{team.name}
 					</h1>
 					<div className='ml-auto flex flex-row gap-2'>
-						{user && user.cs2TeamId === team.id && (
+						{team.isUserMember && user && (
 							<LeaveTeamDialog team={team} user={user}>
 								<Button variant='outline'>
-									<FaSignOutAlt className='h-4 w-4' />
+									<FaSignal className='h-4 w-4' />
 								</Button>
 							</LeaveTeamDialog>
 						)}
 
-						{user && user.id === team.capitanId && (
+						{team.isUserTeamCaptain && (
 							<Suspense fallback={null}>
 								<UsersSearch
 									teamId={team.id}
-									usersWithoutATeam={await getUsersWithoutATeamAndNoRequestAndInvites()}
-									usersWithATeam={await getUsersWithATeamAndNoRequestAndInvites()}
-									usersRequestedToJoin={await getUsersRequestedToJoin()}
-									usersAlreadyInvited={await getUsersAlreadyInvited()}
+									usersWithoutATeam={users.withoutTeam}
+									usersWithATeam={users.withTeam}
+									usersRequestedToJoin={users.requestedToJoin}
+									usersAlreadyInvited={users.alreadyInvited}
 								>
 									<Button>
 										<FaUserPlus className='h-4 w-4' />

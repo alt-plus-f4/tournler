@@ -3,7 +3,6 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/toaster';
 import { Roboto } from 'next/font/google';
-import Providers from '@/redux/Providers';
 
 const roboto = Roboto({
 	weight: '400',
@@ -31,7 +30,7 @@ export default function RootLayout({
 				<Navbar />
 
 				{authModal}
-				<Providers>{children}</Providers>
+				{children}
 				<Toaster />
 
 				<div className='text-foreground p-5 text-center text-sm w-full mt-auto bottom-0 border-t'>

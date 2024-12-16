@@ -1,9 +1,9 @@
 import { User } from 'lucide-react'
-import { BsReddit } from 'react-icons/bs'
 import { FcGoogle } from "react-icons/fc";
+import { SiInoreader } from "react-icons/si";
 
 export const Icons = {
   google: FcGoogle,
   user: User,
-  logo: BsReddit,
+  logo: SiInoreader,
 }

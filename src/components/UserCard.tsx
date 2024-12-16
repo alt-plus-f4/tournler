@@ -1,10 +1,10 @@
 'use client';
 
+import { ExtendedUser } from "@/lib/models/user-model";
 import { Avatar, AvatarImage, AvatarFallback } from "@radix-ui/react-avatar";
 
-
 interface UserCardProps {
-  member: ApiClient.UserPublicDto;
+  member: ExtendedUser;
 }
 
 export function UserCard({ member }: UserCardProps) {
@@ -12,18 +12,17 @@ export function UserCard({ member }: UserCardProps) {
     <div className="flex justify-between space-x-4">
       <Avatar>
         <AvatarImage
-          src={member.avatarUrl}
-          alt={`${member.firstName} ${member.lastName}`}
+          src={member.image ?? ""}
+          alt={`${member.name}`}
         />
         <AvatarFallback>
-          {member.firstName[0]}
-          {member.lastName[0]}
+          {member.name ?? 'X'}
         </AvatarFallback>
       </Avatar>
       <div className="space-y-1 w-full">
-        <h4 className="text-sm font-semibold">{member.nickname}</h4>
+        <h4 className="text-sm font-semibold">{member.name}</h4>
         <p className="text-sm">
-          {member.firstName} {member.lastName}
+          {member.name} is a member of the team.
         </p>
       </div>
     </div>

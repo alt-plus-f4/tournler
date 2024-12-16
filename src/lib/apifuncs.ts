@@ -1,3 +1,6 @@
+import { Cs2Team } from "@prisma/client";
+import { ExtendedUser } from "./models/user-model";
+
 export async function completeOnboarding() {
   try {
     const response = await fetch('/api/user/onboarding', {
@@ -20,6 +23,26 @@ export async function completeOnboarding() {
     }
     return { error: 'An unknown error occurred' };
   }
+}
+
+export async function removeMemberRequest(team: Cs2Team, member: ExtendedUser) {
+	try {
+		const response = await fetch(`/api/teams/${team.id}/invites/${member.id}`, {
+			method: 'DELETE',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json();
+			return { error: errorData.message };
+		}
+
+		return { success: true };
+	} catch (error) {
+		return { error: 'An unexpected error occurred' };
+	}
 }
 
 export async function fetchOnboardingStatus() {
