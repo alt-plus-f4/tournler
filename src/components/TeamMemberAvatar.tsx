@@ -9,10 +9,11 @@ import {
 import { useState, useEffect } from 'react';
 import { FaUserSlash } from 'react-icons/fa';
 import { Button } from './ui/button';
-import { Cs2Team} from '@prisma/client';
+import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
 import { ExtendedUser } from '@/lib/models/user-model';
 import { removeMemberRequest } from '@/lib/apifuncs';
+import Image from 'next/image';
 
 interface TeamMemberAvatarProps {
 	team: Cs2Team;
@@ -55,7 +56,7 @@ export function TeamMemberAvatar({
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
-					<img
+					<Image
 						className='scale-150 mb-2 transition group-hover:z-10 group-hover:scale-[175%] cursor-default'
 						src={member.image ?? ''}
 						alt={`${member.name} avatar`}
@@ -88,7 +89,9 @@ export function TeamMemberAvatar({
 	);
 }
 
-async function getUser(member : ExtendedUser): Promise<ExtendedUser | undefined> {
+async function getUser(
+	member: ExtendedUser
+): Promise<ExtendedUser | undefined> {
 	try {
 		const response = await fetch(`/api/users/${member.id}`);
 		if (!response.ok) {
@@ -99,6 +102,3 @@ async function getUser(member : ExtendedUser): Promise<ExtendedUser | undefined>
 		return undefined;
 	}
 }
-
-
-

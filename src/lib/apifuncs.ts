@@ -41,7 +41,7 @@ export async function removeMemberRequest(team: Cs2Team, member: ExtendedUser) {
 
 		return { success: true };
 	} catch (error) {
-		return { error: 'An unexpected error occurred' };
+		return { error: 'An unexpected error occurred' + error};
 	}
 }
 
