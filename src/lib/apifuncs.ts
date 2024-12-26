@@ -1,6 +1,3 @@
-import { Cs2Team } from "@prisma/client";
-import { ExtendedUser } from "./models/user-model";
-
 export async function completeOnboarding() {
   try {
     const response = await fetch('/api/user/onboarding', {
@@ -25,9 +22,9 @@ export async function completeOnboarding() {
   }
 }
 
-export async function removeMemberRequest(team: Cs2Team, member: ExtendedUser) {
+export async function removeMemberRequest(teamId : number, userId: string) {
 	try {
-		const response = await fetch(`/api/teams/${team.id}/invites/${member.id}`, {
+		const response = await fetch(`/api/teams/${teamId}/invites/${userId}`, {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',

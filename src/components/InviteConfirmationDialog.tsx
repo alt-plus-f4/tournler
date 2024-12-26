@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@radix-ui/react-dialog';
 import { Button } from './ui/button';
 import { DialogHeader, DialogFooter } from './ui/dialog';

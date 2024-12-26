@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; // Import the Input component from shadcn
 import { signIn } from "next-auth/react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/lib/hooks/use-toast";
 
 type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>;
 

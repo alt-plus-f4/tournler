@@ -8,7 +8,7 @@ import { DiscordStep } from './onboarding/DiscordStep';
 import { SteamStep } from './onboarding/SteamStep';
 import { CompletedStep } from './onboarding/CompletedStep';
 import { Dialog, DialogContent } from './ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/lib/onboarding-slice';

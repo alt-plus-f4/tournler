@@ -8,9 +8,13 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { LeaveTeamDialog } from '@/components/LeaveTeamDialog';
 import { UsersSearch } from '@/components/UsersSearch';
-import useSessionUser from '@/hooks/use-session-user';
-import useFetchUsers from '@/hooks/use-fetch-users';
-import useFetchTeam from '@/hooks/use-fetch-team';
+import fetchTeam from '@/lib/helpers/fetch-team';
+import fetchUsers from '@/lib/helpers/fetch-team-users';
+import { getAuthSession } from '@/lib/auth';
+import { fetchUsersWithoutATeam } from '@/lib/helpers/fetch-users-without-a-team';
+import { fetchUsersWithATeam } from '@/lib/helpers/fetch-users-with-team';
+import { fetchUsersRequestedToJoin } from '@/lib/helpers/fetch-users-requested-to-join';
+import { fetchUsersAlreadyInvited } from '@/lib/helpers/fetch-users-already-invited';
 
 interface CS2TeamPageProps {
 	params: {
@@ -18,56 +22,67 @@ interface CS2TeamPageProps {
 	};
 }
 
-export default function CS2TeamPage({ params }: CS2TeamPageProps) {
-	const { user, loading: userLoading } = useSessionUser();
+export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const { slug } = params;
-	const teamId = parseInt(slug, 10);
-	const { team, loading: teamLoading } = useFetchTeam(teamId);
-	const { users, loading: usersLoading } = useFetchUsers(teamId);
 
-	if (userLoading || teamLoading || usersLoading) return <p>Loading...</p>;
+	const session = await getAuthSession();
+	const user = session?.user;
+
+	const teamId = parseInt(slug, 10);
+
+	let team = await fetchTeam(teamId);
+	const users = await fetchUsers(teamId);
+	team = team.team;
+
+	const isUserTeamCaptain = team?.capitan.id === user?.id;
+
+	const usersWithoutATeam = await fetchUsersWithoutATeam(teamId);
+	const usersWithATeam = await fetchUsersWithATeam(teamId);
+	const usersRequestedToJoin = await fetchUsersRequestedToJoin(teamId);
+	const usersAlreadyInvited = await fetchUsersAlreadyInvited(teamId);
+
 	if (!team) return <p>Team not found</p>;
 
 	return (
-		<Card className='w-full mt-12'>
-			<CardHeader className='relative p-0 w-full aspect-[12/3] space-y-0 overflow-hidden rounded-t-xl'>
+		<Card className='w-5/6 mx-auto align-center mt-12 h-[750px]'>
+			<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl'>
 				<TeamBanner
 					team={team}
-					enableTeamCapitanControls={team.isUserTeamCaptain}
+					enableTeamCapitanControls={isUserTeamCaptain}
 				/>
 				<Link
 					className={cn(
-						'absolute top-1 left-1 rounded-xl',
+						'absolute top-1 left-1',
 						buttonVariants({ variant: 'outline' })
 					)}
-					href='/cs2/teams'
+					href='/teams'
 				>
 					<FaArrowLeft className='h-4 w-4' />
 				</Link>
 			</CardHeader>
 			<CardContent className='p-3'>
-				<div className='flex items-center'>
+				<div className='flex items-center border-b-2 border-gray-500 pb-2 mb-2'>
 					<SiCounterstrike className='h-8 w-8 mr-1' />
 					<h1 className='text-xl sm:text-2xl md:text-3xl font-black uppercase my-2 truncate text-clip'>
 						{team.name}
 					</h1>
 					<div className='ml-auto flex flex-row gap-2'>
 						{team.isUserMember && user && (
-							<LeaveTeamDialog team={team} user={user}>
+							<LeaveTeamDialog teamId={team.id} userId={user.id}>
 								<Button variant='outline'>
 									<FaSignal className='h-4 w-4' />
 								</Button>
 							</LeaveTeamDialog>
 						)}
 
-						{team.isUserTeamCaptain && (
+						{isUserTeamCaptain && (
 							<Suspense fallback={null}>
 								<UsersSearch
 									teamId={team.id}
-									usersWithoutATeam={users.withoutTeam}
-									usersWithATeam={users.withTeam}
-									usersRequestedToJoin={users.requestedToJoin}
-									usersAlreadyInvited={users.alreadyInvited}
+									usersWithoutATeam={usersWithoutATeam}
+									usersWithATeam={usersWithATeam}
+									usersRequestedToJoin={usersRequestedToJoin}
+									usersAlreadyInvited={usersAlreadyInvited}
 								>
 									<Button>
 										<FaUserPlus className='h-4 w-4' />
@@ -76,6 +91,10 @@ export default function CS2TeamPage({ params }: CS2TeamPageProps) {
 							</Suspense>
 						)}
 					</div>
+				</div>
+				<div className='flex mx-1 mt-2'>
+					{/* Matches */}
+					<h1 className='text-xl'>Matches</h1>
 				</div>
 			</CardContent>
 		</Card>

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { SiCounterstrike } from 'react-icons/si';
 import { Card, CardHeader, CardContent } from './ui/card';
 

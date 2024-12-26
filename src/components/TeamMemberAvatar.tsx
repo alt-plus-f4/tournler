@@ -1,6 +1,6 @@
 'use client';
 
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/lib/hooks/use-toast';
 import {
 	HoverCard,
 	HoverCardTrigger,
@@ -36,7 +36,7 @@ export function TeamMemberAvatar({
 	}, []);
 
 	async function removeMember() {
-		const response = await removeMemberRequest(team, member);
+		const response = await removeMemberRequest(team.id, member.id);
 		if (response?.error) {
 			toast({
 				variant: 'destructive',
@@ -52,14 +52,19 @@ export function TeamMemberAvatar({
 		return null;
 	}
 
+	console.log(enableTeamCapitanControls);	
+	console.log(user);
+
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
 					<Image
-						className='scale-150 mb-2 transition group-hover:z-10 group-hover:scale-[175%] cursor-default'
+						className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default'
 						src={member.image ?? ''}
 						alt={`${member.name} avatar`}
+						width={300}
+						height={200}
 					/>
 
 					{enableTeamCapitanControls &&
@@ -80,7 +85,7 @@ export function TeamMemberAvatar({
 			</HoverCardTrigger>
 
 			<HoverCardContent
-				className='w-fit min-w-64 max-w-96 z-40 cursor-default'
+				className='w-fit p-4 rounded-lg bg-black min-w-64 max-w-96 z-40 cursor-default '
 				side='top'
 			>
 				<UserCard member={member} />
@@ -93,7 +98,7 @@ async function getUser(
 	member: ExtendedUser
 ): Promise<ExtendedUser | undefined> {
 	try {
-		const response = await fetch(`/api/users/${member.id}`);
+		const response = await fetch(`/api/user/${member.id}`);
 		if (!response.ok) {
 			return undefined;
 		}

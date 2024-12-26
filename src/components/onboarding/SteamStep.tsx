@@ -2,7 +2,7 @@
 
 import { FaSteamSymbol } from 'react-icons/fa6';
 import { DialogTitle } from '@radix-ui/react-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
 

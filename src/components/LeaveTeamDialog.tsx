@@ -1,24 +1,22 @@
 'use client';
 
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/lib/hooks/use-toast';
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose, DialogDescription } from '@radix-ui/react-dialog';
 import React, { ReactNode, useState } from 'react';
 import { Button } from './ui/button';
 import { DialogHeader, DialogFooter } from './ui/dialog';
 import { Toaster } from './ui/toaster';
-import { Cs2Team } from '@prisma/client';
-import { ExtendedUser } from '@/lib/models/user-model';
 import { removeMemberRequest } from '@/lib/apifuncs';
 
 interface LeaveTeamDialogProps {
-  team: Cs2Team;
-  user: ExtendedUser;
+  teamId: number;
+  userId: string;
   children: ReactNode;
 }
 
 export function LeaveTeamDialog({
-  team,
-  user,
+  teamId,
+  userId,
   children,
 }: LeaveTeamDialogProps) {
   const { toast } = useToast();
@@ -42,7 +40,7 @@ export function LeaveTeamDialog({
             </DialogClose>
             <Button
               onClick={async () => {
-                const response = await removeMemberRequest(team, user);
+                const response = await removeMemberRequest(teamId, userId);
                 if (response?.error) {
                   toast({
                     variant: 'destructive',
