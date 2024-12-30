@@ -7,7 +7,7 @@ import {
 	HoverCardContent,
 } from '@radix-ui/react-hover-card';
 import { useState, useEffect } from 'react';
-import { FaUserSlash } from 'react-icons/fa';
+import { FaCrown, FaUserSlash } from 'react-icons/fa';
 import { Button } from './ui/button';
 import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
@@ -30,7 +30,7 @@ export function TeamMemberAvatar({
 	const [exists, setExists] = useState<boolean>(true);
 
 	useEffect(() => {
-		getUser(member)
+		getUser()
 			.then((response) => setUser(response))
 			.catch(() => setUser(undefined));
 	}, []);
@@ -52,13 +52,17 @@ export function TeamMemberAvatar({
 		return null;
 	}
 
-	console.log(enableTeamCapitanControls);	
-	console.log(user);
+	// ! REMOVE
+	// console.log(enableTeamCapitanControls);
+	// console.log(user);
 
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
+					{enableTeamCapitanControls &&(
+						<FaCrown className='absolute top-[-10px] w-5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />
+					)}
 					<Image
 						className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default'
 						src={member.image ?? ''}
@@ -95,10 +99,9 @@ export function TeamMemberAvatar({
 }
 
 async function getUser(
-	member: ExtendedUser
 ): Promise<ExtendedUser | undefined> {
 	try {
-		const response = await fetch(`/api/user/${member.id}`);
+		const response = await fetch(`/api/user/`);
 		if (!response.ok) {
 			return undefined;
 		}

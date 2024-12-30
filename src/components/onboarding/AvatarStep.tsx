@@ -160,10 +160,9 @@ interface CustomizationOptions {
   clothing: number;
 }
 
-
 interface AvatarStepProps {
-    previousStep: () => void;
-    nextStep: (avatar: File) => void;
+  previousStep: () => void;
+  nextStep: (avatar: File) => void;
 }
 
 interface CustomizationOptionProps {
@@ -193,29 +192,20 @@ function CustomizationOption({
   );
 }
 
-function dataURLtoFile(dataURL: string) {
-  const arr = dataURL.split(',');
-  const mimeMatch = arr[0].match(/:(.*?);/);
-  const mime = mimeMatch ? mimeMatch[1] : '';
-  let bstr = '';
+// function dataURLtoFile(dataURL: string, filename: string) {
+//   const arr = dataURL.split(',');
+//   const mimeMatch = arr[0].match(/:(.*?);/);
+//   const mime = mimeMatch ? mimeMatch[1] : '';
+//   const bstr = atob(arr[1]);
+//   let n = bstr.length;
+//   const u8arr = new Uint8Array(n);
 
-  if (arr[0].indexOf('base64') !== -1) {
-    bstr = atob(arr[1]);
-  } else {
-    bstr = decodeURIComponent(arr[1]);
-  }
+//   while (n--) {
+//     u8arr[n] = bstr.charCodeAt(n);
+//   }
 
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-
-  for (; n >= 0; n -= 1) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-
-  const file = new File([u8arr], 'avatar.svg', { type: mime });
-  console.log(file);
-  return file;
-}
+//   return new File([u8arr], filename, { type: mime });
+// }
 
 export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
   const [customization, setCustomization] = useState<CustomizationOptions>({
@@ -263,10 +253,12 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
     facialHairProbability: 100,
   });
 
+  const avatarSVG = avatar.toString();
+
   return (
     <div className="px-12 flex flex-col justify-center">
       <div className="flex justify-center items-center">
-        <Image src={avatar.toDataUri()} alt="" width={120} height={120} />
+        <Image src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`} alt="" width={120} height={120} />
       </div>
       <div>
         <div className="flex flex-col items-center text-center w-full">
@@ -362,7 +354,7 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         </Button>
         <Button
           onClick={() => {
-            const avatarFile = dataURLtoFile(avatar.toDataUri());
+            const avatarFile = new File([avatarSVG], 'avatar.svg', { type: 'image/svg+xml' });
             nextStep(avatarFile);
           }}
         >

@@ -3,6 +3,8 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/toaster';
 import { Roboto } from 'next/font/google';
+import { OnboardingStatus } from '@/components/OnboardingStatus';
+import Providers from './redux/Providers';
 
 const roboto = Roboto({
 	weight: '400',
@@ -28,8 +30,13 @@ export default function RootLayout({
 				className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}
 			>
 				<Navbar />
-
+				
 				{authModal}
+				
+				<Providers>
+					<OnboardingStatus />
+				</Providers>
+
 				{children}
 				<Toaster />
 

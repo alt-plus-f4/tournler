@@ -1,11 +1,8 @@
 import { db } from '@/lib/db';
 
-export async function fetchUsersWithATeam(teamId: number) {
+export async function fetchAllUsers() {
   try {
-    const usersWithATeam = await db.user.findMany({
-      where: {
-        cs2TeamId: teamId,
-      },
+    const allUsers = await db.user.findMany({
       select: {
         id: true,
         email: true,
@@ -18,11 +15,11 @@ export async function fetchUsersWithATeam(teamId: number) {
       },
     });
 
-    console.log('usersWithATeam:', usersWithATeam);
+    console.log('allUsers:', allUsers);
 
-    return usersWithATeam;
+    return allUsers;
   } catch (error) {
-    console.error('Error fetching users with a team:', error);
+    console.error('Error fetching all users:', error);
     return [];
   }
 }

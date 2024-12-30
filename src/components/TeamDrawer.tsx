@@ -74,9 +74,9 @@ export function TeamCreationDrawer() {
 		<Drawer>
 			<DrawerTrigger asChild>
 				<div>
-					<Card className='w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
-						<CardHeader className='relative p-0 w-full aspect-[21/9] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
-							<div className='absolute inset-0 flex items-center justify-center'>
+					<Card className='h-[200px] w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
+						<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
+							<div className='flex items-center justify-center'>
 								<SiCounterstrike className='w-12 h-12 opacity-80' />
 							</div>
 						</CardHeader>

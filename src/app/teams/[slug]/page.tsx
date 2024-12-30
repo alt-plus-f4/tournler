@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { TeamBanner } from '@/components/TeamBanner';
-import { FaArrowLeft, FaUserPlus, FaSignal } from 'react-icons/fa6';
+import { FaArrowLeft, FaUserPlus } from 'react-icons/fa6';
 import Link from 'next/link';
 import { SiCounterstrike } from 'react-icons/si';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -9,12 +9,10 @@ import { cn } from '@/lib/utils';
 import { LeaveTeamDialog } from '@/components/LeaveTeamDialog';
 import { UsersSearch } from '@/components/UsersSearch';
 import fetchTeam from '@/lib/helpers/fetch-team';
-import fetchUsers from '@/lib/helpers/fetch-team-users';
 import { getAuthSession } from '@/lib/auth';
-import { fetchUsersWithoutATeam } from '@/lib/helpers/fetch-users-without-a-team';
-import { fetchUsersWithATeam } from '@/lib/helpers/fetch-users-with-team';
-import { fetchUsersRequestedToJoin } from '@/lib/helpers/fetch-users-requested-to-join';
-import { fetchUsersAlreadyInvited } from '@/lib/helpers/fetch-users-already-invited';
+import { fetchUsersNotInTheTeam } from '@/lib/helpers/fetch-users-not-in-team';
+import { LiaDoorOpenSolid } from 'react-icons/lia';
+import fetchInvitedPlayers from '@/lib/helpers/fetch-invited-players';
 
 interface CS2TeamPageProps {
 	params: {
@@ -31,15 +29,14 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const teamId = parseInt(slug, 10);
 
 	let team = await fetchTeam(teamId);
-	const users = await fetchUsers(teamId);
 	team = team.team;
 
 	const isUserTeamCaptain = team?.capitan.id === user?.id;
-
-	const usersWithoutATeam = await fetchUsersWithoutATeam(teamId);
-	const usersWithATeam = await fetchUsersWithATeam(teamId);
-	const usersRequestedToJoin = await fetchUsersRequestedToJoin(teamId);
-	const usersAlreadyInvited = await fetchUsersAlreadyInvited(teamId);
+	const isUserMember = team?.members.some(
+		(member: { id: string | undefined }) => member.id === user?.id
+	);
+	const allUsers = await fetchUsersNotInTheTeam(teamId);
+	const invitedPlayers = await fetchInvitedPlayers(teamId);
 
 	if (!team) return <p>Team not found</p>;
 
@@ -67,10 +64,13 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 						{team.name}
 					</h1>
 					<div className='ml-auto flex flex-row gap-2'>
-						{team.isUserMember && user && (
+						{isUserMember && user && (
 							<LeaveTeamDialog teamId={team.id} userId={user.id}>
 								<Button variant='outline'>
-									<FaSignal className='h-4 w-4' />
+									<LiaDoorOpenSolid className='h-4 w-4' />
+									<p className='hidden md:block'>
+										Leave Team
+									</p>
 								</Button>
 							</LeaveTeamDialog>
 						)}
@@ -79,13 +79,14 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 							<Suspense fallback={null}>
 								<UsersSearch
 									teamId={team.id}
-									usersWithoutATeam={usersWithoutATeam}
-									usersWithATeam={usersWithATeam}
-									usersRequestedToJoin={usersRequestedToJoin}
-									usersAlreadyInvited={usersAlreadyInvited}
+									allUsers={allUsers}
+									invitedPlayers={invitedPlayers}
 								>
 									<Button>
 										<FaUserPlus className='h-4 w-4' />
+										<p className='hidden md:block'>
+											Invite Players
+										</p>
 									</Button>
 								</UsersSearch>
 							</Suspense>
