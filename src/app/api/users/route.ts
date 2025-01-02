@@ -1,21 +1,38 @@
+import { NextResponse, NextRequest } from 'next/server';
+import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
-import { NextResponse } from 'next/server';
-import { db } from '@/lib/db'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getAuthSession();
+  const sessionUser = session?.user;
 
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!sessionUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({
-    where: { email: session?.user?.email || ''},
-  })
+  const role = await db.user.findFirst({
+    where: { email: sessionUser.email ?? '' },
+    select: { role: true },
+  });
 
-  if (!user) {
-    return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  if (role?.role !== 1) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  return NextResponse.json({ haha: user}, { status: 200 })
+  const { searchParams } = new URL(req.url);
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+  if (isNaN(page) || isNaN(limit)) {
+    return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 });
+  }
+
+  const users = await db.user.findMany({
+    skip: (page - 1) * limit,
+    take: limit,
+  });
+
+  const totalUsers = await db.user.count();
+
+  return NextResponse.json({ users, totalPages: Math.ceil(totalUsers / limit) });
 }

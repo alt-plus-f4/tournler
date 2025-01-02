@@ -1,19 +1,16 @@
-'use client';
-
 import { toast } from '@/lib/hooks/use-toast';
 import {
 	HoverCard,
 	HoverCardTrigger,
 	HoverCardContent,
 } from '@radix-ui/react-hover-card';
-import { useState, useEffect } from 'react';
-import { FaCrown, FaUserSlash } from 'react-icons/fa';
-import { Button } from './ui/button';
+import { FaCrown } from 'react-icons/fa';
 import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
 import { ExtendedUser } from '@/lib/models/user-model';
-import { removeMemberRequest } from '@/lib/apifuncs';
 import Image from 'next/image';
+import { getAuthSession } from '@/lib/auth';
+import { RemoveMemberButton } from './RemoveMemberButton';
 
 interface TeamMemberAvatarProps {
 	team: Cs2Team;
@@ -21,47 +18,20 @@ interface TeamMemberAvatarProps {
 	enableTeamCapitanControls?: boolean;
 }
 
-export function TeamMemberAvatar({
+export async function TeamMemberAvatar({
 	team,
 	member,
 	enableTeamCapitanControls,
 }: TeamMemberAvatarProps) {
-	const [user, setUser] = useState<ExtendedUser | undefined>();
-	const [exists, setExists] = useState<boolean>(true);
-
-	useEffect(() => {
-		getUser()
-			.then((response) => setUser(response))
-			.catch(() => setUser(undefined));
-	}, []);
-
-	async function removeMember() {
-		const response = await removeMemberRequest(team.id, member.id);
-		if (response?.error) {
-			toast({
-				variant: 'destructive',
-				title: response.error,
-				description: 'Try Again',
-			});
-		} else {
-			setExists(false);
-		}
-	}
-
-	if (!exists) {
-		return null;
-	}
-
-	// ! REMOVE
-	// console.log(enableTeamCapitanControls);
-	// console.log(user);
+	const session = await getAuthSession();
+	const user = session?.user;
 
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
-					{enableTeamCapitanControls &&(
-						<FaCrown className='absolute top-[-10px] w-5 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />
+					{team.capitanId === member.id && (
+						<FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />
 					)}
 					<Image
 						className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default'
@@ -73,17 +43,12 @@ export function TeamMemberAvatar({
 
 					{enableTeamCapitanControls &&
 						user &&
-						member.id !== user?.id && (
-							<div className='absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity opacity-0 group-hover:opacity-100'>
-								<div className='flex space-x-2'>
-									<Button
-										variant='secondary'
-										onClick={() => removeMember()}
-									>
-										<FaUserSlash />
-									</Button>
-								</div>
-							</div>
+						member.id === user?.id && (
+							<RemoveMemberButton
+								teamId={team.id}
+								memberId={member.id}
+								memberName={member.name ?? ''}
+							/>
 						)}
 				</div>
 			</HoverCardTrigger>
@@ -96,17 +61,4 @@ export function TeamMemberAvatar({
 			</HoverCardContent>
 		</HoverCard>
 	);
-}
-
-async function getUser(
-): Promise<ExtendedUser | undefined> {
-	try {
-		const response = await fetch(`/api/user/`);
-		if (!response.ok) {
-			return undefined;
-		}
-		return await response.json();
-	} catch {
-		return undefined;
-	}
 }

@@ -1,33 +1,50 @@
-import { BurgerMenu } from "./BurgerMenu"
-import { MainNav } from "./MainNav"
-import { UserNav } from "./UserNav"
-import Link from "next/link"
-import { getAuthSession } from "@/lib/auth";
-import LoginButtons from "./LoginButtons";
+import { BurgerMenu } from './BurgerMenu';
+import { MainNav } from './MainNav';
+import { UserNav } from './UserNav';
+import Link from 'next/link';
+import { getAuthSession } from '@/lib/auth';
+import LoginButtons from './LoginButtons';
+import { getUserRole } from '@/lib/helpers/is-admin';
+import { HiWrenchScrewdriver } from 'react-icons/hi2';
 
 export default async function Navbar() {
-
 	const session = await getAuthSession();
+	const role = session?.user?.id ? await getUserRole(session.user.id) : null;
+	console.log(role);
 
 	return (
 		<>
-			<nav className="grid grid-cols-2 md:grid-cols-3 grid-flow-col w-full sticky md:h-14 h-16 items-center px-4 ml-auto mr-auto border-b-2">
-				<Link href="/" className="hidden md:block text-sm font-medium transition-colors hover:text-primary">
+			<nav className='grid grid-cols-2 md:grid-cols-3 grid-flow-col w-full sticky md:h-14 h-16 items-center px-4 ml-auto mr-auto border-b-2'>
+				<Link
+					href='/'
+					className='hidden md:block text-sm font-medium transition-colors hover:text-primary'
+				>
 					LOGO or text
 				</Link>
 
-				<BurgerMenu className="sm:block md:hidden h-4" />
-				<MainNav className="hidden md:flex" />
+				<BurgerMenu className='sm:block md:hidden h-4' />
+				<MainNav className='hidden md:flex' />
 
-				<div className="ml-auto space-x-4">
+				<div className='ml-auto space-x-4 flex flex-row items-center'>
+					{role === 1 && (
+						<Link href='/admin'>
+							<div className='bg-red-500 hover:bg-red-400 transition-colors text-white rounded-xl flex justify-center items-center px-2 py-2'>
+								<HiWrenchScrewdriver width={8} height={8} />
+								<span className='hidden uppercase md:block text-md mx-2'>
+									Admin
+								</span>
+							</div>
+						</Link>
+					)}
 					{session?.user ? (
-						<div className="">
+						<div className=''>
 							<UserNav user={session.user} />
 						</div>
-					) : <LoginButtons className="hidden sm:inline" />
-					}
-				</div >
-			</nav >
+					) : (
+						<LoginButtons className='hidden sm:inline' />
+					)}
+				</div>
+			</nav>
 		</>
-	)
+	);
 }
