@@ -29,6 +29,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const teamId = parseInt(slug, 10);
 
 	let team = await fetchTeam(teamId);
+	if (!team) return <p>Team not found</p>;
 	team = team.team;
 
 	const isUserTeamCaptain = team?.capitan.id === user?.id;
@@ -38,7 +39,6 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const allUsers = await fetchUsersNotInTheTeam(teamId);
 	const invitedPlayers = await fetchInvitedPlayers(teamId);
 
-	if (!team) return <p>Team not found</p>;
 
 	return (
 		<Card className='w-5/6 mx-auto align-center mt-12 h-[750px]'>

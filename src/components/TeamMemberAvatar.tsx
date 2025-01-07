@@ -30,7 +30,7 @@ export async function TeamMemberAvatar({
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
-					{team.capitanId === member.id && (
+					{enableTeamCapitanControls && (
 						<FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />
 					)}
 					<Image
@@ -43,7 +43,7 @@ export async function TeamMemberAvatar({
 
 					{enableTeamCapitanControls &&
 						user &&
-						member.id === user?.id && (
+						member.id !== user?.id && (
 							<RemoveMemberButton
 								teamId={team.id}
 								memberId={member.id}

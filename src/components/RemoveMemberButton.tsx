@@ -1,7 +1,6 @@
 'use client';
 
 import { toast } from '@/lib/hooks/use-toast';
-import { removeMemberRequest } from '@/lib/apifuncs';
 import { Button } from './ui/button';
 import {
 	Tooltip,
@@ -10,6 +9,7 @@ import {
 	TooltipTrigger,
 } from './ui/tooltip';
 import { LuUserX } from 'react-icons/lu';
+import { removeMember } from '@/lib/helpers/remove-member';
 
 interface RemoveMemberButtonProps {
 	teamId: number;
@@ -22,8 +22,8 @@ export function RemoveMemberButton({
 	memberId,
 	memberName,
 }: RemoveMemberButtonProps) {
-	async function removeMember() {
-		const response = await removeMemberRequest(teamId, memberId);
+	async function lremoveMember() {
+		const response = await removeMember(teamId, memberId);
 		if (response?.error) {
 			toast({
 				variant: 'destructive',
@@ -49,7 +49,7 @@ export function RemoveMemberButton({
 							<TooltipTrigger asChild>
 								<Button
 									variant='secondary'
-									onClick={() => removeMember()}
+									onClick={() => lremoveMember()}
 								>
 									<LuUserX />
 								</Button>

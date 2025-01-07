@@ -75,7 +75,7 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="mt-5 ml-12 w-[80%]">
+    <div className="mt-5 ml-12 w-[80%] h-[80%]">
       <h1 className="text-2xl font-bold mb-4">Users</h1>
       <Suspense fallback={<UserTableSkeleton />}>
         {isLoading ? <UserTableSkeleton /> : <UserTable users={userList} totalPages={totalPages} page={page} onPageChange={handlePageChange} onEdit={handleEdit} />}

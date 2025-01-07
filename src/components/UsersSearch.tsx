@@ -37,6 +37,7 @@ export function UsersSearch({
 	function completeSuccessfulInviteConfirmation(userId: string) {
 		console.log(userId);
 		// ! = = SEND NOTIFICATION
+		window.location.reload();
 	}
 
 	function openInviteConfirmation(user: User) {

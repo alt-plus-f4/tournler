@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import React, { ReactNode, useState } from 'react';
 import { Button } from './ui/button';
-import { removeMemberRequest } from '@/lib/apifuncs';
+import { removeMember } from '@/lib/helpers/remove-member';
 
 interface LeaveTeamDialogProps {
   teamId: number;
@@ -45,7 +45,7 @@ export function LeaveTeamDialog({
           </DialogClose>
           <Button
             onClick={async () => {
-              const response = await removeMemberRequest(teamId, userId);
+              const response = await removeMember(teamId, userId);
               if (response?.error) {
                 toast({
                   variant: 'destructive',

@@ -36,3 +36,84 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ users, totalPages: Math.ceil(totalUsers / limit) });
 }
+
+export async function PUT(req: NextRequest) {
+  const session = await getAuthSession();
+  const sessionUser = session?.user;
+
+  if (!sessionUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const role = await db.user.findFirst({
+    where: { email: sessionUser.email ?? '' },
+    select: { role: true },
+  });
+
+  if (role?.role !== 1) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { pathname } = new URL(req.url);
+  const userId = pathname.split('/').pop();
+
+  if (!userId) {
+    return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  const data = await req.json();
+
+  const updatedUser = await db.user.update({
+    where: { id: userId },
+    data,
+  });
+
+  return NextResponse.json(updatedUser);
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await getAuthSession();
+  const sessionUser = session?.user;
+
+  if (!sessionUser) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const role = await db.user.findFirst({
+    where: { email: sessionUser.email ?? '' },
+    select: { role: true },
+  });
+
+  if (role?.role !== 1) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { pathname } = new URL(req.url);
+  const userId = pathname.split('/').pop();
+
+  if (!userId) {
+    return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+  }
+
+  const user = await db.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 404 });
+  }
+
+  await db.user.delete({
+    where: { id: userId },
+  });
+
+  return NextResponse.json({ message: 'User deleted successfully' });
+}
