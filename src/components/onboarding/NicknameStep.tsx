@@ -17,7 +17,7 @@ import {
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form';
-import { MultiSelect } from '../ui/multi-select';
+// import MultiSelect from '../ui/multi-select';
 
 const gameOptions = [
 	{ value: 'CS:2', label: 'CS: 2' },
@@ -26,10 +26,10 @@ const gameOptions = [
 ];
 
 const FormSchema = z.object({
-	nickname: z.string().nonempty({ message: 'Nickname is required' }),
-	games: z
-		.array(z.string())
-		.nonempty({ message: 'Please select at least one game' }),
+	nickname: z.string().min(1, { message: 'Nickname is required' }),
+	// games: z
+	// 	.array(z.string())
+	// 	.nonempty({ message: 'Please select at least one game' }),
 });
 
 interface NicknameStepProps {
@@ -48,7 +48,7 @@ export function NicknameStep({ previousStep, nextStep }: NicknameStepProps) {
 		resolver: zodResolver(FormSchema),
 		defaultValues: {
 			nickname: formData.nickname || '',
-			games: formData.games || [],
+			games: formData.games || ['CS:2'],
 		},
 	});
 
@@ -86,7 +86,7 @@ export function NicknameStep({ previousStep, nextStep }: NicknameStepProps) {
 						</FormItem>
 					)}
 				/>
-				<FormField
+				{/* <FormField
 					control={form.control}
 					name='games'
 					render={({ field }) => (
@@ -103,7 +103,7 @@ export function NicknameStep({ previousStep, nextStep }: NicknameStepProps) {
 							<FormMessage />
 						</FormItem>
 					)}
-				/>
+				/> */}
 				<DialogFooter className='flex mt-8 gap-y-1 sm:gap-y-0 justify-between'>
 					<Button
 						type='button'

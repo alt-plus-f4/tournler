@@ -162,7 +162,7 @@ interface CustomizationOptions {
 
 interface AvatarStepProps {
   previousStep: () => void;
-  nextStep: (avatar: File) => void;
+  nextStep: (avatar: Blob) => void;
 }
 
 interface CustomizationOptionProps {
@@ -191,21 +191,6 @@ function CustomizationOption({
     </div>
   );
 }
-
-// function dataURLtoFile(dataURL: string, filename: string) {
-//   const arr = dataURL.split(',');
-//   const mimeMatch = arr[0].match(/:(.*?);/);
-//   const mime = mimeMatch ? mimeMatch[1] : '';
-//   const bstr = atob(arr[1]);
-//   let n = bstr.length;
-//   const u8arr = new Uint8Array(n);
-
-//   while (n--) {
-//     u8arr[n] = bstr.charCodeAt(n);
-//   }
-
-//   return new File([u8arr], filename, { type: mime });
-// }
 
 export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
   const [customization, setCustomization] = useState<CustomizationOptions>({
@@ -254,6 +239,11 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
   });
 
   const avatarSVG = avatar.toString();
+
+  const handleContinue = () => {
+    const blob = new Blob([avatarSVG], { type: 'image/svg+xml' });
+    nextStep(blob);
+  };
 
   return (
     <div className="px-12 flex flex-col justify-center">
@@ -352,12 +342,7 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         <Button onClick={previousStep} variant="secondary">
           Previous
         </Button>
-        <Button
-          onClick={() => {
-            const avatarFile = new File([avatarSVG], 'avatar.svg', { type: 'image/svg+xml' });
-            nextStep(avatarFile);
-          }}
-        >
+        <Button onClick={handleContinue}>
           Continue
         </Button>
       </DialogFooter>

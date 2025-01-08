@@ -6,6 +6,7 @@ import { getAuthSession } from '@/lib/auth';
 import LoginButtons from './LoginButtons';
 import { getUserRole } from '@/lib/helpers/is-admin';
 import { HiWrenchScrewdriver } from 'react-icons/hi2';
+import Notifications from './Notifications';
 
 export default async function Navbar() {
 	const session = await getAuthSession();
@@ -37,7 +38,8 @@ export default async function Navbar() {
 						</Link>
 					)}
 					{session?.user ? (
-						<div className=''>
+						<div className='flex flex-row space-x-4 justify-center items-center'>
+							<Notifications userId={session.user.id}/>
 							<UserNav user={session.user} />
 						</div>
 					) : (

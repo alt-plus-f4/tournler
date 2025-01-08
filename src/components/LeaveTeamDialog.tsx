@@ -58,6 +58,7 @@ export function LeaveTeamDialog({
                   title: "You've left the team",
                 });
                 setOpen(false);
+                window.location.reload();
               }
             }}
           >

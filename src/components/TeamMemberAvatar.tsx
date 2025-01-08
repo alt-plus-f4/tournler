@@ -1,4 +1,3 @@
-import { toast } from '@/lib/hooks/use-toast';
 import {
 	HoverCard,
 	HoverCardTrigger,
@@ -16,12 +15,14 @@ interface TeamMemberAvatarProps {
 	team: Cs2Team;
 	member: ExtendedUser;
 	enableTeamCapitanControls?: boolean;
+	capitanId: string;
 }
 
 export async function TeamMemberAvatar({
 	team,
 	member,
 	enableTeamCapitanControls,
+	capitanId,
 }: TeamMemberAvatarProps) {
 	const session = await getAuthSession();
 	const user = session?.user;
@@ -30,11 +31,11 @@ export async function TeamMemberAvatar({
 		<HoverCard>
 			<HoverCardTrigger asChild>
 				<div className='group relative'>
-					{enableTeamCapitanControls && (
+					{member.id == capitanId && (
 						<FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />
 					)}
 					<Image
-						className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default'
+						className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default mb-[-10px]'
 						src={member.image ?? ''}
 						alt={`${member.name} avatar`}
 						width={300}

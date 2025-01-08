@@ -63,9 +63,9 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                 if (response.ok) {
                     const completed: SetStateAction<number[]> = [];
                     if (data.hasName){
-						completed.push(OnboardingDialogSteps.Welcome);
-						completed.push(OnboardingDialogSteps.Nickname);
-					}
+                        completed.push(OnboardingDialogSteps.Welcome);
+                        completed.push(OnboardingDialogSteps.Nickname);
+                    }
                     if (data.hasImage)
                         completed.push(OnboardingDialogSteps.Avatar);
                     if (data.hasLinkedDiscord)
@@ -156,7 +156,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
         }
     }
 
-    async function setAvatar(avatar: File) {
+    async function setAvatar(avatar: Blob) {
         const avatarText = await avatar.text();
         console.log('avatar', avatar);
 
@@ -218,7 +218,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                         previousStep={() =>
                             dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))
                         }
-                        nextStep={(avatar: File) => {
+                        nextStep={(avatar: Blob) => {
                             setAvatar(avatar).then(() => handleStepCompletion(OnboardingDialogSteps.Avatar));
                         }}
                     />

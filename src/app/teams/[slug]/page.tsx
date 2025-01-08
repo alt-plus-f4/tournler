@@ -30,6 +30,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 
 	let team = await fetchTeam(teamId);
 	if (!team) return <p>Team not found</p>;
+
 	team = team.team;
 
 	const isUserTeamCaptain = team?.capitan.id === user?.id;
@@ -39,12 +40,12 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const allUsers = await fetchUsersNotInTheTeam(teamId);
 	const invitedPlayers = await fetchInvitedPlayers(teamId);
 
-
 	return (
 		<Card className='w-5/6 mx-auto align-center mt-12 h-[750px]'>
 			<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl'>
 				<TeamBanner
 					team={team}
+					capitanId={team.capitan.id}
 					enableTeamCapitanControls={isUserTeamCaptain}
 				/>
 				<Link
@@ -78,6 +79,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 						{isUserTeamCaptain && (
 							<Suspense fallback={null}>
 								<UsersSearch
+									teamName={team.name}
 									teamId={team.id}
 									allUsers={allUsers}
 									invitedPlayers={invitedPlayers}

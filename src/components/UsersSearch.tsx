@@ -12,10 +12,13 @@ import {
 import { ReactNode, Suspense, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
 import { User } from '@prisma/client';
+import { useMutation } from 'convex/react';
+import { api } from '../../convex/_generated/api';
 
 interface UsersSearchProps {
 	children: ReactNode;
 	teamId: number;
+	teamName: string;
 	allUsers: User[];
 	invitedPlayers: any;
 }
@@ -23,11 +26,26 @@ interface UsersSearchProps {
 export function UsersSearch({
 	children,
 	teamId,
+	teamName,
 	allUsers,
 	invitedPlayers,
 }: UsersSearchProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [dialog, setDialog] = useState<JSX.Element | undefined>();
+
+	const inviteNotif = useMutation(api.notifications.createTeamInviteNotification);
+
+	async function sendInviteNotification(userId: string, teamId: number) {
+		try {
+			await inviteNotif({
+				text: 'You have been invited to join the team ' + teamName + ".",
+				userId,
+				teamId,
+			});
+		} catch (error) {
+			console.error('Failed to send invite notification:', error);
+		}
+	}
 
 	const invitedPlayersData = invitedPlayers?.teamInvitations || [];
 	const invitedUserIds = invitedPlayersData.map(
@@ -37,7 +55,7 @@ export function UsersSearch({
 	function completeSuccessfulInviteConfirmation(userId: string) {
 		console.log(userId);
 		// ! = = SEND NOTIFICATION
-		window.location.reload();
+		sendInviteNotification(userId, teamId);
 	}
 
 	function openInviteConfirmation(user: User) {
@@ -68,6 +86,7 @@ export function UsersSearch({
 				<div className='mr-2'>
 					<Avatar>
 						<AvatarImage
+							className='w-12 h-12'
 							src={user.image ?? ''}
 							alt={`${user.name} avatar`}
 						/>

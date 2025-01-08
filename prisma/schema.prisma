@@ -62,10 +62,20 @@ model User {
   @@index([cs2TeamId])
 }
 
+model Cs2Tournament {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  
+  // teams Cs2Team[]
+  // createdAt
+  // type Int
+  
+}
+
 model Cs2Team {
   id Int @id @default(autoincrement())
 
-  name String @unique
+  name String  @unique
   logo String?
 
   members User[] @relation("CS2TeamMembers")

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { BadgeCheck, X } from 'lucide-react';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
+import { TeamBanner } from './TeamBanner';
 
 export function TeamCard({ team }: { team: ExtendedCs2Team }) {
 	const isVerified = team.members.length === 5;
@@ -24,10 +25,10 @@ export function TeamCard({ team }: { team: ExtendedCs2Team }) {
 							Not full
 						</span>
 					)}
-					{/* <TeamBanner team={team} /> */}
+					<TeamBanner capitanId={''} team={team} />
 				</CardHeader>
 				<CardContent className=' py-0 px-4 text-center'>
-					<div className='flex items-center'>
+					<div className='flex items-center pt-2'>
 						<SiCounterstrike className='w-6 h-6 mr-2' />
 						<h3 className='text-lg font-bold text-ellipsis overflow-hidden'>
 							{team.name}
