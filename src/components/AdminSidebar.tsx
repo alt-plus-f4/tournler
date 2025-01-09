@@ -136,7 +136,7 @@ export function AdminSidebar({
 				</SidebarGroup>
 			</SidebarContent>
 			<SidebarFooter>
-				<p className='text-sm text-center p-4'>© 2023 Tournler</p>
+				<p className='text-sm text-center p-4'>no© 2025 Tournler</p>
 			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>

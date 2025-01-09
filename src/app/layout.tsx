@@ -6,6 +6,7 @@ import { Roboto } from 'next/font/google';
 import { OnboardingStatus } from '@/components/OnboardingStatus';
 import Providers from './redux/Providers';
 import { ConvexClientProvider } from '@/convex/ConvexClientProvider';
+import Footer from '@/components/Footer';
 
 const roboto = Roboto({
 	weight: '400',
@@ -46,12 +47,8 @@ export default function RootLayout({
 
 				</ConvexClientProvider>
 
-				<div className='text-foreground p-5 text-center text-sm w-full mt-auto bottom-0 border-t'>
-					<p>&copy; 2021 Tournler. All rights reserved.</p>
-				<div className='flex justify-center space-x-4 mt-4'>
+				<Footer />
 					
-				</div>
-				</div>
 			</body>
 		</html>
 	);

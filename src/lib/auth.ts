@@ -60,7 +60,7 @@ function html({ url, host, theme }: { url: string; host: string; theme: any }) {
     <tr>
       <td align="center"
         style="padding: 10px 0px; font-size: 22px; font-family: Helvetica, Arial, sans-serif; color: ${color.text};">
-        Sign in to <strong>${escapedHost}</strong>
+        Sign in to <strong>Tournler</strong>
       </td>
     </tr>
     <tr>

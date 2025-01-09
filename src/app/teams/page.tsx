@@ -18,7 +18,7 @@ export default async function Page() {
 
 	return (
 		<div className='w-[78%] mx-auto my-4'>
-			<h1 className='text-2xl sm:text-4xl md:text-6xl font-black uppercase my-4 truncate text-clip text-center'>
+			<h1 className='text-2xl md:text-4xl lg:text-6xl font-black uppercase my-4 truncate text-clip text-center'>
 				Counter-strike 2 Teams
 			</h1>
 			{!session?.user ? (
