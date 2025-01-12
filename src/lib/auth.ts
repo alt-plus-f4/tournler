@@ -2,17 +2,18 @@ import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import DiscordProvider from 'next-auth/providers/discord';
-import nodemailer, { createTransport } from 'nodemailer';
+// import nodemailer, { createTransport } from 'nodemailer';
+import { createTransport } from 'nodemailer';
 import { db } from '@/lib/db';
 
-const transporter = createTransport({
-  host: process.env.EMAIL_SERVER_HOST!,
-  port: parseInt(process.env.EMAIL_SERVER_PORT!),
-  auth: {
-    user: process.env.EMAIL_SERVER_USER!,
-    pass: process.env.EMAIL_SERVER_PASSWORD!,
-  },
-});
+// const transporter = createTransport({
+//   host: process.env.EMAIL_SERVER_HOST!,
+//   port: parseInt(process.env.EMAIL_SERVER_PORT!),
+//   auth: {
+//     user: process.env.EMAIL_SERVER_USER!,
+//     pass: process.env.EMAIL_SERVER_PASSWORD!,
+//   },
+// });
 
 const sendVerificationRequest = async ({
   identifier,
@@ -32,7 +33,7 @@ const sendVerificationRequest = async ({
     from: provider.from,
     subject: `Sign in to ${host}`,
     text: text({ url, host }),
-    html: html({ url, host, theme }),
+    html: html({ url, theme }),
   });
   const failed = result.rejected.filter(Boolean);
   if (failed.length) {
@@ -40,8 +41,9 @@ const sendVerificationRequest = async ({
   }
 };
 
-function html({ url, host, theme }: { url: string; host: string; theme: any }) {
-  const escapedHost = host.replace(/\./g, "&#8203;.");
+// function html({ url, host, theme }: { url: string; host: string; theme: any }) {
+function html({ url, theme }: { url: string; theme: any }) {
+  // const escapedHost = host.replace(/\./g, "&#8203;.");
 
   const brandColor = theme.brandColor || "#346df1";
   const color = {

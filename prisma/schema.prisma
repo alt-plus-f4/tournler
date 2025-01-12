@@ -65,11 +65,20 @@ model User {
 model Cs2Tournament {
   id   Int    @id @default(autoincrement())
   name String @unique
-  
-  // teams Cs2Team[]
-  // createdAt
-  // type Int
-  
+
+  startDate DateTime
+  endDate   DateTime
+
+  bannerUrl String?
+  logoUrl   String?
+
+  prizePool    Int?
+  teams        Cs2Team[] @relation("TournamentTeams")
+  teamCapacity Int
+
+  location String
+  type     Int
+  status   Int
 }
 
 model Cs2Team {
@@ -84,7 +93,10 @@ model Cs2Team {
   capitan   User?   @relation("CS2TeamCaptain", fields: [capitanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   teamInvitations Cs2TeamInvitation[] @relation(name: "TeamInvitations")
+  Cs2Tournament   Cs2Tournament?      @relation("TournamentTeams", fields: [cs2TournamentId], references: [id])
+  cs2TournamentId Int?
 
+  @@index([cs2TournamentId])
   @@map("cs2_teams")
 }
 

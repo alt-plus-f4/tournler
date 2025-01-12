@@ -14,6 +14,7 @@ const config: Config = {
 				discordColor: '#5865F2',
 				steamColor: '#171a21',
 				steamLogoColor: '#66c0f4',
+				hoverColor: '#1d1e21',
 				grey: '#2f3136',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',

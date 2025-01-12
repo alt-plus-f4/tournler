@@ -19,11 +19,11 @@ import {
 } from '@/components/ui/form';
 // import MultiSelect from '../ui/multi-select';
 
-const gameOptions = [
-	{ value: 'CS:2', label: 'CS: 2' },
-	{ value: 'League of Legends', label: 'League of Legends' },
-	{ value: 'Brawl Stars', label: 'Brawl Stars' },
-];
+// const gameOptions = [
+// 	{ value: 'CS:2', label: 'CS: 2' },
+// 	{ value: 'League of Legends', label: 'League of Legends' },
+// 	{ value: 'Brawl Stars', label: 'Brawl Stars' },
+// ];
 
 const FormSchema = z.object({
 	nickname: z.string().min(1, { message: 'Nickname is required' }),
