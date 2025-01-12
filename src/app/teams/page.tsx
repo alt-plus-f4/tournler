@@ -82,7 +82,7 @@ async function getUserTeam(userEmail: string) {
 
 async function TeamsCards() {
 	try {
-		const response = await fetch(`${process.env.NEXTAUTH_URL}/api/teams`);
+		const response = await fetch('/api/teams');
 		const data = await response.json();
 
 		if (!response.ok)
