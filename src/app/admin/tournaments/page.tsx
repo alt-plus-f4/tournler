@@ -9,7 +9,7 @@ import EditTournamentDialog from '@/components/EditTournamentDialog';
 
 const TOURNAMENTS_PER_PAGE = 10;
 
-interface Tournament {
+export interface Tournament {
 	id: number;
 	name: string;
 	prizePool: number;

@@ -1,4 +1,4 @@
-import { Tournament } from './AdminTournamentsPage';
+import { Tournament } from "@/app/admin/tournaments/page";
 
 interface TournamentTableRowProps {
   tournament: Tournament;

@@ -1,3 +1,5 @@
+import { Button } from "./ui/button";
+
 interface PaginationProps {
     totalPages: number;
     currentPage: number;
