@@ -96,8 +96,6 @@ body {
 	}
 }
 
-
-
 .purple-g {
 	background: linear-gradient(90deg, #401a4a, #020024 50%, #41144d);
 	/* color: #1d1e21; */
@@ -105,4 +103,10 @@ body {
 
 .transition-300 {
 	transition: 0.3s linear;
+}
+
+.navbar-color {
+	background-image: radial-gradient(transparent 1px, black 1px);
+	background-size: 4px 4px;
+	backdrop-filter: saturate(50%) blur(12px);
 }

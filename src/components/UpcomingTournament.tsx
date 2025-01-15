@@ -26,7 +26,7 @@ export function UpcomingTournament({
 }: UpcomingTournamentProps) {
 	return (
 		<Link
-			href={`/tournament/${id}`}
+			href={`/tournaments/${id}`}
 			className='relative flex flex-col items-center justify-center rounded-sm shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 h-[156px] mt-4 sm:mt-2 sm:w-[30%] w-[80%]'
 		>
 			<div className='relative w-full h-20'>

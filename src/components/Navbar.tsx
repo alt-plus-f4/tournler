@@ -15,7 +15,7 @@ export default async function Navbar() {
 
 	return (
 		<>
-			<nav className='grid grid-cols-2 md:grid-cols-3 grid-flow-col w-full sticky md:h-14 h-16 items-center px-4 ml-auto mr-auto border-b-2'>
+			<nav className='grid grid-cols-2 md:grid-cols-3 grid-flow-col w-full md:h-14 h-16 items-center px-4 ml-auto mr-auto border-y navbar-color sticky top-0 z-50'>
 				<Link
 					href='/'
 					className='hidden md:block text-sm font-medium transition-colors hover:text-primary'

@@ -16,6 +16,7 @@ const config: Config = {
 				steamLogoColor: '#66c0f4',
 				hoverColor: '#1d1e21',
 				grey: '#2f3136',
+				foregroundgray: 'rgb(167, 167, 167)',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				card: {

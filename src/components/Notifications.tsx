@@ -80,7 +80,7 @@ export default function Notifications({ userId }: NotificationsProps) {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-[200px] md:w-[400px]'>
+      <PopoverContent className='w-[200px] md:w-[400px] rounded-md mr-12'>
         <div className='flex p-4'>
           <h3 className='text-lg font-medium'>Notifications</h3>
         </div>

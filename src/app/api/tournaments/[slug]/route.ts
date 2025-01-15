@@ -36,6 +36,7 @@ export async function GET(
 			logoUrl: true,
 			status: true,
 			type: true,
+			teams: true,
 		},
 	});
 

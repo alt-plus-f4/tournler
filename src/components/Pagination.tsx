@@ -8,23 +8,23 @@ interface PaginationProps {
   
   export function Pagination({ totalPages, currentPage, onPageChange }: PaginationProps) {
     return (
-      <div className="flex justify-center space-x-2 mt-4">
-        <Button
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          Previous
-        </Button>
-        <span>
-          Page {currentPage} of {totalPages}
-        </span>
-        <Button
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          Next
-        </Button>
-      </div>
+      <div className='mt-4 flex justify-center gap-2'>
+				<Button
+					onClick={() => onPageChange(currentPage - 1)}
+					disabled={currentPage === 1}
+				>
+					&lt;
+				</Button>
+				<span className='py-2 px-4 border bg-muted text-white'>
+					{currentPage}
+				</span>
+				<Button
+					onClick={() => onPageChange(currentPage + 1)}
+					disabled={currentPage === totalPages}
+				>
+					&gt;
+				</Button>
+			</div>
     );
   }
   

@@ -25,7 +25,7 @@ export function TournamentRow({
 	teamCapacity,
 }: TournamentRowProps) {
 	return (
-		<Link href={`/tournament/${id}`}>
+		<Link href={`/tournaments/${id}`}>
 			<div className='relative flex items-center justify-between rounded-lg border shadow-lg overflow-hidden transition-colors w-full h-20 p-2 cursor-pointer mx-2 hover:bg-hoverColor'>
 				<div className='flex items-center'>
 					<div className='relative w-12 h-12'>

@@ -4,28 +4,44 @@ import { db } from '@/lib/db';
 export async function GET(request: Request) {
 	const url = new URL(request.url);
 	const email = url.searchParams.get('email');
+	const id = url.searchParams.get('id');
 
-	if (!email) {
+	if (email) {
+		try {
+			const userTeam = await db.user.findUnique({
+				where: { email },
+				include: {
+					cs2Team: true,
+				},
+			});
+			return NextResponse.json({ team: userTeam }, { status: 200 });
+		} catch (err) {
+			console.log('Error fetching user team:', err);
+			return NextResponse.json(
+				{ error: 'User not found' },
+				{ status: 404 }
+			);
+		}
+	} else if (id) {
+		try {
+			const userTeam = await db.user.findUnique({
+				where: { id },
+				include: {
+					cs2Team: true,
+				},
+			});
+			return NextResponse.json({ team: userTeam }, { status: 200 });
+		} catch (err) {
+			console.log('Error fetching user team:', err);
+			return NextResponse.json(
+				{ error: 'User not found' },
+				{ status: 404 }
+			);
+		}
+	} else {
 		return NextResponse.json(
-			{ error: 'Email query parameter is required' },
+			{ error: 'Missing email or id' },
 			{ status: 400 }
 		);
 	}
-
-	const user = await db.user.findUnique({
-		where: { email },
-		include: {
-			cs2Team: true,
-		},
-	});
-
-	if (!user) {
-		return NextResponse.json({ error: 'User not found' }, { status: 404 });
-	}
-
-	if (!user.cs2Team) {
-		return NextResponse.json({ msg: 'User has no team' }, { status: 200 });
-	}
-
-	return NextResponse.json({ team: user.cs2Team }, { status: 200 });
 }

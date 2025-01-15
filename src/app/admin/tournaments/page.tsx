@@ -6,6 +6,7 @@ import { TournamentForm } from '@/components/TournamentForm';
 import { TournamentTable } from '@/components/TournamentTable';
 import { Pagination } from '@/components/Pagination';
 import EditTournamentDialog from '@/components/EditTournamentDialog';
+import { FaExclamation } from 'react-icons/fa';
 
 const TOURNAMENTS_PER_PAGE = 10;
 
@@ -46,8 +47,9 @@ export default function AdminTournamentsPage() {
 		}
 		async function fetchTournamentCount() {
 			const response = await fetch('/api/tournaments/count');
-			const { count } = await response.json();
-			setTotalPages(Math.ceil(count / TOURNAMENTS_PER_PAGE));
+			const count = await response.json();
+			console.log(count);
+			setTotalPages(count);
 		}
 		fetchTournamentCount();
 		fetchTournaments();
@@ -92,12 +94,19 @@ export default function AdminTournamentsPage() {
 
 	return (
 		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<TournamentForm onSubmit={handleSubmit} />
+			<div className='flex flex-row justify-between mb-4'>
+				<h1 className='text-2xl font-bold mb-4'>Tournaments</h1>
+				<TournamentForm onSubmit={handleSubmit} />
+			</div>
+			<div className='w-full border p-2 mb-4 rounded-sm flex flex-row items-center'>
+				<FaExclamation className='mt-[3px] w-4 h-4 text-2xl text-red-500 mr-2' />
+				<p className='text-md border-b border-b-red-500'>
+					Click on a row to edit Tournaments.
+				</p>
+			</div>
 			<TournamentTable
+				isLoading={!tournaments.length}
 				tournaments={tournaments}
-				totalPages={totalPages}
-				page={page}
-				onPageChange={handlePageChange}
 				onEdit={(tournament) => {
 					setEditingTournament(tournament);
 					setIsEditDialogOpen(true);

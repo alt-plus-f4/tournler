@@ -2,29 +2,41 @@
 
 import { useEffect, useState } from 'react';
 import { OnboardingDialog } from './Onboarding';
-import {fetchOnboardingStatus} from '@/lib/apifuncs';
+import { fetchOnboardingStatus } from '@/lib/apifuncs';
 
 export function OnboardingStatus() {
-    const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<boolean | null>(null);
+	const [isOnboardingCompleted, setIsOnboardingCompleted] = useState<
+		boolean | null
+	>(null);
 
-    useEffect(() => {
-        async function checkOnboardingStatus() {
-            try {
-                const status = await fetchOnboardingStatus();
-                setIsOnboardingCompleted(status);
-                console.log(isOnboardingCompleted);
-            } catch (error) {
-                console.error('Error fetching onboarding status:', error);
-            }
-        }
+	useEffect(() => {
+		async function checkOnboardingStatus() {
+			try {
+				const storedStatus = sessionStorage.getItem(
+					'isOnboardingCompleted'
+				);
+				if (storedStatus !== null) {
+					setIsOnboardingCompleted(storedStatus === 'true');
+					return;
+				}
 
-        checkOnboardingStatus();
-    }, []);
+				const status = await fetchOnboardingStatus();
+				setIsOnboardingCompleted(status);
 
+				sessionStorage.setItem('isOnboardingCompleted', String(status));
+			} catch (error) {
+				console.error('Error fetching onboarding status:', error);
+			}
+		}
 
-    return (
-        <>
-            {isOnboardingCompleted === false && <OnboardingDialog isOpen={!isOnboardingCompleted} />}
-        </>
-    );
+		checkOnboardingStatus();
+	}, []);
+
+	return (
+		<>
+			{isOnboardingCompleted === false && (
+				<OnboardingDialog isOpen={!isOnboardingCompleted} />
+			)}
+		</>
+	);
 }
