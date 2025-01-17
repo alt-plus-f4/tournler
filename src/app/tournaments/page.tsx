@@ -106,17 +106,17 @@ export default function Page() {
 					<UpcomingTournament {...displayedTournaments[3]} />
 				)}
 			</div>
-			<div className='flex justify-center gap-4 mt-8'>
+			<div className='flex flex-col sm:flex-row justify-center gap-4 mt-8'>
 				<Button
 					variant={isUpcoming ? 'default' : 'outline'}
-					className='px-4 py-2'
+					className='px-1 py-0 text-xs md:text-sm md:px-4 md:py-2'
 					onClick={() => setIsUpcoming(true)}
 				>
 					Upcoming Tournaments
 				</Button>
 				<Button
 					variant={!isUpcoming ? 'default' : 'outline'}
-					className='px-4 py-2'
+					className='px-1 py-0 text-xs md:text-sm md:px-4 md:py-2'
 					onClick={() => setIsUpcoming(false)}
 				>
 					Finished Tournaments

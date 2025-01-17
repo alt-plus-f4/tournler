@@ -45,27 +45,27 @@ export function UpcomingTournament({
 				</h1>
 				<div className='text-slate-300 text-xs ml-2 mb-2'>{location}</div>
 				<div className='grid grid-cols-3 gap-1 items-center text-center border-t-2 py-1'>
-					<div className='flex flex-col mt-2'>
-						<span className='font-bold text-sm'>
+					<div className='flex flex-col'>
+						<span className='font-bold text-xs lg:text-sm'>
 							{formatDate(startDate)}
 						</span>
-						<span className='text-slate-300 font-thin text-xs'>
+						<span className='text-slate-300 font-thin text-xs lg:text-sm'>
 							Date
 						</span>
 					</div>
 					<div className='flex flex-col'>
-						<span className='font-bold text-sm'>
+						<span className='font-bold text-xs lg:text-sm'>
 							{formatPrize(prizePool)}
 						</span>
-						<span className='text-slate-300 text-xs'>
+						<span className='text-slate-300 text-xs lg:text-sm'>
 							Prize Pool
 						</span>
 					</div>
 					<div className='flex flex-col'>
-						<span className='font-bold text-sm'>
+						<span className='font-bold text-xs lg:text-sm'>
 							{teams.length}/{teamCapacity}
 						</span>
-						<span className='text-slate-300 text-xs'>Teams</span>
+						<span className='text-slate-300 text-xs lg:text-sm'>Teams</span>
 					</div>
 				</div>
 			</div>

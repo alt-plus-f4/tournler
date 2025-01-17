@@ -11,7 +11,7 @@ import Notifications from './Notifications';
 export default async function Navbar() {
     const session = await getAuthSession();
     const role = session?.user?.id ? await getUserRole(session.user.id) : null;
-    console.log(role);
+    // console.log(role);
 
     return (
         <>

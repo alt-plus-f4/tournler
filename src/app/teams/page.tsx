@@ -63,14 +63,20 @@ export default async function Page() {
 	);
 }
 async function getUserTeam(userEmail: string) {
+	console.log('Fetching user team for email:', userEmail);
 	try {
 		const response = await fetch(
 			`${process.env.NEXTAUTH_URL}/api/user/team?email=${userEmail}`
 		);
+		console.log("NEXTAUTHURL: " + process.env.NEXTAUTH_URL);
+		console.log('Response received:', response);
 		const data = await response.json();
+		console.log('Data received:', data);
 
-		if (!response.ok)
+		if (!response.ok) {
+			console.error('Error response:', data.error);
 			throw new Error(data.error || 'Failed to fetch user team');
+		}
 
 		return data.team;
 	} catch (error) {
@@ -80,12 +86,20 @@ async function getUserTeam(userEmail: string) {
 }
 
 async function TeamsCards() {
+	console.log('Fetching teams');
+	console.log('URL SHOULD BE: ' + process.env.NEXTAUTH_URL + "/api/teams");
+
 	try {
 		const response = await fetch(`${process.env.NEXTAUTH_URL}/api/teams`);
+		console.log("NEXTAUTHURL: " + process.env.NEXTAUTH_URL);
+		console.log('Response received:', response);
 		const data = await response.json();
+		console.log('Data received:', data);
 
-		if (!response.ok)
+		if (!response.ok) {
+			console.error('Error response:', data.error);
 			throw new Error(data.error || 'Failed to fetch teams');
+		}
 
 		return (
 			<>

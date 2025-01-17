@@ -13,6 +13,7 @@ import {
 	DialogHeader,
 	DialogFooter,
 } from '@/components/ui/dialog';
+import { revalidateTournamentPage } from '@/lib/actions';
 
 interface JoinLeaveButtonProps {
 	tournament: any;
@@ -72,6 +73,7 @@ export function JoinLeaveButton({
 				title: 'Successfully joined the tournament',
 			});
 			setIsInTournament(true);
+			await revalidateTournamentPage(tournament.id);
 			return;
 		}
 
@@ -91,7 +93,6 @@ export function JoinLeaveButton({
 				body: JSON.stringify({ teamId: team.cs2TeamId }),
 			}
 		);
-
 		setIsDialogOpen(false);
 
 		if (response.ok) {
@@ -100,6 +101,7 @@ export function JoinLeaveButton({
 				title: 'Successfully left the tournament',
 			});
 			setIsInTournament(false);
+			await revalidateTournamentPage(tournament.id);
 			return;
 		}
 
@@ -124,7 +126,7 @@ export function JoinLeaveButton({
 					isInTournament && (
 						<>
 							<div className='flex flex-row items-center text-white bg-black text-sm p-2 rounded-md font-extralight'>
-                               <FaInfo className='mr-1' />
+								<FaInfo className='mr-1' />
 								You are currently in the tournament.
 							</div>
 						</>

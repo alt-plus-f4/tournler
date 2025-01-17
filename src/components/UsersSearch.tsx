@@ -53,8 +53,7 @@ export function UsersSearch({
 	);
 
 	function completeSuccessfulInviteConfirmation(userId: string) {
-		console.log(userId);
-		// ! = = SEND NOTIFICATION
+		// console.log(userId);
 		sendInviteNotification(userId, teamId);
 	}
 

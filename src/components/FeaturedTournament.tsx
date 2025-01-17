@@ -48,21 +48,21 @@ export function FeaturedTournament({
 			</div>
 			<div className='w-full bg-black border-t-0 border p-2 text-center'>
 				<div className='grid grid-cols-4 gap-4 items-center text-center'>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
+					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
 						<span className='font-bold'>{formatDate(startDate)}</span>
 						<span className='text-slate-300 font-thin'>Date</span>
 					</div>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
+					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
 						<span className='font-bold'>
 							{formatPrize(prizePool)}
 						</span>
 						<span className='text-slate-300'>Prize Pool</span>
 					</div>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
+					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
 						<span className='font-bold'>{location}</span>
 						<span className='text-slate-300'>Location</span>
 					</div>
-					<div className='flex flex-col transform transition-transform duration-200 hover:scale-105'>
+					<div className='flex flex-col transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
 						<span className='font-bold'>
 							{teams.length}/{teamCapacity}
 						</span>
