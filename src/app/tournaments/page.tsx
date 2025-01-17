@@ -22,9 +22,9 @@ interface Tournament {
 function FeaturedTournamentSkeleton() {
 	return (
 		<div className='relative flex flex-col items-center rounded-lg shadow-lg overflow-hidden'>
-			<Skeleton className='w-full h-56' />
+			<Skeleton className='w-full h-[321px]' />
 			<div className='absolute inset-4 flex items-end justify-center'>
-				<Skeleton className='h-8 w-[45%]' />
+				<Skeleton className='h-[65px] w-[80%]' />
 			</div>
 		</div>
 	);
@@ -32,7 +32,7 @@ function FeaturedTournamentSkeleton() {
 
 function UpcomingTournamentSkeleton() {
 	return (
-		<div className='flex flex-col w-[30%] items-center border rounded shadow-lg'>
+		<div className='flex flex-col w-[30%] items-center border rounded shadow-lg h-[156px] mt-4 sm:mt-2'>
 			<Skeleton className='w-full h-12' />
 			<Skeleton className='h-4 w-40 mt-4' />
 			<Skeleton className='h-2 w-32 mt-2' />

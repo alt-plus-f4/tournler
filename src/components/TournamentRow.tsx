@@ -32,7 +32,8 @@ export function TournamentRow({
 						<Image
 							src={logoUrl}
 							alt={name}
-							layout='fill'
+							fill
+							sizes='100vw'
 							className='object-cover w-full h-full'
 						/>
 					</div>

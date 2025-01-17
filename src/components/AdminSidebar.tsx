@@ -76,13 +76,15 @@ export function AdminSidebar({
 			className='h-[90%] left-3 top-20 rounded-[16px] text-white border bg-gray-800'
 		>
 			<SidebarHeader className='flex flex-row items-center transition-colors hover:bg-zinc-900 mt-4'>
-				<div className='w-10 h-10 bg-red-500 flex items-center rounded-xl justify-center ml-4'>
-					<MdAdminPanelSettings size={28} className='' />
-				</div>
-				<div className='flex flex-col justify-center ml-4'>
-					<h2 className='text-lg font-bold'>Administrator</h2>
-					<p className='text-xs'>Panel</p>
-				</div>
+				<Link href={'/admin'} className='w-full flex flex-row hover:bg-hoverColor'>
+					<div className='w-10 h-10 bg-red-500 flex items-center rounded-xl justify-center ml-4'>
+						<MdAdminPanelSettings size={28} className='' />
+					</div>
+					<div className='flex flex-col justify-center ml-4'>
+						<h2 className='text-lg font-bold'>Administrator</h2>
+						<p className='text-xs'>Panel</p>
+					</div>
+				</Link>
 			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>

@@ -34,6 +34,7 @@ export function FeaturedTournament({
 					src={bannerUrl}
 					alt={name}
 					fill
+					sizes='78vw'
                     priority
 					className='object-cover w-full h-64'
 				/>

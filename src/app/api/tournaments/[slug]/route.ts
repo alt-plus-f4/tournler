@@ -26,6 +26,7 @@ export async function GET(
 	const tournament = await db.cs2Tournament.findUnique({
 		where: { id: numericId },
 		select: {
+			id: true,
 			name: true,
 			prizePool: true,
 			teamCapacity: true,
@@ -36,7 +37,20 @@ export async function GET(
 			logoUrl: true,
 			status: true,
 			type: true,
-			teams: true,
+			teams: {
+				select: {
+					id: true,
+					name: true,
+					members: {
+						select: {
+							id: true,
+							name: true,
+							role: true,
+							image: true,
+						},
+					},
+				},
+			},
 		},
 	});
 

@@ -31,7 +31,7 @@ const TabMenu: React.FC<TabMenuProps> = ({ tournament }) => {
 
     return (
         <div>
-            <div className='flex items-start justify-start mx-4 py-2 space-x-24 border-b'>
+            <div className='flex items-start md:justify-start md:mx-4 py-2 justify-between md:space-x-24 border-b'>
                 <button
                     onClick={() => setActiveTab('overview')}
                     className={`p-2 hover:text-gray-400 transition-colors ${activeTab === 'overview' ? 'font-bold border-b-2 border-white' : ''}`}

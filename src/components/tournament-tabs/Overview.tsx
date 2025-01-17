@@ -11,6 +11,32 @@ const Overview: React.FC<{
 	tournament: any;
 	setActiveTab: (tab: string) => void;
 }> = ({ tournament, setActiveTab }) => {
+	const tournamentType = (type: number) => {
+		switch (type) {
+			case 0:
+				return 'Single Elimination';
+			case 1:
+				return 'Swizz Stage';
+			case 2:
+				return 'Group Robin';
+			default:
+				return 'Unknown';
+		}
+	};
+
+	const tournamentStatus = (status: number) => {
+		switch (status) {
+			case 0:
+				return 'Upcoming';
+			case 1:
+				return 'Finished';
+			case 2:
+				return 'Ongoing';
+			default:
+				return 'Unknown';
+		}
+	};
+
 	return (
 		<div className='p-4'>
 			<div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
@@ -52,7 +78,7 @@ const Overview: React.FC<{
 								<p className='text-xs text-foregroundgray uppercase'>
 									Type
 								</p>
-								<p>{tournament.type}</p>
+								<p>{tournamentType(tournament.type)}</p>
 							</div>
 						</div>
 						<div className='flex items-center w-full sm:w-1/3 p-2'>
@@ -61,7 +87,7 @@ const Overview: React.FC<{
 								<p className='text-xs text-foregroundgray uppercase'>
 									Status
 								</p>
-								<p>{tournament.status}</p>
+								<p>{tournamentStatus(tournament.status)}</p>
 							</div>
 						</div>
 					</div>
@@ -92,13 +118,30 @@ const Overview: React.FC<{
 						</Button>
 					</div>
 					<div className='border p-3 mt-2 flex items-center'>
-						<div className='relative w-12 h-8 mr-4'>
-							<div
-								className='absolute inset-0 rounded-full border-4 border-white'
-								style={{
-									borderColor: `rgba(0, 123, 255, ${tournament.teams.length / tournament.teamCapacity})`,
-								}}
-							></div>
+						<div className='relative w-12 h-12 mr-4'>
+							<svg
+								className='absolute inset-0'
+								viewBox='0 0 36 36'
+							>
+								<path
+									className='text-white opacity-25'
+									d='M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831
+                                        a 15.9155 15.9155 0 0 1 0 -31.831'
+									fill='none'
+									stroke='currentColor'
+									strokeWidth='1'
+								/>
+								<path
+									className='text-white'
+									d='M18 2.0845
+                                        a 15.9155 15.9155 0 0 1 0 31.831'
+									fill='none'
+									stroke='currentColor'
+									strokeWidth='1'
+									strokeDasharray={`${(tournament.teams.length / tournament.teamCapacity) * 100}, 100`}
+								/>
+							</svg>
 							<FaGamepad className='absolute inset-0 m-auto h-6 w-6 text-white' />
 						</div>
 						<p className='text-sm font-bold'>
@@ -123,23 +166,25 @@ const Overview: React.FC<{
 								View all
 							</Button>
 						</div>
-						<div className='border p-4 mt-2 flex items-center'>
-							<div className='relative w-12 h-8 mr-4'>
-								<div
-									className='absolute inset-0 rounded-full border-4 border-white'
-									style={{
-										borderColor: `rgba(0, 123, 255, ${tournament.teams.length / tournament.teamCapacity})`,
-									}}
-								></div>
-								<FaGamepad className='absolute inset-0 m-auto h-6 w-6 text-white' />
+						<div className='border p-4 mt-2'>
+							<div className='flex justify-between mb-2 border-b p-2 mt-2'>
+								<p>1st</p>
+								<p className='text-sm'>
+									$ {(tournament.prizePool * 0.5).toFixed(2)}
+								</p>
 							</div>
-							<p className='text-sm font-bold'>
-								{tournament.teams.length} /
-								<span className='font-normal text-foregroundgray'>
-									{' '}
-									{tournament.teamCapacity}
-								</span>
-							</p>
+							<div className='flex justify-between mb-2 border-b p-2'>
+								<p>2nd</p>
+								<p className='text-sm'>
+									$ {(tournament.prizePool * 0.3).toFixed(2)}
+								</p>
+							</div>
+							<div className='flex justify-between p-2'>
+								<p>3rd</p>
+								<p className='text-sm'>
+									$ {(tournament.prizePool * 0.2).toFixed(2)}
+								</p>
+							</div>
 						</div>
 					</div>
 				</div>

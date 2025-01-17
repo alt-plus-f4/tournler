@@ -27,7 +27,12 @@ export async function GET(request: Request) {
 			const userTeam = await db.user.findUnique({
 				where: { id },
 				include: {
-					cs2Team: true,
+					cs2Team: {
+						select: {
+							name: true,
+							id: true,
+						},
+					},
 				},
 			});
 			return NextResponse.json({ team: userTeam }, { status: 200 });

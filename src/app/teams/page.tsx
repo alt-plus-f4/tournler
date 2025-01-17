@@ -4,11 +4,10 @@ import { getAuthSession } from '@/lib/auth';
 import { CircleUser } from 'lucide-react';
 import { Shell } from 'lucide-react';
 import LoginButtons from '@/components/LoginButtons';
-import { Card, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Suspense } from 'react';
 import { TeamCard } from '@/components/TeamCard';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
+import { FallbackCards } from '@/components/FallbackCards';
 
 export default async function Page() {
 	const session = await getAuthSession();
@@ -104,22 +103,4 @@ async function TeamsCards() {
 			</div>
 		);
 	}
-}
-
-function FallbackCards() {
-	return Array(4)
-		.fill(0)
-		.map((_, index) => (
-			<Card
-				key={index}
-				className='w-full transition hover:-translate-y-1 hover:shadow-lg '
-			>
-				<CardHeader className='relative p-0 w-full aspect-[21/9] space-y-0 overflow-hidden rounded-t-xl'>
-					<Skeleton className='w-full h-full' />
-				</CardHeader>
-				<div className='p-3'>
-					<Skeleton className='w-1/2 h-6' />
-				</div>
-			</Card>
-		));
 }

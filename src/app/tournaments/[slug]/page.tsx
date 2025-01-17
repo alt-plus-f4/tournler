@@ -1,4 +1,3 @@
-import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { getAuthSession } from '@/lib/auth';
 import { fetchTournament } from '@/lib/helpers/fetch-tournament';
@@ -9,9 +8,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { FaArrowLeft } from 'react-icons/fa';
-import { FaPlusCircle } from 'react-icons/fa';
 import { IoIosCheckmarkCircleOutline } from 'react-icons/io';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
+import { JoinLeaveButton } from '@/components/JoinLeaveButton';
+import { buttonVariants } from '@/components/ui/button';
 
 interface TournamentPageProps {
 	params: {
@@ -31,11 +31,24 @@ async function TournamentPage({ params }: TournamentPageProps) {
 	const userTeam = user ? await fetchUserTeam(user.id) : null;
 	const hasTeam = !!userTeam;
 
+	const timeLeftToJoin = Math.max(
+		new Date(tournament.startDate).getTime() - new Date().getTime(),
+		0
+	);
+
+	const daysLeft = Math.floor(timeLeftToJoin / (1000 * 60 * 60 * 24));
+	const hoursLeft = Math.floor(
+		(timeLeftToJoin % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+	);
+	const minutesLeft = Math.floor(
+		(timeLeftToJoin % (1000 * 60 * 60)) / (1000 * 60)
+	);
+
 	return (
 		<Card className='w-5/6 mx-auto mt-8 border-none'>
 			<CardHeader className='relative p-0 w-full h-[300px] space-y-0 rounded-t-xl'>
 				<Image
-					src={tournament.bannerUrl || '/default-banner.jpg'}
+					src={tournament.bannerUrl}
 					alt={tournament.name}
 					fill
 					priority
@@ -43,7 +56,7 @@ async function TournamentPage({ params }: TournamentPageProps) {
 				/>
 				<Link
 					className={cn(
-						'absolute top-2 left-2',
+						'absolute top-2 left-2 z-10',
 						buttonVariants({ variant: 'outline' })
 					)}
 					href='/tournaments'
@@ -51,7 +64,6 @@ async function TournamentPage({ params }: TournamentPageProps) {
 					<FaArrowLeft className='h-4 w-4' />
 				</Link>
 
-				{/* ADD TIME LEFT TO JOIN */}
 				<div className='absolute bottom-0 left-0 w-full h-[300px] bg-gradient-to-t from-black to-transparent'></div>
 
 				<div className='absolute inset-4 flex items-end justify-start'>
@@ -61,59 +73,35 @@ async function TournamentPage({ params }: TournamentPageProps) {
 						</h1>
 						<div className='flex flex-row items-center sm:mt-1'>
 							<h1 className='text-foregroundgray text-xs sm:text-sm left-0'>
-								Organized by <span className='text-white'>Admin</span>
+								Organized by{' '}
+								<span className='text-white'>Admin</span>
 							</h1>
 							<IoIosCheckmarkCircleOutline className='ml-1' />
 						</div>
 					</div>
 				</div>
-
-				{hasTeam && (
-					<div className='absolute inset-4 sm:inset-10 flex items-end justify-end text-center z-10 '>
-						<Button variant='default' className='p-4'>
-							<FaPlusCircle />
-							<span className='hidden sm:block'>
-								Join Tournament
+				
+				<div className='absolute inset-4 sm:inset-10 flex items-end justify-end flex-col text-center z-10 '>
+					{hasTeam && timeLeftToJoin > 0 ? (
+						<>
+							<span className='text-xs mb-1 hidden sm:block'>
+								Time left to join: {daysLeft}d {hoursLeft}h{' '}
+								{minutesLeft}m
 							</span>
-						</Button>
-					</div>
-				)}
+							<JoinLeaveButton
+								timeLeftToJoin={timeLeftToJoin}
+								tournament={tournament}
+								team={userTeam.team}
+							/>
+						</>
+					) : (
+						<span>Registration closed</span>
+					)}
+				</div>
 			</CardHeader>
 
 			<CardContent className='p-0'>
-				{/* <div className='w-full bg-black border-t-0 border p-2 text-center'>
-					<div className='grid grid-cols-4 gap-4 items-center text-center'>
-						<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
-							<span className='font-bold'>
-								{formatDate(tournament.startDate)}
-							</span>
-							<span className='text-slate-300 font-thin'>
-								Date
-							</span>
-						</div>
-						<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
-							<span className='font-bold'>
-								{formatPrize(tournament.prizePool)}
-							</span>
-							<span className='text-slate-300'>Prize Pool</span>
-						</div>
-						<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105'>
-							<span className='font-bold'>
-								{tournament.location}
-							</span>
-							<span className='text-slate-300'>Location</span>
-						</div>
-						<div className='flex flex-col transform transition-transform duration-200 hover:scale-105'>
-							<span className='font-bold'>
-								{tournament.teams.length}/
-								{tournament.teamCapacity}
-							</span>
-							<span className='text-slate-300'>Teams</span>
-						</div>
-					</div>
-				</div> */}
-
-                <TabMenu tournament={tournament} />
+				<TabMenu tournament={tournament} />
 			</CardContent>
 		</Card>
 	);

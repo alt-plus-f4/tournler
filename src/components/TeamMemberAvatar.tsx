@@ -8,7 +8,6 @@ import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
 import { ExtendedUser } from '@/lib/models/user-model';
 import Image from 'next/image';
-import { getAuthSession } from '@/lib/auth';
 import { RemoveMemberButton } from './RemoveMemberButton';
 
 interface TeamMemberAvatarProps {
@@ -16,17 +15,16 @@ interface TeamMemberAvatarProps {
 	member: ExtendedUser;
 	enableTeamCapitanControls?: boolean;
 	capitanId: string;
+	userId?: string;
 }
 
-export async function TeamMemberAvatar({
+export function TeamMemberAvatar({
 	team,
 	member,
 	enableTeamCapitanControls,
 	capitanId,
+	userId,
 }: TeamMemberAvatarProps) {
-	const session = await getAuthSession();
-	const user = session?.user;
-
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
@@ -43,8 +41,8 @@ export async function TeamMemberAvatar({
 					/>
 
 					{enableTeamCapitanControls &&
-						user &&
-						member.id !== user?.id && (
+						userId &&
+						member.id !== userId && (
 							<RemoveMemberButton
 								teamId={team.id}
 								memberId={member.id}

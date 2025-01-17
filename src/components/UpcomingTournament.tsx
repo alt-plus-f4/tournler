@@ -33,7 +33,8 @@ export function UpcomingTournament({
 				<Image
 					src={bannerUrl}
 					alt={name}
-					layout='fill'
+					fill
+					sizes='25vw'
 					className='object-cover w-full h-20'
 				/>
 				<div className='absolute bottom-0 left-0 w-full h-[20px] bg-gradient-to-t from-black to-transparent'></div>

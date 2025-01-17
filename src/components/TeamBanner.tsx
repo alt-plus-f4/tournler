@@ -6,12 +6,14 @@ interface TeamBannerProps {
 	team: ExtendedCs2Team;
 	enableTeamCapitanControls?: boolean;
 	capitanId: string;
+	userId?: string;
 }
 
 export function TeamBanner({
 	team,
 	enableTeamCapitanControls,
-	capitanId
+	capitanId,
+	userId,
 }: TeamBannerProps) {
 	const members = team.members || [];
 	const teamName = team.name || 'TEAM NAME';
@@ -39,6 +41,7 @@ export function TeamBanner({
 						key={member.id}
 						team={team}
 						member={member}
+						userId={userId}
 						capitanId={capitanId}
 						enableTeamCapitanControls={enableTeamCapitanControls}
 					/>

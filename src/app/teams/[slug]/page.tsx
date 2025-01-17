@@ -41,9 +41,10 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const invitedPlayers = await fetchInvitedPlayers(teamId);
 
 	return (
-		<Card className='w-5/6 mx-auto align-center mt-12 h-[750px]'>
+		<Card className='w-5/6 mx-auto align-center mt-12 h-[750px] mb-8'>
 			<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl'>
 				<TeamBanner
+					userId={user?.id}
 					team={team}
 					capitanId={team.capitan.id}
 					enableTeamCapitanControls={isUserTeamCaptain}
