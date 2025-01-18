@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 			});
 			return NextResponse.json({ team: userTeam }, { status: 200 });
 		} catch (err) {
-			console.log('Error fetching user team:', err);
+			console.error('Error fetching user team:', err);
 			return NextResponse.json(
 				{ error: 'User not found' },
 				{ status: 404 }
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 			});
 			return NextResponse.json({ team: userTeam }, { status: 200 });
 		} catch (err) {
-			console.log('Error fetching user team:', err);
+			console.error('Error fetching user team:', err);
 			return NextResponse.json(
 				{ error: 'User not found' },
 				{ status: 404 }

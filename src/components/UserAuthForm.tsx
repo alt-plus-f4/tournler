@@ -26,7 +26,7 @@ const UserAuthForm: FC<UserAuthFormProps> = ({ className, ...props }) => {
         variant: 'destructive',
       });
       // ! SHOULD REMOVE CONSOLE LOG HERE
-      console.log(error);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

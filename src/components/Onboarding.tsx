@@ -158,7 +158,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 
     async function setAvatar(avatar: Blob) {
         const avatarText = await avatar.text();
-        console.log('avatar', avatar);
+        // console.log('avatar', avatar);
 
         try {
             const response = await fetch('/api/user/avatar', {

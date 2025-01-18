@@ -47,10 +47,10 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({ className }) => {
 				createPortal(
 					<>
 						<div
-							className={`fixed inset-0 z-40 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+							className={`fixed inset-0 z-50 transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
 						>
 							<div
-								className={`fixed sm:hidden inset-y-0 left-0 w-1/2 bg-white shadow-lg transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+								className={`fixed md:hidden inset-y-0 left-0 w-1/2 bg-white shadow-lg transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
 							>
 								<div className='flex justify-end p-4'>
 									<button

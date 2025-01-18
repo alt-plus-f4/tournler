@@ -5,7 +5,6 @@ export async function authenticateWithSteam(redirectUri: string) {
 
   const response = await fetch(steamOpenIdUrl);
   const text = await response.text();
-  console.log(text);
 
   // Sanitize the XML response
   const sanitizedText = text.replace(/&/g, '&amp;');

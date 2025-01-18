@@ -38,7 +38,6 @@ function UpcomingTournamentSkeleton() {
 			<Skeleton className='h-2 w-32 mt-2' />
 			<span className='border w-full mt-2'></span>
 			<Skeleton className='h-4 w-[80%] my-2' />
-		
 		</div>
 	);
 }
@@ -81,31 +80,27 @@ export default function Page() {
 
 	return (
 		<div className='w-[78%] mx-auto my-8'>
-			{loading && (
+			{loading ? (
 				<FeaturedTournamentSkeleton />
-			)}
-			{displayedTournaments[0] && (
+			) : displayedTournaments[0] ? (
 				<FeaturedTournament {...displayedTournaments[0]} />
-			)}
-			
+			) : null}
+
 			<div className='mt-8 flex flex-col sm:flex-row gap-4 sm:justify-around items-center'>
-				{loading && (
-					<>
-						<UpcomingTournamentSkeleton />
-						<UpcomingTournamentSkeleton />
-						<UpcomingTournamentSkeleton />
-					</>
-				)}
-				{displayedTournaments[1] && (
-					<UpcomingTournament {...displayedTournaments[1]} />
-				)}
-				{displayedTournaments[2] && (
-					<UpcomingTournament {...displayedTournaments[2]} />
-				)}
-				{displayedTournaments[3] && (
-					<UpcomingTournament {...displayedTournaments[3]} />
-				)}
+				{loading
+					? [...Array(3)].map((_, i) => (
+							<UpcomingTournamentSkeleton key={i} />
+						))
+					: displayedTournaments
+							.slice(1, 4)
+							.map((tournament, index) => (
+								<UpcomingTournament
+									key={tournament.id || index}
+									{...tournament}
+								/>
+							))}
 			</div>
+
 			<div className='flex flex-col sm:flex-row justify-center gap-4 mt-8'>
 				<Button
 					variant={isUpcoming ? 'default' : 'outline'}
@@ -122,13 +117,14 @@ export default function Page() {
 					Finished Tournaments
 				</Button>
 			</div>
+
 			<div className='mt-12 space-y-2'>
-				{loading && displayedTournaments.length === 0
+				{loading
 					? [...Array(3)].map((_, i) => (
 							<TournamentRowSkeleton key={i} />
 						))
 					: displayedTournaments
-							.slice(3)
+							.slice(4)
 							.map((tournament) => (
 								<TournamentRow
 									key={tournament.id}

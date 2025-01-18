@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
 
   const { id } = await request.json();
 
-  console.log(id);
+  // console.log(id);
 
   if (!id) {
     return NextResponse.json({ error: 'Missing user ID' }, { status: 400 });

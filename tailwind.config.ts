@@ -17,6 +17,8 @@ const config: Config = {
 				hoverColor: '#1d1e21',
 				grey: '#2f3136',
 				foregroundgray: 'rgb(167, 167, 167)',
+				ctColor: '#1d91d74d',
+				tColor: '#7a030386',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				card: {

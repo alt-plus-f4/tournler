@@ -9,9 +9,10 @@ interface UpcomingTournamentProps {
 	bannerUrl: string;
 	startDate: string;
 	prizePool: number;
-	teams: [];
+	teams: any[];
 	location: string;
 	teamCapacity: number;
+	isHomePage?: boolean;
 }
 
 export function UpcomingTournament({
@@ -23,11 +24,12 @@ export function UpcomingTournament({
 	teams,
 	location,
 	teamCapacity,
+    isHomePage,
 }: UpcomingTournamentProps) {
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className='relative flex flex-col items-center justify-center rounded-sm shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 h-[156px] mt-4 sm:mt-2 sm:w-[30%] w-[80%]'
+			className={`relative flex flex-col items-center justify-center rounded-sm shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-[80%]'}`}
 		>
 			<div className='relative w-full h-20'>
 				<Image
@@ -43,7 +45,9 @@ export function UpcomingTournament({
 				<h1 className='text-white text-md ml-2 mt-2 font-extrabold'>
 					{name}
 				</h1>
-				<div className='text-slate-300 text-xs ml-2 mb-2'>{location}</div>
+				<div className='text-slate-300 text-xs ml-2 mb-2'>
+					{location}
+				</div>
 				<div className='grid grid-cols-3 gap-1 items-center text-center border-t-2 py-1'>
 					<div className='flex flex-col'>
 						<span className='font-bold text-xs lg:text-sm'>
@@ -61,12 +65,16 @@ export function UpcomingTournament({
 							Prize Pool
 						</span>
 					</div>
-					<div className='flex flex-col'>
-						<span className='font-bold text-xs lg:text-sm'>
-							{teams.length}/{teamCapacity}
-						</span>
-						<span className='text-slate-300 text-xs lg:text-sm'>Teams</span>
-					</div>
+					{teams && (
+						<div className='flex flex-col'>
+							<span className='font-bold text-xs lg:text-sm'>
+								{teams.length}/{teamCapacity}
+							</span>
+							<span className='text-slate-300 text-xs lg:text-sm'>
+								Teams
+							</span>
+						</div>
+					)}
 				</div>
 			</div>
 		</Link>

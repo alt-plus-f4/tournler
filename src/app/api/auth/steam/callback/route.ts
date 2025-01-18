@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const openidClaimedId = searchParams.get('openid.claimed_id');
   const openidIdentity = searchParams.get('openid.identity');
 
-  console.log('Received Steam OpenID response:', Object.fromEntries(searchParams));
+  // console.log('Received Steam OpenID response:', Object.fromEntries(searchParams));
 
 
   if (openidMode === 'error') {

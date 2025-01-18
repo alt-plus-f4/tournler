@@ -33,7 +33,7 @@ export default function UsersPage() {
 		async function fetchUserCount() {
 			const response = await fetch('/api/users/count');
 			const count = await response.json();
-			console.log(count);
+			// console.log(count);
 			setTotalPages(count);
 		}
 		fetchUserCount();

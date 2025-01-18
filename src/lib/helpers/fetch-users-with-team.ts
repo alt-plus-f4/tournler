@@ -18,8 +18,6 @@ export async function fetchUsersWithATeam(teamId: number) {
       },
     });
 
-    console.log('usersWithATeam:', usersWithATeam);
-
     return usersWithATeam;
   } catch (error) {
     console.error('Error fetching users with a team:', error);

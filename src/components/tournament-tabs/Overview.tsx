@@ -20,7 +20,7 @@ const Overview: React.FC<{
 			case 2:
 				return 'Group Robin';
 			default:
-				return 'Unknown';
+				return 'Other';
 		}
 	};
 
@@ -33,7 +33,7 @@ const Overview: React.FC<{
 			case 2:
 				return 'Ongoing';
 			default:
-				return 'Unknown';
+				return 'Other';
 		}
 	};
 

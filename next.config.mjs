@@ -5,6 +5,7 @@ const nextConfig = {
 			'6q0iedxcfemxlbr8.public.blob.vercel-storage.com',
 			'via.placeholder.com',
 			'img-cdn.hltv.org',
+			'assets.blast.tv',
 		],
 	},
 };

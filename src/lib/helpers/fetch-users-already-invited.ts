@@ -24,8 +24,6 @@ export async function fetchUsersAlreadyInvited(teamId: number) {
       },
     });
 
-    console.log('usersAlreadyInvited:', usersAlreadyInvited);
-
     return usersAlreadyInvited;
   } catch (error) {
     console.error('Error fetching users already invited:', error);

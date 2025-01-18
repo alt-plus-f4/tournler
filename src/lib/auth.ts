@@ -135,24 +135,20 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, account, user }) {
       if (account?.provider === 'steam') {
-        console.log('Steam');
         token.steamId = account.providerAccountId;
       }
 
       if (account?.provider === 'discord') {
-        console.log('Discord: ', account);
         const discordId = account.providerAccountId;
         const accessToken = account.access_token || '';
 
         if (user?.id) {
-          console.log('User ID', user.id);
           const existingDiscordAccount =
             await db.discordAccount.findUnique({
               where: { discordId },
             });
 
           if (!existingDiscordAccount) {
-            console.log('Creating Discord Account');
             await db.discordAccount.create({
               data: {
                 userId: user.id,
@@ -168,7 +164,6 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (user) {
-        console.log('User: ', user);
         token.id = user.id;
       } else if (token.email) {
         let dbUser = await db.user.findUnique({
