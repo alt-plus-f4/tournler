@@ -16,7 +16,9 @@ interface TournamentFormProps {
 	onSubmit: (formData: FormData) => Promise<void>;
 }
 
-export function TournamentForm({ onSubmit }: TournamentFormProps) {
+export function TournamentForm({
+	onSubmit,
+}: TournamentFormProps) {
 	const [name, setName] = useState('');
 	const [prizePool, setPrizePool] = useState<number | ''>('');
 	const [teamCapacity, setTeamCapacity] = useState<number | ''>('');
@@ -27,6 +29,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [status, setStatus] = useState<number | ''>('');
 	const [type, setType] = useState<number | ''>('');
+	const [organizer, setOrganizer] = useState('');
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -41,6 +44,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 		if (logoFile) formData.append('logoFile', logoFile);
 		formData.append('status', status.toString());
 		formData.append('type', type.toString());
+		formData.append('organizerId', organizer.toString());
 
 		await onSubmit(formData);
 	};
@@ -136,6 +140,13 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 						type='number'
 						value={type}
 						onChange={(e) => setType(Number(e.target.value))}
+						required
+					/>
+					<Label htmlFor='name'>Organizer</Label>
+					<Input
+						id='organizer'
+						value={organizer}
+						onChange={(e) => setOrganizer(e.target.value)}
 						required
 					/>
 					<Button type='submit' className='w-full mt-3'>

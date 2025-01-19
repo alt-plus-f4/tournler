@@ -11,15 +11,15 @@ import {
 } from '@/components/ui/command';
 import { ReactNode, Suspense, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
-import { User } from '@prisma/client';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import { ReducedUser } from '@/types/types';
 
 interface UsersSearchProps {
 	children: ReactNode;
 	teamId: number;
 	teamName: string;
-	allUsers: User[];
+	allUsers: ReducedUser[];
 	invitedPlayers: any;
 }
 
@@ -32,13 +32,17 @@ export function UsersSearch({
 }: UsersSearchProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [dialog, setDialog] = useState<JSX.Element | undefined>();
+    const [localInvitedUserIds, setLocalInvitedUserIds] = useState<string[]>([]);
 
-	const inviteNotif = useMutation(api.notifications.createTeamInviteNotification);
+	const inviteNotif = useMutation(
+		api.notifications.createTeamInviteNotification
+	);
 
 	async function sendInviteNotification(userId: string, teamId: number) {
 		try {
 			await inviteNotif({
-				text: 'You have been invited to join the team ' + teamName + ".",
+				text:
+					'You have been invited to join the team ' + teamName + '.',
 				userId,
 				teamId,
 			});
@@ -48,38 +52,38 @@ export function UsersSearch({
 	}
 
 	const invitedPlayersData = invitedPlayers?.teamInvitations || [];
-	const invitedUserIds = invitedPlayersData.map(
-		(invitation: { userId: number }) => invitation.userId
-	);
+    const invitedUserIds = [...invitedPlayersData.map(
+        (invitation: { userId: number }) => invitation.userId
+    ), ...localInvitedUserIds];
 
 	function completeSuccessfulInviteConfirmation(userId: string) {
-		// console.log(userId);
-		sendInviteNotification(userId, teamId);
-	}
+        sendInviteNotification(userId, teamId);
+        setLocalInvitedUserIds(prev => [...prev, userId]);
+    }
 
-	function openInviteConfirmation(user: User) {
-		setIsOpen(false);
+	function openInviteConfirmation(user: ReducedUser) {
+        setIsOpen(false);
 
-		const currentDialog = (
-			<InviteConfirmationDialog
-				key={user.id}
-				user={user}
-				teamId={teamId}
-				completeSuccessfulInviteConfirmation={() =>
-					completeSuccessfulInviteConfirmation(user.id)
-				}
-				onOpenChange={(isOpen) => {
-					if (!isOpen) {
-						setDialog(undefined);
-					}
-				}}
-			/>
-		);
+        const currentDialog = (
+            <InviteConfirmationDialog
+                key={user.id}
+                user={user}
+                teamId={teamId}
+                completeSuccessfulInviteConfirmation={() =>
+                    completeSuccessfulInviteConfirmation(user.id)
+                }
+                onOpenChange={(isOpen) => {
+                    if (!isOpen) {
+                        setDialog(undefined);
+                    }
+                }}
+            />
+        );
 
-		setDialog(currentDialog);
-	}
+        setDialog(currentDialog);
+    }
 
-	function commandItemProfile(user: User, isInvited: boolean = false) {
+	function commandItemProfile(user: ReducedUser, isInvited: boolean = false) {
 		return (
 			<>
 				<div className='mr-2'>
@@ -110,30 +114,35 @@ export function UsersSearch({
 			<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
 				<CommandInput placeholder='Search for users...' />
 				<CommandList>
-					<CommandEmpty>No results found.</CommandEmpty>
+					<CommandEmpty>No users found.</CommandEmpty>
 					<Suspense
 						fallback={<CommandGroup>Loading...</CommandGroup>}
 					>
-						<CommandGroup heading='All Users'>
-							{allUsers.map((user) => {
-								const isInvited = invitedUserIds.includes(
-									user.id
-								);
-								return (
-									<CommandItem
-										className='cursor-pointer'
-										key={user.id}
-										onSelect={() =>
-											!isInvited &&
-											openInviteConfirmation(user)
-										}
-										disabled={isInvited}
-									>
-										{commandItemProfile(user, isInvited)}
-									</CommandItem>
-								);
-							})}
-						</CommandGroup>
+						{allUsers.length > 0 && (
+							<CommandGroup heading='All Users'>
+								{allUsers.map((user) => {
+									const isInvited = invitedUserIds.includes(
+										user.id
+									);
+									return (
+										<CommandItem
+											className='cursor-pointer'
+											key={user.id}
+											onSelect={() =>
+												!isInvited &&
+												openInviteConfirmation(user)
+											}
+											disabled={isInvited}
+										>
+											{commandItemProfile(
+												user,
+												isInvited
+											)}
+										</CommandItem>
+									);
+								})}
+							</CommandGroup>
+						)}
 					</Suspense>
 				</CommandList>
 			</CommandDialog>

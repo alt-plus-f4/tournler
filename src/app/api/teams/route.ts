@@ -12,8 +12,6 @@ export async function GET() {
 		},
 	});
 
-	// console.log(teams);
-
 	if (!teams) {
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 	}
@@ -50,6 +48,17 @@ export async function POST(request: Request) {
 		return NextResponse.json(
 			{ error: 'User is already in a team' },
 			{ status: 400 }
+		);
+	}
+
+	const existingTeam = await db.cs2Team.findUnique({
+		where: { name: teamName },
+	});
+
+	if (existingTeam) {
+		return NextResponse.json(
+			{ error: 'Team name is already taken' },
+			{ status: 409 }
 		);
 	}
 

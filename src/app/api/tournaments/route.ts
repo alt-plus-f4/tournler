@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
+import { TournamentStatus, TournamentType } from '@prisma/client';
+
+const statusMap: { [key: number]: TournamentStatus } = {
+	0: TournamentStatus.UPCOMING,
+	1: TournamentStatus.ONGOING,
+	2: TournamentStatus.COMPLETED,
+};
+
+const typeMap: { [key: number]: TournamentType } = {
+	0: TournamentType.ONLINE,
+	1: TournamentType.OFFLINE,
+};
 
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
@@ -26,17 +38,26 @@ export async function GET(request: Request) {
 		return NextResponse.json(tournaments, { status: 200 });
 	}
 
-	if (status !== '0' && status !== '1') {
+	const statusInt = parseInt(status, 10);
+	console.log(statusInt);
+	if (isNaN(statusInt) || (statusInt !== 0 && statusInt !== 1 && statusInt !== 2 && statusInt !== 10)) {
 		return NextResponse.json(
 			{ error: 'Invalid status parameter' },
 			{ status: 400 }
 		);
 	}
 
+	let enumStatus: TournamentStatus[];
+	if (statusInt === 10)
+		enumStatus = [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
+	else enumStatus = [statusMap[statusInt]];
+
 	try {
 		const tournaments = await db.cs2Tournament.findMany({
 			where: {
-				status: parseInt(status),
+				status: {
+					in: enumStatus,
+				},
 			},
 			orderBy: {
 				prizePool: 'desc',
@@ -119,8 +140,11 @@ export async function POST(req: Request) {
 				location,
 				bannerUrl,
 				logoUrl,
-				status: parseInt(statusValue, 10),
-				type: parseInt(typeValue, 10),
+				status: statusValue
+					? statusMap[parseInt(statusValue, 10)]
+					: TournamentStatus.UPCOMING,
+				type: typeMap[parseInt(typeValue, 10)],
+				organizerId: '1',
 			},
 		});
 

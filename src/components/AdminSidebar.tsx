@@ -73,7 +73,7 @@ export function AdminSidebar({
 	return (
 		<Sidebar
 			{...props}
-			className='h-[90%] left-3 top-20 rounded-[16px] text-white border bg-gray-800'
+			className='h-[85%] left-3 top-20 rounded-[16px] text-white border bg-gray-800'
 		>
 			<SidebarHeader className='flex flex-row items-center transition-colors hover:bg-zinc-900 mt-4'>
 				<Link href={'/admin'} className='w-full flex flex-row hover:bg-hoverColor'>

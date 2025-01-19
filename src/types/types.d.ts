@@ -1,18 +1,9 @@
-export enum UserRole {
-  USER = "USER",
-  ADMIN = "ADMIN",
-  MODERATOR = "MODERATOR",
-}
-
-export enum TournamentStatus {
-  PENDING = "PENDING",
-  ONGOING = "ONGOING",
-  COMPLETED = "COMPLETED",
-}
-
-export enum TournamentType {
-  ONLINE = "ONLINE",
-  OFFLINE = "OFFLINE",
+export interface ReducedUser {
+  id: string;
+  name?: string | null;
+  email: string;
+  image?: string | null,
+  cs2TeamId?: number | null,
 }
 
 export interface User {

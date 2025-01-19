@@ -10,7 +10,7 @@ import {
 } from './ui/tooltip';
 import { LuUserX } from 'react-icons/lu';
 import { removeMember } from '@/lib/helpers/remove-member';
-
+import { useRouter } from 'next/navigation'
 interface RemoveMemberButtonProps {
 	teamId: number;
 	memberId: string;
@@ -22,6 +22,7 @@ export function RemoveMemberButton({
 	memberId,
 	memberName,
 }: RemoveMemberButtonProps) {
+	const router = useRouter()
 	async function lremoveMember() {
 		const response = await removeMember(teamId, memberId);
 		if (response?.error) {
@@ -36,7 +37,7 @@ export function RemoveMemberButton({
 				title: 'Member removed',
 				description: `${memberName} has been removed from the team.`,
 			});
-			window.location.reload();
+			router.refresh();
 		}
 	}
 

@@ -11,32 +11,6 @@ const Overview: React.FC<{
 	tournament: any;
 	setActiveTab: (tab: string) => void;
 }> = ({ tournament, setActiveTab }) => {
-	const tournamentType = (type: number) => {
-		switch (type) {
-			case 0:
-				return 'Single Elimination';
-			case 1:
-				return 'Swizz Stage';
-			case 2:
-				return 'Group Robin';
-			default:
-				return 'Other';
-		}
-	};
-
-	const tournamentStatus = (status: number) => {
-		switch (status) {
-			case 0:
-				return 'Upcoming';
-			case 1:
-				return 'Finished';
-			case 2:
-				return 'Ongoing';
-			default:
-				return 'Other';
-		}
-	};
-
 	return (
 		<div className='p-4'>
 			<div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
@@ -78,7 +52,7 @@ const Overview: React.FC<{
 								<p className='text-xs text-foregroundgray uppercase'>
 									Type
 								</p>
-								<p>{tournamentType(tournament.type)}</p>
+								<p>{tournament.type}</p>
 							</div>
 						</div>
 						<div className='flex items-center w-full sm:w-1/3 p-2'>
@@ -87,7 +61,7 @@ const Overview: React.FC<{
 								<p className='text-xs text-foregroundgray uppercase'>
 									Status
 								</p>
-								<p>{tournamentStatus(tournament.status)}</p>
+								<p>{tournament.status}</p>
 							</div>
 						</div>
 					</div>

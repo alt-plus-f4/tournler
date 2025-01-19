@@ -12,13 +12,12 @@ datasource db {
 enum UserRole {
   USER
   ADMIN
-  MODERATOR
 
   @@map("user_role")
 }
 
 enum TournamentStatus {
-  PENDING
+  UPCOMING
   ONGOING
   COMPLETED
 

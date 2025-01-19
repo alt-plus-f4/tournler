@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
+import { isAdmin } from '@/lib/helpers/is-admin';
 
 export async function GET() {
 	const session = await getAuthSession();
@@ -10,12 +11,7 @@ export async function GET() {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const role = await db.user.findFirst({
-		where: { email: sessionUser.email ?? '' },
-		select: { role: true },
-	});
-
-	if (role?.role !== 1) {
+	if (!isAdmin(sessionUser.id)) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 

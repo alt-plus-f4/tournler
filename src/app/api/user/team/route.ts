@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 					cs2Team: true,
 				},
 			});
-			return NextResponse.json({ team: userTeam }, { status: 200 });
+			return NextResponse.json({ team: userTeam?.cs2Team }, { status: 200 });
 		} catch (err) {
 			console.error('Error fetching user team:', err);
 			return NextResponse.json(
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 					},
 				},
 			});
-			return NextResponse.json({ team: userTeam }, { status: 200 });
+			return NextResponse.json({ team: userTeam?.cs2Team }, { status: 200 });
 		} catch (err) {
 			console.error('Error fetching user team:', err);
 			return NextResponse.json(

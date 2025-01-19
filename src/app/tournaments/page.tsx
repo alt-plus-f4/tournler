@@ -54,6 +54,7 @@ export default function Page() {
 				const response = await fetch(
 					`/api/tournaments?status=${status}`
 				);
+
 				const data: ReducedTournament[] = await response.json();
 				setTournaments(data);
 			} catch (error) {
@@ -62,7 +63,7 @@ export default function Page() {
 				setLoading(false);
 			}
 		}
-		fetchTournaments(isUpcoming ? 0 : 1);
+		fetchTournaments(isUpcoming ? 10 : 2);
 	}, [isUpcoming]);
 
 	const displayedTournaments = tournaments;
@@ -80,14 +81,16 @@ export default function Page() {
 					? [...Array(3)].map((_, i) => (
 							<UpcomingTournamentSkeleton key={i} />
 						))
-					: displayedTournaments
-							.slice(1, 4)
-							.map((tournament, index) => (
-								<UpcomingTournament
-									key={tournament.id || index}
-									{...tournament}
-								/>
-							))}
+					: displayedTournaments[1]
+						? displayedTournaments
+								.slice(1, 4)
+								.map((tournament, index) => (
+									<UpcomingTournament
+										key={tournament.id || index}
+										{...tournament}
+									/>
+								))
+						: null}
 			</div>
 
 			<div className='flex flex-col sm:flex-row justify-center gap-4 mt-8'>

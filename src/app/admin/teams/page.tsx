@@ -2,66 +2,61 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/lib/hooks/use-toast';
-import { TournamentForm } from '@/components/TournamentForm';
-import { TournamentTable } from '@/components/TournamentTable';
+import { TeamForm } from '@/components/TeamForm';
+import { TeamTable } from '@/components/TeamTable';
 import { Pagination } from '@/components/Pagination';
-import EditTournamentDialog from '@/components/EditTournamentDialog';
+import EditTeamDialog from '@/components/EditTeamDialog';
 import { FaExclamation } from 'react-icons/fa';
-import { Tournament } from '@/types/types';
+import { Cs2Team } from '@/types/types';
 
-const TOURNAMENTS_PER_PAGE = 10;
+const TEAMS_PER_PAGE = 10;
 
-export default function AdminTournamentsPage() {
-	const [tournaments, setTournaments] = useState<Tournament[]>([]);
+export default function AdminTeamsPage() {
+	const [teams, setTeams] = useState<Cs2Team[]>([]);
 	const [page, setPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(1);
-	const [editingTournament, setEditingTournament] =
-		useState<Tournament | null>(null);
+	const [editingTeam, setEditingTeam] = useState<Cs2Team | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const { toast } = useToast();
 
 	useEffect(() => {
-		async function fetchTournaments() {
+		async function fetchTeams() {
 			const response = await fetch(
-				`/api/tournaments?page=${page}&limit=${TOURNAMENTS_PER_PAGE}`
+				`/api/teams?page=${page}&limit=${TEAMS_PER_PAGE}`
 			);
 			const data = await response.json();
 			if (Array.isArray(data)) {
-				setTournaments(data);
+				setTeams(data);
 			} else {
 				console.error('API response is not an array:', data);
 			}
 		}
-		async function fetchTournamentCount() {
-			const response = await fetch('/api/tournaments/count');
+		async function fetchTeamCount() {
+			const response = await fetch('/api/teams/count');
 			const count = await response.json();
-			// console.log(count);
 			setTotalPages(count);
 		}
-		fetchTournamentCount();
-		fetchTournaments();
+		fetchTeamCount();
+		fetchTeams();
 	}, [page]);
 
 	const handleSubmit = async (formData: FormData) => {
-		const response = await fetch('/api/tournaments', {
+		const response = await fetch('/api/teams', {
 			method: 'POST',
 			body: formData,
 		});
 		if (response.ok) {
 			toast({
 				title: 'Success',
-				description: 'Tournament created successfully',
+				description: 'Team created successfully',
 				variant: 'default',
 			});
-			const newTournament = await response.json();
-			setTournaments((prevTournaments) => [
-				...prevTournaments,
-				newTournament,
-			]);
+			const newTeam = await response.json();
+			setTeams((prevTeams) => [...prevTeams, newTeam]);
 		} else {
 			toast({
 				title: 'Error',
-				description: 'Failed to create tournament',
+				description: 'Failed to create team',
 				variant: 'destructive',
 			});
 		}
@@ -71,31 +66,27 @@ export default function AdminTournamentsPage() {
 		setPage(newPage);
 	};
 
-	const handleSave = (updatedTournament: Tournament) => {
-		setTournaments(
-			tournaments.map((t) =>
-				t.id === updatedTournament.id ? updatedTournament : t
-			)
-		);
+	const handleSave = (updatedTeam: Cs2Team) => {
+		setTeams(teams.map((t) => (t.id === updatedTeam.id ? updatedTeam : t)));
 	};
 
 	return (
 		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
 			<div className='flex flex-row justify-between mb-4'>
-				<h1 className='text-2xl font-bold mb-4'>Tournaments</h1>
-				<TournamentForm onSubmit={handleSubmit} />
+				<h1 className='text-2xl font-bold mb-4'>Teams</h1>
+				<TeamForm onSubmit={handleSubmit} />
 			</div>
 			<div className='w-full border p-2 mb-4 rounded-sm flex flex-row items-center'>
 				<FaExclamation className='mt-[3px] w-4 h-4 text-2xl text-red-500 mr-2' />
 				<p className='text-md border-b border-b-red-500'>
-					Click on a row to edit Tournaments.
+					Click on a row to edit Teams.
 				</p>
 			</div>
-			<TournamentTable
-				isLoading={!tournaments.length}
-				tournaments={tournaments}
-				onEdit={(tournament) => {
-					setEditingTournament(tournament);
+			<TeamTable
+				isLoading={!teams.length}
+				teams={teams}
+				onEdit={(team) => {
+					setEditingTeam(team);
 					setIsEditDialogOpen(true);
 				}}
 			/>
@@ -104,8 +95,8 @@ export default function AdminTournamentsPage() {
 				currentPage={page}
 				onPageChange={handlePageChange}
 			/>
-			<EditTournamentDialog
-				tournament={editingTournament}
+			<EditTeamDialog
+				team={editingTeam}
 				isOpen={isEditDialogOpen}
 				onClose={() => setIsEditDialogOpen(false)}
 				onSave={handleSave}

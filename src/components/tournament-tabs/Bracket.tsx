@@ -1,7 +1,7 @@
-import { Team } from "@/types/types";
+import { Cs2Team } from "@/types/types";
 
 interface BracketProps {
-    teams: Team[];
+    teams: Cs2Team[];
 }
 
 const Bracket: React.FC<BracketProps> = ({ teams }) => {
