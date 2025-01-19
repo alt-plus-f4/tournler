@@ -49,10 +49,10 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 	return (
 		<>
 			<div
-				className='flex flex-col px-32 py-20 m-1 items-center text-center w-full cursor-pointer transition-300 hover:bg-steamColor rounded-md'
+				className='flex flex-col sm:px-32 sm:py-20 m-1 items-center text-center w-full cursor-pointer transition-300 hover:bg-steamColor rounded-md'
 				onClick={handleSteamLogin}
 			>
-				<FaSteamSymbol className='w-40 h-40' />
+				<FaSteamSymbol className='sm:w-40 sm:h-40' />
 				<DialogTitle className='text-2xl font-semibold'>
 					Steam account linking
 				</DialogTitle>

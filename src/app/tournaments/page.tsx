@@ -6,18 +6,7 @@ import { TournamentRow } from '@/components/TournamentRow';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-
-interface Tournament {
-	id: number;
-	name: string;
-	bannerUrl: string;
-	logoUrl: string;
-	startDate: string;
-	prizePool: number;
-	teams: [];
-	teamCapacity: number;
-	location: string;
-}
+import { ReducedTournament } from '@/types/types';
 
 function FeaturedTournamentSkeleton() {
 	return (
@@ -54,7 +43,7 @@ function TournamentRowSkeleton() {
 }
 
 export default function Page() {
-	const [tournaments, setTournaments] = useState<Tournament[]>([]);
+	const [tournaments, setTournaments] = useState<ReducedTournament[]>([]);
 	const [isUpcoming, setIsUpcoming] = useState(true);
 	const [loading, setLoading] = useState(true);
 
@@ -65,7 +54,7 @@ export default function Page() {
 				const response = await fetch(
 					`/api/tournaments?status=${status}`
 				);
-				const data: Tournament[] = await response.json();
+				const data: ReducedTournament[] = await response.json();
 				setTournaments(data);
 			} catch (error) {
 				console.error(error);

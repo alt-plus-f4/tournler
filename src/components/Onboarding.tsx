@@ -7,13 +7,14 @@ import { AvatarStep } from './onboarding/AvatarStep';
 import { DiscordStep } from './onboarding/DiscordStep';
 import { SteamStep } from './onboarding/SteamStep';
 import { CompletedStep } from './onboarding/CompletedStep';
-import { Dialog, DialogContent } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader } from './ui/dialog';
 import { useToast } from '@/lib/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/lib/onboarding-slice';
 import Step from './Steps';
-import { DialogDescription } from '@radix-ui/react-dialog';
+import { DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
+import { Button } from './ui/button';
 
 interface OnboardingDialogProps {
     isOpen: boolean;
@@ -255,9 +256,36 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
         }
     };
 
+    const renderSkipButton = () => {
+        if (
+            completedSteps.includes(OnboardingDialogSteps.Nickname) &&
+            completedSteps.includes(OnboardingDialogSteps.Avatar) &&
+            completedSteps.includes(OnboardingDialogSteps.Discord) &&
+            completedSteps.includes(OnboardingDialogSteps.Steam) &&
+            currentStep !== OnboardingDialogSteps.Completed
+        ) {
+            return (
+                <Button
+                    variant="outline"
+                    onClick={() => dispatch(setCurrentStep(OnboardingDialogSteps.Completed))}
+                    className="mt-4 w-[30%] sm:w-[80%] mx-auto"
+                >
+                    Skip
+                </Button>
+            );
+        }
+        return null;
+    };
+
     return (
         <>
             <Dialog open={open}>
+                <DialogHeader>
+                <DialogTitle>
+                    <h1>Onboarding</h1>
+                </DialogTitle>
+                </DialogHeader>
+
                 <DialogContent className="max-w-max">
                     <DialogDescription></DialogDescription>
                     <div className="flex flex-row py-5">
@@ -271,7 +299,10 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
                             ))}
                         </div>
 
-                        <div className="flex flex-col m-auto">{renderStep()}</div>
+                        <div className="flex flex-col m-auto">
+                            {renderStep()}
+                            {renderSkipButton()}
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

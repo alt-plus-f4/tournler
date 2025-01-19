@@ -1,18 +1,8 @@
 import { formatDate } from '@/lib/helpers/format-date';
 import { formatPrize } from '@/lib/helpers/format-prize';
+import { ReducedTournament } from '@/types/types';
 import Image from 'next/image';
 import Link from 'next/link';
-
-interface FeaturedTournamentProps {
-	id: number;
-	name: string;
-	bannerUrl: string;
-	startDate: string;
-	prizePool: number;
-	teams: [];
-	location: string;
-	teamCapacity: number;
-}
 
 export function FeaturedTournament({
 	id,
@@ -23,7 +13,7 @@ export function FeaturedTournament({
 	teams,
 	location,
 	teamCapacity,
-}: FeaturedTournamentProps) {
+}: ReducedTournament) {
 	return (
 		<Link
 			href={`/tournaments/${id}`}

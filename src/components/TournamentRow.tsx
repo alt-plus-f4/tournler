@@ -1,18 +1,8 @@
 import { formatDate } from '@/lib/helpers/format-date';
 import { formatPrize } from '@/lib/helpers/format-prize';
+import { ReducedTournament } from '@/types/types';
 import Image from 'next/image';
 import Link from 'next/link';
-
-interface TournamentRowProps {
-	id: number;
-	name: string;
-	logoUrl: string;
-	startDate: string;
-	prizePool: number;
-	teams: [];
-	location: string;
-	teamCapacity: number;
-}
 
 export function TournamentRow({
 	id,
@@ -23,7 +13,7 @@ export function TournamentRow({
 	teams,
 	location,
 	teamCapacity,
-}: TournamentRowProps) {
+}: ReducedTournament) {
 	return (
 		<Link href={`/tournaments/${id}`}>
 			<div className='relative flex items-center justify-between rounded-lg border shadow-lg overflow-hidden transition-colors w-full h-20 p-2 cursor-pointer mx-2 hover:bg-hoverColor'>

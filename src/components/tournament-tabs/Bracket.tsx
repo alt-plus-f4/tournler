@@ -1,4 +1,4 @@
-import { Team } from "@/types/tournaments";
+import { Team } from "@/types/types";
 
 interface BracketProps {
     teams: Team[];

@@ -5,7 +5,7 @@ import Overview from './Overview';
 import Participants from './Participants';
 import Prizes from './Prizes';
 import Bracket from './Bracket';
-import { Tournament } from '@/types/tournaments';
+import { Tournament } from '@/types/types';
 
 interface TabMenuProps {
     tournament: Tournament;

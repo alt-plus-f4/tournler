@@ -41,5 +41,5 @@ export async function PATCH() {
     data: { isOnboardingCompleted: true },
   });
 
-  return NextResponse.json({ updatedUser }, { status: 200 });
+  return NextResponse.json( updatedUser.isOnboardingCompleted , { status: 200 });
 }

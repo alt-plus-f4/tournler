@@ -1,5 +1,5 @@
 import { TeamCard } from '@/components/TeamCard';
-import { Tournament } from '@/types/tournaments';
+import { Tournament } from '@/types/types';
 
 interface ParticipantsProps {
 	tournament: Tournament;
