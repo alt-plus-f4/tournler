@@ -64,7 +64,7 @@ export default function UsersPage() {
 			<div className='w-full border p-2 mb-4 rounded-sm flex items-center'>
 				<FaExclamation className='text-red-500 mr-2' />
 				<p className='text-md border-b border-red-500'>
-					Click on a row to edit a user.
+					Click on a row to edit User.
 				</p>
 			</div>
 			<UserTable
