@@ -39,7 +39,7 @@ export default function EnhancedTournamentManagementSystemInfo() {
 		<div className='min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'>
 			<div className='container mx-auto px-4 py-12'>
 				<div className='max-w-3xl mx-auto'>
-					<div className='text-center mb-12'>
+					<div className='text-center mb-8'>
 						<h1 className='text-4xl font-bold mb-4'>
 							Tournament Management System
 						</h1>
@@ -50,11 +50,11 @@ export default function EnhancedTournamentManagementSystemInfo() {
 					</div>
 
 					<Image
-						src='/placeholder.svg?height=300&width=800'
+						src='/info-image.png'
 						alt='Tournament Management System Dashboard'
-						width={800}
-						height={300}
-						className='rounded-lg shadow-lg mb-12'
+						width={600}
+						height={200}
+						className='mx-auto rounded-lg shadow-lg mb-12'
 					/>
 
 					<div className='space-y-4'>

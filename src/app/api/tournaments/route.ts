@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 	}
 
 	const statusInt = parseInt(status, 10);
-	console.log(statusInt);
+	// console.log(statusInt);
 	if (isNaN(statusInt) || (statusInt !== 0 && statusInt !== 1 && statusInt !== 2 && statusInt !== 10)) {
 		return NextResponse.json(
 			{ error: 'Invalid status parameter' },
