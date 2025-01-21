@@ -77,7 +77,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 							</LeaveTeamDialog>
 						)}
 
-						{isUserTeamCaptain && (
+						{isUserTeamCaptain && team.members.length < 5 && (
 							<Suspense fallback={null}>
 								<UsersSearch
 									teamName={team.name}

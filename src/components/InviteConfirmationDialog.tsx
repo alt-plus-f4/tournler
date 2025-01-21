@@ -12,10 +12,10 @@ import {
 	DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from './ui/button';
-import { User } from '@prisma/client';
+import { ReducedUser } from '@/types/types';
 
 interface InviteButtonProps {
-	user: User;
+	user: ReducedUser;
 	teamId: number;
 	completeSuccessfulInviteConfirmation: () => void;
 	onOpenChange?: (isOpen: boolean) => void;
@@ -37,13 +37,10 @@ export function InviteConfirmationDialog({
 	}, [isOpen, onOpenChange]);
 
 	async function inviteUser() {
-		const response = await fetch(
-			`/api/teams/${teamId}/invites`,
-			{
-				method: 'POST',
-				body: JSON.stringify({ id: user.id }),
-			}
-		);
+		const response = await fetch(`/api/teams/${teamId}/invites`, {
+			method: 'POST',
+			body: JSON.stringify({ id: user.id }),
+		});
 
 		setIsOpen(false);
 
@@ -53,6 +50,7 @@ export function InviteConfirmationDialog({
 				title: 'Invitation sent',
 			});
 			completeSuccessfulInviteConfirmation();
+
 			return;
 		}
 
@@ -76,9 +74,16 @@ export function InviteConfirmationDialog({
 					</DialogHeader>
 					<DialogFooter className='flex justify-center gap-2 pt-2'>
 						<DialogClose asChild>
-							<Button className='w-[40%]' variant='secondary'>Cancel</Button>
+							<Button className='w-[40%]' variant='secondary'>
+								Cancel
+							</Button>
 						</DialogClose>
-						<Button className='w-[40%]' onClick={() => inviteUser()}>Invite</Button>
+						<Button
+							className='w-[40%]'
+							onClick={() => inviteUser()}
+						>
+							Invite
+						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

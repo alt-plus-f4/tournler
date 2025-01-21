@@ -34,11 +34,11 @@ export function JoinLeaveButton({
 	useEffect(() => {
 		async function checkIfInTournament() {
 			const response = await fetch(
-				`/api/tournaments/${tournament.id}/teams?teamId=${team.cs2TeamId}`
+				`/api/tournaments/${tournament.id}/teams?teamId=${team.id}`
 			);
 			if (response.ok) {
 				const data = await response.json();
-				console.log(data.teamInTournament);
+				// console.log(data.teamInTournament);
 				if (data.teamInTournament) {
 					setIsInTournament(true);
 				}
@@ -61,7 +61,7 @@ export function JoinLeaveButton({
 			`/api/tournaments/${tournament.id}/teams`,
 			{
 				method: 'POST',
-				body: JSON.stringify({ teamId: team.cs2TeamId }),
+				body: JSON.stringify({ teamId: team.id }),
 			}
 		);
 
@@ -90,7 +90,7 @@ export function JoinLeaveButton({
 			`/api/tournaments/${tournament.id}/teams`,
 			{
 				method: 'DELETE',
-				body: JSON.stringify({ teamId: team.cs2TeamId }),
+				body: JSON.stringify({ teamId: team.id }),
 			}
 		);
 		setIsDialogOpen(false);
@@ -113,7 +113,6 @@ export function JoinLeaveButton({
 		});
 	}
 
-	const isCaptain = team.capitan === team.userId;
 	const hasStarted = new Date(tournament.startDate) <= new Date();
 	const registrationClosed = timeLeftToJoin <= 0;
 
@@ -139,7 +138,7 @@ export function JoinLeaveButton({
 				className='p-4'
 				onClick={handleJoinClick}
 				disabled={
-					!isCaptain || hasStarted || registrationClosed || loading
+					hasStarted || registrationClosed || loading
 				}
 			>
 				{loading ? (

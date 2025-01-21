@@ -25,6 +25,21 @@ export async function POST(request: Request) {
 			);
 		}
 
+		const team = await db.cs2Team.findFirst({
+			where: { id: teamId },
+			include: { members: true },
+		});
+
+		if (team && team.members.length >= 5) {
+			await db.cs2TeamInvitation.delete({
+				where: { id: invitation.id },
+			});
+			return NextResponse.json(
+				{ message: 'Team already has 5 members, invitation removed' },
+				{ status: 400 }
+			);
+		}
+
 		await db.cs2TeamInvitation.delete({
 			where: { id: invitation.id },
 		});

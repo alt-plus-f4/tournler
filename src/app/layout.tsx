@@ -7,6 +7,7 @@ import { OnboardingStatus } from '@/components/OnboardingStatus';
 import Providers from './redux/Providers';
 import { ConvexClientProvider } from '@/convex/ConvexClientProvider';
 import Footer from '@/components/Footer';
+import { getAuthSession } from '@/lib/auth';
 
 const roboto = Roboto({
 	weight: '400',
@@ -15,40 +16,39 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-	title: 'Tournler',
-	description: ' Website for gaming tournament organizing',
+	title: 'Tournler - Simplifying Competitive Events',
+	description:
+		'Effortlessly organize and manage tournaments with Tournler – your all-in-one platform for seamless competition management.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 	authModal,
 }: Readonly<{
 	children: React.ReactNode;
 	authModal: React.ReactNode;
-}>)
- {
-	
+}>) {
+	const session = await getAuthSession();
+
 	return (
 		<html lang='en'>
 			<body
 				className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}
 			>
 				<ConvexClientProvider>
-				<Navbar />
-				
-				{authModal}
-				
-				<Providers>
-					<OnboardingStatus />
-				</Providers>
+					<Navbar session={session} />
 
-				{children}
-				<Toaster />
+					{authModal}
 
+					<Providers>
+						<OnboardingStatus session={session}/>
+					</Providers>
+
+					{children}
+					<Toaster />
 				</ConvexClientProvider>
 
 				<Footer />
-					
 			</body>
 		</html>
 	);

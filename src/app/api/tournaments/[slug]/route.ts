@@ -37,6 +37,11 @@ export async function GET(
 			logoUrl: true,
 			status: true,
 			type: true,
+			organizer: {
+				select: {
+					name: true,
+				},
+			},
 			teams: {
 				select: {
 					id: true,
@@ -62,6 +67,85 @@ export async function GET(
 	}
 
 	return NextResponse.json({ tournament }, { status: 200 });
+}
+
+export async function PATCH(
+	request: Request,
+	{ params }: { params: { slug: string } }
+) {
+	try {
+		const { slug } = params;
+		const numericId = parseInt(slug, 10);
+
+		if (isNaN(numericId)) {
+			return NextResponse.json(
+				{ error: 'Invalid tournament ID' },
+				{ status: 400 }
+			);
+		}
+
+		const body = await request.json();
+
+		if (!body || Object.keys(body).length === 0) {
+			return NextResponse.json(
+				{ error: 'No fields to update provided' },
+				{ status: 400 }
+			);
+		}
+
+		const allowedFields = [
+			'name',
+			'prizePool',
+			'teamCapacity',
+			'location',
+			'startDate',
+			'endDate',
+			'status',
+			'type',
+			'bannerUrl',
+			'logoUrl',
+		];
+
+		const dataToUpdate: Record<string, any> = {};
+		for (const key of allowedFields) {
+			if (body[key] !== undefined) {
+				dataToUpdate[key] = body[key];
+			}
+		}
+
+		if (Object.keys(dataToUpdate).length === 0) {
+			return NextResponse.json(
+				{ error: 'No valid fields to update provided' },
+				{ status: 400 }
+			);
+		}
+
+		const updatedTournament = await db.cs2Tournament.update({
+			where: { id: numericId },
+			data: dataToUpdate,
+		});
+
+		if (!updatedTournament) {
+			return NextResponse.json(
+				{ error: 'Tournament not found or not updated' },
+				{ status: 404 }
+			);
+		}
+
+		return NextResponse.json(
+			{
+				message: 'Tournament updated successfully',
+				tournament: updatedTournament,
+			},
+			{ status: 200 }
+		);
+	} catch (error) {
+		console.error('Error updating tournament:', error);
+		return NextResponse.json(
+			{ error: 'Internal server error' },
+			{ status: 500 }
+		);
+	}
 }
 
 export async function DELETE(

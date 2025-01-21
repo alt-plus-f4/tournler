@@ -53,6 +53,12 @@ export function TeamCreationDrawer() {
 					description: "You've successfully created a new team.",
 				});
 				router.refresh();
+			} else if (response.status === 409) {
+				toast({
+					variant: 'destructive',
+					title: 'Error',
+					description: 'Failed to create team (Team name taken).',
+				});
 			} else {
 				toast({
 					variant: 'destructive',
@@ -73,25 +79,23 @@ export function TeamCreationDrawer() {
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
-				<div>
-					<Card className='h-[200px] w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
-						<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
-							<div className='flex items-center justify-center'>
-								<SiCounterstrike className='w-12 h-12 opacity-80' />
-							</div>
-						</CardHeader>
-						<CardContent className='px-4 text-center'>
-							<div className='flex flex-col items-center justify-center'>
-								<h3 className='text-xl font-extrabold text-white'>
-									Create Team
-								</h3>
-								<p className='text-sm font-medium text-slate-400'>
-									Click to start your journey
-								</p>
-							</div>
-						</CardContent>
-					</Card>
-				</div>
+				<Card className='h-[200px] w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
+					<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
+						<div className='flex items-center justify-center'>
+							<SiCounterstrike className='w-12 h-12 opacity-80' />
+						</div>
+					</CardHeader>
+					<CardContent className='px-4 text-center'>
+						<div className='flex flex-col items-center justify-center'>
+							<h3 className='text-xl font-extrabold text-white'>
+								Create Team
+							</h3>
+							<p className='text-sm font-medium text-slate-400'>
+								Click to start your journey
+							</p>
+						</div>
+					</CardContent>
+				</Card>
 			</DrawerTrigger>
 			<DrawerContent>
 				<div className='mx-auto w-full max-w-sm'>

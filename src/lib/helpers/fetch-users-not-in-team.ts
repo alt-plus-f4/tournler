@@ -17,12 +17,9 @@ export async function fetchUsersNotInTheTeam(teamId: number) {
       },
       select: {
         id: true,
-        email: true,
         name: true,
+        email: true,
         image: true,
-        isOnboardingCompleted: true,
-        emailVerified: true,
-        role: true,
         cs2TeamId: true,
       },
     });

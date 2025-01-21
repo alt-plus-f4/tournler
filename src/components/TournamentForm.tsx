@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -27,6 +29,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [status, setStatus] = useState<number | ''>('');
 	const [type, setType] = useState<number | ''>('');
+	const [organizer, setOrganizer] = useState('');
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -41,6 +44,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 		if (logoFile) formData.append('logoFile', logoFile);
 		formData.append('status', status.toString());
 		formData.append('type', type.toString());
+		formData.append('organizerId', organizer.toString());
 
 		await onSubmit(formData);
 	};
@@ -133,9 +137,16 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 					<Label htmlFor='type'>Type</Label>
 					<Input
 						id='type'
-						type='number'
+						type=''
 						value={type}
 						onChange={(e) => setType(Number(e.target.value))}
+						required
+					/>
+					<Label htmlFor='name'>Organizer</Label>
+					<Input
+						id='organizer'
+						value={organizer}
+						onChange={(e) => setOrganizer(e.target.value)}
 						required
 					/>
 					<Button type='submit' className='w-full mt-3'>

@@ -12,6 +12,7 @@ import { IoIosCheckmarkCircleOutline } from 'react-icons/io';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
 import { buttonVariants } from '@/components/ui/button';
+import Timer from '@/components/Timer';
 
 interface TournamentPageProps {
 	params: {
@@ -34,14 +35,6 @@ async function TournamentPage({ params }: TournamentPageProps) {
 	const timeLeftToJoin = Math.max(
 		new Date(tournament.startDate).getTime() - new Date().getTime(),
 		0
-	);
-
-	const daysLeft = Math.floor(timeLeftToJoin / (1000 * 60 * 60 * 24));
-	const hoursLeft = Math.floor(
-		(timeLeftToJoin % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-	);
-	const minutesLeft = Math.floor(
-		(timeLeftToJoin % (1000 * 60 * 60)) / (1000 * 60)
 	);
 
 	return (
@@ -74,7 +67,7 @@ async function TournamentPage({ params }: TournamentPageProps) {
 						<div className='flex flex-row items-center sm:mt-1'>
 							<h1 className='text-foregroundgray text-xs sm:text-sm left-0'>
 								Organized by{' '}
-								<span className='text-white'>Admin</span>
+								<span className='text-white'>{tournament.organizer.name}</span>
 							</h1>
 							<IoIosCheckmarkCircleOutline className='ml-1' />
 						</div>
@@ -82,12 +75,9 @@ async function TournamentPage({ params }: TournamentPageProps) {
 				</div>
 				
 				<div className='absolute inset-4 sm:inset-10 flex items-end justify-end flex-col text-center z-10 '>
-					{hasTeam && timeLeftToJoin > 0 ? (
+					{hasTeam && timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
 						<>
-							<span className='text-xs mb-1 hidden sm:block'>
-								Time left to join: {daysLeft}d {hoursLeft}h{' '}
-								{minutesLeft}m
-							</span>
+							<Timer timeLeft={timeLeftToJoin} />
 							<JoinLeaveButton
 								timeLeftToJoin={timeLeftToJoin}
 								tournament={tournament}

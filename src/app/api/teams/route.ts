@@ -1,18 +1,58 @@
 import { getAuthSession } from '@/lib/auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
-	const teams = await db.cs2Team.findMany({
+export async function GET(req: NextRequest) {
+	const { searchParams } = new URL(req.url);
+	const page = parseInt(searchParams.get('page') || '1', 10);
+	const limit = parseInt(searchParams.get('limit') || '10', 10);
+
+	let teams = null;
+
+	if (isNaN(page) || isNaN(limit)) {
+		teams = await db.cs2Team.findMany({
+			select: {
+				id: true,
+				name: true,
+				members: {
+					select: {
+						id: true,
+						name: true,
+						image: true,
+					},
+				},
+				capitanId: true,
+				logo: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
+
+		if (!teams) 
+			return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+		
+		return NextResponse.json({ teams }, { status: 200 });
+	}
+
+	teams = await db.cs2Team.findMany({
 		select: {
 			id: true,
 			name: true,
+			members: {
+				select: {
+					id: true,
+					name: true,
+					image: true,
+				},
+			},
+			capitanId: true,
 			logo: true,
-			members: true,
+			createdAt: true,
+			updatedAt: true,
 		},
+		skip: (page - 1) * limit,
+		take: limit,
 	});
-
-	// console.log(teams);
 
 	if (!teams) {
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
@@ -34,7 +74,6 @@ export async function POST(request: Request) {
 			{ status: 400 }
 		);
 
-	// Check if the user is already in a team (created or joined)
 	const user = await db.user.findUnique({
 		where: { id: session.user.id },
 		include: {
@@ -50,6 +89,17 @@ export async function POST(request: Request) {
 		return NextResponse.json(
 			{ error: 'User is already in a team' },
 			{ status: 400 }
+		);
+	}
+
+	const existingTeam = await db.cs2Team.findUnique({
+		where: { name: teamName },
+	});
+
+	if (existingTeam) {
+		return NextResponse.json(
+			{ error: 'Team name is already taken' },
+			{ status: 409 }
 		);
 	}
 

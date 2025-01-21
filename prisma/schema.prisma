@@ -9,105 +9,158 @@ datasource db {
   relationMode = "prisma"
 }
 
+enum UserRole {
+  USER
+  ADMIN
+
+  @@map("user_role")
+}
+
+enum TournamentStatus {
+  UPCOMING
+  ONGOING
+  COMPLETED
+
+  @@map("tournament_status")
+}
+
+enum TournamentType {
+  ONLINE
+  OFFLINE
+
+  @@map("tournament_type")
+}
+
 model Account {
-  id                String  @id @default(uuid()) @db.Uuid
-  userId            String? @db.Uuid
-  type              String  @db.VarChar
-  provider          String  @db.VarChar
-  providerAccountId String  @db.VarChar
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String? @db.VarChar
-  scope             String? @db.VarChar
-  id_token          String?
-  session_state     String? @db.VarChar
-  user              User?   @relation(fields: [userId], references: [id], onDelete: Cascade) // Optional relation to handle orphan accounts
+  id                String   @id @default(uuid()) @map("id") @db.Uuid
+  userId            String?  @map("user_id") @db.Uuid
+  type              String   @map("type") @db.VarChar
+  provider          String   @map("provider") @db.VarChar
+  providerAccountId String   @map("provider_account_id") @db.VarChar
+  refresh_token     String?  @map("refresh_token")
+  access_token      String?  @map("access_token")
+  expires_at        Int?     @map("expires_at")
+  token_type        String?  @map("token_type") @db.VarChar
+  scope             String?  @map("scope") @db.VarChar
+  id_token          String?  @map("id_token")
+  session_state     String?  @map("session_state") @db.VarChar
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@index([userId])
 }
 
 model Session {
-  id           String   @id @default(uuid()) @db.Uuid
-  sessionToken String   @unique @db.VarChar
-  userId       String   @db.Uuid
-  expires      DateTime @db.Timestamp(6)
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(uuid()) @map("id") @db.Uuid
+  sessionToken String   @unique @map("session_token") @db.VarChar
+  userId       String   @map("user_id") @db.Uuid
+  expires      DateTime @map("expires") @db.Timestamp(6)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model User {
-  id    String  @id @default(uuid()) @db.Uuid
-  email String  @unique @db.VarChar
-  name  String? @db.VarChar
+  id    String  @id @default(uuid()) @map("id") @db.Uuid
+  email String  @unique @map("email") @db.VarChar
+  name  String? @map("name") @db.VarChar
   image String? @map("image") @db.VarChar
 
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
-  role                  Int       @default(0)
+  role                  UserRole  @default(USER) @map("role")
 
   discord DiscordAccount?
   steam   SteamAccount?
 
-  cs2TeamId          Int?
+  cs2TeamId          Int?                @map("cs2_team_id")
   cs2Team            Cs2Team?            @relation(name: "CS2TeamMembers", fields: [cs2TeamId], references: [id], onDelete: SetNull, onUpdate: Restrict)
   cs2TeamCaptain     Cs2Team?            @relation(name: "CS2TeamCaptain")
   cs2TeamInvitations Cs2TeamInvitation[]
 
+  organizedTournaments Cs2Tournament[] @relation("TournamentOrganizers")
+
   accounts Account[]
   sessions Session[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([cs2TeamId])
 }
 
 model Cs2Tournament {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id   Int    @id @default(autoincrement()) @map("id")
+  name String @unique @map("name")
 
-  startDate DateTime
-  endDate   DateTime
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
 
-  bannerUrl String?
-  logoUrl   String?
+  bannerUrl String? @map("banner_url")
+  logoUrl   String? @map("logo_url")
 
-  prizePool    Int?
+  prizePool    Int?      @map("prize_pool")
   teams        Cs2Team[] @relation("TournamentTeams")
-  teamCapacity Int
+  teamCapacity Int       @map("team_capacity")
 
-  location String
-  type     Int
-  status   Int
+  location String           @map("location")
+  type     TournamentType   @map("type")
+  status   TournamentStatus @map("status")
+
+  organizerId String @map("organizer_id")
+  organizer   User   @relation("TournamentOrganizers", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  matches Matches[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([organizerId])
 }
 
 model Cs2Team {
-  id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement()) @map("id")
 
-  name String  @unique
-  logo String?
+  name String  @unique @map("name")
+  logo String? @map("logo")
 
   members User[] @relation("CS2TeamMembers")
 
-  capitanId String? @unique
+  capitanId String? @unique @map("capitan_id")
   capitan   User?   @relation("CS2TeamCaptain", fields: [capitanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   teamInvitations Cs2TeamInvitation[] @relation(name: "TeamInvitations")
-  Cs2Tournament   Cs2Tournament?      @relation("TournamentTeams", fields: [cs2TournamentId], references: [id])
-  cs2TournamentId Int?
+  Cs2Tournament   Cs2Tournament?      @relation("TournamentTeams", fields: [cs2TournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  cs2TournamentId Int?                @map("cs2_tournament_id")
+
+  matchesAsTeamA  Matches[] @relation("MatchTeamA")
+  matchesAsTeamB  Matches[] @relation("MatchTeamB")
+  matchesAsWinner Matches[] @relation("MatchWinner")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([cs2TournamentId])
   @@map("cs2_teams")
 }
 
 model Cs2TeamInvitation {
-  id Int @id @default(autoincrement())
+  id Int @id @default(autoincrement()) @map("id")
 
-  teamId Int
+  teamId Int     @map("team_id")
   team   Cs2Team @relation(name: "TeamInvitations", fields: [teamId], references: [id], onDelete: Cascade)
 
-  userId String
+  userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([teamId])
   @@index([userId])
@@ -115,24 +168,59 @@ model Cs2TeamInvitation {
 }
 
 model SteamAccount {
-  id      String @id @default(uuid()) @db.Uuid
-  userId  String @unique @db.Uuid
-  steamId String @unique @db.VarChar
+  id      String @id @default(uuid()) @map("id") @db.Uuid
+  userId  String @unique @map("user_id") @db.Uuid
+  steamId String @unique @map("steam_id") @db.VarChar
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 }
 
 model DiscordAccount {
-  id          String @id @default(uuid()) @db.Uuid
-  userId      String @unique @db.Uuid
-  discordId   String @unique @db.VarChar
-  accessToken String @db.VarChar
+  id          String @id @default(uuid()) @map("id") @db.Uuid
+  userId      String @unique @map("user_id") @db.Uuid
+  discordId   String @unique @map("discord_id") @db.VarChar
+  accessToken String @map("access_token") @db.VarChar
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 }
 
 model VerificationToken {
-  identifier String   @db.VarChar
-  token      String   @db.VarChar
-  expires    DateTime @db.Timestamp(6)
+  identifier String   @map("identifier") @db.VarChar
+  token      String   @map("token") @db.VarChar
+  expires    DateTime @map("expires") @db.Timestamp(6)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([identifier, token])
+}
+
+model Matches {
+  id           Int           @id @default(autoincrement()) @map("id")
+  tournamentId Int           @map("tournament_id")
+  tournament   Cs2Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  teamAId  Int      @map("team_a_id")
+  teamA    Cs2Team  @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamBId  Int      @map("team_b_id")
+  teamB    Cs2Team  @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+  winnerId Int?     @map("winner_id")
+  winner   Cs2Team? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
+
+  scoreTeamA Int?     @map("score_team_a")
+  scoreTeamB Int?     @map("score_team_b")
+  matchDate  DateTime @map("match_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tournamentId])
+  @@index([teamAId])
+  @@index([teamBId])
+  @@index([winnerId])
+  @@map("matches")
 }
