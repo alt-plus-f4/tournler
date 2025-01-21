@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Overview from './Overview';
 import Participants from './Participants';
 import Prizes from './Prizes';
-import Bracket from './Bracket';
 import { Cs2Tournament } from '@/types/types';
+import SingleEliminationBracket from './SingleEliminationBracket';
 
 interface TabMenuProps {
     tournament: Cs2Tournament;
@@ -23,7 +23,7 @@ const TabMenu: React.FC<TabMenuProps> = ({ tournament }) => {
             case 'prizes':
                 return <Prizes prizePool={tournament.prizePool ?? 0} />;
             case 'bracket':
-                return <Bracket teams={tournament.teams} />;
+                return <SingleEliminationBracket tournament={tournament}/>;
             default:
                 return <Overview tournament={tournament} setActiveTab={setActiveTab} />;
         }

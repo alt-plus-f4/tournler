@@ -23,7 +23,7 @@ export function TournamentRow({
 							src={logoUrl}
 							alt={name}
 							fill
-							sizes='100vw'
+							sizes='5vw'
 							className='object-cover w-full h-full'
 						/>
 					</div>

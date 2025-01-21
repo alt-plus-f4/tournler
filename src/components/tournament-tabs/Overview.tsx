@@ -14,7 +14,7 @@ const Overview: React.FC<{
 	return (
 		<div className='p-4'>
 			<div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
-				<div className='col-span-3 space-y-4'>
+				<div className='col-span-3'>
 					<h1 className='text-2xl font-bold mt-6 mb-2 ml-1'>
 						Details
 					</h1>
@@ -65,18 +65,62 @@ const Overview: React.FC<{
 							</div>
 						</div>
 					</div>
-					<div className='space-y-4'>
-						<h1 className='text-2xl font-bold mb-2 ml-1'>
-							Brackets
-						</h1>
-						<div className='border p-4 flex items-center'>
-							<Button
-								variant='ghost'
-								className='px-6 uppercase'
-								onClick={() => setActiveTab('bracket')}
-							>
-								View Brackets
-							</Button>
+					<div
+						className='border mt-10 p-4 relative group cursor-pointer hover:border-primary/50'
+						onClick={() => setActiveTab('bracket')}
+					>
+						<div className='flex items-center gap-4'>
+							{/* Mini Bracket Visual */}
+							<div className='relative w-24 h-16'>
+								<svg
+									viewBox='0 0 100 60'
+									className='w-full h-full'
+								>
+									<path
+										d='M 10 10 H 30 V 25 H 50 V 35 H 30 V 50 H 10'
+										stroke='#4ade80'
+										strokeWidth='2'
+										fill='none'
+										className='transition-all duration-300 group-hover:stroke-primary'
+									/>
+									<rect
+										x='5'
+										y='5'
+										width='10'
+										height='10'
+										fill='#1a1a1a'
+										stroke='#333'
+									/>
+									<rect
+										x='5'
+										y='45'
+										width='10'
+										height='10'
+										fill='#1a1a1a'
+										stroke='#333'
+									/>
+									<rect
+										x='45'
+										y='25'
+										width='10'
+										height='10'
+										fill='#1a1a1a'
+										stroke='#333'
+									/>
+								</svg>
+							</div>
+
+							<div className='flex flex-col'>
+								<span className='text-lg font-bold mb-1'>
+									Tournament Bracket
+								</span>
+								<span className='text-sm text-muted-foreground'>
+									View full bracket and matches
+								</span>
+							</div>
+							<div className='ml-auto transition-transform duration-300 group-hover:translate-x-2'>
+								→
+							</div>
 						</div>
 					</div>
 				</div>

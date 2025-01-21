@@ -10,7 +10,23 @@ export async function GET(req: NextRequest) {
 	let teams = null;
 
 	if (isNaN(page) || isNaN(limit)) {
-		teams = await db.cs2Team.findMany();
+		teams = await db.cs2Team.findMany({
+			select: {
+				id: true,
+				name: true,
+				members: {
+					select: {
+						id: true,
+						name: true,
+						image: true,
+					},
+				},
+				capitanId: true,
+				logo: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+		});
 
 		if (!teams) 
 			return NextResponse.json({ error: 'Team not found' }, { status: 404 });
@@ -26,6 +42,7 @@ export async function GET(req: NextRequest) {
 				select: {
 					id: true,
 					name: true,
+					image: true,
 				},
 			},
 			capitanId: true,

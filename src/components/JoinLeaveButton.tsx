@@ -38,7 +38,7 @@ export function JoinLeaveButton({
 			);
 			if (response.ok) {
 				const data = await response.json();
-				console.log(data.teamInTournament);
+				// console.log(data.teamInTournament);
 				if (data.teamInTournament) {
 					setIsInTournament(true);
 				}

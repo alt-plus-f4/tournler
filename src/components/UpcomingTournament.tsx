@@ -29,7 +29,7 @@ export function UpcomingTournament({
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className={`relative flex flex-col items-center justify-center rounded-sm shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-[80%]'}`}
+			className={`relative flex flex-col items-center justify-center rounded-md shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-[80%]'}`}
 		>
 			<div className='relative w-full h-20'>
 				<Image

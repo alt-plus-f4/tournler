@@ -18,9 +18,7 @@ interface TournamentFormProps {
 	onSubmit: (formData: FormData) => Promise<void>;
 }
 
-export function TournamentForm({
-	onSubmit,
-}: TournamentFormProps) {
+export function TournamentForm({ onSubmit }: TournamentFormProps) {
 	const [name, setName] = useState('');
 	const [prizePool, setPrizePool] = useState<number | ''>('');
 	const [teamCapacity, setTeamCapacity] = useState<number | ''>('');
@@ -139,7 +137,7 @@ export function TournamentForm({
 					<Label htmlFor='type'>Type</Label>
 					<Input
 						id='type'
-						type='number'
+						type=''
 						value={type}
 						onChange={(e) => setType(Number(e.target.value))}
 						required

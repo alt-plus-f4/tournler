@@ -95,6 +95,21 @@ export async function POST(req: Request) {
 		let bannerUrl: string | null = null;
 		let logoUrl: string | null = null;
 
+		if (
+			!name ||
+			!startDate ||
+			!endDate ||
+			!teamCapacity ||
+			!location ||
+			statusValue === undefined ||
+			typeValue === undefined
+		) {
+			return NextResponse.json(
+				{ error: 'Missing required fields' },
+				{ status: 400 }
+			);
+		}
+
 		const bannerFile = formData.get('bannerFile');
 		if (bannerFile instanceof Blob && name) {
 			const arrayBuffer = await bannerFile.arrayBuffer();
@@ -113,21 +128,6 @@ export async function POST(req: Request) {
 				token: process.env.BLOB_READ_WRITE_TOKEN,
 			});
 			logoUrl = blob.url;
-		}
-
-		if (
-			!name ||
-			!startDate ||
-			!endDate ||
-			!teamCapacity ||
-			!location ||
-			statusValue === undefined ||
-			typeValue === undefined
-		) {
-			return NextResponse.json(
-				{ error: 'Missing required fields' },
-				{ status: 400 }
-			);
 		}
 
 		const newTournament = await db.cs2Tournament.create({

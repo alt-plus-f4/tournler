@@ -45,7 +45,7 @@ const sendVerificationRequest = async ({
 function html({ url, theme }: { url: string; theme: any }) {
 	// const escapedHost = host.replace(/\./g, "&#8203;.");
 
-	const brandColor = theme.brandColor || '#346df1';
+	const brandColor = theme.brandColor || '#2f3136';
 	const color = {
 		background: '#f9f9f9',
 		text: '#444',

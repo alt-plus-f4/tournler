@@ -15,8 +15,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
 
-const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
-const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
+export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
+export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
 
 interface EditTournamentDialogProps {
 	tournament: Tournament | null;

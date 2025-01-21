@@ -2,14 +2,17 @@ import { BurgerMenu } from './BurgerMenu';
 import { MainNav } from './MainNav';
 import { UserNav } from './UserNav';
 import Link from 'next/link';
-import { getAuthSession } from '@/lib/auth';
 import LoginButtons from './LoginButtons';
 import { isAdmin } from '@/lib/helpers/is-admin';
 import { HiWrenchScrewdriver } from 'react-icons/hi2';
 import Notifications from './Notifications';
+import { Session } from 'next-auth';
 
-export default async function Navbar() {
-	const session = await getAuthSession();
+interface NavbarProps {
+	session: Session | null;
+}
+
+export default async function Navbar({ session }: NavbarProps) {
 	let role = 'USER';
 	if (session?.user?.id)
 		role = (await isAdmin(session.user.id)) ? 'ADMIN' : 'USER';

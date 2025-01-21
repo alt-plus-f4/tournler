@@ -1,111 +1,11 @@
 import { FeaturedNewsCard } from '@/components/FeaturedNewsCard';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
+import { featuredTournaments } from '@/lib/sample/sampleNews';
+import { upcomingTournaments } from '@/lib/sample/sampleUpcoming';
 import Image from 'next/image';
 
 export default function Page() {
-	const featuredTournaments = [
-		{
-			id: 1,
-			name: 'Championship Finals',
-			startDate: '2025-02-10',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 50000,
-			location: 'New York, USA',
-			teamCapacity: 16,
-		},
-		{
-			id: 2,
-			name: 'Summer Invitational',
-			startDate: '2025-06-15',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 10000,
-			location: 'Los Angeles, USA',
-			teamCapacity: 12,
-		},
-		{
-			id: 3,
-			name: 'Winter Clash',
-			startDate: '2025-12-01',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 10000,
-			location: 'Chicago, USA',
-			teamCapacity: 10,
-		},
-		{
-			id: 4,
-			name: 'Championship Finals',
-			startDate: '2025-02-10',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 50000,
-			location: 'New York, USA',
-			teamCapacity: 16,
-		},
-		{
-			id: 5,
-			name: 'Summer Invitational',
-			startDate: '2025-06-15',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 10000,
-			location: 'Los Angeles, USA',
-			teamCapacity: 12,
-		},
-		{
-			id: 6,
-			name: 'Winter Clash',
-			startDate: '2025-12-01',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			prizePool: 10000,
-			location: 'Chicago, USA',
-			teamCapacity: 10,
-		},
-	];
-
-	const upcomingTournaments = [
-		{
-			id: 4,
-			name: 'Regional Qualifiers',
-			startDate: '2025-01-25',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			teams: ['asd', 'asd'],
-			prizePool: 8000,
-			location: 'Los Angeles, USA',
-			teamCapacity: 8,
-			isHomePage: true,
-		},
-		{
-			id: 5,
-			name: 'Regional Qualifiers',
-			startDate: '2025-01-25',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			teams: ['asd', 'asd'],
-			prizePool: 8000,
-			location: 'Los Angeles, USA',
-			teamCapacity: 8,
-			isHomePage: true,
-		},
-		{
-			id: 6,
-			name: 'Regional Qualifiers',
-			startDate: '2025-01-25',
-			bannerUrl:
-				'https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/banners/HLTV%20Awards%202024-banner-s0VpyG91t4XW06qC72uscQ4u0Oa1Qf.png',
-			teams: ['asd', 'asd'],
-			prizePool: 8000,
-			location: 'Los Angeles, USA',
-			teamCapacity: 8,
-			isHomePage: true,
-		},
-	];
-
 	return (
 		<div className='container mx-auto px-4 max-w-[1400px]'>
 			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 p-8'>
@@ -115,12 +15,12 @@ export default function Page() {
 							<CardHeader className='mb-2 flex flex-row gap-1 p-0 space-y-0 select-none'>
 								<div className='flex w-full flex-col gap-2 rounded-lg p-1 py-2 lg:py-1 items-center lg:gap-5 lg:px-5 lg:flex-row-reverse border '>
 									<Image
-										className='h-5 object-contain md:h-8'
-										src='https://img-cdn.hltv.org/teamlogo/zFLwAELOD15BjJSDMMNBWQ.png?ixlib=java-2.1.0&w=50&s=affb583e6716d8ee904826992255cc4b'
+										className='h5 md:h-8 w-auto object-contain'
+										src='https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/logos/zFLwAELOD15BjJSDMMNBWQ-D3exi76MOTrjZtz0Xp7UEQBS1oWnUJ.png'
 										alt='G2'
-										width={50}
-										height={50}
-										draggable='false'
+										width={32}
+										height={32}
+										draggable={false}
 									/>
 									<div className='w-full text-center text-neutral-0 lg:flex lg:w-fit lg:flex-col lg:text-right'>
 										<p className='font-style-1'>G2</p>
@@ -134,10 +34,10 @@ export default function Page() {
 								<div className='flex w-full flex-col gap-2 rounded-lg p-1 py-2 lg:py-1 items-center lg:gap-5 lg:px-5 lg:flex-row border '>
 									<Image
 										className='h-5 object-contain md:h-8'
-										src='https://img-cdn.hltv.org/teamlogo/4S22uk_gnZTiQiI-hhH4yp.png?ixlib=java-2.1.0&w=50&s=3619ddf1d490573ab3dc261b8c2f3f6f'
+										src='https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com/logos/4S22uk_gnZTiQiI-hhH4yp-RbEJga6u2dwOsFnlHUwTBmI01XKtj0.png'
 										alt='HEROIC'
-										width={50}
-										height={50}
+										width={32}
+										height={32}
 										draggable='false'
 									/>
 									<div className='w-full text-center text-neutral-0 lg:flex lg:w-fit lg:flex-col lg:text-left'>
@@ -148,10 +48,12 @@ export default function Page() {
 							<CardContent className='p-0'>
 								<div className='relative aspect-video w-full'>
 									<iframe
-										className='w-full h-full'
-										src='https://www.youtube.com/embed/z0rBsvbMapU?si=QdrFFSCXoQYbP1ih&autoplay=1&mute=1&controls=1&disablekb=1&fs=0&modestbranding=1&playsinline=1&rel=0&showinfo=0&loop=1&playlist=z0rBsvbMapU'
+										className='w-full h-full rounded-lg'
+										src='https://www.youtube-nocookie.com/embed/z0rBsvbMapU?rel=0&modestbranding=1'
 										title='YouTube video player'
-										allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+										sandbox='allow-scripts allow-same-origin allow-presentation'
+										loading='lazy'
+										referrerPolicy='no-referrer'
 										frameBorder='0'
 									/>
 								</div>
@@ -194,7 +96,7 @@ export default function Page() {
 							All
 						</a>
 					</div>
-					<div className='space-y-4'>
+					<div className='space-y-4 overflow-hidden'>
 						{upcomingTournaments.map((tournament) => (
 							<UpcomingTournament
 								key={tournament.id}
