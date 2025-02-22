@@ -1,6 +1,7 @@
 export async function fetchUserTeam(userId: string) {
     try {
-        const response = await fetch(`http://localhost:3000/api/user/team?id=${userId}`);
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+        const response = await fetch(`${baseUrl}/api/user/team?id=${userId}`);
         
         if (!response.ok) {
             throw new Error('Network response was not ok');
