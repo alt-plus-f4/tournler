@@ -116,10 +116,67 @@ export const authOptions: NextAuthOptions = {
 		DiscordProvider({
 			clientId: process.env.DISCORD_CLIENT_ID!,
 			clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-			allowDangerousEmailAccountLinking: true,
+			allowDangerousEmailAccountLinking: false,
 		}),
 	],
 	callbacks: {
+		async signIn({ account }) {
+			const currentSession = await getServerSession(authOptions);
+			if (!currentSession) {
+				console.error('No session found during sign-in.');
+				return false;
+			}
+
+			const user = currentSession.user;
+
+			if (account?.provider === 'discord') {
+				const discordId = account.providerAccountId;
+				const accessToken = account.access_token || '';
+
+				if (!user?.id) {
+					console.error('User ID is missing during Discord sign-in.');
+					return false;
+				}
+
+				// Check if the Discord account already exists
+				let discordAccount = await db.discordAccount.findUnique({
+					where: { discordId },
+				});
+
+				if (!discordAccount) {
+					// Create Discord account entry and link to the current user
+					discordAccount = await db.discordAccount.create({
+						data: {
+							userId: user.id,
+							discordId,
+							accessToken,
+						},
+					});
+				} else {
+					// Update the existing Discord account entry to link to the current user
+					discordAccount = await db.discordAccount.update({
+						where: { discordId },
+						data: {
+							userId: user.id, // Reassign to the current user
+							accessToken,
+						},
+					});
+				}
+
+				// Ensure the User model is updated with the linked Discord account
+				await db.user.update({
+					where: { id: user.id },
+					data: {
+						discord: {
+							connect: { discordId: discordAccount.discordId },
+						},
+					},
+				});
+			}
+
+			return true;
+		},
+
 		async session({ token, session }) {
 			if (token) {
 				session.user = {
@@ -175,15 +232,22 @@ export const authOptions: NextAuthOptions = {
 								accessToken,
 							},
 						});
+					} else {
+						await db.discordAccount.update({
+							where: { discordId },
+							data: {
+								userId: user.id,
+								accessToken,
+							},
+						});
 					}
-				}
 
-				token.discordId = discordId;
-				token.accessToken = accessToken;
+					token.discordId = discordId;
+					token.accessToken = accessToken;
+				}
 			}
 
 			if (account?.provider === 'steam') {
-				console.log("STEAM ACCOUNT", account);
 				const steamId = account.providerAccountId;
 
 				if (user?.id) {
