@@ -121,15 +121,15 @@ export const authOptions: NextAuthOptions = {
 	],
 	callbacks: {
 		async signIn({ account }) {
-			const currentSession = await getServerSession(authOptions);
-			if (!currentSession) {
-				console.error('No session found during sign-in.');
-				return false;
-			}
-
-			const user = currentSession.user;
-
 			if (account?.provider === 'discord') {
+				const currentSession = await getServerSession(authOptions);
+				if (!currentSession) {
+					console.error('No session found during sign-in.');
+					return false;
+				}
+
+				const user = currentSession.user;
+
 				const discordId = account.providerAccountId;
 				const accessToken = account.access_token || '';
 
