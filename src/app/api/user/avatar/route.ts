@@ -40,7 +40,7 @@ export async function PATCH(request: Request) {
   try {
     const buffer = Buffer.from(avatar, 'utf-8');
 
-    const blob = await put(`avatars/${user.id}.svg`, buffer, {
+    const blob = await put(`avatars/${user.email}.svg`, buffer, {
       access: 'public',
     });
 

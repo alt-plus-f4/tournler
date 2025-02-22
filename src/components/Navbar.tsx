@@ -52,10 +52,10 @@ export default async function Navbar({ session }: NavbarProps) {
 					{session?.user ? (
 						<div className='flex flex-row space-x-4 justify-center items-center'>
 							<Notifications userId={session.user.id} />
-							<UserNav user={session.user} />
+							<UserNav/>
 						</div>
 					) : (
-						<LoginButtons className='hidden sm:inline' />
+						<LoginButtons className='flex flex-row sm:inline' />
 					)}
 				</div>
 			</nav>

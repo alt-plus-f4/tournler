@@ -1,4 +1,5 @@
-import { User } from 'next-auth';
+'use client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,12 +14,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Settings, Users, UserPlus } from 'lucide-react';
 import SignOut from './SignOut';
+import useSWR from 'swr'
 
-interface UserAccountNavProps extends React.HTMLAttributes<HTMLDivElement> {
-	user: Pick<User, 'name' | 'image' | 'email'>;
-}
+export function UserNav() {
+	const { data: data } = useSWR('/api/user', async () => {
+		const res = await fetch('/api/user')
+		if (!res.ok) throw new Error('Failed to fetch user')
+		return res.json()
+	}, { revalidateOnFocus: false })
 
-export function UserNav({ user }: UserAccountNavProps) {
+	const user = data?.haha
+	if (!user) return null
 
 	return (
 		<DropdownMenu>
@@ -46,10 +52,11 @@ export function UserNav({ user }: UserAccountNavProps) {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
-					<DropdownMenuItem>
-						<Users />
-						<span>Profile</span>
-						<DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+					<DropdownMenuItem asChild>
+						<a href='/profile'>
+							<Users />
+							<span>Profile</span>
+						</a>
 					</DropdownMenuItem>
 					<DropdownMenuItem>
 						<Settings />

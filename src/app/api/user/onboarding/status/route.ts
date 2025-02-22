@@ -10,16 +10,15 @@ export async function GET() {
 	}
 
 	const user = await db.user.findUnique({
-		where: { email: session?.user?.email || '' },
-		include: {
-			discord: true,
-			steam: true,
-		},
+		where: { id: session.user.id },
+		include: { discord: true, steam: true },
 	});
 
 	if (!user) {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 	}
+
+	// console.log(user);
 
 	const hasName = !!user.name;
 	const hasImage = !!user.image;

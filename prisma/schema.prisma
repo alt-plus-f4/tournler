@@ -71,6 +71,7 @@ model User {
   email String  @unique @map("email") @db.VarChar
   name  String? @map("name") @db.VarChar
   image String? @map("image") @db.VarChar
+  bio   String? @map("bio") @default("Software developer by day, gamer by night 🎮") @db.VarChar
 
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)

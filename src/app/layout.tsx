@@ -45,7 +45,9 @@ export default async function RootLayout({
 					</Providers>
 
 					{children}
+					
 					<Toaster />
+					
 				</ConvexClientProvider>
 
 				<Footer />

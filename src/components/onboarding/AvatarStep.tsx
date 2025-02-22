@@ -103,6 +103,7 @@ const options = {
     'f8d25c',
     'ffdbb4',
     'fd9841',
+    'ffffff',
   ],
   facialHairColor: [
     '2c1b18',
@@ -160,9 +161,11 @@ interface CustomizationOptions {
   clothing: number;
 }
 
+// Add loading prop here
 interface AvatarStepProps {
   previousStep: () => void;
   nextStep: (avatar: Blob) => void;
+  loading: boolean;
 }
 
 interface CustomizationOptionProps {
@@ -192,7 +195,7 @@ function CustomizationOption({
   );
 }
 
-export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
+export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps) {
   const [customization, setCustomization] = useState<CustomizationOptions>({
     mouth: 0,
     top: 0,
@@ -248,7 +251,12 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
   return (
     <div className="px-12 flex flex-col justify-center">
       <div className="flex justify-center items-center">
-        <Image src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`} alt="" width={120} height={120} />
+        <Image
+          src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`}
+          alt=""
+          width={120}
+          height={120}
+        />
       </div>
       <div>
         <div className="flex flex-col items-center text-center w-full">
@@ -342,8 +350,8 @@ export function AvatarStep({ previousStep, nextStep }: AvatarStepProps) {
         <Button onClick={previousStep} variant="secondary">
           Previous
         </Button>
-        <Button onClick={handleContinue}>
-          Continue
+        <Button onClick={handleContinue} disabled={loading}>
+          {loading ? 'Loading...' : 'Continue'}
         </Button>
       </DialogFooter>
     </div>

@@ -11,11 +11,7 @@ export async function GET(req: NextRequest) {
   const openidClaimedId = searchParams.get('openid.claimed_id');
   const openidIdentity = searchParams.get('openid.identity');
 
-  // console.log('Received Steam OpenID response:', Object.fromEntries(searchParams));
-
-
   if (openidMode === 'error') {
-    // Handle the error returned by Steam
     return new Response(JSON.stringify({ error: `Steam authentication failed: ${openidError}` }), { status: 400 });
   }
 
@@ -37,22 +33,17 @@ export async function GET(req: NextRequest) {
       return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
     }
 
-    const existingSteamAccount = await db.steamAccount.findUnique({
+    // Update or create the steam account
+    await db.steamAccount.upsert({
       where: { steamId },
-    });
-
-    if (existingSteamAccount) {
-      return new Response(null, { status: 302, headers: { Location: '/' } }); // Redirect to the home page
-    }
-
-    await db.steamAccount.create({
-      data: {
+      update: { userId: existingUser.id },
+      create: {
         userId: existingUser.id,
         steamId,
       },
     });
 
-    return new Response(null, { status: 302, headers: { Location: '/' } }); // Redirect to the home page
+    return new Response(null, { status: 302, headers: { Location: '/' } });
 
   } catch (error) {
     console.error('Error during Steam callback:', error);
