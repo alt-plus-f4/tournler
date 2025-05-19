@@ -10,8 +10,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-// Make this page static
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 interface AccordionItemProps {
 	title: string;
