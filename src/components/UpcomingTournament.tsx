@@ -24,7 +24,7 @@ export function UpcomingTournament({
 	teams,
 	location,
 	teamCapacity,
-    isHomePage,
+	isHomePage,
 }: UpcomingTournamentProps) {
 	return (
 		<Link
@@ -38,6 +38,8 @@ export function UpcomingTournament({
 					fill
 					sizes='25vw'
 					className='object-cover w-full h-20'
+					placeholder='blur' // or "empty"
+					blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 				/>
 				<div className='absolute bottom-0 left-0 w-full h-[20px] bg-gradient-to-t from-black to-transparent'></div>
 			</div>

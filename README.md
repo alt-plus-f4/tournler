@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# 🏆 TOURNLER - Tournament Management System 🏆
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-13.5+-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
+![React Testing Library](https://img.shields.io/badge/Testing_Library-E33332?style=for-the-badge&logo=testing-library&logoColor=white)
 
+A comprehensive platform for organizing and managing esports tournaments, with a focus on Counter-Strike 2 competitions.
+
+## ✨ Features
+
+- **Tournament Management**: Create, edit, and manage tournaments with bracket systems
+- **Team Management**: Create teams, invite players, and manage team rosters
+- **User Authentication**: Secure login with multiple providers
+- **Responsive Design**: Optimized for all devices with dark mode support
+- **Real-time Updates**: Stay informed with live tournament data and notifications
+- **Interactive Brackets**: Visualize tournament progress
+
+## 🚀 Tech Stack
+
+- **Frontend**: Next.js 13+ (App Router), React, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Authentication**: NextAuth.js
+- **Testing**: Jest, React Testing Library
+- **Deployment**: Vercel
+
+## 📋 Prerequisites
+
+- Node.js 18.x or higher
+- npm or yarn
+- Git
+
+## 🛠️ Installation
+
+1. Clone the repository:
 ```bash
+git clone https://github.com/alt-plus-f4/tournler
+cd tournler
+
+npm i
+npx prisma generate
+
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🖼️ Images
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Home Page
+<img width="1511" alt="image" src="https://github.com/user-attachments/assets/9ecac702-55f2-47ca-bff5-22cb459abe6f" />
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Teams Page
+<img width="1040" alt="image" src="https://github.com/user-attachments/assets/ec1d5f41-735a-4343-bb37-5493788d1177" />
 
-## Learn More
+## Tournaments Page
+<img width="1042" alt="image" src="https://github.com/user-attachments/assets/150442fd-3625-4340-883c-d4dcc03473ec" />
 
-To learn more about Next.js, take a look at the following resources:
+## Administrator Dashboard
+<img width="1502" alt="image" src="https://github.com/user-attachments/assets/dc4035d7-79b2-45e8-92df-a3476f3cab2b" />
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## end

@@ -15,9 +15,7 @@ import { buttonVariants } from '@/components/ui/button';
 import Timer from '@/components/Timer';
 
 interface TournamentPageProps {
-	params: {
-		slug: string;
-	};
+	params: { slug: string };
 }
 
 async function TournamentPage({ params }: TournamentPageProps) {
@@ -45,6 +43,7 @@ async function TournamentPage({ params }: TournamentPageProps) {
 					alt={tournament.name}
 					fill
 					priority
+					loading='eager'
 					className='object-cover w-1200 h-220'
 				/>
 				<Link
@@ -67,13 +66,15 @@ async function TournamentPage({ params }: TournamentPageProps) {
 						<div className='flex flex-row items-center sm:mt-1'>
 							<h1 className='text-foregroundgray text-xs sm:text-sm left-0'>
 								Organized by{' '}
-								<span className='text-white'>{tournament.organizer.name}</span>
+								<span className='text-white'>
+									{tournament.organizer.name}
+								</span>
 							</h1>
 							<IoIosCheckmarkCircleOutline className='ml-1' />
 						</div>
 					</div>
 				</div>
-				
+
 				<div className='absolute inset-4 sm:inset-10 flex items-end justify-end flex-col text-center z-10 '>
 					{timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
 						<>

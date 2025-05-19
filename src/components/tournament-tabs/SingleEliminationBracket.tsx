@@ -28,7 +28,12 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 	tournament,
 	svgWrapper: SvgWrapper = ({ children }) => <div>{children}</div>,
 }) => {
-	const bracketMatches = tournament.status === 'UPCOMING' ? emptyBracket : matches.length > 0 ? matches : sampleMatches;
+	const bracketMatches =
+		tournament.status === 'UPCOMING'
+			? emptyBracket
+			: matches.length > 0
+				? matches
+				: sampleMatches;
 	const columnWidth = 250;
 	const rowHeight = 100;
 	const padding = 40;
@@ -97,7 +102,11 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 			return {
 				name: participant.name,
 				score: participant.score ?? '-',
-				fill: match.winner ? (isWinner ? '#ffffff' : '#999999') : '#999999',
+				fill: match.winner
+					? isWinner
+						? '#ffffff'
+						: '#999999'
+					: '#999999',
 				opacity: match.winner ? (isWinner ? 1 : 0.5) : 1,
 			};
 		};
@@ -236,32 +245,41 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 	);
 
 	return (
-		<SvgWrapper>
-			<svg
-				width={bracketWidth}
-				height={bracketHeight + padding + titleMarginTop}
-			>
-				{columns.map((column, columnIndex) => (
-					<g key={columnIndex}>
-						{renderRoundTitles(
-							columnIndex,
-							padding + columnIndex * columnWidth
-						)}
-						{column.map((match, matchIndex) => {
-							const x = padding + columnIndex * columnWidth;
-							const y = getYPosition(columnIndex, matchIndex);
+		<div
+			className={`w-[${bracketWidth}px] h-[${bracketHeight}px] overflow-scroll`}
+		>
+			<SvgWrapper>
+				<svg
+					width={bracketWidth}
+					height={bracketHeight + padding + titleMarginTop}
+				>
+					{columns.map((column, columnIndex) => (
+						<g key={columnIndex}>
+							{renderRoundTitles(
+								columnIndex,
+								padding + columnIndex * columnWidth
+							)}
+							{column.map((match, matchIndex) => {
+								const x = padding + columnIndex * columnWidth;
+								const y = getYPosition(columnIndex, matchIndex);
 
-							return (
-								<g key={match.id}>
-									{renderConnectors(match, x, y, columnIndex)}
-									{renderMatch(match, x, y)}
-								</g>
-							);
-						})}
-					</g>
-				))}
-			</svg>
-		</SvgWrapper>
+								return (
+									<g key={match.id}>
+										{renderConnectors(
+											match,
+											x,
+											y,
+											columnIndex
+										)}
+										{renderMatch(match, x, y)}
+									</g>
+								);
+							})}
+						</g>
+					))}
+				</svg>
+			</SvgWrapper>
+		</div>
 	);
 };
 

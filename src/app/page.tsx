@@ -21,6 +21,8 @@ export default function Page() {
 										width={32}
 										height={32}
 										draggable={false}
+										placeholder='blur' // or "empty"
+										blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 									/>
 									<div className='w-full text-center text-neutral-0 lg:flex lg:w-fit lg:flex-col lg:text-right'>
 										<p className='font-style-1'>G2</p>
@@ -39,6 +41,8 @@ export default function Page() {
 										width={32}
 										height={32}
 										draggable='false'
+										placeholder='blur' // or "empty"
+										blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 									/>
 									<div className='w-full text-center text-neutral-0 lg:flex lg:w-fit lg:flex-col lg:text-left'>
 										<p className='font-style-1'>HEROIC</p>
