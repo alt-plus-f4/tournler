@@ -28,7 +28,7 @@
 /out/
 
 # Convex
-/convex/_generated
+# /convex/_generated
 
 # production
 /build
