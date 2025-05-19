@@ -33,6 +33,10 @@ export function JoinLeaveButton({
 
 	useEffect(() => {
 		async function checkIfInTournament() {
+			if (!team) {
+				setLoading(false);
+				return;
+			}
 			const response = await fetch(
 				`/api/tournaments/${tournament.id}/teams?teamId=${team.id}`
 			);
@@ -46,7 +50,7 @@ export function JoinLeaveButton({
 			setLoading(false);
 		}
 		checkIfInTournament();
-	}, [tournament.id, team.id]);
+	}, [tournament.id, team]);
 
 	const handleJoinClick = () => {
 		setIsDialogOpen(true);
@@ -117,7 +121,9 @@ export function JoinLeaveButton({
 	const registrationClosed = timeLeftToJoin <= 0;
 
 	return (
+		team !== null && (
 		<>
+
 			<div className='absolute top-[-5px]'>
 				{loading ? (
 					<></>
@@ -191,6 +197,6 @@ export function JoinLeaveButton({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</>
+		</>)
 	);
 }

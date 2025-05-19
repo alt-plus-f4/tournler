@@ -17,7 +17,7 @@ export function UserCard({ member }: UserCardProps) {
 			<div className='space-y-1 w-full'>
 				<h4 className='text-sm font-semibold'>{member.name}</h4>
 				<p className='text-sm'>
-					{member.name} is a member of the team.
+					{member.bio || member.name + ' is a player.'} 
 				</p>
 			</div>
 		</div>

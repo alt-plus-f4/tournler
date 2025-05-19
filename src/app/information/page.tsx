@@ -36,7 +36,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({
 
 export default function EnhancedTournamentManagementSystemInfo() {
 	return (
-		<div className='min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'>
+		<div className='min-h-screen text-gray-900 dark:text-gray-100'>
 			<div className='container mx-auto px-4 py-12'>
 				<div className='max-w-3xl mx-auto'>
 					<div className='text-center mb-8'>

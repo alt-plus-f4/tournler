@@ -75,14 +75,18 @@ async function TournamentPage({ params }: TournamentPageProps) {
 				</div>
 				
 				<div className='absolute inset-4 sm:inset-10 flex items-end justify-end flex-col text-center z-10 '>
-					{hasTeam && timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
+					{timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
 						<>
 							<Timer timeLeft={timeLeftToJoin} />
-							<JoinLeaveButton
-								timeLeftToJoin={timeLeftToJoin}
-								tournament={tournament}
-								team={userTeam.team}
-							/>
+							{hasTeam ? (
+								<JoinLeaveButton
+									timeLeftToJoin={timeLeftToJoin}
+									tournament={tournament}
+									team={userTeam.team}
+								/>
+							) : (
+								<span>You need a team to register</span>
+							)}
 						</>
 					) : (
 						<span>Registration closed</span>
