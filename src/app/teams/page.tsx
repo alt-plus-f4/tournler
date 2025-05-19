@@ -53,7 +53,7 @@ export default async function Page() {
 
 			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-evenly border-l-2 ml-4 pl-4 border-black dark:border-white'>
 				{!userTeam && session?.user && <TeamDrawer />}
-				<TeamsCards />
+				{await TeamsCards()}
 			</div>
 		</div>
 	);
