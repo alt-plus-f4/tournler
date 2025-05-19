@@ -46,20 +46,12 @@ export default function Loading() {
 				<div className='border-b'>
 					<div className='flex space-x-4 px-4'>
 						{[1, 2, 3, 4].map((i) => (
-							<Skeleton key={i} className='h-10 w-24 my-2' />
+							<Skeleton key={i} className='h-10 w-40 my-2' />
 						))}
 					</div>
 				</div>
 
-				{/* Tab content skeleton */}
-				<div className='p-4 space-y-4'>
-					<Skeleton className='h-8 w-full max-w-md' />
-					<div className='space-y-2'>
-						{[1, 2, 3].map((i) => (
-							<Skeleton key={i} className='h-24 w-full' />
-						))}
-					</div>
-				</div>
+				<Skeleton className='mt-12 h-32 w-full' />
 			</CardContent>
 		</Card>
 	);
