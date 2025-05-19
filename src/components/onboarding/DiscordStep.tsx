@@ -9,7 +9,6 @@ interface DiscordStepProps {
 }
 
 export function DiscordStep({ previousStep, nextStep }: DiscordStepProps) {
-
 	return (
 		<>
 			<div
@@ -30,9 +29,9 @@ export function DiscordStep({ previousStep, nextStep }: DiscordStepProps) {
 				>
 					Previous
 				</Button>
-					<Button onClick={nextStep} className='sm:w-48'>
-						Continue
-					</Button>
+				<Button onClick={nextStep} className='sm:w-48'>
+					Continue
+				</Button>
 			</DialogFooter>
 		</>
 	);

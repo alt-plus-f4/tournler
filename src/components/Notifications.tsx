@@ -150,7 +150,7 @@ export default function Notifications({ userId }: NotificationsProps) {
               <Button
                 variant={'outline'}
                 className='w-full'
-                onClick={() => markAllAsRead()}
+                onClick={() => markAllAsRead({ userId })}
               >
                 Mark all as read
               </Button>

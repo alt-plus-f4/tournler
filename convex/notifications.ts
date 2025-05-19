@@ -13,15 +13,15 @@ export const getNotifications = query({
 });
 
 export const getUserNotifications = query({
-    args: { id: v.string() },
-    handler: async (ctx, args) => {
-        return await ctx.db
-            .query('notifications')
-            .filter((q) => q.eq(q.field('userId'), args.id))
+	args: { id: v.string() },
+	handler: async (ctx, args) => {
+		return await ctx.db
+			.query('notifications')
+			.filter((q) => q.eq(q.field('userId'), args.id))
 			.filter((q) => q.eq(q.field('isRead'), false))
-            .order('desc')
-            .take(10);
-    },
+			.order('desc')
+			.take(10);
+	},
 });
 
 export const markNotificationAsRead = mutation({
@@ -33,43 +33,44 @@ export const markNotificationAsRead = mutation({
 });
 
 export const markAllNotificationsAsRead = mutation({
-    args: {},
-    handler: async (ctx) => {
-        const unreadNotifications = await ctx.db
-            .query('notifications')
-            .filter((q) => q.eq(q.field('isRead'), false))
-            .order('desc')
-            .collect();
+	args: { userId: v.string() },
+	handler: async (ctx, { userId }) => {
+		const unreadNotifications = await ctx.db
+			.query('notifications')
+			.filter((q) => q.eq(q.field('userId'), userId))
+			.filter((q) => q.eq(q.field('isRead'), false))
+			// Exclude team invite notifications (type: 1)
+			.filter((q) => q.not(q.eq(q.field('type'), 1)))
+			.order('desc')
+			.collect();
 
-        if(unreadNotifications.length > 0) {
-            for(const notification of unreadNotifications) {
-                await ctx.db.patch(notification._id, { isRead: true });
-            }
-        }
-    },
+		for (const notification of unreadNotifications) {
+			await ctx.db.patch(notification._id, { isRead: true });
+		}
+	},
 });
 
 export const createInfoNotification = mutation({
-    args: { text: v.string(), userId: v.string() },
-    handler: async (ctx, args) => {
-        await ctx.db.insert('notifications', {
-            text: args.text,
-            userId: args.userId,
-            isRead: false,
-            type: 0,
-        });
-    },
+	args: { text: v.string(), userId: v.string() },
+	handler: async (ctx, args) => {
+		await ctx.db.insert('notifications', {
+			text: args.text,
+			userId: args.userId,
+			isRead: false,
+			type: 0,
+		});
+	},
 });
 
 export const createTeamInviteNotification = mutation({
-    args: { text: v.string(), userId: v.string(), teamId: v.number() },
-    handler: async (ctx, args) => {
-        await ctx.db.insert('notifications', {
-            text: args.text,
-            userId: args.userId,
-            teamId: args.teamId,
-            isRead: false,
-            type: 1,
-        });
-    },
+	args: { text: v.string(), userId: v.string(), teamId: v.number() },
+	handler: async (ctx, args) => {
+		await ctx.db.insert('notifications', {
+			text: args.text,
+			userId: args.userId,
+			teamId: args.teamId,
+			isRead: false,
+			type: 1,
+		});
+	},
 });
