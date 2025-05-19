@@ -24,6 +24,7 @@ export function TournamentRow({
 							alt={name}
 							fill
 							sizes='5vw'
+							loading='eager'
 							className='object-cover w-full h-full'
 						/>
 					</div>

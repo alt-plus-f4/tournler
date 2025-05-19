@@ -1,3 +1,4 @@
+import type React from 'react';
 import {
 	ChevronDown,
 	Code,
@@ -8,6 +9,9 @@ import {
 	Zap,
 } from 'lucide-react';
 import Image from 'next/image';
+
+// Make this page static
+export const dynamic = 'force-static';
 
 interface AccordionItemProps {
 	title: string;
@@ -54,6 +58,7 @@ export default function EnhancedTournamentManagementSystemInfo() {
 						alt='Tournament Management System Dashboard'
 						width={600}
 						height={200}
+						loading='eager'
 						className='mx-auto rounded-lg shadow-lg mb-12'
 					/>
 

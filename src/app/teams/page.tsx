@@ -4,10 +4,8 @@ import { getAuthSession } from '@/lib/auth';
 import { CircleUser } from 'lucide-react';
 import { Shell } from 'lucide-react';
 import LoginButtons from '@/components/LoginButtons';
-import { Suspense } from 'react';
 import { TeamCard } from '@/components/TeamCard';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
-import { FallbackCards } from '@/components/FallbackCards';
 
 export default async function Page() {
 	const session = await getAuthSession();
@@ -55,9 +53,7 @@ export default async function Page() {
 
 			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-evenly border-l-2 ml-4 pl-4 border-black dark:border-white'>
 				{!userTeam && session?.user && <TeamDrawer />}
-				<Suspense fallback={<FallbackCards />}>
-					<TeamsCards />
-				</Suspense>
+				<TeamsCards />
 			</div>
 		</div>
 	);
@@ -102,7 +98,8 @@ async function TeamsCards() {
 		console.error('Error fetching teams:', error);
 		return (
 			<div className='h-[200px] border flex items-center justify-center text-center'>
-				Error while loading teams<br/>
+				Error while loading teams
+				<br />
 				Try again
 			</div>
 		);

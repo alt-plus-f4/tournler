@@ -6,6 +6,9 @@ body {
 	font-family: var(--font-main-font);
 	color: var(--foreground);
 }
+html {
+	scroll-behavior: smooth;
+}
 
 @layer utilities {
 	.text-balance {

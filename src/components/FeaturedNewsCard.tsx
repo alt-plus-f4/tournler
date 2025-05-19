@@ -29,6 +29,8 @@ export function FeaturedNewsCard({
 						fill
 						sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
 						className='object-cover'
+						placeholder='blur' // or "empty"
+						blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 					/>
 				</div>
 				<div className='p-4 space-y-2'>
