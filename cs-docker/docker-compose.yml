@@ -1,0 +1,46 @@
+services:
+    cs2-dedicated-01:
+        image: joedwards32/cs2
+        container_name: cs2-dedicated-01
+        environment:
+            - SRCDS_TOKEN=C1E3E238144B1D927B24437B7DA1EDFC
+            - CS2_SERVERNAME=[Tournler]
+            - CS2_LAN=0
+            - CS2_PORT=27015
+            - CS2_RCON_PORT=27016
+            - CS2_PW=connectpw
+            - CS2_RCONPW=rconpw
+            - TV_PW=tvpw
+            - TV_ENABLE=1
+            - CS2_MAPGROUP=""
+        volumes:
+            - C:\Users\valen\cs2-dedicated-01:/home/steam/cs2-dedicated
+        ports:
+            - '27015:27015/tcp'
+            - '27016:27016/tcp'
+            - '27015:27015/udp'
+            - '27020:27020/udp'
+        stdin_open: true
+        tty: true
+
+    # cs2-dedicated-02:
+    #   image: joedwards32/cs2
+    #   container_name: cs2-dedicated-02
+    #   environment:
+    #     - SRCDS_TOKEN=C1E3E238144B1D927B24437B7DA1EDFC
+    #     - CS2_SERVERNAME=[TOURNLER] CS2 Dedicated Tournament Server 02
+    #     - CS2_LAN=0
+    #     - CS2_PORT=27025
+    #     - CS2_PW="insertpassword"
+    #     - CS2_RCONPW="insertpassword"
+    #     - TV_PW="insertpassword"
+    #     - TV_ENABLE=1
+    #     - CS2_MAPGROUP=""
+    #   volumes:
+    #     - C:\Users\valen\cs2-dedicated-01:/home/steam/cs2-dedicated
+    #   ports:
+    #     - "27025:27025/tcp"
+    #     - "27025:27025/udp"
+    #     - "27030:27020/udp"
+    #   stdin_open: true
+    #   tty: true
