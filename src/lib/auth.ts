@@ -15,17 +15,7 @@ import { db } from '@/lib/db';
 //   },
 // });
 
-const sendVerificationRequest = async ({
-	identifier,
-	url,
-	provider,
-	theme,
-}: {
-	identifier: string;
-	url: string;
-	provider: { from: string; server: any };
-	theme: any;
-}) => {
+const sendVerificationRequest = async ({ identifier, url, provider, theme }: { identifier: string; url: string; provider: { from: string; server: any }; theme: any }) => {
 	const { host } = new URL(url);
 	const transport = createTransport(provider.server);
 	const result = await transport.sendMail({
@@ -185,6 +175,7 @@ export const authOptions: NextAuthOptions = {
 					email: token.email || '',
 					image: token.picture || '',
 					discordId: (token.discordId as string) || '',
+					role: token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined,
 				};
 			}
 			return session;
@@ -219,10 +210,9 @@ export const authOptions: NextAuthOptions = {
 				const accessToken = account.access_token || '';
 
 				if (user?.id) {
-					const existingDiscordAccount =
-						await db.discordAccount.findUnique({
-							where: { discordId },
-						});
+					const existingDiscordAccount = await db.discordAccount.findUnique({
+						where: { discordId },
+					});
 
 					if (!existingDiscordAccount) {
 						await db.discordAccount.create({
@@ -251,10 +241,9 @@ export const authOptions: NextAuthOptions = {
 				const steamId = account.providerAccountId;
 
 				if (user?.id) {
-					const existingSteamAccount =
-						await db.steamAccount.findUnique({
-							where: { steamId },
-						});
+					const existingSteamAccount = await db.steamAccount.findUnique({
+						where: { steamId },
+					});
 
 					if (!existingSteamAccount) {
 						await db.steamAccount.create({
@@ -267,6 +256,17 @@ export const authOptions: NextAuthOptions = {
 				}
 
 				token.steamId = steamId;
+			}
+
+			if (token.id) {
+				const dbUser = await db.user.findUnique({
+					where: { id: token.id as string },
+					select: { role: true },
+				});
+
+				if (dbUser) {
+					token.role = dbUser.role;
+				}
 			}
 
 			return token;

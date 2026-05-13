@@ -1,6 +1,7 @@
 import { db } from '../db';
+import { isAdminRole } from './permissions';
 
-export async function isAdmin(userId: string): Promise<boolean | null> {
+export async function isAdmin(userId: string): Promise<boolean> {
 	try {
 		const user = await db.user.findUnique({
 			where: { id: userId },
@@ -8,13 +9,12 @@ export async function isAdmin(userId: string): Promise<boolean | null> {
 		});
 
 		if (!user) {
-			console.log('User not found');
-			return null;
+			return false;
 		}
 
-		return user.role == 'ADMIN' ? true : false;
+		return isAdminRole(user.role);
 	} catch (error) {
 		console.error('Error fetching user role:', error);
-		return null;
+		return false;
 	}
 }

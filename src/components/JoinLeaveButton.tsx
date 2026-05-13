@@ -4,28 +4,23 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { FaPlusCircle, FaMinusCircle, FaInfo } from 'react-icons/fa';
 import { useToast } from '@/lib/hooks/use-toast';
-import {
-	Dialog,
-	DialogContent,
-	DialogTitle,
-	DialogDescription,
-	DialogClose,
-	DialogHeader,
-	DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { revalidateTournamentPage } from '@/lib/actions';
 
 interface JoinLeaveButtonProps {
-	tournament: any;
-	team: any;
+	tournament: {
+		id: number;
+		name: string;
+		startDate: string;
+	};
+	team: {
+		id: number;
+		name: string;
+	} | null;
 	timeLeftToJoin: number;
 }
 
-export function JoinLeaveButton({
-	tournament,
-	team,
-	timeLeftToJoin,
-}: JoinLeaveButtonProps) {
+export function JoinLeaveButton({ tournament, team, timeLeftToJoin }: JoinLeaveButtonProps) {
 	const { toast } = useToast();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [isInTournament, setIsInTournament] = useState(false);
@@ -37,20 +32,21 @@ export function JoinLeaveButton({
 				setLoading(false);
 				return;
 			}
-			const response = await fetch(
-				`/api/tournaments/${tournament.id}/teams?teamId=${team.id}`
-			);
-			if (response.ok) {
-				const data = await response.json();
-				// console.log(data.teamInTournament);
-				if (data.teamInTournament) {
-					setIsInTournament(true);
+			try {
+				const response = await fetch(`/api/tournaments/${tournament.id}/teams?teamId=${team.id}`);
+				if (response.ok) {
+					const data = await response.json();
+					if (data.teamInTournament) {
+						setIsInTournament(true);
+					}
 				}
+			} finally {
+				setLoading(false);
 			}
-			setLoading(false);
 		}
-		checkIfInTournament();
-	}, [tournament.id, team]);
+
+		void checkIfInTournament();
+	}, [tournament.id, team?.id]);
 
 	const handleJoinClick = () => {
 		setIsDialogOpen(true);
@@ -61,13 +57,11 @@ export function JoinLeaveButton({
 	};
 
 	async function joinTournament() {
-		const response = await fetch(
-			`/api/tournaments/${tournament.id}/teams`,
-			{
-				method: 'POST',
-				body: JSON.stringify({ teamId: team.id }),
-			}
-		);
+		if (!team) return;
+		const response = await fetch(`/api/tournaments/${tournament.id}/teams`, {
+			method: 'POST',
+			body: JSON.stringify({ teamId: team.id }),
+		});
 
 		setIsDialogOpen(false);
 
@@ -90,13 +84,11 @@ export function JoinLeaveButton({
 	}
 
 	async function leaveTournament() {
-		const response = await fetch(
-			`/api/tournaments/${tournament.id}/teams`,
-			{
-				method: 'DELETE',
-				body: JSON.stringify({ teamId: team.id }),
-			}
-		);
+		if (!team) return;
+		const response = await fetch(`/api/tournaments/${tournament.id}/teams`, {
+			method: 'DELETE',
+			body: JSON.stringify({ teamId: team.id }),
+		});
 		setIsDialogOpen(false);
 
 		if (response.ok) {
@@ -120,10 +112,12 @@ export function JoinLeaveButton({
 	const hasStarted = new Date(tournament.startDate) <= new Date();
 	const registrationClosed = timeLeftToJoin <= 0;
 
-	return (
-		team !== null && (
-		<>
+	if (!team) {
+		return null;
+	}
 
+	return (
+		<>
 			<div className='absolute top-[-5px]'>
 				{loading ? (
 					<></>
@@ -139,22 +133,13 @@ export function JoinLeaveButton({
 				)}
 			</div>
 
-			<Button
-				variant='default'
-				className='p-4'
-				onClick={handleJoinClick}
-				disabled={
-					hasStarted || registrationClosed || loading
-				}
-			>
+			<Button variant='default' className='p-4' onClick={handleJoinClick} disabled={hasStarted || registrationClosed || loading}>
 				{loading ? (
 					<span>Loading...</span>
 				) : isInTournament ? (
 					<>
 						<FaMinusCircle />
-						<span className='hidden sm:block'>
-							Leave Tournament
-						</span>
+						<span className='hidden sm:block'>Leave Tournament</span>
 					</>
 				) : (
 					<>
@@ -167,15 +152,9 @@ export function JoinLeaveButton({
 			<Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
 				<DialogContent className='sm:max-w-[375px]'>
 					<DialogHeader className='flex items-center pt-3'>
-						<DialogTitle>
-							{isInTournament
-								? 'Leave Tournament Confirmation'
-								: 'Join Tournament Confirmation'}
-						</DialogTitle>
+						<DialogTitle>{isInTournament ? 'Leave Tournament Confirmation' : 'Join Tournament Confirmation'}</DialogTitle>
 						<DialogDescription>
-							{isInTournament
-								? `You are about to leave the tournament "${tournament.name}" with your team "${team.name}".`
-								: `You are about to join the tournament "${tournament.name}" with your team "${team.name}".`}
+							{isInTournament ? `You are about to leave the tournament "${tournament.name}" with your team "${team.name}".` : `You are about to join the tournament "${tournament.name}" with your team "${team.name}".`}
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-center gap-2 pt-2'>
@@ -184,19 +163,12 @@ export function JoinLeaveButton({
 								Cancel
 							</Button>
 						</DialogClose>
-						<Button
-							className='w-[40%]'
-							onClick={
-								isInTournament
-									? leaveTournament
-									: joinTournament
-							}
-						>
+						<Button className='w-[40%]' onClick={isInTournament ? leaveTournament : joinTournament}>
 							{isInTournament ? 'Leave' : 'Join'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</>)
+		</>
 	);
 }

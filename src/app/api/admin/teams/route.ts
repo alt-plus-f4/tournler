@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
-import { isAdmin } from '@/lib/helpers/is-admin';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
 export async function GET() {
 	const session = await getAuthSession();
@@ -11,7 +11,7 @@ export async function GET() {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	if (!isAdmin(session.user.id)) {
+	if (!(await userHasPermission(session.user.id, 'teams:manage'))) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
@@ -26,9 +26,7 @@ export async function GET() {
 		},
 	});
 
-	const verifiedTeams = teams.filter(
-		(team) => team.members.length === 5
-	).length;
+	const verifiedTeams = teams.filter((team) => team.members.length === 5).length;
 	const notFullTeams = teams.filter((team) => team.members.length < 5).length;
 
 	return NextResponse.json({ verifiedTeams, notFullTeams });

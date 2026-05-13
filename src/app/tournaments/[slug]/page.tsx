@@ -15,11 +15,13 @@ import { buttonVariants } from '@/components/ui/button';
 import Timer from '@/components/Timer';
 
 interface TournamentPageProps {
-	params: { slug: string };
+	params: Promise<{
+		slug: string;
+	}>;
 }
 
 async function TournamentPage({ params }: TournamentPageProps) {
-	const { slug } = params;
+	const { slug } = await params;
 	const session = await getAuthSession();
 	const user = session?.user;
 	const tournamentId = parseInt(slug, 10);
@@ -30,29 +32,13 @@ async function TournamentPage({ params }: TournamentPageProps) {
 	const userTeam = user ? await fetchUserTeam(user.id) : null;
 	const hasTeam = !!userTeam;
 
-	const timeLeftToJoin = Math.max(
-		new Date(tournament.startDate).getTime() - new Date().getTime(),
-		0
-	);
+	const timeLeftToJoin = Math.max(new Date(tournament.startDate).getTime() - new Date().getTime(), 0);
 
 	return (
 		<Card className='w-5/6 mx-auto mt-8 border-none'>
 			<CardHeader className='relative p-0 w-full h-[300px] space-y-0 rounded-t-xl'>
-				<Image
-					src={tournament.bannerUrl}
-					alt={tournament.name}
-					fill
-					priority
-					loading='eager'
-					className='object-cover w-1200 h-220'
-				/>
-				<Link
-					className={cn(
-						'absolute top-2 left-2 z-10',
-						buttonVariants({ variant: 'outline' })
-					)}
-					href='/tournaments'
-				>
+				<Image src={tournament.bannerUrl} alt={tournament.name} fill priority loading='eager' className='object-cover w-1200 h-220' />
+				<Link className={cn('absolute top-2 left-2 z-10', buttonVariants({ variant: 'outline' }))} href='/tournaments'>
 					<FaArrowLeft className='h-4 w-4' />
 				</Link>
 
@@ -60,15 +46,10 @@ async function TournamentPage({ params }: TournamentPageProps) {
 
 				<div className='absolute inset-4 flex items-end justify-start'>
 					<div className='flex flex-col'>
-						<h1 className='text-white text-xl sm:text-4xl font-extrabold'>
-							{tournament.name}
-						</h1>
+						<h1 className='text-white text-xl sm:text-4xl font-extrabold'>{tournament.name}</h1>
 						<div className='flex flex-row items-center sm:mt-1'>
 							<h1 className='text-foregroundgray text-xs sm:text-sm left-0'>
-								Organized by{' '}
-								<span className='text-white'>
-									{tournament.organizer.name}
-								</span>
+								Organized by <span className='text-white'>{tournament.organizer.name}</span>
 							</h1>
 							<IoIosCheckmarkCircleOutline className='ml-1' />
 						</div>
@@ -79,15 +60,7 @@ async function TournamentPage({ params }: TournamentPageProps) {
 					{timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
 						<>
 							<Timer timeLeft={timeLeftToJoin} />
-							{hasTeam ? (
-								<JoinLeaveButton
-									timeLeftToJoin={timeLeftToJoin}
-									tournament={tournament}
-									team={userTeam.team}
-								/>
-							) : (
-								<span>You need a team to register</span>
-							)}
+							{hasTeam ? <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={tournament} team={userTeam.team} /> : <span>You need a team to register</span>}
 						</>
 					) : (
 						<span>Registration closed</span>

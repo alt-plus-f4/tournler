@@ -1,19 +1,22 @@
-import { PrismaClient } from '@prisma/client'
-import "server-only"
+import { PrismaClient } from '@prisma/client';
+import 'server-only';
 
 declare global {
-  // eslint-disable-next-line no-var
-  var cachedPrisma: PrismaClient
+	// eslint-disable-next-line no-var
+	var cachedPrisma: PrismaClient;
 }
 
-let prisma: PrismaClient
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient()
-} else {
-  if (!global.cachedPrisma) {
-    global.cachedPrisma = new PrismaClient()
-  }
-  prisma = global.cachedPrisma
+const prismaClientSingleton = () => {
+	return new PrismaClient();
+};
+
+declare global {
+	// eslint-disable-next-line no-var
+	var prisma: ReturnType<typeof prismaClientSingleton>;
 }
 
-export const db = prisma
+const db = globalThis.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = db;
+
+export { db };

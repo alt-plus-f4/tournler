@@ -11,6 +11,9 @@ datasource db {
 
 enum UserRole {
   USER
+  MODERATOR
+  TOURNAMENT_ADMIN
+  CONTENT_ADMIN
   ADMIN
 
   @@map("user_role")
@@ -71,7 +74,7 @@ model User {
   email String  @unique @map("email") @db.VarChar
   name  String? @map("name") @db.VarChar
   image String? @map("image") @db.VarChar
-  bio   String? @map("bio") @default("Software developer by day, gamer by night 🎮") @db.VarChar
+  bio   String? @default("Software developer by day, gamer by night 🎮") @map("bio") @db.VarChar
 
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
@@ -216,6 +219,8 @@ model Matches {
   scoreTeamB Int?     @map("score_team_b")
   matchDate  DateTime @map("match_date")
 
+  gameServer GameServer?
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -224,4 +229,31 @@ model Matches {
   @@index([teamBId])
   @@index([winnerId])
   @@map("matches")
+}
+
+model GameServer {
+  id      Int     @id @default(autoincrement()) @map("id")
+  matchId Int     @unique @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  connectIp String @map("connect_ip")
+  port      Int    @map("port")
+  password  String @map("password")
+
+  status GameServerStatus @default(PENDING) @map("status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([matchId])
+  @@map("game_servers")
+}
+
+enum GameServerStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+
+  @@map("game_server_status")
 }
