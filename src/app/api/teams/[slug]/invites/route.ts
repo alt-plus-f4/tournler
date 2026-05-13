@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET(
-	request: Request,
-	{ params }: { params: { slug: string } }
-) {
-	const { slug } = params;
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const { slug } = await params;
 
 	if (!slug) {
 		return NextResponse.json({ error: 'Missing team ID' }, { status: 400 });
@@ -28,18 +25,12 @@ export async function GET(
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 	}
 
-	return NextResponse.json(
-		{ teamInvitations: team.teamInvitations },
-		{ status: 200 }
-	);
+	return NextResponse.json({ teamInvitations: team.teamInvitations }, { status: 200 });
 }
 
 // POST
-export async function POST(
-	request: Request,
-	{ params }: { params: { slug: string } }
-) {
-	const { slug } = params;
+export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const { slug } = await params;
 
 	if (!slug) {
 		return NextResponse.json({ error: 'Missing team ID' }, { status: 400 });

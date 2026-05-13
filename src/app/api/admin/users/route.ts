@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
-import { isAdmin } from '@/lib/helpers/is-admin';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
 export async function GET() {
 	const session = await getAuthSession();
@@ -11,7 +11,7 @@ export async function GET() {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	if (!isAdmin(sessionUser.id)) {
+	if (!(await userHasPermission(sessionUser.id, 'users:manage'))) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 

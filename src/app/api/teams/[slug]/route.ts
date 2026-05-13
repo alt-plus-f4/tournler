@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET(
-	request: Request,
-	{ params }: { params: { slug: string } }
-) {
-	const { slug } = params;
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const { slug } = await params;
 
 	if (!slug) {
 		return NextResponse.json({ error: 'Missing team ID' }, { status: 400 });
@@ -35,11 +32,8 @@ export async function GET(
 	return NextResponse.json({ team }, { status: 200 });
 }
 
-export async function DELETE(
-	request: Request,
-	{ params }: { params: { slug: string } }
-) {
-	const { slug } = params;
+export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const { slug } = await params;
 	const { userId } = await request.json();
 
 	if (!slug) {
@@ -66,26 +60,16 @@ export async function DELETE(
 	}
 
 	if (userId) {
-		const isMember = team.members.some(
-			(member: { id: string }) => member.id === userId
-		);
+		const isMember = team.members.some((member: { id: string }) => member.id === userId);
 		if (!isMember) {
-			return NextResponse.json(
-				{ error: 'User not a member of the team' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ error: 'User not a member of the team' }, { status: 400 });
 		}
 
-		const updatedMembers = team.members.filter(
-			(member: { id: string }) => member.id !== userId
-		);
+		const updatedMembers = team.members.filter((member: { id: string }) => member.id !== userId);
 
 		if (updatedMembers.length === 0) {
 			await db.cs2Team.delete({ where: { id: numericId } });
-			return NextResponse.json(
-				{ message: 'Team deleted as the last member left' },
-				{ status: 200 }
-			);
+			return NextResponse.json({ message: 'Team deleted as the last member left' }, { status: 200 });
 		}
 
 		if (team.capitan?.id === userId) {
@@ -100,10 +84,7 @@ export async function DELETE(
 					capitan: { connect: { id: updatedMembers[0].id } },
 				},
 			});
-			return NextResponse.json(
-				{ message: 'User removed and new captain assigned' },
-				{ status: 200 }
-			);
+			return NextResponse.json({ message: 'User removed and new captain assigned' }, { status: 200 });
 		} else {
 			await db.cs2Team.update({
 				where: { id: numericId },
@@ -115,10 +96,7 @@ export async function DELETE(
 					},
 				},
 			});
-			return NextResponse.json(
-				{ message: 'User removed from the team' },
-				{ status: 200 }
-			);
+			return NextResponse.json({ message: 'User removed from the team' }, { status: 200 });
 		}
 	} else {
 		await db.cs2Team.delete({ where: { id: numericId } });

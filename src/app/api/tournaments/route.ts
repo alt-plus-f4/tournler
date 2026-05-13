@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
 import { TournamentStatus, TournamentType } from '@prisma/client';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -14,6 +16,62 @@ const typeMap: { [key: number]: TournamentType } = {
 	1: TournamentType.OFFLINE,
 };
 
+function parseStatusFilter(rawStatus: string | null): TournamentStatus[] | null {
+	if (!rawStatus) {
+		return null;
+	}
+
+	const normalized = rawStatus.trim().toUpperCase();
+	if (normalized === 'ACTIVE') {
+		return [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
+	}
+
+	if (normalized in TournamentStatus) {
+		return [TournamentStatus[normalized as keyof typeof TournamentStatus]];
+	}
+
+	const statusInt = Number.parseInt(rawStatus, 10);
+	if (!Number.isNaN(statusInt)) {
+		if (statusInt === 10) {
+			return [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
+		}
+
+		if (statusMap[statusInt]) {
+			return [statusMap[statusInt]];
+		}
+	}
+
+	return [];
+}
+
+function parseTournamentStatus(rawStatus: string): TournamentStatus | null {
+	const normalized = rawStatus.trim().toUpperCase();
+	if (normalized in TournamentStatus) {
+		return TournamentStatus[normalized as keyof typeof TournamentStatus];
+	}
+
+	const statusInt = Number.parseInt(rawStatus, 10);
+	if (!Number.isNaN(statusInt) && statusMap[statusInt]) {
+		return statusMap[statusInt];
+	}
+
+	return null;
+}
+
+function parseTournamentType(rawType: string): TournamentType | null {
+	const normalized = rawType.trim().toUpperCase();
+	if (normalized in TournamentType) {
+		return TournamentType[normalized as keyof typeof TournamentType];
+	}
+
+	const typeInt = Number.parseInt(rawType, 10);
+	if (!Number.isNaN(typeInt) && typeMap[typeInt]) {
+		return typeMap[typeInt];
+	}
+
+	return null;
+}
+
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
 	const status = searchParams.get('status');
@@ -21,44 +79,23 @@ export async function GET(request: Request) {
 	const limit = parseInt(searchParams.get('limit') || '10', 10);
 
 	if (isNaN(page) || isNaN(limit)) {
-		return NextResponse.json(
-			{ error: 'Invalid pagination parameters' },
-			{ status: 400 }
-		);
+		return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 });
 	}
 
-	if (!status) {
-		const tournaments = await db.cs2Tournament.findMany({
-			skip: (page - 1) * limit,
-			take: limit,
-			include: {
-				teams: true,
-			},
-		});
-		return NextResponse.json(tournaments, { status: 200 });
+	const statusFilter = parseStatusFilter(status);
+	if (statusFilter && statusFilter.length === 0) {
+		return NextResponse.json({ error: 'Invalid status parameter' }, { status: 400 });
 	}
-
-	const statusInt = parseInt(status, 10);
-	// console.log(statusInt);
-	if (isNaN(statusInt) || (statusInt !== 0 && statusInt !== 1 && statusInt !== 2 && statusInt !== 10)) {
-		return NextResponse.json(
-			{ error: 'Invalid status parameter' },
-			{ status: 400 }
-		);
-	}
-
-	let enumStatus: TournamentStatus[];
-	if (statusInt === 10)
-		enumStatus = [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
-	else enumStatus = [statusMap[statusInt]];
 
 	try {
 		const tournaments = await db.cs2Tournament.findMany({
-			where: {
-				status: {
-					in: enumStatus,
-				},
-			},
+			where: statusFilter
+				? {
+						status: {
+							in: statusFilter,
+						},
+					}
+				: undefined,
 			orderBy: {
 				prizePool: 'desc',
 			},
@@ -72,15 +109,21 @@ export async function GET(request: Request) {
 		return NextResponse.json(tournaments, { status: 200 });
 	} catch (error) {
 		console.error('Error fetching tournaments:', error);
-		return NextResponse.json(
-			{ error: 'Internal server error' },
-			{ status: 500 }
-		);
+		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
 }
 
 export async function POST(req: Request) {
 	try {
+		const session = await getAuthSession();
+		if (!session) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		if (!(await userHasPermission(session.user.id, 'tournaments:manage'))) {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
 		const formData = await req.formData();
 
 		const name = formData.get('name')?.toString() || '';
@@ -95,19 +138,8 @@ export async function POST(req: Request) {
 		let bannerUrl: string | null = null;
 		let logoUrl: string | null = null;
 
-		if (
-			!name ||
-			!startDate ||
-			!endDate ||
-			!teamCapacity ||
-			!location ||
-			statusValue === undefined ||
-			typeValue === undefined
-		) {
-			return NextResponse.json(
-				{ error: 'Missing required fields' },
-				{ status: 400 }
-			);
+		if (!name || !startDate || !endDate || !teamCapacity || !location || statusValue === undefined || typeValue === undefined) {
+			return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 		}
 
 		const bannerFile = formData.get('bannerFile');
@@ -130,6 +162,13 @@ export async function POST(req: Request) {
 			logoUrl = blob.url;
 		}
 
+		const parsedStatus = parseTournamentStatus(statusValue || 'UPCOMING');
+		const parsedType = typeValue ? parseTournamentType(typeValue) : null;
+
+		if (!parsedStatus || !parsedType) {
+			return NextResponse.json({ error: 'Invalid status or type value' }, { status: 400 });
+		}
+
 		const newTournament = await db.cs2Tournament.create({
 			data: {
 				name,
@@ -140,20 +179,15 @@ export async function POST(req: Request) {
 				location,
 				bannerUrl,
 				logoUrl,
-				status: statusValue
-					? statusMap[parseInt(statusValue, 10)]
-					: TournamentStatus.UPCOMING,
-				type: typeMap[parseInt(typeValue, 10)],
-				organizerId: '1',
+				status: parsedStatus,
+				type: parsedType,
+				organizerId: session.user.id,
 			},
 		});
 
 		return NextResponse.json(newTournament, { status: 201 });
 	} catch (error) {
 		console.error('Error creating tournament:', error);
-		return NextResponse.json(
-			{ error: 'Failed to create tournament' },
-			{ status: 500 }
-		);
+		return NextResponse.json({ error: 'Failed to create tournament' }, { status: 500 });
 	}
 }

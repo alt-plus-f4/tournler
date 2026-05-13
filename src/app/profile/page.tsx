@@ -5,28 +5,42 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-	Dialog,
-	DialogContent,
-	DialogTitle,
-	DialogTrigger,
-} from '@/components/ui/dialog';
-import { Pencil, Check, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Pencil, Check, X, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FaDiscord, FaSteam } from 'react-icons/fa';
+import { FaDiscord, FaSteam } from 'react-icons/fa6';
+
+interface SteamData {
+	steamId: string;
+	createdAt: string;
+}
+
+interface ProfileData {
+	id: string;
+	displayName: string;
+	bio: string;
+	avatarUrl: string;
+	steam?: SteamData;
+	discord?: {
+		discordId: string;
+	};
+}
 
 export default function ProfilePage() {
 	const [isEditing, setIsEditing] = useState(false);
 	const [isAvatarEditing, setIsAvatarEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
-	const [profile, setProfile] = useState({
+	const [profile, setProfile] = useState<ProfileData>({
+		id: '',
 		displayName: '',
 		bio: '',
 		avatarUrl: '/avatar.png',
+		steam: undefined,
+		discord: undefined,
 	});
 	const { toast } = useToast();
 
@@ -36,11 +50,24 @@ export default function ProfilePage() {
 			const response = await fetch('/api/user');
 			if (!response.ok) throw new Error('Failed to fetch user data');
 			const userData = await response.json();
+			const user = userData.user;
 
 			setProfile({
-				displayName: userData.haha.name || '',
-				bio: userData.haha.bio || '',
-				avatarUrl: userData.haha.image || '/avatar.png',
+				id: user.id || '',
+				displayName: user.name || '',
+				bio: user.bio || '',
+				avatarUrl: user.image || '/avatar.png',
+				steam: user.steam
+					? {
+							steamId: user.steam.steamId,
+							createdAt: user.steam.createdAt,
+						}
+					: undefined,
+				discord: user.discord
+					? {
+							discordId: user.discord.discordId,
+						}
+					: undefined,
 			});
 		} catch (error) {
 			console.error('Error fetching user:', error);
@@ -72,7 +99,7 @@ export default function ProfilePage() {
 
 				if (response.ok && json.imageUrl) {
 					toast({ title: 'Avatar updated successfully' });
-					fetchUser(); // Refetch user data
+					fetchUser();
 				} else {
 					toast({
 						variant: 'destructive',
@@ -89,7 +116,7 @@ export default function ProfilePage() {
 				setIsAvatarEditing(false);
 			}
 		},
-		[fetchUser, toast]
+		[fetchUser, toast],
 	);
 
 	// Handle profile save
@@ -99,7 +126,10 @@ export default function ProfilePage() {
 			const response = await fetch('/api/profile', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(profile),
+				body: JSON.stringify({
+					displayName: profile.displayName,
+					bio: profile.bio,
+				}),
 			});
 
 			if (!response.ok) {
@@ -108,7 +138,7 @@ export default function ProfilePage() {
 
 			setIsEditing(false);
 			toast({ title: 'Profile updated successfully' });
-			fetchUser(); // Refetch user data
+			fetchUser();
 		} catch (error) {
 			console.error('Error updating profile:', error);
 			toast({
@@ -147,34 +177,17 @@ export default function ProfilePage() {
 				<CardContent className='p-6'>
 					<div className='flex justify-end mb-4'>
 						{!isEditing ? (
-							<Button
-								variant='ghost'
-								size='sm'
-								onClick={() => setIsEditing(true)}
-								className='gap-2 text-white hover:bg-gray-800'
-							>
+							<Button variant='ghost' size='sm' onClick={() => setIsEditing(true)} className='gap-2 text-white hover:bg-gray-800'>
 								<Pencil className='h-4 w-4' />
 								Edit Profile
 							</Button>
 						) : (
 							<div className='flex gap-2'>
-								<Button
-									variant='ghost'
-									size='sm'
-									onClick={handleCancel}
-									className='gap-2 text-red-400 hover:bg-gray-800'
-									disabled={isSaving}
-								>
+								<Button variant='ghost' size='sm' onClick={handleCancel} className='gap-2 text-red-400 hover:bg-gray-800' disabled={isSaving}>
 									<X className='h-4 w-4' />
 									Cancel
 								</Button>
-								<Button
-									variant='ghost'
-									size='sm'
-									onClick={handleSave}
-									className='gap-2 text-green-400 hover:bg-gray-800'
-									disabled={isSaving}
-								>
+								<Button variant='ghost' size='sm' onClick={handleSave} className='gap-2 text-green-400 hover:bg-gray-800' disabled={isSaving}>
 									<Check className='h-4 w-4' />
 									{isSaving ? 'Saving...' : 'Save Changes'}
 								</Button>
@@ -184,55 +197,27 @@ export default function ProfilePage() {
 
 					<div className='flex flex-col items-center text-center'>
 						<div className='relative group'>
-							<Image
-								src={profile.avatarUrl || '/placeholder.svg'}
-								alt={`${profile.displayName}'s Profile`}
-								width={100}
-								height={100}
-								className='rounded-full w-24 h-24 border border-gray-700'
-							/>
-							<Dialog
-								open={isAvatarEditing}
-								onOpenChange={setIsAvatarEditing}
-							>
+							<Image src={profile.avatarUrl || '/placeholder.svg'} alt={`${profile.displayName}'s Profile`} width={100} height={100} className='rounded-full w-24 h-24 border border-gray-700' />
+							<Dialog open={isAvatarEditing} onOpenChange={setIsAvatarEditing}>
 								<DialogTrigger asChild>
-									<Button
-										variant='ghost'
-										size='sm'
-										className='absolute bottom-0 right-0 bg-gray-700 text-white p-1 rounded-full opacity-75 hover:opacity-100 hover:bg-gray-600'
-									>
+									<Button variant='ghost' size='sm' className='absolute bottom-0 right-0 bg-gray-700 text-white p-1 rounded-full opacity-75 hover:opacity-100 hover:bg-gray-600'>
 										<Pencil className='h-4 w-4' />
 									</Button>
 								</DialogTrigger>
 								<DialogContent className='max-w-none w-fit  border-gray-800'>
-									<DialogTitle className='text-white'>
-										Change Avatar
-									</DialogTitle>
-									<AvatarStep
-										loading={false}
-										previousStep={() =>
-											setIsAvatarEditing(false)
-										}
-										nextStep={handleAvatarChange}
-									/>
+									<DialogTitle className='text-white'>Change Avatar</DialogTitle>
+									<AvatarStep loading={false} previousStep={() => setIsAvatarEditing(false)} nextStep={handleAvatarChange} />
 								</DialogContent>
 							</Dialog>
 						</div>
-						<h2 className='text-xl font-bold mt-4 text-white'>
-							{profile.displayName}
-						</h2>
-						<p className='text-gray-400'>
-							{profile.bio || 'No bio available'}
-						</p>
+						<h2 className='text-xl font-bold mt-4 text-white'>{profile.displayName}</h2>
+						<p className='text-gray-400'>{profile.bio || 'No bio available'}</p>
 					</div>
 
 					{isEditing && (
 						<div className='mt-6 space-y-4'>
 							<div>
-								<Label
-									htmlFor='displayName'
-									className='text-white'
-								>
+								<Label htmlFor='displayName' className='text-white'>
 									Display Name
 								</Label>
 								<Input
@@ -268,53 +253,76 @@ export default function ProfilePage() {
 
 					{/* Account Linking Section */}
 					<div className='mt-8 w-full max-w-md mx-auto'>
-						<h3 className='text-lg font-semibold mb-4 text-left text-white'>
-							Connected Accounts
-						</h3>
+						<h3 className='text-lg font-semibold mb-4 text-left text-white'>Connected Accounts</h3>
 						<div className='space-y-3'>
-							{/* Discord Button */}
-							<div className='flex items-center justify-between p-3 border border-gray-700 rounded-lg bg-gray-800/50'>
-								<div className='flex items-center gap-3'>
-									<div className='w-8 h-8 bg-[#5865F2] rounded-full flex items-center justify-center'>
-										<FaDiscord className='h-5 w-5 text-white' />
+							{/* Discord Account */}
+							{profile.discord ? (
+								<div className='flex items-center justify-between p-4 border border-gray-700 rounded-lg bg-gradient-to-r from-[#5865F2]/10 to-transparent'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-[#5865F2] rounded-full flex items-center justify-center'>
+											<FaDiscord className='h-6 w-6 text-white' />
+										</div>
+										<div className='flex flex-col items-start'>
+											<span className='font-medium text-white'>Discord</span>
+											<span className='text-sm text-gray-400'>Connected</span>
+										</div>
 									</div>
-									<div className='flex flex-col items-start'>
-										<span className='font-medium text-white'>
-											Discord
-										</span>
-										<span className='text-sm text-gray-400'>
-											@username#1234
-										</span>
+									<div className='flex items-center gap-2'>
+										<div className='h-2 w-2 bg-green-500 rounded-full'></div>
+										<span className='text-xs text-green-400'>Active</span>
 									</div>
 								</div>
-								<Button
-									variant='outline'
-									size='sm'
-									className='bg-[#5865F2] text-white border-[#5865F2] hover:bg-[#4752C4] hover:border-[#4752C4]'
-									disabled
-								>
-									Linked
-								</Button>
-							</div>
+							) : (
+								<div className='flex items-center justify-between p-4 border border-gray-700 rounded-lg bg-gray-800/30'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center'>
+											<FaDiscord className='h-6 w-6 text-gray-400' />
+										</div>
+										<div className='flex flex-col items-start'>
+											<span className='font-medium text-white'>Discord</span>
+											<span className='text-sm text-gray-400'>Not connected</span>
+										</div>
+									</div>
+									<span className='text-xs text-gray-400'>Required for login</span>
+								</div>
+							)}
 
-							{/* Steam Button */}
-							<div className='flex items-center justify-between p-3 border'>
-								<div className='flex items-center gap-3'>
-									<div className='w-8 h-8 bg-[#1B2838] rounded-full flex items-center justify-center'>
-										<FaSteam className='w-7 h-7 hover:text-steamLogoColor transition-colors' />
+							{/* Steam Account */}
+							{profile.steam ? (
+								<div className='flex items-center justify-between p-4 border border-gray-700 rounded-lg bg-gradient-to-r from-[#1B2838]/10 to-transparent'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-[#1B2838] rounded-full flex items-center justify-center'>
+											<FaSteam className='w-6 h-6 text-[#00B0E0]' />
+										</div>
+										<div className='flex flex-col items-start'>
+											<span className='font-medium text-white'>Steam</span>
+											<a href={`https://steamcommunity.com/gid/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='text-sm text-[#00B0E0] hover:text-[#00D4FF] transition-colors flex items-center gap-1'>
+												View Profile
+												<ExternalLink className='h-3 w-3' />
+											</a>
+										</div>
 									</div>
-									<span className='font-medium text-white'>
-										Steam
-									</span>
+									<div className='flex items-center gap-2'>
+										<div className='h-2 w-2 bg-green-500 rounded-full'></div>
+										<span className='text-xs text-green-400'>Linked</span>
+									</div>
 								</div>
-								<Button
-									variant='outline'
-									size='sm'
-									className='border-gray-600 text-gray-300 hover:bg-[#1B2838] hover:text-white hover:border-[#1B2838]'
-								>
-									Link Account
-								</Button>
-							</div>
+							) : (
+								<div className='flex items-center justify-between p-4 border border-gray-700 rounded-lg bg-gray-800/30'>
+									<div className='flex items-center gap-3'>
+										<div className='w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center'>
+											<FaSteam className='w-6 h-6 text-gray-400' />
+										</div>
+										<div className='flex flex-col items-start'>
+											<span className='font-medium text-white'>Steam</span>
+											<span className='text-sm text-gray-400'>Not linked</span>
+										</div>
+									</div>
+									<Button variant='outline' size='sm' className='border-gray-600 text-gray-300 hover:bg-[#1B2838] hover:text-white hover:border-[#1B2838]'>
+										Link Account
+									</Button>
+								</div>
+							)}
 						</div>
 					</div>
 				</CardContent>
