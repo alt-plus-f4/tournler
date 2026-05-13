@@ -175,7 +175,7 @@ export const authOptions: NextAuthOptions = {
 					email: token.email || '',
 					image: token.picture || '',
 					discordId: (token.discordId as string) || '',
-					role: token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'SUPER_ADMIN' | undefined,
+					role: token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined,
 				};
 			}
 			return session;

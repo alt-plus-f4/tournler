@@ -4,13 +4,13 @@ import { db } from '@/lib/db';
 export type Permission = 'admin:access' | 'users:manage' | 'teams:manage' | 'tournaments:manage' | 'matches:manage' | 'servers:manage' | 'content:manage';
 
 const permissionMap: Record<Permission, UserRole[]> = {
-	'admin:access': ['MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'SUPER_ADMIN'],
-	'users:manage': ['SUPER_ADMIN'],
-	'teams:manage': ['MODERATOR', 'SUPER_ADMIN'],
-	'tournaments:manage': ['TOURNAMENT_ADMIN', 'SUPER_ADMIN'],
-	'matches:manage': ['TOURNAMENT_ADMIN', 'SUPER_ADMIN'],
-	'servers:manage': ['TOURNAMENT_ADMIN', 'SUPER_ADMIN'],
-	'content:manage': ['CONTENT_ADMIN', 'SUPER_ADMIN'],
+	'admin:access': ['MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'ADMIN'],
+	'users:manage': ['ADMIN'],
+	'teams:manage': ['MODERATOR', 'ADMIN'],
+	'tournaments:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
+	'matches:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
+	'servers:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
+	'content:manage': ['CONTENT_ADMIN', 'ADMIN'],
 };
 
 export function hasPermission(role: UserRole | null | undefined, permission: Permission): boolean {

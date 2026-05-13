@@ -10,7 +10,7 @@ The application now supports five user roles:
 - MODERATOR: Team moderation and admin panel visibility.
 - TOURNAMENT_ADMIN: Tournament, match, and game-server management.
 - CONTENT_ADMIN: Content-focused admin permissions.
-- SUPER_ADMIN: Full administrative access.
+- ADMIN: Full administrative access.
 
 These are defined in the Prisma enum `UserRole`.
 
@@ -18,13 +18,13 @@ These are defined in the Prisma enum `UserRole`.
 
 Permissions are centralized in `src/lib/helpers/permissions.ts`.
 
-- admin:access: MODERATOR, TOURNAMENT_ADMIN, CONTENT_ADMIN, SUPER_ADMIN
-- users:manage: SUPER_ADMIN
-- teams:manage: MODERATOR, SUPER_ADMIN
-- tournaments:manage: TOURNAMENT_ADMIN, SUPER_ADMIN
-- matches:manage: TOURNAMENT_ADMIN, SUPER_ADMIN
-- servers:manage: TOURNAMENT_ADMIN, SUPER_ADMIN
-- content:manage: CONTENT_ADMIN, SUPER_ADMIN
+- admin:access: MODERATOR, TOURNAMENT_ADMIN, CONTENT_ADMIN, ADMIN
+- users:manage: ADMIN
+- teams:manage: MODERATOR, ADMIN
+- tournaments:manage: TOURNAMENT_ADMIN, ADMIN
+- matches:manage: TOURNAMENT_ADMIN, ADMIN
+- servers:manage: TOURNAMENT_ADMIN, ADMIN
+- content:manage: CONTENT_ADMIN, ADMIN
 
 ## Updated API Authorization
 
@@ -88,7 +88,7 @@ For production, use your deploy migration flow (`prisma migrate deploy`).
 
 Backfill existing users currently marked `ADMIN` to one of:
 
-- `SUPER_ADMIN` (full power)
+- `ADMIN` (full power)
 - `TOURNAMENT_ADMIN` (tournament ops)
 - `MODERATOR` (team moderation)
 

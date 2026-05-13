@@ -1,4 +1,4 @@
-export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'SUPER_ADMIN';
+export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN';
 export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 export type TournamentType = 'ONLINE' | 'OFFLINE';
 
