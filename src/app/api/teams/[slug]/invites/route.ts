@@ -56,6 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			id: true,
 			name: true,
 			logo: true,
+			background: true,
 			members: true,
 			capitan: true,
 		},

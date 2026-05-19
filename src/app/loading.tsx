@@ -1,28 +1,27 @@
-import { Skeleton } from '@/components/ui/skeleton';
+'use client';
+
+import { usePathname } from 'next/navigation';
 
 export default function Loading() {
+	const pathname = usePathname();
+
+	// When navigating to lightweight modal routes, avoid showing the heavy page spinner.
+	if (pathname === '/sign-in' || pathname === '/sign-up') {
+		return (
+			<div className='fixed inset-0 z-50 flex items-center justify-center'>
+				<div className='flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-black/80 px-6 py-5 text-white shadow-2xl backdrop-blur'>
+					<div className='h-10 w-10 animate-spin rounded-full border-4 border-t-transparent border-white/70' />
+					<span className='text-sm text-white/70'>Loading...</span>
+				</div>
+			</div>
+		);
+	}
+
 	return (
-		<div className='min-h-screen px-6 py-10 md:px-12'>
-			<div className='mx-auto flex w-full max-w-6xl flex-col gap-8'>
-				<div className='space-y-4'>
-					<Skeleton className='h-12 w-3/5 max-w-xl' />
-					<Skeleton className='h-6 w-2/5 max-w-md' />
-				</div>
-
-				<div className='grid gap-4 md:grid-cols-3'>
-					{Array.from({ length: 3 }).map((_, index) => (
-						<div key={index} className='rounded-2xl border border-white/10 bg-white/5 p-5'>
-							<Skeleton className='mb-4 h-40 w-full rounded-xl' />
-							<Skeleton className='h-5 w-3/4' />
-							<Skeleton className='mt-3 h-4 w-1/2' />
-						</div>
-					))}
-				</div>
-
-				<div className='grid gap-4 lg:grid-cols-[2fr_1fr]'>
-					<Skeleton className='h-80 rounded-2xl' />
-					<Skeleton className='h-80 rounded-2xl' />
-				</div>
+		<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80'>
+			<div className='flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-black/80 px-6 py-5 text-white shadow-2xl backdrop-blur'>
+				<div className='h-10 w-10 animate-spin rounded-full border-4 border-t-transparent border-white/70' />
+				<span className='text-sm text-white/70'>Loading...</span>
 			</div>
 		</div>
 	);

@@ -9,9 +9,23 @@ export async function GET() {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
-	const user = await db.user.findUnique({
-		where: { email: session?.user?.email || '' },
-	});
+	const userId = session.user?.id;
+	const email = session.user?.email || '';
+
+	let user = null;
+	if (userId) {
+		user = await db.user.findUnique({
+			where: { id: userId },
+			include: { discord: true, steam: true },
+		});
+	}
+
+	if (!user && email) {
+		user = await db.user.findUnique({
+			where: { email },
+			include: { discord: true, steam: true },
+		});
+	}
 
 	if (!user) {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });

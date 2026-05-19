@@ -8,7 +8,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
 	if (!slug) return NextResponse.json({ error: 'Missing user ID' }, { status: 400 });
 
-	const user = await db.user.findUnique({
+	// Try to find by id first, otherwise fallback to searching by name (case-insensitive)
+	let user = await db.user.findUnique({
 		where: { id: slug },
 		select: {
 			id: true,
@@ -29,6 +30,30 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			createdAt: true,
 		},
 	});
+
+	if (!user) {
+		user = await db.user.findFirst({
+			where: { name: { equals: slug, mode: 'insensitive' } },
+			select: {
+				id: true,
+				name: true,
+				bio: true,
+				image: true,
+				steam: {
+					select: {
+						steamId: true,
+						createdAt: true,
+					},
+				},
+				discord: {
+					select: {
+						discordId: true,
+					},
+				},
+				createdAt: true,
+			},
+		});
+	}
 
 	if (!user) {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });

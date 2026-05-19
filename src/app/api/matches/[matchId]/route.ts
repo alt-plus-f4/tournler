@@ -24,7 +24,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 					},
 				},
 				teamA: {
-					include: {
+					select: {
+						id: true,
+						name: true,
+						logo: true,
+						background: true,
 						members: {
 							select: {
 								id: true,
@@ -35,7 +39,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 					},
 				},
 				teamB: {
-					include: {
+					select: {
+						id: true,
+						name: true,
+						logo: true,
+						background: true,
 						members: {
 							select: {
 								id: true,

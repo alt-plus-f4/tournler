@@ -1,19 +1,20 @@
-export async function fetchTournament(tournamentId: number): Promise<any> {
-	const response = await fetch(
-		`${process.env.NEXTAUTH_URL}/api/tournaments/${tournamentId}`,
-		{
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		}
-	);
+export async function fetchTournament(tournamentId: number): Promise<any | null> {
+	const base = process.env.NEXTAUTH_URL ?? '';
+	const url = base ? `${base}/api/tournaments/${tournamentId}` : `/api/tournaments/${tournamentId}`;
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: { 'Content-Type': 'application/json' },
+	});
+
+	if (response.status === 404) {
+		return null;
+	}
 
 	if (!response.ok) {
 		throw new Error(`Error fetching tournament: ${response.statusText}`);
 	}
 
-	return response.json().then((data) => {
-		return data.tournament;
-	});
+	const data = await response.json();
+	return data.tournament ?? null;
 }

@@ -9,25 +9,21 @@ interface TeamBannerProps {
 	userId?: string;
 }
 
-export function TeamBanner({
-	team,
-	enableTeamCapitanControls,
-	capitanId,
-	userId,
-}: TeamBannerProps) {
+export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId }: TeamBannerProps) {
 	const members = team.members || [];
 	const teamName = team.name || 'TEAM NAME';
 
 	return (
-		<>
-			<div
-				className='absolute inset-0 flex flex-col w-full h-full pt-5 overflow-ellipsis items-center text-center text-white'
-				style={{ backgroundColor: 'white' }}
-			>
-				<span className='w-fit p-2 text-3xl font-bold bg-white text-black dark:bg-black dark:text-white'>
-					{teamName.toUpperCase()}
-				</span>
-				<Icons.logo className='px-4 py-2 scale-50 -mt-3 bg-white text-black dark:bg-black dark:text-white' />
+		<div style={{ backgroundColor: team.background || '#000000' }} className='absolute inset-0'>
+			<div className='absolute inset-0 flex flex-col items-center justify-center'>
+				{team.logo ? (
+					<img src={team.logo} alt={team.name} className='max-h-[160px] max-w-full object-contain' />
+				) : (
+					<>
+						<span className='w-fit p-2 text-3xl font-bold bg-white text-black'>{teamName.toUpperCase()}</span>
+						<Icons.logo className='px-4 py-2 scale-50 -mt-3 bg-white text-black' />
+					</>
+				)}
 			</div>
 			<div
 				className='absolute inset-0 w-full h-full grid justify-center items-end'
@@ -37,16 +33,9 @@ export function TeamBanner({
 				}}
 			>
 				{members.map((member) => (
-					<TeamMemberAvatar
-						key={member.id}
-						team={team}
-						member={member}
-						userId={userId}
-						capitanId={capitanId}
-						enableTeamCapitanControls={enableTeamCapitanControls}
-					/>
+					<TeamMemberAvatar key={member.id} team={team} member={member} userId={userId} capitanId={capitanId} enableTeamCapitanControls={enableTeamCapitanControls} />
 				))}
 			</div>
-		</>
+		</div>
 	);
 }

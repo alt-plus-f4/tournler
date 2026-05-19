@@ -13,6 +13,9 @@ import TabMenu from '@/components/tournament-tabs/TabMenu';
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
 import { buttonVariants } from '@/components/ui/button';
 import Timer from '@/components/Timer';
+import { notFound } from 'next/navigation';
+import { userHasPermission } from '@/lib/helpers/permissions';
+import { StartTournamentButton } from '@/components/StartTournamentButton';
 
 interface TournamentPageProps {
 	params: Promise<{
@@ -24,12 +27,14 @@ async function TournamentPage({ params }: TournamentPageProps) {
 	const { slug } = await params;
 	const session = await getAuthSession();
 	const user = session?.user;
+	const canManageTournaments = user ? await userHasPermission(user.id, 'tournaments:manage') : false;
 	const tournamentId = parseInt(slug, 10);
 
 	const tournament = await fetchTournament(tournamentId);
-	if (!tournament) return <p>Tournament not found</p>;
+	if (!tournament) notFound();
 
-	const userTeam = user ? await fetchUserTeam(user.id) : null;
+	const userTeamResponse = user ? await fetchUserTeam(user.id) : null;
+	const userTeam = userTeamResponse?.team ?? null;
 	const hasTeam = !!userTeam;
 
 	const timeLeftToJoin = Math.max(new Date(tournament.startDate).getTime() - new Date().getTime(), 0);
@@ -57,10 +62,15 @@ async function TournamentPage({ params }: TournamentPageProps) {
 				</div>
 
 				<div className='absolute inset-4 sm:inset-10 flex items-end justify-end flex-col text-center z-10 '>
+					{canManageTournaments && tournament.status === 'UPCOMING' && (
+						<div className='mb-3 flex w-full justify-end'>
+							<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} />
+						</div>
+					)}
 					{timeLeftToJoin > 0 && tournament.status !== 'ONGOING' ? (
 						<>
 							<Timer timeLeft={timeLeftToJoin} />
-							{hasTeam ? <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={tournament} team={userTeam.team} /> : <span>You need a team to register</span>}
+							{hasTeam ? <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={tournament} team={userTeam} /> : <span>You need a team to register</span>}
 						</>
 					) : (
 						<span>Registration closed</span>

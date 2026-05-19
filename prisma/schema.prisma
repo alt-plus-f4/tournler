@@ -74,7 +74,7 @@ model User {
   email String  @unique @map("email") @db.VarChar
   name  String? @map("name") @db.VarChar
   image String? @map("image") @db.VarChar
-  bio   String? @default("Software developer by day, gamer by night 🎮") @map("bio") @db.VarChar
+  bio   String? @default("Software developer by day, gamer by night 67") @map("bio") @db.VarChar
 
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
@@ -131,8 +131,9 @@ model Cs2Tournament {
 model Cs2Team {
   id Int @id @default(autoincrement()) @map("id")
 
-  name String  @unique @map("name")
-  logo String? @map("logo")
+  name       String  @unique @map("name")
+  logo       String? @map("logo")
+  background String? @map("background")
 
   members User[] @relation("CS2TeamMembers")
 

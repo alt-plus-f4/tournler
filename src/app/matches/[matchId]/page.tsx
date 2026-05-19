@@ -135,13 +135,13 @@ export default function MatchPage() {
 							{/* Team A */}
 							<div className='text-center'>
 								<div className='mb-4'>
-									{match.teamA.logo ? (
-										<Image src={match.teamA.logo} alt={match.teamA.name} width={80} height={80} className='mx-auto rounded-lg' />
-									) : (
-										<div className='w-20 h-20 mx-auto bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center'>
+									<div className='w-20 h-20 mx-auto rounded-lg flex items-center justify-center overflow-hidden' style={{ backgroundColor: match.teamA.background || '#000000' }}>
+										{match.teamA.logo ? (
+											<Image src={match.teamA.logo} alt={match.teamA.name} width={80} height={80} className='mx-auto object-contain' />
+										) : (
 											<span className='text-white font-bold text-lg'>{match.teamA.name.substring(0, 2).toUpperCase()}</span>
-										</div>
-									)}
+										)}
+									</div>
 								</div>
 								<h2 className='text-2xl font-bold text-white mb-2'>{match.teamA.name}</h2>
 								<div className='text-5xl font-bold text-blue-400 mb-4'>{match.scoreTeamA ?? '-'}</div>
@@ -162,13 +162,13 @@ export default function MatchPage() {
 							{/* Team B */}
 							<div className='text-center'>
 								<div className='mb-4'>
-									{match.teamB.logo ? (
-										<Image src={match.teamB.logo} alt={match.teamB.name} width={80} height={80} className='mx-auto rounded-lg' />
-									) : (
-										<div className='w-20 h-20 mx-auto bg-gradient-to-br from-red-600 to-red-800 rounded-lg flex items-center justify-center'>
+									<div className='w-20 h-20 mx-auto rounded-lg flex items-center justify-center overflow-hidden' style={{ backgroundColor: match.teamB.background || '#000000' }}>
+										{match.teamB.logo ? (
+											<Image src={match.teamB.logo} alt={match.teamB.name} width={80} height={80} className='mx-auto object-contain' />
+										) : (
 											<span className='text-white font-bold text-lg'>{match.teamB.name.substring(0, 2).toUpperCase()}</span>
-										</div>
-									)}
+										)}
+									</div>
 								</div>
 								<h2 className='text-2xl font-bold text-white mb-2'>{match.teamB.name}</h2>
 								<div className='text-5xl font-bold text-red-400 mb-4'>{match.scoreTeamB ?? '-'}</div>

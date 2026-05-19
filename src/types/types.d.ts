@@ -95,6 +95,7 @@ export interface Cs2Team {
 	id: number;
 	name: string;
 	logo?: string;
+	background?: string;
 	members: User[];
 	capitanId?: string;
 	capitan?: User;

@@ -17,8 +17,7 @@ const roboto = Roboto({
 
 export const metadata: Metadata = {
 	title: 'Tournler - Simplifying Competitive Events',
-	description:
-		'Effortlessly organize and manage tournaments with Tournler – your all-in-one platform for seamless competition management.',
+	description: 'Effortlessly organize and manage tournaments with Tournler – your all-in-one platform for seamless competition management.',
 };
 
 export default async function RootLayout({
@@ -31,23 +30,20 @@ export default async function RootLayout({
 	const session = await getAuthSession();
 
 	return (
-		<html lang='en'>
-			<body
-				className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}
-			>
+		<html lang='en' data-scroll-behavior='smooth'>
+			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
 				<ConvexClientProvider>
 					<Navbar session={session} />
 
 					{authModal}
 
 					<Providers>
-						<OnboardingStatus session={session}/>
+						<OnboardingStatus session={session} />
 					</Providers>
 
 					{children}
-					
+
 					<Toaster />
-					
 				</ConvexClientProvider>
 
 				<Footer />

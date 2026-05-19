@@ -23,14 +23,14 @@ export async function GET(req: NextRequest) {
 				},
 				capitanId: true,
 				logo: true,
+				background: true,
 				createdAt: true,
 				updatedAt: true,
 			},
 		});
 
-		if (!teams) 
-			return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-		
+		if (!teams) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+
 		return NextResponse.json({ teams }, { status: 200 });
 	}
 
@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
 			},
 			capitanId: true,
 			logo: true,
+			background: true,
 			createdAt: true,
 			updatedAt: true,
 		},
@@ -63,16 +64,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(request: Request) {
 	const session = await getAuthSession();
-	if (!session)
-		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
 	const { teamName } = await request.json();
 
-	if (!teamName || typeof teamName !== 'string')
-		return NextResponse.json(
-			{ error: 'Invalid team name' },
-			{ status: 400 }
-		);
+	if (!teamName || typeof teamName !== 'string') return NextResponse.json({ error: 'Invalid team name' }, { status: 400 });
 
 	const user = await db.user.findUnique({
 		where: { id: session.user.id },
@@ -82,14 +78,10 @@ export async function POST(request: Request) {
 		},
 	});
 
-	if (!user)
-		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
 	if (user.cs2Team || user.cs2TeamCaptain) {
-		return NextResponse.json(
-			{ error: 'User is already in a team' },
-			{ status: 400 }
-		);
+		return NextResponse.json({ error: 'User is already in a team' }, { status: 400 });
 	}
 
 	const existingTeam = await db.cs2Team.findUnique({
@@ -97,10 +89,7 @@ export async function POST(request: Request) {
 	});
 
 	if (existingTeam) {
-		return NextResponse.json(
-			{ error: 'Team name is already taken' },
-			{ status: 409 }
-		);
+		return NextResponse.json({ error: 'Team name is already taken' }, { status: 409 });
 	}
 
 	try {
@@ -116,14 +105,8 @@ export async function POST(request: Request) {
 			},
 		});
 
-		return NextResponse.json(
-			{ message: 'Team created successfully', team },
-			{ status: 201 }
-		);
+		return NextResponse.json({ message: 'Team created successfully', team }, { status: 201 });
 	} catch (error) {
-		return NextResponse.json(
-			{ error: 'Failed to create team: ' + error },
-			{ status: 500 }
-		);
+		return NextResponse.json({ error: 'Failed to create team: ' + error }, { status: 500 });
 	}
 }

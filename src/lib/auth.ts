@@ -110,78 +110,47 @@ export const authOptions: NextAuthOptions = {
 		}),
 	],
 	callbacks: {
-		async signIn({ account }) {
-			if (account?.provider === 'discord') {
-				const currentSession = await getServerSession(authOptions);
-				if (!currentSession) {
-					console.error('No session found during sign-in.');
-					return false;
-				}
-
-				const user = currentSession.user;
-
-				const discordId = account.providerAccountId;
-				const accessToken = account.access_token || '';
-
-				if (!user?.id) {
-					console.error('User ID is missing during Discord sign-in.');
-					return false;
-				}
-
-				// Check if the Discord account already exists
-				let discordAccount = await db.discordAccount.findUnique({
-					where: { discordId },
-				});
-
-				if (!discordAccount) {
-					// Create Discord account entry and link to the current user
-					discordAccount = await db.discordAccount.create({
-						data: {
-							userId: user.id,
-							discordId,
-							accessToken,
-						},
-					});
-				} else {
-					// Update the existing Discord account entry to link to the current user
-					discordAccount = await db.discordAccount.update({
-						where: { discordId },
-						data: {
-							userId: user.id, // Reassign to the current user
-							accessToken,
-						},
-					});
-				}
-
-				// Ensure the User model is updated with the linked Discord account
-				await db.user.update({
-					where: { id: user.id },
-					data: {
-						discord: {
-							connect: { discordId: discordAccount.discordId },
-						},
-					},
-				});
-			}
-
+		async signIn() {
+			// Allow sign-in to proceed for providers; account linking is handled later
 			return true;
 		},
 
 		async session({ token, session }) {
 			if (token) {
+				const tokenUserId = (token.id as string) || token.sub || '';
+				const dbUser = tokenUserId
+					? await db.user.findUnique({
+							where: { id: tokenUserId },
+							select: {
+								id: true,
+								name: true,
+								email: true,
+								image: true,
+								role: true,
+								discord: {
+									select: { discordId: true },
+								},
+							},
+						})
+					: null;
+
 				session.user = {
-					id: (token.id as string) || '',
-					name: (token.name as string) || '',
-					email: token.email || '',
-					image: token.picture || '',
-					discordId: (token.discordId as string) || '',
-					role: token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined,
+					id: dbUser?.id || tokenUserId,
+					name: dbUser?.name || (token.name as string) || '',
+					email: dbUser?.email || token.email || '',
+					image: dbUser?.image || token.picture || '',
+					discordId: (token.discordId as string) || dbUser?.discord?.discordId || '',
+					role: dbUser?.role || (token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined),
 				};
 			}
 			return session;
 		},
 
 		async jwt({ token, account, user }) {
+			if (user?.id) {
+				token.id = user.id;
+			}
+
 			if (account?.provider === 'email') {
 				if (user) {
 					token.id = user.id;
@@ -232,6 +201,10 @@ export const authOptions: NextAuthOptions = {
 						});
 					}
 
+					if (!token.id && user?.id) {
+						token.id = user.id;
+					}
+
 					token.discordId = discordId;
 					token.accessToken = accessToken;
 				}
@@ -253,6 +226,10 @@ export const authOptions: NextAuthOptions = {
 							},
 						});
 					}
+				}
+
+				if (!token.id && user?.id) {
+					token.id = user.id;
 				}
 
 				token.steamId = steamId;

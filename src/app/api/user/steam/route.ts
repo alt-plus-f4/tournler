@@ -27,23 +27,17 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
 	const session = await getAuthSession();
-	if (!session)
-		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
 	const user = await db.user.findUnique({
 		where: { email: session?.user?.email || '' },
 	});
 
-	if (!user)
-		return NextResponse.json({ error: 'User not found' }, { status: 404 });
+	if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
 	const { steamId } = await request.json();
 
-	if (!steamId || typeof steamId !== 'string')
-		return NextResponse.json(
-			{ error: 'Invalid Steam ID' },
-			{ status: 400 }
-		);
+	if (!steamId || typeof steamId !== 'string') return NextResponse.json({ error: 'Invalid Steam ID' }, { status: 400 });
 
 	await db.steamAccount.upsert({
 		where: { userId: user.id },
@@ -56,8 +50,17 @@ export async function PATCH(request: Request) {
 		},
 	});
 
-	return NextResponse.json(
-		{ message: 'Steam account linked successfully' },
-		{ status: 200 }
-	);
+	return NextResponse.json({ message: 'Steam account linked successfully' }, { status: 200 });
+}
+
+export async function DELETE() {
+	const session = await getAuthSession();
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+	const user = await db.user.findUnique({ where: { email: session?.user?.email || '' } });
+	if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+	await db.steamAccount.deleteMany({ where: { userId: user.id } });
+
+	return NextResponse.json({ message: 'Steam account unlinked' }, { status: 200 });
 }

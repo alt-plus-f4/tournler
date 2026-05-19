@@ -7,12 +7,14 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { LeaveTeamDialog } from '@/components/LeaveTeamDialog';
+import TeamActions from '@/components/TeamActions';
 import { UsersSearch } from '@/components/UsersSearch';
 import fetchTeam from '@/lib/helpers/fetch-team';
 import { getAuthSession } from '@/lib/auth';
 import { fetchUsersNotInTheTeam } from '@/lib/helpers/fetch-users-not-in-team';
 import { LiaDoorOpenSolid } from 'react-icons/lia';
 import fetchInvitedPlayers from '@/lib/helpers/fetch-invited-players';
+import { notFound } from 'next/navigation';
 
 interface CS2TeamPageProps {
 	params: Promise<{
@@ -29,7 +31,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 	const teamId = parseInt(slug, 10);
 
 	let team = await fetchTeam(teamId);
-	if (!team) return <p>Team not found</p>;
+	if (!team) notFound();
 
 	team = team.team;
 
@@ -70,6 +72,9 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 								</UsersSearch>
 							</Suspense>
 						)}
+
+						{/* Team owner actions */}
+						<TeamActions team={team} userId={user?.id} isUserTeamCaptain={isUserTeamCaptain} />
 					</div>
 				</div>
 				<div className='flex mx-1 mt-2'>

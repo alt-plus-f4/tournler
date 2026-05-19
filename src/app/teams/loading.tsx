@@ -1,33 +1,9 @@
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert } from '@/components/ui/alert';
-import { FallbackCards } from '@/components/FallbackCards';
-import { CircleUser } from 'lucide-react';
-
 export default function Loading() {
 	return (
-		<div className='w-[78%] mx-auto my-4'>
-			{/* Page title skeleton */}
-			<div className='flex justify-center my-4'>
-				<Skeleton className='h-12 w-3/4 max-w-[600px]' />
-			</div>
-
-			{/* Alert skeleton */}
-			<Alert className='md:flex'>
-				<CircleUser className='h-4 w-4' />
-				<div className='w-fit'>
-					<Skeleton className='h-5 w-32 mb-2' />
-					<Skeleton className='h-4 w-64' />
-				</div>
-			</Alert>
-
-			{/* Teams heading skeleton */}
-			<div className='flex items-center'>
-				<Skeleton className='h-8 w-32 my-4' />
-			</div>
-
-			{/* Teams grid skeleton using FallbackCards */}
-			<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 justify-evenly border-l-2 ml-4 pl-4 border-black dark:border-white'>
-				<FallbackCards />
+		<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4'>
+			<div className='flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-black/90 px-6 py-5 text-white shadow-2xl backdrop-blur'>
+				<div className='h-10 w-10 animate-spin rounded-full border-4 border-t-transparent border-white/70' />
+				<span className='text-sm text-white/70'>Loading teams...</span>
 			</div>
 		</div>
 	);

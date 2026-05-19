@@ -85,6 +85,58 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });
 		}
 
+		// Coerce/validate certain field types for Prisma
+		if (dataToUpdate.startDate !== undefined) {
+			if (typeof dataToUpdate.startDate === 'string') {
+				const parsed = new Date(dataToUpdate.startDate);
+				if (isNaN(parsed.getTime())) {
+					// try ISO date-only -> append midnight UTC
+					const alt = new Date(dataToUpdate.startDate + 'T00:00:00Z');
+					if (isNaN(alt.getTime())) {
+						return NextResponse.json({ error: 'Invalid startDate format, expected ISO-8601' }, { status: 400 });
+					}
+					dataToUpdate.startDate = alt;
+				} else {
+					dataToUpdate.startDate = parsed;
+				}
+			} else if (!(dataToUpdate.startDate instanceof Date)) {
+				return NextResponse.json({ error: 'startDate must be a valid date' }, { status: 400 });
+			}
+		}
+
+		if (dataToUpdate.endDate !== undefined) {
+			if (typeof dataToUpdate.endDate === 'string') {
+				const parsed = new Date(dataToUpdate.endDate);
+				if (isNaN(parsed.getTime())) {
+					const alt = new Date(dataToUpdate.endDate + 'T00:00:00Z');
+					if (isNaN(alt.getTime())) {
+						return NextResponse.json({ error: 'Invalid endDate format, expected ISO-8601' }, { status: 400 });
+					}
+					dataToUpdate.endDate = alt;
+				} else {
+					dataToUpdate.endDate = parsed;
+				}
+			} else if (!(dataToUpdate.endDate instanceof Date)) {
+				return NextResponse.json({ error: 'endDate must be a valid date' }, { status: 400 });
+			}
+		}
+
+		if (dataToUpdate.prizePool !== undefined) {
+			const n = Number(dataToUpdate.prizePool);
+			if (Number.isNaN(n)) {
+				return NextResponse.json({ error: 'prizePool must be a number' }, { status: 400 });
+			}
+			dataToUpdate.prizePool = n;
+		}
+
+		if (dataToUpdate.teamCapacity !== undefined) {
+			const n = Number(dataToUpdate.teamCapacity);
+			if (!Number.isInteger(n)) {
+				return NextResponse.json({ error: 'teamCapacity must be an integer' }, { status: 400 });
+			}
+			dataToUpdate.teamCapacity = n;
+		}
+
 		const updatedTournament = await db.cs2Tournament.update({
 			where: { id: numericId },
 			data: dataToUpdate,
