@@ -17,7 +17,8 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId 
 		<div style={{ backgroundColor: team.background || '#000000' }} className='absolute inset-0'>
 			<div className='absolute inset-0 flex flex-col items-center justify-center'>
 				{team.logo ? (
-					<img src={team.logo} alt={team.name} className='max-h-[160px] max-w-full object-contain' />
+					// eslint-disable-next-line @next/next/no-img-element
+					<img src={team.logo} alt={team.name} className='max-h-[80px] max-w-[120px] object-contain' />
 				) : (
 					<>
 						<span className='w-fit p-2 text-3xl font-bold bg-white text-black'>{teamName.toUpperCase()}</span>

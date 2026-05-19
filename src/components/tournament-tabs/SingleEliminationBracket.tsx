@@ -1,3 +1,4 @@
+import { useRouter } from 'next/navigation';
 import { emptyBracket, sampleMatches } from '@/lib/sample/sampleMatches';
 import { Tournament } from '@/types/types';
 
@@ -22,22 +23,88 @@ interface BracketProps {
 	svgWrapper?: React.FC<{ children: React.ReactNode }>;
 }
 
-const SingleEliminationBracket: React.FC<BracketProps> = ({
-	matches = [],
-	onMatchClick,
-	tournament,
-	svgWrapper: SvgWrapper = ({ children }) => <div>{children}</div>,
-}) => {
-	const bracketMatches =
-		tournament.status === 'UPCOMING'
-			? emptyBracket
-			: matches.length > 0
-				? matches
-				: sampleMatches;
-	const columnWidth = 250;
-	const rowHeight = 100;
-	const padding = 40;
-	const titleMarginTop = 20;
+const generateBracketFromTeams = (teams: any[]): Match[] => {
+	if (!teams || teams.length === 0) {
+		return emptyBracket;
+	}
+
+	// Sort teams (could add seeding logic here)
+	const sortedTeams = [...teams];
+
+	// Calculate number of rounds needed
+	const numTeams = sortedTeams.length;
+	let matchId = 1;
+	const matches: Match[] = [];
+
+	// Generate first round matches
+	const firstRoundMatches: Match[] = [];
+	for (let i = 0; i < numTeams; i += 2) {
+		const team1 = sortedTeams[i];
+		const team2 = sortedTeams[i + 1];
+
+		const nextMatchId = numTeams > 2 ? Math.floor(numTeams / 2) + Math.ceil((i / 2 + 1) / 2) : undefined;
+
+		firstRoundMatches.push({
+			id: matchId,
+			nextMatchId: nextMatchId,
+			participants: [
+				{
+					id: team1?.id,
+					name: team1?.name || 'TBD',
+					score: null,
+				},
+				{
+					id: team2?.id,
+					name: team2?.name || 'TBD',
+					score: null,
+				},
+			],
+			winner: null,
+			status: 'PENDING',
+		});
+		matchId++;
+	}
+
+	matches.push(...firstRoundMatches);
+
+	// Generate subsequent rounds
+	let currentRoundMatches = firstRoundMatches;
+	let roundStartId = matchId;
+
+	while (currentRoundMatches.length > 1) {
+		const nextRoundMatches: Match[] = [];
+
+		for (let i = 0; i < currentRoundMatches.length; i += 2) {
+			const nextMatchId = currentRoundMatches.length > 2 ? roundStartId + Math.ceil((i / 2 + 1) / 2) : undefined;
+
+			nextRoundMatches.push({
+				id: matchId,
+				nextMatchId: nextMatchId,
+				participants: [
+					{ id: undefined, name: 'TBD', score: null },
+					{ id: undefined, name: 'TBD', score: null },
+				],
+				winner: null,
+				status: 'PENDING',
+			});
+			matchId++;
+		}
+
+		roundStartId = matchId;
+		matches.push(...nextRoundMatches);
+		currentRoundMatches = nextRoundMatches;
+	}
+
+	return matches;
+};
+
+const SingleEliminationBracket: React.FC<BracketProps> = ({ matches = [], onMatchClick, tournament, svgWrapper: SvgWrapper = ({ children }) => <div>{children}</div> }) => {
+	const router = useRouter();
+	const bracketMatches = tournament.status === 'UPCOMING' ? emptyBracket : matches.length > 0 ? matches : tournament.teams && tournament.teams.length > 0 ? generateBracketFromTeams(tournament.teams) : sampleMatches;
+	const columnWidth = 240;
+	const rowHeight = 90;
+	const padding = 30;
+	const titleMarginTop = 25;
 
 	const generateBracket = (matches: Match[]): Match[][] => {
 		const lastMatch = matches.find((match) => !match.nextMatchId);
@@ -49,9 +116,7 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 		while (currentColumn.length > 0) {
 			columns.unshift(currentColumn);
 			const nextColumn = currentColumn.reduce<Match[]>((acc, match) => {
-				const previousMatches = matches.filter(
-					(m) => m.nextMatchId === match.id
-				);
+				const previousMatches = matches.filter((m) => m.nextMatchId === match.id);
 				return [...acc, ...previousMatches];
 			}, []);
 			currentColumn = nextColumn;
@@ -60,13 +125,21 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 		return columns;
 	};
 
+	const getRoundTitle = (matchCount: number): string => {
+		if (matchCount === 1) return 'Finals';
+		if (matchCount === 2) return 'Semi Finals';
+		if (matchCount === 4) return 'Quarter Finals';
+		if (matchCount === 8) return 'Round of 16';
+		if (matchCount === 16) return 'Round of 32';
+		return `Round (${matchCount} teams)`;
+	};
+
 	const columns = generateBracket(bracketMatches);
-	const bracketWidth = columns.length * columnWidth + padding * 2;
+	const bracketWidth = Math.max(columns.length * columnWidth + padding * 2, 400);
 	const getYPosition = (columnIndex: number, matchIndex: number): number => {
 		const totalMatches = columns[columnIndex].length;
 		const spaceBetweenMatches = rowHeight * Math.pow(2, columnIndex);
-		const startY =
-			(bracketHeight - (totalMatches - 1) * spaceBetweenMatches) / 2;
+		const startY = (bracketHeight - (totalMatches - 1) * spaceBetweenMatches) / 2;
 		return startY + matchIndex * spaceBetweenMatches;
 	};
 
@@ -76,25 +149,26 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 				const totalMatches = col.length;
 				const spaceBetweenMatches = rowHeight * Math.pow(2, i);
 				return (totalMatches - 1) * spaceBetweenMatches + rowHeight;
-			})
+			}),
 		) +
 		padding * 2;
 
 	const renderMatch = (match: Match, x: number, y: number) => {
-		const boxHeight = 60;
-		const textPadding = 20;
+		const boxHeight = 70;
+		const textPadding = 12;
+		const borderRadius = 6;
 
 		const getParticipantDetails = (
 			participant: Participant | null,
 			// eslint-disable-next-line @typescript-eslint/no-unused-vars
-			index: number
+			index: number,
 		) => {
 			if (!participant || !participant.name) {
 				return {
 					name: 'TBD',
 					score: '-',
-					fill: '#666666',
-					opacity: 0.5,
+					fill: '#999999',
+					bgColor: '#2a2a2a',
 				};
 			}
 
@@ -102,31 +176,32 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 			return {
 				name: participant.name,
 				score: participant.score ?? '-',
-				fill: match.winner
-					? isWinner
-						? '#ffffff'
-						: '#999999'
-					: '#999999',
-				opacity: match.winner ? (isWinner ? 1 : 0.5) : 1,
+				fill: isWinner ? '#ffffff' : '#e0e0e0',
+				bgColor: isWinner ? '#1a1a1a' : '#2a2a2a',
+				isWinner,
 			};
 		};
+
+		// const statusStrokeColor: Record<string, string> = {
+		// 	PENDING: '#ffffff',
+		// 	IN_PROGRESS: '#ffffff',
+		// 	COMPLETED: '#ffffff',
+		// };
 
 		return (
 			<g
 				key={`match-${match.id}`}
 				transform={`translate(${x}, ${y + titleMarginTop})`}
-				onClick={() => onMatchClick?.(match)}
+				onClick={() => {
+					onMatchClick?.(match);
+					router.push(`/matches/${match.id}`);
+				}}
 				style={{ cursor: 'pointer' }}
-				className='transition-all duration-200 hover:brightness-150'
+				className='hover:opacity-80 transition-opacity'
 			>
-				<rect
-					width={columnWidth - padding}
-					height={boxHeight}
-					rx={2}
-					fill='#1a1a1a'
-					stroke='#333333'
-					strokeWidth={1}
-				/>
+				{/* Main match box */}
+				<rect width={columnWidth - padding} height={boxHeight} rx={borderRadius} fill='#1a1a1a' stroke='#ffffff' strokeWidth='0.25' />
+
 				{[0, 1].map((index) => {
 					const participant = match.participants[index];
 					const details = getParticipantDetails(participant, index);
@@ -134,47 +209,28 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 
 					return (
 						<g key={`match-${match.id}-team-${index}`}>
-							<rect
-								x={0}
-								y={index * teamHeight}
-								width={columnWidth - padding}
-								height={teamHeight}
-								fill='#1a1a1a'
-								fillOpacity={details.opacity}
-								stroke='#333333'
-								strokeWidth={1}
-							/>
-							<rect
-								x={0}
-								y={index * teamHeight}
-								width={3}
-								height={teamHeight}
-								fill={
-									participant && match.winner
-										? match.winner.id === participant.id
-											? '#4ade80'
-											: '#ef4444'
-										: '#999999'
-								}
-							/>
-							<text
-								x={textPadding}
-								y={index * teamHeight + teamHeight / 2}
-								fill={details.fill}
-								fontSize={13}
-								fontFamily='Arial'
-								dominantBaseline='middle'
-							>
+							{/* Team row background */}
+							<rect x={0} y={index * teamHeight} width={columnWidth - padding} height={teamHeight} fill={details.bgColor} rx={index === 0 ? `${borderRadius} ${borderRadius} 0 0` : `0 0 ${borderRadius} ${borderRadius}`} />
+
+							{/* Left accent bar */}
+							<rect x={0} y={index * teamHeight} width={3} height={teamHeight} fill={details.isWinner ? '#ffffff' : '#666666'} rx={index === 0 ? `${borderRadius} 0 0 0` : `0 0 0 ${borderRadius}`} />
+
+							{/* Team name */}
+							<text x={textPadding + 8} y={index * teamHeight + teamHeight / 2} fill={details.fill} fontSize='12' fontFamily='system-ui, -apple-system, sans-serif' fontWeight='500' dominantBaseline='middle' className='pointer-events-none'>
 								{details.name}
 							</text>
+
+							{/* Score */}
 							<text
-								x={columnWidth - padding - textPadding}
+								x={columnWidth - padding - textPadding - 4}
 								y={index * teamHeight + teamHeight / 2}
 								fill={details.fill}
-								fontSize={13}
-								fontFamily='Arial'
+								fontSize='14'
+								fontFamily='system-ui, -apple-system, sans-serif'
+								fontWeight='600'
 								textAnchor='end'
 								dominantBaseline='middle'
+								className='pointer-events-none'
 							>
 								{details.score}
 							</text>
@@ -185,42 +241,36 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 		);
 	};
 
-	const renderConnectors = (
-		match: Match,
-		x: number,
-		y: number,
-		columnIndex: number
-	) => {
+	const renderConnectors = (match: Match, x: number, y: number, columnIndex: number) => {
 		if (columnIndex === 0) return null;
 
-		const previousMatches = bracketMatches.filter(
-			(m) => m.nextMatchId === match.id
-		);
+		const previousMatches = bracketMatches.filter((m) => m.nextMatchId === match.id);
 		if (previousMatches.length === 0) return null;
 
 		return (
-			<g key={`connector-${match.id}`}>
+			<g key={`connectors-${match.id}`}>
 				{previousMatches.map((prevMatch) => {
 					const prevX = x - columnWidth;
-					const prevY = getYPosition(
-						columnIndex - 1,
-						previousMatches.indexOf(prevMatch)
-					);
-					const startY = prevY + titleMarginTop + 40;
-					const endY = y + titleMarginTop + 40;
+					const prevY = getYPosition(columnIndex - 1, previousMatches.indexOf(prevMatch));
+					const startY = prevY + titleMarginTop + 35;
+					const endY = y + titleMarginTop + 35;
+
+					const midX = x - columnWidth / 2 + padding / 2;
 
 					return (
 						<path
 							key={`connector-${match.id}-${prevMatch.id}`}
 							d={`
-					M ${prevX + columnWidth - padding} ${startY}
-					H ${x - padding / 2}
-					V ${endY}
-					H ${x}
-				  `}
-							stroke='#404040'
-							strokeWidth={2}
+								M ${prevX + columnWidth - padding} ${startY}
+								L ${midX} ${startY}
+								L ${midX} ${endY}
+								L ${x} ${endY}
+							`}
+							stroke='#555555'
+							strokeWidth='1.5'
 							fill='none'
+							strokeLinecap='round'
+							strokeLinejoin='round'
 						/>
 					);
 				})}
@@ -228,57 +278,40 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({
 		);
 	};
 
-	const roundTitles = ['Quarter Finals', 'Semi Finals', 'Finals'];
-
-	const renderRoundTitles = (columnIndex: number, x: number) => (
-		<text
-			key={`round-${columnIndex}`}
-			x={x + columnWidth / 2 - 15}
-			y={padding + titleMarginTop}
-			textAnchor='middle'
-			fill='white'
-			fontSize={16}
-			fontWeight='bold'
-		>
-			{roundTitles[columnIndex]}
-		</text>
+	const renderRoundTitles = (columnIndex: number, x: number, matchCount: number) => (
+		<g key={`round-${columnIndex}`}>
+			<text x={x + columnWidth / 2} y={12} textAnchor='middle' fill='#ffffff' fontSize='13' fontWeight='700' fontFamily='system-ui, -apple-system, sans-serif' className='pointer-events-none'>
+				{getRoundTitle(matchCount)}
+			</text>
+		</g>
 	);
 
 	return (
-		<div
-			className={`w-[${bracketWidth}px] h-[${bracketHeight}px] overflow-scroll`}
-		>
-			<SvgWrapper>
-				<svg
-					width={bracketWidth}
-					height={bracketHeight + padding + titleMarginTop}
-				>
-					{columns.map((column, columnIndex) => (
-						<g key={columnIndex}>
-							{renderRoundTitles(
-								columnIndex,
-								padding + columnIndex * columnWidth
-							)}
-							{column.map((match, matchIndex) => {
-								const x = padding + columnIndex * columnWidth;
-								const y = getYPosition(columnIndex, matchIndex);
+		<div className='w-full flex flex-col items-center justify-center py-8'>
+			<div className='flex justify-center'>
+				<div className='overflow-x-auto'>
+					<SvgWrapper>
+						<svg width={bracketWidth} height={bracketHeight + padding + titleMarginTop}>
+							{columns.map((column, columnIndex) => (
+								<g key={columnIndex}>
+									{renderRoundTitles(columnIndex, padding + columnIndex * columnWidth, column.length)}
+									{column.map((match, matchIndex) => {
+										const x = padding + columnIndex * columnWidth;
+										const y = getYPosition(columnIndex, matchIndex);
 
-								return (
-									<g key={match.id}>
-										{renderConnectors(
-											match,
-											x,
-											y,
-											columnIndex
-										)}
-										{renderMatch(match, x, y)}
-									</g>
-								);
-							})}
-						</g>
-					))}
-				</svg>
-			</SvgWrapper>
+										return (
+											<g key={match.id}>
+												{renderConnectors(match, x, y, columnIndex)}
+												{renderMatch(match, x, y)}
+											</g>
+										);
+									})}
+								</g>
+							))}
+						</svg>
+					</SvgWrapper>
+				</div>
+			</div>
 		</div>
 	);
 };
