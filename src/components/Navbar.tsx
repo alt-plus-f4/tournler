@@ -23,7 +23,7 @@ export default async function Navbar({ session }: NavbarProps) {
 				<BurgerMenu className='block md:hidden h-4 z-50 col-start-1' />
 
 				<Link href='/' className='col-start-2 md:col-start-1 flex justify-center md:justify-start'>
-					<Image src={'/logo.png'} alt='Tournler' width={140} height={20} className='hover:brightness-150 h-auto w-[80px] sm:w-[140px]' style={{ height: 'auto' }} />
+					<Image src={'/logo.png'} alt='Tournler' width={140} height={20} className='hover:brightness-150 h-auto w-[80px] sm:w-[140px]' />
 				</Link>
 
 				<MainNav className='hidden md:flex col-start-2' />
