@@ -18,8 +18,6 @@ export async function GET() {
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 	}
 
-	// console.log(user);
-
 	const hasName = !!user.name;
 	const hasImage = !!user.image;
 	const hasLinkedDiscord = !!user.discord;

@@ -1,0 +1,28 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
+import { TournamentStatus } from '@prisma/client';
+
+export async function GET() {
+	const session = await getAuthSession();
+	const sessionUser = session?.user;
+
+	if (!sessionUser) {
+		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	if (!(await userHasPermission(sessionUser.id, 'tournaments:manage'))) {
+		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
+	const ended = await db.cs2Tournament.count({
+		where: { status: TournamentStatus.COMPLETED },
+	});
+
+	const upcoming = await db.cs2Tournament.count({
+		where: { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } },
+	});
+
+	return NextResponse.json({ ended, upcoming });
+}

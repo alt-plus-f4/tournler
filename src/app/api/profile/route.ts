@@ -29,8 +29,6 @@ export async function PATCH(request: Request) {
     session.user.bio = bio || '';
     session.user.image = avatarUrl;
 
-    // console.log(session);
-
     const updatedUser = await db.user.update({
       where: { email: session.user.email || '' },
       data: {
