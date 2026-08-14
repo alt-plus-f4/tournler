@@ -10,7 +10,7 @@ export async function fetchUserTeam(userId: string) {
 		const userTeam = await response.json();
 
 		return userTeam;
-	} catch (error) {
+	} catch {
 		return null;
 	}
 }

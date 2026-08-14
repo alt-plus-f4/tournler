@@ -12,7 +12,9 @@ const LoginButtons = ({ className = '' }: LoginButtonsProps) => {
 	const savePrevPath = () => {
 		try {
 			sessionStorage.setItem('preAuthPath', window.location.pathname + window.location.search);
-		} catch (e) {}
+		} catch {
+			// sessionStorage may be unavailable (e.g. private browsing) — safe to ignore
+		}
 	};
 
 	return (

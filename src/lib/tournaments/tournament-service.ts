@@ -38,29 +38,34 @@ export async function startTournament(tournamentId: number) {
 		// Generate bracket matches
 		const bracketMatches = generateBracket(tournament.teams, 'single-elimination');
 
-		// Create matches in the database
-		const createdMatches = await Promise.all(
-			bracketMatches.map((match) =>
-				db.matches.create({
-					data: {
-						tournamentId,
-						teamAId: match.teamAId,
-						teamBId: match.teamBId,
-						matchDate: new Date(), // Initial date, will be scheduled later
-					},
-				}),
-			),
-		);
-
-		// Update tournament status to ONGOING
-		const updatedTournament = await db.cs2Tournament.update({
-			where: { id: tournamentId },
+		// Atomically claim the UPCOMING -> ONGOING transition so two concurrent
+		// callers (e.g. a manual start racing the check-start cron) can't both
+		// pass the earlier status check and double-generate brackets.
+		const { count } = await db.cs2Tournament.updateMany({
+			where: { id: tournamentId, status: TournamentStatus.UPCOMING },
 			data: { status: TournamentStatus.ONGOING },
+		});
+
+		if (count === 0) {
+			throw new Error(`Tournament ${tournamentId} was already started by another request`);
+		}
+
+		await db.matches.createMany({
+			data: bracketMatches.map((match) => ({
+				tournamentId,
+				teamAId: match.teamAId,
+				teamBId: match.teamBId,
+				matchDate: new Date(), // Initial date, will be scheduled later
+			})),
+		});
+
+		const updatedTournament = await db.cs2Tournament.findUniqueOrThrow({
+			where: { id: tournamentId },
 		});
 
 		return {
 			tournament: updatedTournament,
-			matchesCreated: createdMatches.length,
+			matchesCreated: bracketMatches.length,
 		};
 	} catch (error) {
 		console.error(`Error starting tournament ${tournamentId}:`, error);

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { FeaturedTournament } from '@/components/FeaturedTournament';
 import { TournamentRow } from '@/components/TournamentRow';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ReducedTournament } from '@/types/types';
 import Loading from './loading';
 
@@ -15,20 +15,22 @@ export default function Page() {
 	const [view, setView] = useState<TournamentView>('active');
 	const [isLoading, setIsLoading] = useState(true);
 	const [isSwitching, setIsSwitching] = useState(false);
-	const [cache, setCache] = useState<Record<TournamentView, ReducedTournament[]>>({
+	const cacheRef = useRef<Record<TournamentView, ReducedTournament[]>>({
 		active: [],
 		completed: [],
 	});
+	const hasLoadedOnceRef = useRef(false);
 
 	useEffect(() => {
 		async function fetchTournaments(status: TournamentView) {
-			if (cache[status].length > 0) {
-				setTournaments(cache[status]);
+			const cached = cacheRef.current[status];
+			if (cached.length > 0) {
+				setTournaments(cached);
 				setIsLoading(false);
 				return;
 			}
 
-			if (isLoading) {
+			if (!hasLoadedOnceRef.current) {
 				setIsLoading(true);
 			} else {
 				setIsSwitching(true);
@@ -39,19 +41,17 @@ export default function Page() {
 				const data: ReducedTournament[] = await response.json();
 
 				setTournaments(data);
-				setCache((prev) => ({
-					...prev,
-					[status]: data,
-				}));
+				cacheRef.current = { ...cacheRef.current, [status]: data };
 			} catch (error) {
 				console.error(error);
 			} finally {
+				hasLoadedOnceRef.current = true;
 				setIsLoading(false);
 				setIsSwitching(false);
 			}
 		}
 		fetchTournaments(view);
-	}, [view, cache, isLoading]);
+	}, [view]);
 
 	if (isLoading) return <Loading />;
 

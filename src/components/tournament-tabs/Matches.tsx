@@ -84,7 +84,7 @@ const Matches: React.FC<MatchesProps> = ({ tournament }) => {
 										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamA.name}</p>
 										{match.scoreTeamA !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamA}</p>}
 									</div>
-									{match.teamA.logo && <img src={match.teamA.logo} alt={match.teamA.name} className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
+									{match.teamA.logo && <img src={match.teamA.logo} alt={match.teamA.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
 								</div>
 
 								{/* Score/Status */}
@@ -108,7 +108,7 @@ const Matches: React.FC<MatchesProps> = ({ tournament }) => {
 
 								{/* Team B */}
 								<div className='flex-1 flex items-center gap-3'>
-									{match.teamB.logo && <img src={match.teamB.logo} alt={match.teamB.name} className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
+									{match.teamB.logo && <img src={match.teamB.logo} alt={match.teamB.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
 									<div className='text-left'>
 										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamB.name}</p>
 										{match.scoreTeamB !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamB}</p>}
