@@ -80,6 +80,9 @@
 				"brace-expansion": "1.1.18"
 			}
 		},
-		"postcss": "^8.5.26"
+		"postcss": "^8.5.26",
+		"next-auth": {
+			"nodemailer": "$nodemailer"
+		}
 	}
 }
