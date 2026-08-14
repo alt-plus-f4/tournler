@@ -4,37 +4,12 @@ import { db } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
-	const page = parseInt(searchParams.get('page') || '1', 10);
-	const limit = parseInt(searchParams.get('limit') || '10', 10);
+	const parsedPage = parseInt(searchParams.get('page') || '1', 10);
+	const parsedLimit = parseInt(searchParams.get('limit') || '10', 10);
+	const page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
+	const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : Math.min(parsedLimit, 100);
 
-	let teams = null;
-
-	if (isNaN(page) || isNaN(limit)) {
-		teams = await db.cs2Team.findMany({
-			select: {
-				id: true,
-				name: true,
-				members: {
-					select: {
-						id: true,
-						name: true,
-						image: true,
-					},
-				},
-				capitanId: true,
-				logo: true,
-				background: true,
-				createdAt: true,
-				updatedAt: true,
-			},
-		});
-
-		if (!teams) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-
-		return NextResponse.json({ teams }, { status: 200 });
-	}
-
-	teams = await db.cs2Team.findMany({
+	const teams = await db.cs2Team.findMany({
 		select: {
 			id: true,
 			name: true,

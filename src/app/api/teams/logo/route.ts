@@ -28,6 +28,11 @@ export async function POST(request: Request) {
 
 		if (!(file instanceof Blob)) return NextResponse.json({ error: 'Missing file' }, { status: 400 });
 
+		if (!file.type.startsWith('image/')) return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
+
+		const MAX_LOGO_BYTES = 5 * 1024 * 1024;
+		if (file.size > MAX_LOGO_BYTES) return NextResponse.json({ error: 'Image must be smaller than 5MB' }, { status: 400 });
+
 		const arrayBuffer = await file.arrayBuffer();
 		const now = Date.now();
 		const blob = await put(`logos/team-${teamId}-${now}.png`, arrayBuffer, {

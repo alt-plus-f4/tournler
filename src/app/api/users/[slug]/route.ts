@@ -90,7 +90,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		return NextResponse.json({ error: 'User not found' }, { status: 404 });
 	}
 
-	const data = await request.json();
+	const body = await request.json();
+
+	const allowedFields = ['name', 'bio', 'image', 'role'] as const;
+	const data: Record<string, unknown> = {};
+	for (const key of allowedFields) {
+		if (body[key] !== undefined) data[key] = body[key];
+	}
+
+	if (Object.keys(data).length === 0) {
+		return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });
+	}
 
 	const updatedUser = await db.user.update({
 		where: { id: userId },

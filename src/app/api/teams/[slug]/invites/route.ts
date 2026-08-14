@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
@@ -30,6 +32,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
 // POST
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const session = await getAuthSession();
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 	const { slug } = await params;
 
 	if (!slug) {
@@ -44,8 +49,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 	const { id } = await request.json();
 
-	// console.log(id);
-
 	if (!id) {
 		return NextResponse.json({ error: 'Missing user ID' }, { status: 400 });
 	}
@@ -59,6 +62,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			background: true,
 			members: true,
 			capitan: true,
+			teamInvitations: true,
 		},
 	});
 
@@ -66,8 +70,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 	}
 
+	const isCaptain = team.capitan?.id === session.user.id;
+	if (!isCaptain && !(await userHasPermission(session.user.id, 'teams:manage'))) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
 	if (team.members.length >= 5) {
 		return NextResponse.json({ error: 'Team is full' }, { status: 400 });
+	}
+
+	if (team.members.some((member) => member.id === id)) {
+		return NextResponse.json({ error: 'User is already a member of this team' }, { status: 400 });
+	}
+
+	if (team.teamInvitations.some((invite) => invite.userId === id)) {
+		return NextResponse.json({ error: 'User has already been invited' }, { status: 400 });
 	}
 
 	const user = await db.user.findUnique({

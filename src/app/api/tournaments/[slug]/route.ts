@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
@@ -65,6 +67,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		if (isNaN(numericId)) {
 			return NextResponse.json({ error: 'Invalid tournament ID' }, { status: 400 });
 		}
+
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+		const existingTournament = await db.cs2Tournament.findUnique({ where: { id: numericId }, select: { organizerId: true } });
+		if (!existingTournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+
+		const canManage = existingTournament.organizerId === session.user.id || (await userHasPermission(session.user.id, 'tournaments:manage'));
+		if (!canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
 		const body = await request.json();
 
@@ -172,51 +183,18 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 		return NextResponse.json({ error: 'Invalid tournament ID' }, { status: 400 });
 	}
 
+	const session = await getAuthSession();
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+	const existingTournament = await db.cs2Tournament.findUnique({ where: { id: numericId }, select: { organizerId: true } });
+	if (!existingTournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+
+	const canManage = existingTournament.organizerId === session.user.id || (await userHasPermission(session.user.id, 'tournaments:manage'));
+	if (!canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+
 	const isDeleted = await db.cs2Tournament.delete({
 		where: { id: numericId },
 	});
 	if (isDeleted) return NextResponse.json({ message: 'Tournament deleted!' }, { status: 200 });
 	else return NextResponse.json({ error: 'Tournament not found or other Error!' }, { status: 500 });
-}
-
-export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
-	try {
-		const { slug } = await params;
-		const tournamentId = parseInt(slug, 10);
-		const { teamId } = await request.json();
-
-		if (isNaN(tournamentId) || !teamId) {
-			return NextResponse.json({ error: 'Invalid tournamentId or missing teamId' }, { status: 400 });
-		}
-
-		const tournament = await db.cs2Tournament.findUnique({
-			where: { id: tournamentId },
-		});
-
-		if (!tournament) {
-			return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
-		}
-
-		const team = await db.cs2Team.findUnique({
-			where: { id: teamId },
-		});
-
-		if (!team) {
-			return NextResponse.json({ error: 'Team not found' }, { status: 404 });
-		}
-
-		await db.cs2Tournament.update({
-			where: { id: tournamentId },
-			data: {
-				teams: {
-					connect: { id: teamId },
-				},
-			},
-		});
-
-		return NextResponse.json({ message: 'Team added to tournament successfully' }, { status: 200 });
-	} catch (error) {
-		console.error('Error adding team to tournament:', error);
-		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-	}
 }
