@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface TeamTableProps {
 	teams: any[];
 	onEdit: (team: any) => void;
@@ -31,7 +33,7 @@ export function TeamTable({ isLoading, teams, onEdit }: TeamTableProps) {
 									<td className='py-2 px-4 border'>
 										<div className='flex items-center justify-center gap-2'>
 											<div className='w-8 h-8 rounded-sm border overflow-hidden' style={{ backgroundColor: team.background || '#000000' }}>
-												{team.logo ? <img src={team.logo} alt={team.name} className='w-full h-full object-contain' /> : null}
+												{team.logo ? <Image src={team.logo} alt={team.name} width={32} height={32} loading='eager' className='w-full h-full object-contain' /> : null}
 											</div>
 											{team.logo ? (
 												<a href={team.logo} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline'>
