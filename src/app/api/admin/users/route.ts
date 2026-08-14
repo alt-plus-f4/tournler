@@ -4,24 +4,26 @@ import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 
 export async function GET() {
-	const session = await getAuthSession();
-	const sessionUser = session?.user;
+	try {
+		const session = await getAuthSession();
+		const sessionUser = session?.user;
 
-	if (!sessionUser) {
-		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		if (!sessionUser) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		if (!(await userHasPermission(sessionUser.id, 'users:manage'))) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		const [usersInTeam, usersNotInTeam] = await Promise.all([
+			db.user.count({ where: { cs2TeamId: { not: null } } }),
+			db.user.count({ where: { cs2TeamId: null } }),
+		]);
+
+		return NextResponse.json({ usersInTeam, usersNotInTeam });
+	} catch (error) {
+		console.error('Error fetching user stats:', error);
+		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
-
-	if (!(await userHasPermission(sessionUser.id, 'users:manage'))) {
-		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-	}
-
-	const usersInTeam = await db.user.count({
-		where: { cs2TeamId: { not: null } },
-	});
-
-	const usersNotInTeam = await db.user.count({
-		where: { cs2TeamId: null },
-	});
-
-	return NextResponse.json({ usersInTeam, usersNotInTeam });
 }

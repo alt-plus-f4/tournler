@@ -3,64 +3,78 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 export async function GET() {
-	const session = await getAuthSession();
+	try {
+		const session = await getAuthSession();
 
-	if (!session) {
-		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		if (!session) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		const user = await db.user.findUnique({
+			where: { email: session?.user?.email || '' },
+			select: { steam: { select: { id: true } } },
+		});
+
+		if (!user) {
+			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		const hasLinkedSteam = !!user.steam;
+
+		return NextResponse.json({ hasLinkedSteam }, { status: 200 });
+	} catch (error) {
+		console.error('Error fetching Steam link status:', error);
+		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
-
-	const user = await db.user.findUnique({
-		where: { email: session?.user?.email || '' },
-		include: {
-			steam: true,
-		},
-	});
-
-	if (!user) {
-		return NextResponse.json({ error: 'User not found' }, { status: 404 });
-	}
-
-	const hasLinkedSteam = !!user.steam;
-
-	return NextResponse.json({ hasLinkedSteam }, { status: 200 });
 }
 
 export async function PATCH(request: Request) {
-	const session = await getAuthSession();
-	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	try {
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-	const user = await db.user.findUnique({
-		where: { email: session?.user?.email || '' },
-	});
+		const user = await db.user.findUnique({
+			where: { email: session?.user?.email || '' },
+			select: { id: true },
+		});
 
-	if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-	const { steamId } = await request.json();
+		const { steamId } = await request.json();
 
-	if (!steamId || typeof steamId !== 'string') return NextResponse.json({ error: 'Invalid Steam ID' }, { status: 400 });
+		if (!steamId || typeof steamId !== 'string') return NextResponse.json({ error: 'Invalid Steam ID' }, { status: 400 });
 
-	await db.steamAccount.upsert({
-		where: { userId: user.id },
-		update: {
-			steamId: steamId,
-		},
-		create: {
-			userId: user.id,
-			steamId: steamId,
-		},
-	});
+		await db.steamAccount.upsert({
+			where: { userId: user.id },
+			update: {
+				steamId: steamId,
+			},
+			create: {
+				userId: user.id,
+				steamId: steamId,
+			},
+		});
 
-	return NextResponse.json({ message: 'Steam account linked successfully' }, { status: 200 });
+		return NextResponse.json({ message: 'Steam account linked successfully' }, { status: 200 });
+	} catch (error) {
+		console.error('Error linking Steam account:', error);
+		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+	}
 }
 
 export async function DELETE() {
-	const session = await getAuthSession();
-	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	try {
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-	const user = await db.user.findUnique({ where: { email: session?.user?.email || '' } });
-	if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		const user = await db.user.findUnique({ where: { email: session?.user?.email || '' }, select: { id: true } });
+		if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-	await db.steamAccount.deleteMany({ where: { userId: user.id } });
+		await db.steamAccount.deleteMany({ where: { userId: user.id } });
 
-	return NextResponse.json({ message: 'Steam account unlinked' }, { status: 200 });
+		return NextResponse.json({ message: 'Steam account unlinked' }, { status: 200 });
+	} catch (error) {
+		console.error('Error unlinking Steam account:', error);
+		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+	}
 }
