@@ -30,5 +30,5 @@ export function InteractiveBackground() {
 		return () => window.removeEventListener('pointermove', handlePointerMove);
 	}, []);
 
-	return <div ref={ref} aria-hidden className='interactive-bg pointer-events-none absolute inset-0 -z-10' />;
+	return <div ref={ref} aria-hidden className='interactive-bg pointer-events-none fixed inset-0 -z-10' />;
 }

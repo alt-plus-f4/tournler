@@ -8,6 +8,7 @@ import Providers from './redux/Providers';
 import { ConvexClientProvider } from '@/convex/ConvexClientProvider';
 import Footer from '@/components/Footer';
 import { getAuthSession } from '@/lib/auth';
+import { InteractiveBackground } from '@/components/InteractiveBackground';
 
 const roboto = Roboto({
 	weight: '400',
@@ -32,6 +33,7 @@ export default async function RootLayout({
 	return (
 		<html lang='en' data-scroll-behavior='smooth'>
 			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
+				<InteractiveBackground />
 				<ConvexClientProvider>
 					<Navbar session={session} />
 
