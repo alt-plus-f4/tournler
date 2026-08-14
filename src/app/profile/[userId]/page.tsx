@@ -184,6 +184,7 @@ export default function PublicProfilePage() {
 										alt={`${profile.name}'s Profile`}
 										width={100}
 										height={100}
+										priority
 										className={`rounded-full w-24 h-24 border-2 border-gray-700 shadow-lg transition-opacity ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
 										onLoadingComplete={() => setAvatarLoaded(true)}
 									/>
