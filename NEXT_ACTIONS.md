@@ -28,7 +28,13 @@ is a living plan — update it as items are done or reprioritized.
       an actual cron invocation — do both before relying on this in
       production. Set `CRON_API_KEY` and/or `CRON_SECRET`, and enable either
       `vercel.json`'s cron or `.github/workflows/check-tournaments.yml` (not
-      both).
+      both). Note: `vercel.json`'s schedule was changed from every 5 minutes
+      to once daily (`0 0 * * *`) after it failed PR #82's Vercel deployment
+      check — Hobby-plan projects reject sub-daily cron schedules outright
+      rather than silently downgrading them. If this project is on a Pro (or
+      higher) plan, tighten it back to `*/5 * * * *` for closer-to-realtime
+      auto-start; otherwise use the GitHub Actions workflow instead, which
+      isn't plan-gated.
 - [ ] **Decide on Convex auth**: `convex/notifications.ts` has no identity
       checks at all — every query/mutation trusts a client-supplied `userId`.
       Fixing this properly requires wiring Convex Auth (or passing a verified
