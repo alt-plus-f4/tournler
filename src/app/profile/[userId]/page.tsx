@@ -30,6 +30,7 @@ interface ProfileBadge {
 		description: string | null;
 		icon: string;
 		color: string;
+		isOverlay: boolean;
 	};
 }
 
@@ -65,6 +66,8 @@ interface PlayerRecentMatch {
 	scoreAgainst: number | null;
 	matchDate: string;
 }
+
+const HEXAGON_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
 
 function levelColor(level: number): string {
 	if (level >= 20) return '#facc15'; // gold
@@ -218,6 +221,15 @@ export default function PublicProfilePage() {
 		{ label: 'Win Rate', value: `${stats?.winRate ?? 0}%`, icon: Percent },
 	];
 
+	const summaryStats = stats ? [
+		{ label: 'Win Rate', value: `${stats.winRate}%` },
+		{ label: 'K/D', value: stats.kd.toFixed(2) },
+		{ label: 'Matches', value: stats.matchesPlayed },
+	] : [];
+
+	const overlayBadges = (profile.badges ?? []).filter((b) => b.badge.isOverlay).slice(0, 2);
+	const showcaseBadges = (profile.badges ?? []).filter((b) => !b.badge.isOverlay);
+
 	return (
 		<div className='min-h-screen py-8 sm:py-12 bg-black'>
 			<div className='max-w-3xl mx-auto px-4'>
@@ -245,16 +257,16 @@ export default function PublicProfilePage() {
 					)}
 
 					<div className='relative flex flex-col items-center text-center'>
-						<div className='relative'>
+						<div className='relative h-32 w-32'>
 							{isOwner && isEditing ? (
 								<button type='button' className='block rounded-full' onClick={() => setIsAvatarEditing(true)} aria-label='Edit profile picture'>
 									<Image
 										src={profile.image || '/placeholder.svg'}
 										alt={`${profile.name}'s Profile`}
-										width={112}
-										height={112}
+										width={128}
+										height={128}
 										priority
-										className={`rounded-full w-28 h-28 border-4 shadow-lg transition-opacity object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
+										className={`rounded-full w-32 h-32 border-4 shadow-lg transition-opacity object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
 										style={{ borderColor: `${accentColor}40` }}
 										onLoadingComplete={() => setAvatarLoaded(true)}
 									/>
@@ -263,19 +275,19 @@ export default function PublicProfilePage() {
 								<Image
 									src={profile.image || '/placeholder.svg'}
 									alt={`${profile.name}'s Profile`}
-									width={112}
-									height={112}
-									className={`rounded-full w-28 h-28 border-4 shadow-lg transition-opacity object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
+									width={128}
+									height={128}
+									className={`rounded-full w-32 h-32 border-4 shadow-lg transition-opacity object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
 									style={{ borderColor: `${accentColor}40` }}
 									onLoadingComplete={() => setAvatarLoaded(true)}
 								/>
 							)}
-							{!avatarLoaded && <Skeleton className='absolute inset-0 h-28 w-28 rounded-full bg-gray-800' />}
+							{!avatarLoaded && <Skeleton className='absolute inset-0 h-32 w-32 rounded-full bg-gray-800' />}
 							{isOwner && (
 								<Button
 									variant='ghost'
 									size='icon'
-									className='absolute -bottom-1 -right-1 h-8 w-8 rounded-full border border-gray-700 bg-black/80 text-white shadow-lg hover:bg-black'
+									className='absolute -bottom-1 -right-1 h-8 w-8 rounded-full border border-gray-700 bg-black/80 text-white shadow-lg hover:bg-black z-20'
 									onClick={() => setIsAvatarEditing(true)}
 									aria-label='Change profile picture'
 								>
@@ -283,12 +295,22 @@ export default function PublicProfilePage() {
 								</Button>
 							)}
 							<div
-								className='absolute -bottom-1 -left-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-black text-xs font-black text-black'
-								style={{ backgroundColor: accentColor }}
+								className='absolute -bottom-2 left-1/2 flex h-8 w-9 -translate-x-1/2 items-center justify-center text-xs font-black text-black'
+								style={{ backgroundColor: accentColor, clipPath: HEXAGON_CLIP }}
 								title={`Level ${level}`}
 							>
 								{level}
 							</div>
+							{overlayBadges.map(({ badge }, i) => (
+								<span
+									key={badge.id}
+									title={badge.description ?? badge.name}
+									className='absolute top-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-black shadow-md'
+									style={{ backgroundColor: badge.color, right: `${-4 + i * 24}px`, zIndex: 10 - i }}
+								>
+									<BadgeIcon name={badge.icon} className='h-3.5 w-3.5 text-white' />
+								</span>
+							))}
 						</div>
 
 						{!isEditing ? (
@@ -300,17 +322,31 @@ export default function PublicProfilePage() {
 							</div>
 						)}
 
-						{profile.badges && profile.badges.length > 0 && (
-							<div className='flex flex-wrap justify-center gap-2 mt-3'>
-								{profile.badges.map(({ badge }) => (
-									<span
-										key={badge.id}
-										title={badge.description ?? badge.name}
-										className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10'
-										style={{ backgroundColor: `${badge.color}20` }}
-									>
-										<BadgeIcon name={badge.icon} className='h-4 w-4' style={{ color: badge.color }} />
-									</span>
+						{showcaseBadges.length > 0 && (
+							<div className='mt-4 w-full'>
+								<div className='text-[10px] uppercase tracking-wide text-gray-500 mb-2'>Badges</div>
+								<div className='flex flex-wrap justify-center gap-2'>
+									{showcaseBadges.map(({ badge }) => (
+										<span
+											key={badge.id}
+											title={badge.description ?? badge.name}
+											className='flex h-8 w-8 items-center justify-center rounded-full border border-white/10'
+											style={{ backgroundColor: `${badge.color}20` }}
+										>
+											<BadgeIcon name={badge.icon} className='h-4 w-4' style={{ color: badge.color }} />
+										</span>
+									))}
+								</div>
+							</div>
+						)}
+
+						{summaryStats.length > 0 && (
+							<div className='mt-5 flex items-stretch justify-center divide-x divide-white/10 rounded-lg border border-white/10 bg-white/[0.03]'>
+								{summaryStats.map((s) => (
+									<div key={s.label} className='px-5 py-2 text-center'>
+										<div className='text-lg font-bold text-white'>{s.value}</div>
+										<div className='text-[10px] uppercase tracking-wide text-gray-500'>{s.label}</div>
+									</div>
 								))}
 							</div>
 						)}
@@ -366,9 +402,19 @@ export default function PublicProfilePage() {
 
 				{/* Tabs */}
 				<Tabs defaultValue='overview' className='mt-8'>
-					<TabsList className='grid grid-cols-2 w-full max-w-sm mx-auto'>
-						<TabsTrigger value='overview'>Overview</TabsTrigger>
-						<TabsTrigger value='statistics'>Statistics</TabsTrigger>
+					<TabsList className='grid grid-cols-2 w-full max-w-sm mx-auto h-auto rounded-none border-b border-white/10 bg-transparent p-0'>
+						<TabsTrigger
+							value='overview'
+							className='rounded-none border-b-2 border-transparent bg-transparent pb-3 text-gray-400 data-[state=active]:border-current data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none'
+						>
+							Overview
+						</TabsTrigger>
+						<TabsTrigger
+							value='statistics'
+							className='rounded-none border-b-2 border-transparent bg-transparent pb-3 text-gray-400 data-[state=active]:border-current data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none'
+						>
+							Statistics
+						</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value='overview' className='mt-6 space-y-6'>

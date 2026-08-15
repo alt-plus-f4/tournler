@@ -78,7 +78,10 @@ export default function BadgesClient() {
 								<BadgeIcon name={badge.icon} className='h-6 w-6' style={{ color: badge.color }} />
 							</div>
 							<div className='min-w-0 flex-1'>
-								<p className='font-semibold truncate'>{badge.name}</p>
+								<div className='flex items-center gap-2'>
+									<p className='font-semibold truncate'>{badge.name}</p>
+									{badge.isOverlay && <span className='shrink-0 rounded-full border border-white/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>Avatar</span>}
+								</div>
 								{badge.description && <p className='text-sm text-muted-foreground truncate'>{badge.description}</p>}
 								<p className='text-xs text-muted-foreground mt-1'>{badge._count?.awards ?? 0} awarded</p>
 							</div>

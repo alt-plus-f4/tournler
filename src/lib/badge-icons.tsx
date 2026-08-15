@@ -1,4 +1,4 @@
-import { Trophy, Award, Star, Crown, Medal, Zap, Flame, Shield, Target, Rocket, Gem, ThumbsUp, Swords, Sparkles, type LucideIcon } from 'lucide-react';
+import { Trophy, Award, Star, Crown, Medal, Zap, Flame, Shield, Target, Rocket, Gem, ThumbsUp, Swords, Sparkles, BadgeCheck, type LucideIcon } from 'lucide-react';
 
 /** Curated icon set for badge definitions — a fixed key rather than an arbitrary icon upload keeps the admin picker simple and every badge visually consistent. */
 export const BADGE_ICONS: Record<string, LucideIcon> = {
@@ -16,6 +16,7 @@ export const BADGE_ICONS: Record<string, LucideIcon> = {
 	'thumbs-up': ThumbsUp,
 	swords: Swords,
 	sparkles: Sparkles,
+	verified: BadgeCheck,
 };
 
 export const BADGE_ICON_KEYS = Object.keys(BADGE_ICONS);

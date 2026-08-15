@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 		}
 
 		const body = await request.json();
-		const { name, description, icon, color } = body;
+		const { name, description, icon, color, isOverlay } = body;
 
 		if (!name || typeof name !== 'string') {
 			return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
 				description: description || null,
 				icon,
 				color: color || undefined,
+				isOverlay: Boolean(isOverlay),
 			},
 		});
 

@@ -25,7 +25,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ba
 		if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid badge ID' }, { status: 400 });
 
 		const body = await request.json();
-		const { name, description, icon, color } = body;
+		const { name, description, icon, color, isOverlay } = body;
 
 		if (icon !== undefined && !BADGE_ICON_KEYS.includes(icon)) {
 			return NextResponse.json({ error: 'Invalid icon' }, { status: 400 });
@@ -41,6 +41,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ba
 				...(description !== undefined ? { description: description || null } : {}),
 				...(icon !== undefined ? { icon } : {}),
 				...(color !== undefined ? { color } : {}),
+				...(isOverlay !== undefined ? { isOverlay: Boolean(isOverlay) } : {}),
 			},
 		});
 

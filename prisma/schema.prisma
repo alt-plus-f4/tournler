@@ -349,6 +349,7 @@ model Badge {
   description String? @map("description")
   icon        String  @map("icon")
   color       String  @default("#facc15") @map("color")
+  isOverlay   Boolean @default(false) @map("is_overlay")
 
   awards UserBadge[]
 

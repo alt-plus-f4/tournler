@@ -15,6 +15,7 @@ export interface BadgeDefinition {
 	description: string | null;
 	icon: string;
 	color: string;
+	isOverlay: boolean;
 	_count?: { awards: number };
 }
 
@@ -34,6 +35,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 	const [description, setDescription] = useState('');
 	const [icon, setIcon] = useState(BADGE_ICON_KEYS[0]);
 	const [color, setColor] = useState('#facc15');
+	const [isOverlay, setIsOverlay] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -45,6 +47,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 			setDescription(badge?.description ?? '');
 			setIcon(badge?.icon ?? BADGE_ICON_KEYS[0]);
 			setColor(badge?.color ?? '#facc15');
+			setIsOverlay(badge?.isOverlay ?? false);
 			setIsConfirmingDelete(false);
 		}
 	}, [badge, isOpen]);
@@ -62,7 +65,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 			const response = await fetch(url, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name, description, icon, color }),
+				body: JSON.stringify({ name, description, icon, color, isOverlay }),
 			});
 			const payload = await response.json().catch(() => null);
 			if (!response.ok) throw new Error(payload?.error || 'Failed to save badge');
@@ -169,6 +172,14 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						<Input id='badge-color' type='color' value={color} onChange={(e) => setColor(e.target.value)} className='h-9 w-16 p-1' />
 						<span className='text-sm font-mono text-muted-foreground'>{color}</span>
 					</div>
+
+					<label htmlFor='badge-overlay' className='flex items-center gap-3 rounded-lg border border-white/10 p-3 cursor-pointer'>
+						<input id='badge-overlay' type='checkbox' checked={isOverlay} onChange={(e) => setIsOverlay(e.target.checked)} className='h-4 w-4 shrink-0 accent-white' />
+						<span className='text-sm'>
+							Show on avatar
+							<span className='block text-xs text-muted-foreground'>Pins this badge as a small icon on the player&apos;s profile picture (e.g. Verified, Gold) instead of the badge row.</span>
+						</span>
+					</label>
 
 					<DialogFooter className='gap-2 pt-2'>
 						{!isCreating && onDelete && (

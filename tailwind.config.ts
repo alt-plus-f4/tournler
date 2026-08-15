@@ -11,6 +11,7 @@ const config: Config = {
 		extend: {
 			colors: {
 				popupcolor: '#0000009e',
+				faceitOrange: '#FF5500',
 				discordColor: '#5865F2',
 				steamColor: '#171a21',
 				steamLogoColor: '#66c0f4',
