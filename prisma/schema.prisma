@@ -34,6 +34,37 @@ enum TournamentType {
   @@map("tournament_type")
 }
 
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  ROUND_ROBIN
+  DOUBLE_ELIMINATION
+
+  @@map("tournament_format")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+
+  @@map("match_status")
+}
+
+enum BracketSlot {
+  WINNERS
+  LOSERS
+  GRAND_FINAL
+
+  @@map("bracket_slot")
+}
+
+enum MatchSlot {
+  TEAM_A
+  TEAM_B
+
+  @@map("match_slot")
+}
+
 model Account {
   id                String   @id @default(uuid()) @map("id") @db.Uuid
   userId            String?  @map("user_id") @db.Uuid
@@ -116,6 +147,7 @@ model Cs2Tournament {
   location String           @map("location")
   type     TournamentType   @map("type")
   status   TournamentStatus @map("status")
+  format   TournamentFormat @default(SINGLE_ELIMINATION) @map("format")
 
   organizerId String @map("organizer_id")
   organizer   User   @relation("TournamentOrganizers", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -209,16 +241,35 @@ model Matches {
   tournamentId Int           @map("tournament_id")
   tournament   Cs2Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
-  teamAId  Int      @map("team_a_id")
-  teamA    Cs2Team  @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
-  teamBId  Int      @map("team_b_id")
-  teamB    Cs2Team  @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+  teamAId  Int?     @map("team_a_id")
+  teamA    Cs2Team? @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamBId  Int?     @map("team_b_id")
+  teamB    Cs2Team? @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
   winnerId Int?     @map("winner_id")
   winner   Cs2Team? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
 
   scoreTeamA Int?     @map("score_team_a")
   scoreTeamB Int?     @map("score_team_b")
   matchDate  DateTime @map("match_date")
+
+  status      MatchStatus @default(SCHEDULED) @map("status")
+  round       Int         @default(1) @map("round")
+  position    Int         @default(0) @map("position")
+  bracketSlot BracketSlot @default(WINNERS) @map("bracket_slot")
+
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  // Plain (non-relational) self-pointers: explicit bracket-feeder wiring computed once at
+  // generation time. Deliberately NOT modeled as Prisma @relation fields — self-relation
+  // cascade cycles require onUpdate/onDelete: NoAction, which relationMode="prisma" (emulated
+  // FKs, no real DB constraint) does not support. Plain columns avoid that entirely; callers
+  // fetch the target row by id when they need to follow the pointer.
+  nextMatchId   Int?       @map("next_match_id")
+  nextMatchSlot MatchSlot? @map("next_match_slot")
+
+  nextLoserMatchId   Int?       @map("next_loser_match_id")
+  nextLoserMatchSlot MatchSlot? @map("next_loser_match_slot")
 
   gameServer GameServer?
 
@@ -229,6 +280,9 @@ model Matches {
   @@index([teamAId])
   @@index([teamBId])
   @@index([winnerId])
+  @@index([tournamentId, bracketSlot, round])
+  @@index([nextMatchId])
+  @@index([nextLoserMatchId])
   @@map("matches")
 }
 

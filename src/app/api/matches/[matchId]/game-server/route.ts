@@ -4,6 +4,30 @@ import { userHasPermission } from '@/lib/helpers/permissions';
 import { NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 
+const PORT_MIN = Number.parseInt(process.env.GAME_SERVER_PORT_MIN || '27015', 10);
+const PORT_MAX = Number.parseInt(process.env.GAME_SERVER_PORT_MAX || '27099', 10);
+
+/**
+ * Picks the lowest port in the configured range not currently held by a
+ * non-terminal (PENDING/RUNNING) game server. COMPLETED/FAILED servers don't
+ * reserve their port, or the range would exhaust over time. This is still a
+ * simulated allocation (no real container binds to it) — see the CS2 Docker
+ * provisioning issue tracked on GitHub for the real integration.
+ */
+async function allocatePort(): Promise<number> {
+	const reserved = await db.gameServer.findMany({
+		where: { status: { in: ['PENDING', 'RUNNING'] } },
+		select: { port: true },
+	});
+	const reservedPorts = new Set(reserved.map((r) => r.port));
+
+	for (let port = PORT_MIN; port <= PORT_MAX; port++) {
+		if (!reservedPorts.has(port)) return port;
+	}
+
+	throw new Error('No available game server ports in the configured range');
+}
+
 /**
  * POST /api/matches/[matchId]/game-server
  * Create a game server instance for a match
@@ -55,7 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		// In production, this would call a Docker API to create a container
 		// For now, we'll simulate it
 		const connectIp = process.env.GAME_SERVER_IP || 'localhost';
-		const port = 27015 + match.id; // Simple port allocation
+		const port = await allocatePort();
 		const password = randomBytes(9).toString('base64url');
 
 		// Create game server record
@@ -111,7 +135,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 			return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 		}
 
-		const isParticipant = [...match.teamA.members, ...match.teamB.members].some((member) => member.id === session.user.id);
+		const isParticipant = [...(match.teamA?.members ?? []), ...(match.teamB?.members ?? [])].some((member) => member.id === session.user.id);
 		const isOrganizer = match.tournament.organizerId === session.user.id;
 		const canManageServers = await userHasPermission(session.user.id, 'servers:manage');
 

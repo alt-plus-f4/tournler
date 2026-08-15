@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink } from 'lucide-react';
+import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass } from 'lucide-react';
 
 interface TeamMember {
 	id: string;
@@ -41,23 +42,17 @@ interface Match {
 		name: string;
 		status: string;
 	};
-	teamA: Team;
-	teamB: Team;
+	teamA: Team | null;
+	teamB: Team | null;
 	scoreTeamA: number | null;
 	scoreTeamB: number | null;
 	winner: Team | null;
 	matchDate: string;
+	status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+	startedAt: string | null;
+	completedAt: string | null;
 	gameServer: GameServer | null;
 }
-
-const SAMPLE_GAME_SERVER: GameServer = {
-	id: 0,
-	matchId: 0,
-	connectIp: '203.0.113.42',
-	port: 27015,
-	status: 'RUNNING',
-	password: 'faceit123',
-};
 
 const getMemberLevel = (member: TeamMember, index: number) => {
 	if (member.createdAt) {
@@ -91,37 +86,81 @@ function TeamLogo({ logo, name }: { logo: string | null; name: string }) {
 	return <img src={logo} alt={name} loading='eager' className='w-[120px] h-[120px] object-contain' onError={() => setFailed(true)} />;
 }
 
+function formatDuration(ms: number) {
+	const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	const pad = (n: number) => n.toString().padStart(2, '0');
+	return hours > 0 ? `${hours}:${pad(minutes)}:${pad(seconds)}` : `${minutes}:${pad(seconds)}`;
+}
+
+/** Ticks once a second while `active`, forcing the caller to re-render (used to keep a live timer's displayed value current). */
+function useTicker(active: boolean) {
+	const [, setTick] = useState(0);
+	useEffect(() => {
+		if (!active) return;
+		const id = setInterval(() => setTick((t) => t + 1), 1000);
+		return () => clearInterval(id);
+	}, [active]);
+}
+
+function MatchTimer({ match }: { match: Match }) {
+	useTicker(match.status !== 'COMPLETED');
+
+	if (match.status === 'SCHEDULED') {
+		const msUntilStart = new Date(match.matchDate).getTime() - Date.now();
+		if (msUntilStart <= 0) {
+			return (
+				<span className='inline-flex items-center gap-2 text-neutral-400 text-sm'>
+					<Hourglass className='w-4 h-4' /> Waiting to start
+				</span>
+			);
+		}
+		return (
+			<span className='inline-flex items-center gap-2 text-neutral-300 text-sm'>
+				<Hourglass className='w-4 h-4' /> Starts in {formatDuration(msUntilStart)}
+			</span>
+		);
+	}
+
+	if (match.status === 'LIVE') {
+		const elapsed = match.startedAt ? Date.now() - new Date(match.startedAt).getTime() : 0;
+		return (
+			<span className='inline-flex items-center gap-2 text-white text-sm font-bold'>
+				<span className='w-2 h-2 rounded-full bg-red-500 animate-pulse' /> LIVE &middot; {formatDuration(elapsed)}
+			</span>
+		);
+	}
+
+	if (match.startedAt && match.completedAt) {
+		const duration = new Date(match.completedAt).getTime() - new Date(match.startedAt).getTime();
+		return <span className='text-neutral-400 text-sm'>Finished in {formatDuration(duration)}</span>;
+	}
+
+	return null;
+}
+
+const fetcher = async (url: string) => {
+	const response = await fetch(url);
+	if (!response.ok) throw new Error('Failed to fetch match');
+	const data = await response.json();
+	return data.match as Match;
+};
+
 export default function MatchPage() {
 	const params = useParams();
 	const matchId = params.matchId as string;
-	const [match, setMatch] = useState<Match | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
 	const [copied, setCopied] = useState(false);
 	const { toast } = useToast();
 
+	const { data: match, error, isLoading } = useSWR(matchId ? `/api/matches/${matchId}` : null, fetcher, { refreshInterval: 4000 });
+
 	useEffect(() => {
-		const fetchMatch = async () => {
-			try {
-				const response = await fetch(`/api/matches/${matchId}`);
-				if (!response.ok) throw new Error('Failed to fetch match');
-
-				const data = await response.json();
-				setMatch(data.match);
-			} catch (error) {
-				console.error('Error fetching match:', error);
-				toast({
-					variant: 'destructive',
-					title: 'Error loading match',
-				});
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		if (matchId) {
-			fetchMatch();
+		if (error) {
+			toast({ variant: 'destructive', title: 'Error loading match' });
 		}
-	}, [matchId, toast]);
+	}, [error, toast]);
 
 	if (isLoading) {
 		return (
@@ -148,15 +187,11 @@ export default function MatchPage() {
 		);
 	}
 
-	const hasWinner = match.winner !== null;
-	const isMatchStarted = match.scoreTeamA !== null || match.scoreTeamB !== null;
-	const visibleTeamAMembers = fillTeamToFive(match.teamA.members);
-	const visibleTeamBMembers = fillTeamToFive(match.teamB.members);
-	const serverInfo = match.gameServer ?? SAMPLE_GAME_SERVER;
-	// const matchCounter = `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}`;
-	const connectAddress = `${serverInfo.connectIp}:${serverInfo.port}`;
-	const connectCommand = `connect ${connectAddress}${serverInfo.password ? `; password ${serverInfo.password}` : ''}`;
-	const steamConnectUrl = `steam://run/730//+${encodeURIComponent(connectCommand)}`;
+	const visibleTeamAMembers = match.teamA ? fillTeamToFive(match.teamA.members) : [];
+	const visibleTeamBMembers = match.teamB ? fillTeamToFive(match.teamB.members) : [];
+	const connectAddress = match.gameServer ? `${match.gameServer.connectIp}:${match.gameServer.port}` : null;
+	const connectCommand = connectAddress ? `connect ${connectAddress}${match.gameServer?.password ? `; password ${match.gameServer.password}` : ''}` : null;
+	const steamConnectUrl = connectCommand ? `steam://run/730//+${encodeURIComponent(connectCommand)}` : null;
 
 	const copyToClipboard = (text: string) => {
 		navigator.clipboard.writeText(text);
@@ -165,17 +200,15 @@ export default function MatchPage() {
 	};
 
 	const launchCS2 = () => {
-		window.location.href = steamConnectUrl;
+		if (steamConnectUrl) window.location.href = steamConnectUrl;
 	};
 
 	const statusConfig = {
-		completed: { badge: 'COMPLETED', borderClass: 'border-white' },
-		live: { badge: 'LIVE', borderClass: 'border-white animate-pulse' },
-		upcoming: { badge: 'UPCOMING', borderClass: 'border-neutral-600' },
+		COMPLETED: { badge: 'COMPLETED', borderClass: 'border-white' },
+		LIVE: { badge: 'LIVE', borderClass: 'border-white animate-pulse' },
+		SCHEDULED: { badge: 'UPCOMING', borderClass: 'border-neutral-600' },
 	};
-
-	const statusKey = hasWinner ? 'completed' : isMatchStarted ? 'live' : 'upcoming';
-	const status = statusConfig[statusKey as keyof typeof statusConfig];
+	const status = statusConfig[match.status];
 
 	return (
 		<div className='min-h-screen bg-black text-white py-12'>
@@ -195,10 +228,13 @@ export default function MatchPage() {
 						<Badge className={`${status.borderClass} bg-black border-2 text-white px-4 py-2 font-bold tracking-wider uppercase text-xs`}>{status.badge}</Badge>
 					</div>
 
-					{/* Match Date */}
-					<div className='flex items-center gap-2 text-neutral-400'>
-						<Clock className='w-4 h-4' />
-						<p className='text-sm'>{new Date(match.matchDate).toLocaleString()}</p>
+					{/* Match Date & Timer */}
+					<div className='flex flex-wrap items-center gap-4 text-neutral-400'>
+						<div className='flex items-center gap-2'>
+							<Clock className='w-4 h-4' />
+							<p className='text-sm'>{new Date(match.matchDate).toLocaleString()}</p>
+						</div>
+						<MatchTimer match={match} />
 					</div>
 				</div>
 
@@ -207,13 +243,19 @@ export default function MatchPage() {
 					<div className='grid grid-cols-1 lg:grid-cols-3 divide-neutral-800 lg:divide-x'>
 						{/* Team A */}
 						<div className='p-8 lg:p-12 flex flex-col items-center justify-center border-b lg:border-b-0 border-neutral-800 group hover:bg-neutral-900 transition-colors'>
-							<div className='mb-6'>
-								<div className='w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-neutral-700 group-hover:border-white transition-colors' style={{ backgroundColor: match.teamA.background || '#000000' }}>
-									<TeamLogo logo={match.teamA.logo} name={match.teamA.name} />
-								</div>
-							</div>
-							<h2 className='text-2xl font-black text-white mb-6 text-center leading-tight uppercase tracking-wider'>{match.teamA.name}</h2>
-							<div className='text-7xl font-black text-white'>{match.scoreTeamA ?? '-'}</div>
+							{match.teamA ? (
+								<>
+									<div className='mb-6'>
+										<div className='w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-neutral-700 group-hover:border-white transition-colors' style={{ backgroundColor: match.teamA.background || '#000000' }}>
+											<TeamLogo logo={match.teamA.logo} name={match.teamA.name} />
+										</div>
+									</div>
+									<h2 className='text-2xl font-black text-white mb-6 text-center leading-tight uppercase tracking-wider'>{match.teamA.name}</h2>
+									<div className='text-7xl font-black text-white'>{match.scoreTeamA ?? '-'}</div>
+								</>
+							) : (
+								<div className='text-neutral-600 font-bold uppercase tracking-wider text-xl'>TBD</div>
+							)}
 						</div>
 
 						{/* VS / Center */}
@@ -227,36 +269,41 @@ export default function MatchPage() {
 								<p className='text-neutral-500 text-sm'>{match.tournament.name}</p>
 							</div>
 
-							<div className='w-full border border-neutral-700 rounded-md p-4 mb-4 space-y-3'>
-								<div className='text-left'>
-									<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Connect IP</p>
-									<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-sm font-mono text-white break-all'>{connectAddress}</div>
-								</div>
-								{serverInfo.password && (
+							{match.gameServer && connectAddress ? (
+								<div className='w-full border border-neutral-700 rounded-md p-4 mb-4 space-y-3'>
 									<div className='text-left'>
-										<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Password</p>
-										<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-sm font-mono text-white break-all'>{serverInfo.password}</div>
+										<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Connect IP</p>
+										<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-sm font-mono text-white break-all'>{connectAddress}</div>
 									</div>
-								)}
-								<div className='text-left'>
-									<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Console Command</p>
-									<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-xs font-mono text-white break-all'>{connectCommand}</div>
+									{match.gameServer.password && (
+										<div className='text-left'>
+											<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Password</p>
+											<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-sm font-mono text-white break-all'>{match.gameServer.password}</div>
+										</div>
+									)}
+									<div className='text-left'>
+										<p className='text-neutral-400 uppercase tracking-wide text-xs mb-2'>Console Command</p>
+										<div className='bg-black border border-neutral-700 rounded px-3 py-2 text-xs font-mono text-white break-all'>{connectCommand}</div>
+									</div>
 								</div>
-								{!match.gameServer && <p className='text-xs text-neutral-500 text-center'>Using sample server data for testing</p>}
-							</div>
+							) : (
+								<div className='w-full border border-dashed border-neutral-700 rounded-md p-4 mb-4 text-center'>
+									<p className='text-sm text-neutral-500'>Server not yet provisioned</p>
+								</div>
+							)}
 
 							<div className='grid grid-cols-1 sm:grid-cols-2 gap-2 w-full mb-4'>
-								<Button onClick={() => copyToClipboard(connectAddress)} className='bg-white text-black font-bold hover:bg-neutral-200 transition-colors w-full'>
+								<Button disabled={!connectAddress} onClick={() => connectAddress && copyToClipboard(connectAddress)} className='bg-white text-black font-bold hover:bg-neutral-200 transition-colors w-full disabled:opacity-40'>
 									<Copy className='h-4 w-4 mr-2' />
 									{copied ? 'Copied!' : 'Copy IP'}
 								</Button>
-								<Button onClick={() => copyToClipboard(connectCommand)} variant='outline' className='border-neutral-600 text-white hover:bg-neutral-800 w-full'>
+								<Button disabled={!connectCommand} onClick={() => connectCommand && copyToClipboard(connectCommand)} variant='outline' className='border-neutral-600 text-white hover:bg-neutral-800 w-full disabled:opacity-40'>
 									<Gamepad2 className='h-4 w-4 mr-2' />
 									Copy Command
 								</Button>
 							</div>
 
-							<Button onClick={launchCS2} variant='outline' className='border-neutral-600 text-white hover:bg-neutral-800 transition-colors w-full mb-6'>
+							<Button disabled={!steamConnectUrl} onClick={launchCS2} variant='outline' className='border-neutral-600 text-white hover:bg-neutral-800 transition-colors w-full mb-6 disabled:opacity-40'>
 								<ExternalLink className='h-4 w-4 mr-2' />
 								Launch CS2
 							</Button>
@@ -264,13 +311,19 @@ export default function MatchPage() {
 
 						{/* Team B */}
 						<div className='p-8 lg:p-12 flex flex-col items-center justify-center group hover:bg-neutral-900 transition-colors'>
-							<div className='mb-6'>
-								<div className='w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-neutral-700 group-hover:border-white transition-colors' style={{ backgroundColor: match.teamB.background || '#000000' }}>
-									<TeamLogo logo={match.teamB.logo} name={match.teamB.name} />
-								</div>
-							</div>
-							<h2 className='text-2xl font-black text-white mb-6 text-center leading-tight uppercase tracking-wider'>{match.teamB.name}</h2>
-							<div className='text-7xl font-black text-white'>{match.scoreTeamB ?? '-'}</div>
+							{match.teamB ? (
+								<>
+									<div className='mb-6'>
+										<div className='w-32 h-32 rounded-xl flex items-center justify-center overflow-hidden border-2 border-neutral-700 group-hover:border-white transition-colors' style={{ backgroundColor: match.teamB.background || '#000000' }}>
+											<TeamLogo logo={match.teamB.logo} name={match.teamB.name} />
+										</div>
+									</div>
+									<h2 className='text-2xl font-black text-white mb-6 text-center leading-tight uppercase tracking-wider'>{match.teamB.name}</h2>
+									<div className='text-7xl font-black text-white'>{match.scoreTeamB ?? '-'}</div>
+								</>
+							) : (
+								<div className='text-neutral-600 font-bold uppercase tracking-wider text-xl'>TBD</div>
+							)}
 						</div>
 					</div>
 				</div>
@@ -282,7 +335,7 @@ export default function MatchPage() {
 						<div className='bg-black px-8 py-6 border-b border-neutral-800'>
 							<div className='flex items-center gap-3 mb-1'>
 								<Users className='w-5 h-5' />
-								<h3 className='text-lg font-black uppercase tracking-wider'>{match.teamA.name}</h3>
+								<h3 className='text-lg font-black uppercase tracking-wider'>{match.teamA?.name ?? 'TBD'}</h3>
 							</div>
 							<p className='text-neutral-500 text-sm'>Roster (5 players)</p>
 						</div>
@@ -322,7 +375,7 @@ export default function MatchPage() {
 						<div className='bg-black px-8 py-6 border-b border-neutral-800'>
 							<div className='flex items-center gap-3 mb-1'>
 								<Users className='w-5 h-5' />
-								<h3 className='text-lg font-black uppercase tracking-wider'>{match.teamB.name}</h3>
+								<h3 className='text-lg font-black uppercase tracking-wider'>{match.teamB?.name ?? 'TBD'}</h3>
 							</div>
 							<p className='text-neutral-500 text-sm'>Roster (5 players)</p>
 						</div>
@@ -359,7 +412,7 @@ export default function MatchPage() {
 				</div>
 
 				{/* Winner Card */}
-				{hasWinner && (
+				{match.status === 'COMPLETED' && match.winner && (
 					<div className='bg-black border-2 border-white rounded-lg overflow-hidden mb-12'>
 						<div className='px-8 py-12 text-center'>
 							<div className='inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-6'>

@@ -13,6 +13,19 @@ import {
 	DialogDescription,
 	DialogClose,
 } from '@/components/ui/dialog';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select';
+
+const FORMAT_OPTIONS = [
+	{ value: 0, label: 'Single Elimination' },
+	{ value: 1, label: 'Round Robin' },
+	{ value: 2, label: 'Double Elimination' },
+];
 
 interface TournamentFormProps {
 	onSubmit: (formData: FormData) => Promise<void>;
@@ -29,6 +42,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [status, setStatus] = useState<number | ''>('');
 	const [type, setType] = useState<number | ''>('');
+	const [format, setFormat] = useState<number>(0);
 	const [organizer, setOrganizer] = useState('');
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -44,6 +58,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 		if (logoFile) formData.append('logoFile', logoFile);
 		formData.append('status', status.toString());
 		formData.append('type', type.toString());
+		formData.append('format', format.toString());
 		formData.append('organizerId', organizer.toString());
 
 		await onSubmit(formData);
@@ -142,6 +157,25 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 						onChange={(e) => setType(Number(e.target.value))}
 						required
 					/>
+					<Label htmlFor='format'>Bracket Format</Label>
+					<Select
+						value={format.toString()}
+						onValueChange={(value) => setFormat(Number(value))}
+					>
+						<SelectTrigger id='format'>
+							<SelectValue placeholder='Select a format' />
+						</SelectTrigger>
+						<SelectContent>
+							{FORMAT_OPTIONS.map((option) => (
+								<SelectItem
+									key={option.value}
+									value={option.value.toString()}
+								>
+									{option.label}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 					<Label htmlFor='name'>Organizer</Label>
 					<Input
 						id='organizer'

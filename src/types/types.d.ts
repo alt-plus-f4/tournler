@@ -1,6 +1,10 @@
 export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN';
 export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 export type TournamentType = 'ONLINE' | 'OFFLINE';
+export type TournamentFormat = 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION';
+export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
+export type MatchSlot = 'TEAM_A' | 'TEAM_B';
 
 export interface ReducedUser {
 	id: string;
@@ -84,6 +88,7 @@ export interface Cs2Tournament {
 	location: string;
 	type: TournamentType;
 	status: TournamentStatus;
+	format: TournamentFormat;
 	organizerId: string;
 	organizer: User;
 	matches: Match[];
@@ -150,15 +155,25 @@ export interface Match {
 	id: number;
 	tournamentId: number;
 	tournament: Cs2Tournament;
-	teamAId: number;
-	teamA: Cs2Team;
-	teamBId: number;
-	teamB: Cs2Team;
+	teamAId: number | null;
+	teamA: Cs2Team | null;
+	teamBId: number | null;
+	teamB: Cs2Team | null;
 	winnerId?: number;
 	winner?: Cs2Team;
 	scoreTeamA?: number;
 	scoreTeamB?: number;
 	matchDate: string;
+	status: MatchStatus;
+	round: number;
+	position: number;
+	bracketSlot: BracketSlot;
+	startedAt?: string | null;
+	completedAt?: string | null;
+	nextMatchId?: number | null;
+	nextMatchSlot?: MatchSlot | null;
+	nextLoserMatchId?: number | null;
+	nextLoserMatchSlot?: MatchSlot | null;
 	gameServer?: GameServer;
 	createdAt: string;
 	updatedAt: string;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
-import { TournamentStatus, TournamentType } from '@prisma/client';
+import { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 
@@ -14,6 +14,12 @@ const statusMap: { [key: number]: TournamentStatus } = {
 const typeMap: { [key: number]: TournamentType } = {
 	0: TournamentType.ONLINE,
 	1: TournamentType.OFFLINE,
+};
+
+const formatMap: { [key: number]: TournamentFormat } = {
+	0: TournamentFormat.SINGLE_ELIMINATION,
+	1: TournamentFormat.ROUND_ROBIN,
+	2: TournamentFormat.DOUBLE_ELIMINATION,
 };
 
 function parseStatusFilter(rawStatus: string | null): TournamentStatus[] | null {
@@ -67,6 +73,20 @@ function parseTournamentType(rawType: string): TournamentType | null {
 	const typeInt = Number.parseInt(rawType, 10);
 	if (!Number.isNaN(typeInt) && typeMap[typeInt]) {
 		return typeMap[typeInt];
+	}
+
+	return null;
+}
+
+function parseTournamentFormat(rawFormat: string): TournamentFormat | null {
+	const normalized = rawFormat.trim().toUpperCase().replace(/-/g, '_');
+	if (normalized in TournamentFormat) {
+		return TournamentFormat[normalized as keyof typeof TournamentFormat];
+	}
+
+	const formatInt = Number.parseInt(rawFormat, 10);
+	if (!Number.isNaN(formatInt) && formatMap[formatInt]) {
+		return formatMap[formatInt];
 	}
 
 	return null;
@@ -134,6 +154,7 @@ export async function POST(req: Request) {
 		const location = formData.get('location')?.toString() || '';
 		const statusValue = formData.get('status')?.toString();
 		const typeValue = formData.get('type')?.toString();
+		const formatValue = formData.get('format')?.toString();
 
 		let bannerUrl: string | null = null;
 		let logoUrl: string | null = null;
@@ -164,9 +185,14 @@ export async function POST(req: Request) {
 
 		const parsedStatus = parseTournamentStatus(statusValue || 'UPCOMING');
 		const parsedType = typeValue ? parseTournamentType(typeValue) : null;
+		const parsedFormat = formatValue ? parseTournamentFormat(formatValue) : TournamentFormat.SINGLE_ELIMINATION;
 
 		if (!parsedStatus || !parsedType) {
 			return NextResponse.json({ error: 'Invalid status or type value' }, { status: 400 });
+		}
+
+		if (!parsedFormat) {
+			return NextResponse.json({ error: 'Invalid format value' }, { status: 400 });
 		}
 
 		const newTournament = await db.cs2Tournament.create({
@@ -181,6 +207,7 @@ export async function POST(req: Request) {
 				logoUrl,
 				status: parsedStatus,
 				type: parsedType,
+				format: parsedFormat,
 				organizerId: session.user.id,
 			},
 		});

@@ -32,7 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 					select: { id: true, name: true },
 				},
 			},
-			orderBy: { matchDate: 'asc' },
+			orderBy: [{ bracketSlot: 'asc' }, { round: 'asc' }, { position: 'asc' }],
 		});
 
 		return NextResponse.json({ matches });

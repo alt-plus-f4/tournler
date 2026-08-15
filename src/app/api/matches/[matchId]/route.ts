@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { MatchResultConflictError, recordMatchResult } from '@/lib/tournaments/bracket-advancement';
 import { NextResponse } from 'next/server';
 
 /**
@@ -104,14 +105,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		const updatedMatch = await db.matches.update({
+		if (data.matchDate !== undefined) {
+			await db.matches.update({ where: { id: parsedMatchId }, data: { matchDate: new Date(data.matchDate) } });
+		}
+
+		if (data.scoreTeamA !== undefined || data.scoreTeamB !== undefined || data.winnerId !== undefined) {
+			await recordMatchResult(parsedMatchId, {
+				scoreTeamA: data.scoreTeamA,
+				scoreTeamB: data.scoreTeamB,
+				winnerId: data.winnerId,
+			});
+		}
+
+		const updatedMatch = await db.matches.findUniqueOrThrow({
 			where: { id: parsedMatchId },
-			data: {
-				scoreTeamA: data.scoreTeamA !== undefined ? data.scoreTeamA : match.scoreTeamA,
-				scoreTeamB: data.scoreTeamB !== undefined ? data.scoreTeamB : match.scoreTeamB,
-				winnerId: data.winnerId !== undefined ? data.winnerId : match.winnerId,
-				matchDate: data.matchDate !== undefined ? new Date(data.matchDate) : match.matchDate,
-			},
 			include: {
 				teamA: true,
 				teamB: true,
@@ -124,6 +131,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			match: updatedMatch,
 		});
 	} catch (error) {
+		if (error instanceof MatchResultConflictError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
 		console.error('Error updating match:', error);
 		return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
 	}
