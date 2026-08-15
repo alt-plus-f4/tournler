@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -13,20 +13,35 @@ interface EditTeamDialogProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSave: (updatedTeam: Cs2Team) => void;
+	onDelete?: (teamId: number) => void;
 }
 
-export default function EditTeamDialog({ team, isOpen, onClose, onSave }: EditTeamDialogProps) {
+export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete }: EditTeamDialogProps) {
 	const [editingTeam, setEditingTeam] = useState<Cs2Team | null>(null);
 	const [updatedFields, setUpdatedFields] = useState<Partial<Cs2Team>>({});
 	const [logoFile, setLogoFile] = useState<File | null>(null);
+	const [logoPreview, setLogoPreview] = useState<string | null>(null);
+	const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
 	const { toast } = useToast();
 
 	useEffect(() => {
 		if (team) {
 			setEditingTeam(team);
 			setUpdatedFields({});
+			setLogoFile(null);
+			setLogoPreview(null);
+			setIsConfirmingDelete(false);
 		}
 	}, [team]);
+
+	useEffect(() => {
+		if (!logoFile) return;
+		const url = URL.createObjectURL(logoFile);
+		setLogoPreview(url);
+		return () => URL.revokeObjectURL(url);
+	}, [logoFile]);
 
 	const handleChange = (field: keyof Cs2Team, value: string | number | null) => {
 		setEditingTeam((prev) => (prev ? { ...prev, [field]: value } : null));
@@ -36,15 +51,10 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave }: EditTe
 	const handleEdit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!editingTeam || (Object.keys(updatedFields).length === 0 && !logoFile)) {
-			toast({
-				title: 'No Changes',
-				description: 'No changes were made to the team.',
-				variant: 'default',
-			});
+			toast({ title: 'No Changes', description: 'No changes were made to the team.' });
 			return;
 		}
 
-		// Validate background color if provided
 		if (updatedFields.background !== undefined && updatedFields.background !== null) {
 			const val = String(updatedFields.background);
 			if (!/^#([0-9A-Fa-f]{6})$/.test(val)) {
@@ -53,85 +63,146 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave }: EditTe
 			}
 		}
 
-		let newTeam = { ...editingTeam } as Cs2Team;
+		setIsSaving(true);
+		try {
+			let newTeam = { ...editingTeam } as Cs2Team;
 
-		// If a logo file was provided, upload it first via the dedicated endpoint
-		if (logoFile) {
-			const fd = new FormData();
-			fd.append('teamId', String(editingTeam.id));
-			fd.append('logoFile', logoFile);
-			const uploadRes = await fetch('/api/teams/logo', { method: 'POST', body: fd });
-			if (uploadRes.ok) {
-				const json = await uploadRes.json();
-				newTeam = { ...newTeam, ...json.team };
-				setLogoFile(null);
-			} else {
-				toast({ title: 'Error', description: 'Failed to upload logo', variant: 'destructive' });
-				return;
+			if (logoFile) {
+				const fd = new FormData();
+				fd.append('teamId', String(editingTeam.id));
+				fd.append('logoFile', logoFile);
+				const uploadRes = await fetch('/api/teams/logo', { method: 'POST', body: fd });
+				if (uploadRes.ok) {
+					const json = await uploadRes.json();
+					newTeam = { ...newTeam, ...json.team };
+					setLogoFile(null);
+				} else {
+					toast({ title: 'Error', description: 'Failed to upload logo', variant: 'destructive' });
+					return;
+				}
 			}
-		}
 
-		// If there are other fields to update (like name or background), PATCH them
-		const fieldsToPatch = { ...updatedFields } as Record<string, any>;
-		// Remove logo field from fieldsToPatch to avoid overwriting
-		delete fieldsToPatch.logo;
+			const fieldsToPatch = { ...updatedFields } as Record<string, any>;
+			delete fieldsToPatch.logo;
 
-		if (Object.keys(fieldsToPatch).length > 0) {
-			const response = await fetch(`/api/teams/${editingTeam.id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(fieldsToPatch),
-			});
+			if (Object.keys(fieldsToPatch).length > 0) {
+				const response = await fetch(`/api/teams/${editingTeam.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(fieldsToPatch),
+				});
 
-			if (response.ok) {
+				if (!response.ok) throw new Error('Failed to update team');
 				const json = await response.json();
 				newTeam = { ...newTeam, ...json.team };
-				toast({ title: 'Success', description: 'Team updated successfully', variant: 'default' });
-				onSave(newTeam);
-				onClose();
-				return;
-			} else {
-				toast({ title: 'Error', description: 'Failed to update team', variant: 'destructive' });
-				return;
 			}
-		} else {
-			// No additional fields, but possibly logo upload already updated team
-			toast({ title: 'Success', description: 'Team updated', variant: 'default' });
+
+			toast({ title: 'Success', description: 'Team updated successfully' });
 			onSave(newTeam);
 			onClose();
-			return;
+		} catch (error) {
+			console.error('Failed to update team', error);
+			toast({ title: 'Error', description: 'Failed to update team', variant: 'destructive' });
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
+	const handleDelete = async () => {
+		if (!editingTeam) return;
+		setIsDeleting(true);
+		try {
+			const response = await fetch(`/api/teams/${editingTeam.id}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+			if (!response.ok) throw new Error('Failed to delete team');
+
+			toast({ title: 'Team deleted', description: `${editingTeam.name} was removed.` });
+			onDelete?.(editingTeam.id);
+			onClose();
+		} catch (error) {
+			console.error('Failed to delete team', error);
+			toast({ variant: 'destructive', title: 'Could not delete team', description: error instanceof Error ? error.message : 'An unexpected error occurred' });
+		} finally {
+			setIsDeleting(false);
+			setIsConfirmingDelete(false);
+		}
+	};
+
+	if (isConfirmingDelete) {
+		return (
+			<Dialog open={isOpen} onOpenChange={onClose}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Delete this team?</DialogTitle>
+						<DialogDescription>{editingTeam?.name} will be permanently deleted, along with its match history. This can&apos;t be undone.</DialogDescription>
+					</DialogHeader>
+					<DialogFooter className='gap-2'>
+						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
+							Cancel
+						</Button>
+						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
+							{isDeleting ? 'Deleting...' : 'Delete'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		);
+	}
+
+	const previewSrc = logoPreview ?? editingTeam?.logo ?? null;
+
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent>
+			<DialogContent className='sm:max-w-[460px]'>
 				<DialogHeader>
 					<DialogTitle>Edit Team</DialogTitle>
-					<DialogDescription>Update the team details below.</DialogDescription>
+					<DialogDescription>Update the team&apos;s details below.</DialogDescription>
 				</DialogHeader>
-				<form onSubmit={handleEdit} className='space-y-2'>
-					<Label htmlFor='edit-name'>Team Name</Label>
-					<Input id='edit-name' value={editingTeam?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
-					<Label htmlFor='edit-logo-file' className='mt-4'>
-						Team Logo
-					</Label>
-					<Input id='edit-logo-file' type='file' accept='image/*' onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
-					{logoFile && <p className='text-sm text-neutral-500'>Selected: {logoFile.name}</p>}
-					<div className='flex items-center gap-2'>
-						<Label htmlFor='edit-background' className='mt-4'>
-							Background Color
-						</Label>
-						<div className='w-6 h-6 rounded-sm border' style={{ backgroundColor: (editingTeam?.background as string) || '#000000' }} />
+				<form onSubmit={handleEdit} className='space-y-5'>
+					<div className='flex items-center gap-4'>
+						<div className='h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center' style={{ backgroundColor: (editingTeam?.background as string) || '#000000' }}>
+							{previewSrc ? (
+								// eslint-disable-next-line @next/next/no-img-element
+								<img src={previewSrc} alt={editingTeam?.name ?? ''} className='h-full w-full object-contain' />
+							) : (
+								<span className='text-lg font-bold text-white'>{(editingTeam?.name || '?').substring(0, 2).toUpperCase()}</span>
+							)}
+						</div>
+						<div className='flex-1 space-y-2'>
+							<Label htmlFor='edit-name'>Team Name</Label>
+							<Input id='edit-name' value={editingTeam?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
+						</div>
 					</div>
-					<Input id='edit-background' type='color' value={(editingTeam?.background as string) || '#000000'} onChange={(e) => handleChange('background', e.target.value)} />
-					<Button type='submit' className='w-full'>
-						Update Team
-					</Button>
+
+					<div className='space-y-3'>
+						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Branding</p>
+						<div className='space-y-2'>
+							<Label htmlFor='edit-logo-file'>Team Logo</Label>
+							<Input id='edit-logo-file' type='file' accept='image/*' onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
+							{logoFile && <p className='text-xs text-neutral-500'>Selected: {logoFile.name}</p>}
+						</div>
+						<div className='flex items-center gap-3'>
+							<Label htmlFor='edit-background' className='shrink-0'>
+								Background Color
+							</Label>
+							<Input id='edit-background' type='color' value={(editingTeam?.background as string) || '#000000'} onChange={(e) => handleChange('background', e.target.value)} className='h-9 w-16 p-1' />
+							<span className='text-sm font-mono text-muted-foreground'>{(editingTeam?.background as string) || '#000000'}</span>
+						</div>
+					</div>
+
+					<DialogFooter className='gap-2 pt-2'>
+						{onDelete && (
+							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+								Delete
+							</Button>
+						)}
+						<Button type='button' variant='outline' onClick={onClose}>
+							Cancel
+						</Button>
+						<Button type='submit' disabled={isSaving}>
+							{isSaving ? 'Saving...' : 'Save changes'}
+						</Button>
+					</DialogFooter>
 				</form>
-				<DialogClose asChild>
-					<Button variant='outline'>Close</Button>
-				</DialogClose>
 			</DialogContent>
 		</Dialog>
 	);

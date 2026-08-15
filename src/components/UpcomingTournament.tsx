@@ -6,9 +6,9 @@ import Link from 'next/link';
 interface UpcomingTournamentProps {
 	id: number;
 	name: string;
-	bannerUrl: string;
+	bannerUrl: string | null;
 	startDate: string;
-	prizePool: number;
+	prizePool: number | null;
 	teams: any[];
 	location: string;
 	teamCapacity: number;
@@ -31,16 +31,18 @@ export function UpcomingTournament({
 			href={`/tournaments/${id}`}
 			className={`relative flex flex-col items-center justify-center rounded-md shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-[80%]'}`}
 		>
-			<div className='relative w-full h-20'>
-				<Image
-					src={bannerUrl}
-					alt={name}
-					fill
-					sizes='25vw'
-					className='object-cover w-full h-20'
-					placeholder='blur' // or "empty"
-					blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
-				/>
+			<div className='relative w-full h-20 bg-neutral-900'>
+				{bannerUrl && (
+					<Image
+						src={bannerUrl}
+						alt={name}
+						fill
+						sizes='25vw'
+						className='object-cover w-full h-20'
+						placeholder='blur' // or "empty"
+						blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+					/>
+				)}
 				<div className='absolute bottom-0 left-0 w-full h-[20px] bg-gradient-to-t from-black to-transparent'></div>
 			</div>
 			<div className='w-full bg-black hover:brightness-75 transition-all border-t-0 border text-center'>

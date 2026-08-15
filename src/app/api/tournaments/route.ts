@@ -95,6 +95,7 @@ function parseTournamentFormat(rawFormat: string): TournamentFormat | null {
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
 	const status = searchParams.get('status');
+	const search = searchParams.get('search')?.trim();
 	const page = parseInt(searchParams.get('page') || '1', 10);
 	const limit = parseInt(searchParams.get('limit') || '10', 10);
 
@@ -107,15 +108,14 @@ export async function GET(request: Request) {
 		return NextResponse.json({ error: 'Invalid status parameter' }, { status: 400 });
 	}
 
+	const where = {
+		...(statusFilter ? { status: { in: statusFilter } } : {}),
+		...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+	};
+
 	try {
 		const tournaments = await db.cs2Tournament.findMany({
-			where: statusFilter
-				? {
-						status: {
-							in: statusFilter,
-						},
-					}
-				: undefined,
+			where: Object.keys(where).length > 0 ? where : undefined,
 			orderBy: {
 				prizePool: 'desc',
 			},

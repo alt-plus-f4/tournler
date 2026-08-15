@@ -19,7 +19,7 @@ export default async function AdminLayout({
 	return (
 		<SidebarProvider>
 			<AdminSidebar />
-			{children}
+			<div className='flex-1 h-svh overflow-y-auto'>{children}</div>
 		</SidebarProvider>
 	);
 }

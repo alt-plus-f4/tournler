@@ -18,15 +18,19 @@ export function TournamentRow({
 		<Link href={`/tournaments/${id}`}>
 			<div className='relative flex items-center justify-between rounded-lg border shadow-lg overflow-hidden transition-colors w-full h-20 p-2 cursor-pointer mx-2 hover:bg-hoverColor'>
 				<div className='flex items-center'>
-					<div className='relative w-12 h-12'>
-						<Image
-							src={logoUrl}
-							alt={name}
-							fill
-							sizes='5vw'
-							loading='eager'
-							className='object-cover w-full h-full'
-						/>
+					<div className='relative w-12 h-12 bg-neutral-900 rounded flex items-center justify-center'>
+						{logoUrl ? (
+							<Image
+								src={logoUrl}
+								alt={name}
+								fill
+								sizes='5vw'
+								loading='eager'
+								className='object-cover w-full h-full'
+							/>
+						) : (
+							<span className='text-white font-bold text-sm'>{name.substring(0, 2).toUpperCase()}</span>
+						)}
 					</div>
 					<div className='flex flex-col items-start ml-4'>
 						<h1 className='text-white text-lg font-extrabold'>

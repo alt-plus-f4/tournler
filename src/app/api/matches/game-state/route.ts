@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { safeEqual } from '@/lib/helpers/safe-equal';
 import { MatchResultConflictError, recordMatchResult } from '@/lib/tournaments/bracket-advancement';
+import { upsertPlayerMatchStats, PlayerStatInput } from '@/lib/tournaments/player-stats';
 import { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
@@ -10,6 +11,12 @@ interface GameStateUpdate {
 	teamBScore: number;
 	isCompleted: boolean;
 	winnerId?: number;
+	playerStats?: PlayerStatInput[];
+}
+
+function isValidPlayerStats(value: unknown): value is PlayerStatInput[] {
+	if (!Array.isArray(value)) return false;
+	return value.every((entry) => entry && typeof entry === 'object' && typeof (entry as Record<string, unknown>).userId === 'string' && typeof (entry as Record<string, unknown>).teamId === 'number' && typeof (entry as Record<string, unknown>).kills === 'number' && typeof (entry as Record<string, unknown>).deaths === 'number' && typeof (entry as Record<string, unknown>).assists === 'number');
 }
 
 function isValidGameStateUpdate(payload: unknown): payload is GameStateUpdate {
@@ -18,7 +25,12 @@ function isValidGameStateUpdate(payload: unknown): payload is GameStateUpdate {
 	}
 
 	const data = payload as Record<string, unknown>;
-	return typeof data.matchId === 'number' && typeof data.teamAScore === 'number' && typeof data.teamBScore === 'number' && typeof data.isCompleted === 'boolean' && (data.winnerId === undefined || typeof data.winnerId === 'number');
+	if (typeof data.matchId !== 'number' || typeof data.teamAScore !== 'number' || typeof data.teamBScore !== 'number' || typeof data.isCompleted !== 'boolean') {
+		return false;
+	}
+	if (data.winnerId !== undefined && typeof data.winnerId !== 'number') return false;
+	if (data.playerStats !== undefined && !isValidPlayerStats(data.playerStats)) return false;
+	return true;
 }
 
 /**
@@ -58,6 +70,10 @@ export async function POST(request: Request) {
 				where: { matchId: update.matchId },
 				data: { status: 'COMPLETED' },
 			});
+		}
+
+		if (update.playerStats && update.playerStats.length > 0) {
+			await upsertPlayerMatchStats(update.matchId, update.playerStats);
 		}
 
 		const matchWithTeams = await db.matches.findUnique({

@@ -120,6 +120,8 @@ model User {
   cs2TeamInvitations Cs2TeamInvitation[]
 
   organizedTournaments Cs2Tournament[] @relation("TournamentOrganizers")
+  playerMatchStats     PlayerMatchStat[]
+  badges               UserBadge[]
 
   accounts Account[]
   sessions Session[]
@@ -179,6 +181,7 @@ model Cs2Team {
   matchesAsTeamA  Matches[] @relation("MatchTeamA")
   matchesAsTeamB  Matches[] @relation("MatchTeamB")
   matchesAsWinner Matches[] @relation("MatchWinner")
+  playerMatchStats PlayerMatchStat[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -271,7 +274,8 @@ model Matches {
   nextLoserMatchId   Int?       @map("next_loser_match_id")
   nextLoserMatchSlot MatchSlot? @map("next_loser_match_slot")
 
-  gameServer GameServer?
+  gameServer  GameServer?
+  playerStats PlayerMatchStat[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -311,4 +315,62 @@ enum GameServerStatus {
   FAILED
 
   @@map("game_server_status")
+}
+
+model PlayerMatchStat {
+  id Int @id @default(autoincrement()) @map("id")
+
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  teamId Int     @map("team_id")
+  team   Cs2Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  kills   Int @default(0) @map("kills")
+  deaths  Int @default(0) @map("deaths")
+  assists Int @default(0) @map("assists")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([matchId, userId])
+  @@index([matchId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("player_match_stats")
+}
+
+model Badge {
+  id          Int     @id @default(autoincrement()) @map("id")
+  name        String  @unique @map("name")
+  description String? @map("description")
+  icon        String  @map("icon")
+  color       String  @default("#facc15") @map("color")
+
+  awards UserBadge[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id Int @id @default(autoincrement()) @map("id")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  badgeId Int   @map("badge_id")
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
 }

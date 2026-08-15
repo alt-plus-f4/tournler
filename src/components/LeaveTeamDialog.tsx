@@ -11,7 +11,7 @@ import {
 	DialogHeader,
 	DialogFooter,
 } from '@/components/ui/dialog';
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { removeMember } from '@/lib/helpers/remove-member';
 import { useRouter } from 'next/navigation';
@@ -30,6 +30,17 @@ export function LeaveTeamDialog({
 	const { toast } = useToast();
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
+	// DialogTrigger's asChild composition (Radix Slot) mismatches between SSR
+	// and the client for this trigger — the same class of issue already
+	// worked around for TeamMemberAvatar's HoverCard and AdminSidebar's
+	// Collapsible. Render the plain trigger for the first paint, swap in the
+	// interactive Dialog-wrapped version post-mount.
+	const [isMounted, setIsMounted] = useState(false);
+	useEffect(() => setIsMounted(true), []);
+
+	if (!isMounted) {
+		return <>{children}</>;
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>

@@ -66,10 +66,10 @@ export interface Session {
 export interface ReducedTournament {
 	id: number;
 	name: string;
-	bannerUrl: string;
-	logoUrl: string;
+	bannerUrl: string | null;
+	logoUrl: string | null;
 	startDate: string;
-	prizePool: number;
+	prizePool: number | null;
 	teams: [];
 	location: string;
 	teamCapacity: number;

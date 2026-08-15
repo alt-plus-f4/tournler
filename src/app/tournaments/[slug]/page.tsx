@@ -41,8 +41,8 @@ async function TournamentPage({ params }: TournamentPageProps) {
 
 	return (
 		<Card className='w-5/6 mx-auto mt-8 border-none'>
-			<CardHeader className='relative p-0 w-full h-[300px] space-y-0 rounded-t-xl'>
-				<Image src={tournament.bannerUrl} alt={tournament.name} fill priority loading='eager' className='object-cover w-1200 h-220' />
+			<CardHeader className='relative p-0 w-full h-[300px] space-y-0 rounded-t-xl bg-neutral-900'>
+				{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt={tournament.name} fill priority loading='eager' className='object-cover w-1200 h-220' />}
 				<Link className={cn('absolute top-2 left-2 z-10', buttonVariants({ variant: 'outline' }))} href='/tournaments'>
 					<FaArrowLeft className='h-4 w-4' />
 				</Link>

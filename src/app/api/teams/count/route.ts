@@ -1,10 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
 	try {
-		let count = await db.cs2Team.count() / 10;
-		count = Math.ceil(count);
+		const { searchParams } = new URL(req.url);
+		const limit = Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10);
+		const search = searchParams.get('search')?.trim();
+
+		const where = search ? { name: { contains: search, mode: 'insensitive' as const } } : undefined;
+
+		const total = await db.cs2Team.count({ where });
+		const count = Math.ceil(total / limit);
 
 		return NextResponse.json(count, { status: 200 });
 	} catch (error) {

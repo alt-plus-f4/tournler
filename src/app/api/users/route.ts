@@ -19,17 +19,25 @@ export async function GET(req: NextRequest) {
 		const { searchParams } = new URL(req.url);
 		const page = parseInt(searchParams.get('page') || '1', 10);
 		const limit = parseInt(searchParams.get('limit') || '10', 10);
+		const search = searchParams.get('search')?.trim();
 
 		if (isNaN(page) || isNaN(limit)) {
 			return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 });
 		}
 
+		const where = search
+			? {
+					OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { email: { contains: search, mode: 'insensitive' as const } }],
+				}
+			: undefined;
+
 		const [users, totalUsers] = await Promise.all([
 			db.user.findMany({
+				where,
 				skip: (page - 1) * limit,
 				take: limit,
 			}),
-			db.user.count(),
+			db.user.count({ where }),
 		]);
 
 		return NextResponse.json({

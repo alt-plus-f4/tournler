@@ -7,6 +7,7 @@ import Prizes from './Prizes';
 import Matches from './Matches';
 import { Cs2Tournament } from '@/types/types';
 import Bracket from './Bracket';
+import PlayerStats from './PlayerStats';
 
 interface TabMenuProps {
 	tournament: Cs2Tournament;
@@ -27,6 +28,8 @@ const TabMenu: React.FC<TabMenuProps> = ({ tournament }) => {
 				return <Matches tournament={tournament} />;
 			case 'bracket':
 				return <Bracket tournament={tournament} />;
+			case 'stats':
+				return <PlayerStats tournament={tournament} />;
 			default:
 				return <Overview tournament={tournament} setActiveTab={setActiveTab} />;
 		}
@@ -49,6 +52,9 @@ const TabMenu: React.FC<TabMenuProps> = ({ tournament }) => {
 				</button>
 				<button onClick={() => setActiveTab('bracket')} className={`p-2 hover:text-gray-400 transition-colors whitespace-nowrap ${activeTab === 'bracket' ? 'font-bold border-b-2 border-white' : ''}`}>
 					Bracket
+				</button>
+				<button onClick={() => setActiveTab('stats')} className={`p-2 hover:text-gray-400 transition-colors whitespace-nowrap ${activeTab === 'stats' ? 'font-bold border-b-2 border-white' : ''}`}>
+					Stats
 				</button>
 			</div>
 			<div>{renderTabContent()}</div>

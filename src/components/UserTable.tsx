@@ -1,4 +1,4 @@
-import { User } from "@/types/types";
+import { User } from '@/types/types';
 
 export default function UserTable({
 	users,
@@ -17,16 +17,7 @@ export default function UserTable({
 			<table className='w-full border'>
 				<thead>
 					<tr>
-						{[
-							'ID',
-							'Email',
-							'Name',
-							'Role',
-							'Onboarding Completed',
-							'Team',
-							'Created At',
-							'Updated At',
-						].map((header) => (
+						{['ID', 'Email', 'Name', 'Role', 'Onboarding Completed', 'Team', 'Created At', 'Updated At'].map((header) => (
 							<th key={header} className='py-2 px-4 border'>
 								{header}
 							</th>
@@ -35,40 +26,38 @@ export default function UserTable({
 				</thead>
 				{isLoading ? (
 					<UserTableSkeleton />
+				) : users.length === 0 ? (
+					<tbody>
+						<tr>
+							<td colSpan={8} className='py-8 px-4 border text-center text-muted-foreground'>
+								No users found.
+							</td>
+						</tr>
+					</tbody>
 				) : (
 					<tbody>
 						{users.map((user) => (
 							<tr
 								key={user.id}
 								onClick={() => onEdit(user)}
-								className='cursor-pointer hover:opacity-80 transition-colors text-center pb-8'
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										onEdit(user);
+									}
+								}}
+								tabIndex={0}
+								role='button'
+								className='cursor-pointer hover:opacity-80 transition-colors text-center pb-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset'
 							>
 								<td className='py-2 px-6 border text-nowrap'>{user.id}</td>
-								<td className='py-2 px-4 border'>
-									{user.email}
-								</td>
-								<td className='py-2 px-4 border'>
-									{user.name || 'N/A'}
-								</td>
-								<td className='py-2 px-4 border'>
-									{user.role}
-								</td>
-								<td className='py-2 px-4 border'>
-									{user.isOnboardingCompleted ? 'Yes' : 'No'}
-								</td>
-								<td className='py-2 px-4 border'>
-									{user.cs2Team?.name || 'N/A'}
-								</td>
-								<td className='py-2 px-4 border'>
-									{new Date(
-										user.createdAt
-									).toLocaleDateString()}
-								</td>
-								<td className='py-2 px-4 border'>
-									{new Date(
-										user.updatedAt
-									).toLocaleDateString()}
-								</td>
+								<td className='py-2 px-4 border'>{user.email}</td>
+								<td className='py-2 px-4 border'>{user.name || 'N/A'}</td>
+								<td className='py-2 px-4 border'>{user.role}</td>
+								<td className='py-2 px-4 border'>{user.isOnboardingCompleted ? 'Yes' : 'No'}</td>
+								<td className='py-2 px-4 border'>{user.cs2Team?.name || 'N/A'}</td>
+								<td className='py-2 px-4 border'>{new Date(user.createdAt).toLocaleDateString()}</td>
+								<td className='py-2 px-4 border'>{new Date(user.updatedAt).toLocaleDateString()}</td>
 							</tr>
 						))}
 					</tbody>
