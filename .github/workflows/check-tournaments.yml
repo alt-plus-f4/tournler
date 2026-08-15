@@ -1,0 +1,32 @@
+name: Check & auto-start tournaments
+
+# Alternative to the native Vercel Cron configured in vercel.json.
+# Use ONE of the two, not both:
+#   - vercel.json's `crons` entry if the deployment is on a Vercel plan that
+#     supports frequent (sub-daily) cron schedules.
+#   - This workflow if deploying elsewhere, or on Vercel's Hobby plan (which
+#     limits native cron jobs to once per day).
+# Requires two repository secrets:
+#   - APP_URL: the deployed app's base URL, e.g. https://tournler.example.com
+#   - CRON_API_KEY: must match the CRON_API_KEY env var configured on the app
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check-start:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call check-start endpoint
+        run: |
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X GET "${{ secrets.APP_URL }}/api/tournaments/check-start" \
+            -H "x-api-key: ${{ secrets.CRON_API_KEY }}")
+          echo "HTTP status: $status"
+          cat /tmp/response.json
+          if [ "$status" -ge 300 ]; then
+            echo "check-start request failed"
+            exit 1
+          fi

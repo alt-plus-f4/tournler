@@ -38,25 +38,21 @@
 		"clsx": "^2.1.1",
 		"cmdk": "^1.0.0",
 		"convex": "^1.17.4",
-		"date-fns": "^3.6.0",
 		"lucide-react": "^0.453.0",
-		"next": "^15.5.18",
+		"next": "^16.3.1",
 		"next-auth": "^4.24.14",
-		"nodemailer": "^8.0.7",
+		"nodemailer": "^9.0.5",
 		"react": "^18",
-		"react-day-picker": "^8.10.1",
 		"react-dom": "^18",
 		"react-hook-form": "^7.53.1",
 		"react-icons": "^5.3.0",
 		"react-redux": "^9.1.2",
 		"recharts": "^2.15.0",
-		"sharp": "^0.33.5",
+		"sharp": "^0.35.3",
 		"swr": "^2.3.2",
 		"tailwind-merge": "^2.5.4",
 		"tailwindcss-animate": "^1.0.7",
-		"tournler": "file:",
 		"vaul": "^1.1.1",
-		"xml2js": "^0.6.2",
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
@@ -68,14 +64,12 @@
 		"@types/node": "^20",
 		"@types/nodemailer": "^8.0.0",
 		"@types/react": "^18",
-		"@types/react-burger-menu": "^2.8.7",
 		"@types/react-dom": "^18",
-		"@types/xml2js": "^0.4.14",
 		"eslint": "^8",
 		"eslint-config-next": "^15.5.18",
 		"jest": "^30.4.2",
 		"jest-environment-jsdom": "^30.4.1",
-		"postcss": "^8.5.14",
+		"postcss": "^8.5.26",
 		"prisma": "^6.2.1",
 		"tailwindcss": "^3.4.1",
 		"typescript": "^5"
@@ -83,8 +77,12 @@
 	"overrides": {
 		"eslint": {
 			"minimatch": {
-				"brace-expansion": "1.1.13"
+				"brace-expansion": "1.1.18"
 			}
+		},
+		"postcss": "^8.5.26",
+		"next-auth": {
+			"nodemailer": "$nodemailer"
 		}
 	}
 }

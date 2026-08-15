@@ -99,10 +99,18 @@ html {
 	}
 }
 
-.purple-g {
-	background: linear-gradient(90deg, #401a4a, #020024 50%, #41144d);
-	/* color: #1d1e21; */
-	background: #1d91d74d;
+.interactive-bg {
+	background:
+		radial-gradient(500px circle at var(--x, 50%) var(--y, 20%), rgba(255, 255, 255, 0.07), transparent 60%),
+		repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px);
+	transition: background-position 0.15s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.interactive-bg {
+		transition: none;
+	}
 }
 
 .transition-300 {

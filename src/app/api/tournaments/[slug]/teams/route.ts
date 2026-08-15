@@ -1,5 +1,19 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
+
+async function assertCanManageTeamRoster(userId: string, teamId: number) {
+	const team = await db.cs2Team.findUnique({ where: { id: teamId }, select: { capitanId: true, members: { select: { id: true } } } });
+	if (!team) return { ok: false as const, status: 404, error: 'Team not found' };
+
+	const isMember = team.capitanId === userId || team.members.some((m) => m.id === userId);
+	if (!isMember && !(await userHasPermission(userId, 'tournaments:manage'))) {
+		return { ok: false as const, status: 403, error: 'Forbidden' };
+	}
+
+	return { ok: true as const };
+}
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
@@ -37,6 +51,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	try {
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 		const { slug } = await params;
 		const tournamentId = parseInt(slug, 10);
 		const { teamId } = await request.json();
@@ -44,6 +61,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 		if (isNaN(tournamentId) || !teamId) {
 			return NextResponse.json({ error: 'Invalid tournamentId or missing teamId' }, { status: 400 });
 		}
+
+		const access = await assertCanManageTeamRoster(session.user.id, teamId);
+		if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
 		const tournament = await db.cs2Tournament.findUnique({
 			where: { id: tournamentId },
@@ -79,6 +99,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	try {
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 		const { slug } = await params;
 		const tournamentId = parseInt(slug, 10);
 		const { teamId } = await request.json();
@@ -86,6 +109,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 		if (isNaN(tournamentId) || !teamId) {
 			return NextResponse.json({ error: 'Invalid tournamentId or missing teamId' }, { status: 400 });
 		}
+
+		const access = await assertCanManageTeamRoster(session.user.id, teamId);
+		if (!access.ok) return NextResponse.json({ error: access.error }, { status: access.status });
 
 		const tournament = await db.cs2Tournament.findUnique({
 			where: { id: tournamentId },

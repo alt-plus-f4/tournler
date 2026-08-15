@@ -35,7 +35,6 @@ export default function AdminTournamentsPage() {
 		async function fetchTournamentCount() {
 			const response = await fetch('/api/tournaments/count');
 			const count = await response.json();
-			// console.log(count);
 			setTotalPages(count);
 		}
 		fetchTournamentCount();

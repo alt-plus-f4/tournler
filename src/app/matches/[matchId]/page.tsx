@@ -88,7 +88,7 @@ function TeamLogo({ logo, name }: { logo: string | null; name: string }) {
 	}
 
 	// eslint-disable-next-line @next/next/no-img-element
-	return <img src={logo} alt={name} className='w-[120px] h-[120px] object-contain' onError={() => setFailed(true)} />;
+	return <img src={logo} alt={name} loading='eager' className='w-[120px] h-[120px] object-contain' onError={() => setFailed(true)} />;
 }
 
 export default function MatchPage() {

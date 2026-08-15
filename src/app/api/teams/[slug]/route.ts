@@ -36,6 +36,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+	const session = await getAuthSession();
+	if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
 	const { slug } = await params;
 	const { userId } = await request.json();
 
@@ -62,7 +65,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 	}
 
+	const isCaptain = team.capitan?.id === session.user.id;
+	const canManage = isCaptain || (await userHasPermission(session.user.id, 'teams:manage'));
+
 	if (userId) {
+		// Removing a specific member: allowed for that member themself, the captain, or teams:manage
+		if (session.user.id !== userId && !canManage) {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
 		const isMember = team.members.some((member: { id: string }) => member.id === userId);
 		if (!isMember) {
 			return NextResponse.json({ error: 'User not a member of the team' }, { status: 400 });
@@ -102,6 +112,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 			return NextResponse.json({ message: 'User removed from the team' }, { status: 200 });
 		}
 	} else {
+		// Deleting the whole team: captain or teams:manage only
+		if (!canManage) {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
 		await db.cs2Team.delete({ where: { id: numericId } });
 		return NextResponse.json({ message: 'Team deleted' }, { status: 200 });
 	}

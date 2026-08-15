@@ -17,9 +17,7 @@ export async function acceptTeamInvite(
 		});
 
 		const data = await response.json();
-		if (response.ok) {
-			console.log(data.message);
-		} else {
+		if (!response.ok) {
 			console.error(data.message);
 		}
 	} catch (error) {

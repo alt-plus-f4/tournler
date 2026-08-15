@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
 
 export async function POST(request: Request) {
 	try {
+		const session = await getAuthSession();
+		if (!session) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+
 		const body = await request.json();
 
-		const { userId, teamId } = body;
+		const userId = session.user.id;
+		const { teamId } = body;
 
-		if (!userId || !teamId) {
+		if (!teamId) {
 			return NextResponse.json(
-				{ message: 'Missing userId or teamId' },
+				{ message: 'Missing teamId' },
 				{ status: 400 }
 			);
 		}

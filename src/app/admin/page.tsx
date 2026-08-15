@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-// import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
 	Bar,
 	BarChart,
@@ -40,62 +40,56 @@ const chartConfig = {
 	},
 };
 
-const userData = [
-	{ name: 'Users in a Team', count: 1200 },
-	{ name: 'Users not in a Team', count: 300 },
-];
-
-const teamData = [
-	{ name: 'Verified Teams', count: 300 },
-	{ name: 'Not full Teams', count: 150 },
-];
-
-const tournamentData = [
-	{ status: 'Ended', count: 90 },
-	{ status: 'Upcoming', count: 60 },
-];
-
 export default function AdminDashboard() {
 	const router = useRouter();
 
-	// const [userData, setUserData] = useState([{}]);
-	// const [teamData, setTeamData] = useState([{}]);
-	// const [tournamentData, setTournamentData] = useState([{}]);
+	const [userData, setUserData] = useState([
+		{ name: 'Users in a Team', count: 0 },
+		{ name: 'Users not in a Team', count: 0 },
+	]);
+	const [teamData, setTeamData] = useState([
+		{ name: 'Verified Teams', count: 0 },
+		{ name: 'Not full Teams', count: 0 },
+	]);
+	const [tournamentData, setTournamentData] = useState([
+		{ status: 'Ended', count: 0 },
+		{ status: 'Upcoming', count: 0 },
+	]);
 
-	// useEffect(() => {
-	// 	const fetchData = async () => {
-	// 		try {
-	// 			const usersResponse = await fetch('/api/admin/users');
-	// 			const { usersInTeam, usersNotInTeam } =
-	// 				await usersResponse.json();
-	// 			setUserData([
-	// 				{ name: 'Users in a Team', count: usersInTeam },
-	// 				{ name: 'Users not in a Team', count: usersNotInTeam },
-	// 			]);
+	useEffect(() => {
+		const fetchData = async () => {
+			try {
+				const usersResponse = await fetch('/api/admin/users');
+				const { usersInTeam, usersNotInTeam } =
+					await usersResponse.json();
+				setUserData([
+					{ name: 'Users in a Team', count: usersInTeam },
+					{ name: 'Users not in a Team', count: usersNotInTeam },
+				]);
 
-	// 			const teamsResponse = await fetch('/api/admin/teams');
-	// 			const { verifiedTeams, notFullTeams } =
-	// 				await teamsResponse.json();
-	// 			setTeamData([
-	// 				{ name: 'Verified Teams', count: verifiedTeams },
-	// 				{ name: 'Not full Teams', count: notFullTeams },
-	// 			]);
+				const teamsResponse = await fetch('/api/admin/teams');
+				const { verifiedTeams, notFullTeams } =
+					await teamsResponse.json();
+				setTeamData([
+					{ name: 'Verified Teams', count: verifiedTeams },
+					{ name: 'Not full Teams', count: notFullTeams },
+				]);
 
-	// 			const tournamentsResponse = await fetch(
-	// 				'/api/admin/tournaments'
-	// 			);
-	// 			const { ended, upcoming } = await tournamentsResponse.json();
-	// 			setTournamentData([
-	// 				{ status: 'Ended', count: ended },
-	// 				{ status: 'Upcoming', count: upcoming },
-	// 			]);
-	// 		} catch (error) {
-	// 			console.error('Error fetching data:', error);
-	// 		}
-	// 	};
+				const tournamentsResponse = await fetch(
+					'/api/admin/tournaments'
+				);
+				const { ended, upcoming } = await tournamentsResponse.json();
+				setTournamentData([
+					{ status: 'Ended', count: ended },
+					{ status: 'Upcoming', count: upcoming },
+				]);
+			} catch (error) {
+				console.error('Error fetching admin dashboard data:', error);
+			}
+		};
 
-	// 	fetchData();
-	// }, []);
+		fetchData();
+	}, []);
 
 	const handleChartClick = (path: string) => {
 		router.push(path);

@@ -2,6 +2,20 @@ import { NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { createHmac } from 'crypto';
 
+async function verifyWithSteam(searchParams: URLSearchParams) {
+	const verifyParams = new URLSearchParams(searchParams);
+	verifyParams.set('openid.mode', 'check_authentication');
+
+	const response = await fetch('https://steamcommunity.com/openid/login', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+		body: verifyParams.toString(),
+	});
+
+	const text = await response.text();
+	return /is_valid\s*:\s*true/.test(text);
+}
+
 function verifyState(state: string | null) {
 	if (!state) return null;
 
@@ -47,6 +61,11 @@ export async function GET(req: NextRequest) {
 
 		if (!state?.userId) {
 			return new Response(JSON.stringify({ error: 'Missing or invalid linking state' }), { status: 400 });
+		}
+
+		const isValid = await verifyWithSteam(searchParams);
+		if (!isValid) {
+			return new Response(JSON.stringify({ error: 'Steam assertion could not be verified' }), { status: 400 });
 		}
 
 		const existingUser = await db.user.findUnique({

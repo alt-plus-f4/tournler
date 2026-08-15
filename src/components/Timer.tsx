@@ -23,7 +23,10 @@ const Timer: React.FC<TimerProps> = ({ timeLeft: initialTimeLeft }) => {
     }, 1000);
 
     return () => clearInterval(intervalId);
-  }, [timeLeft]);
+    // Intentionally mount-only: reads the initial timeLeft value once and
+    // then counts down internally via the functional setState updater, so
+    // the interval isn't torn down and recreated on every tick.
+  }, []);
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor((ms / 1000) % 60);

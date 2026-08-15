@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { emptyBracket, sampleMatches } from '@/lib/sample/sampleMatches';
 import { Tournament } from '@/types/types';
@@ -106,24 +107,37 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({ matches = [], onMatc
 	const padding = 30;
 	const titleMarginTop = 25;
 
-	const generateBracket = (matches: Match[]): Match[][] => {
-		const lastMatch = matches.find((match) => !match.nextMatchId);
+	// Group matches by the match they feed into, once, instead of re-filtering
+	// the full match list for every match on every render.
+	const previousMatchesByNextId = useMemo(() => {
+		const map = new Map<number, Match[]>();
+		for (const match of bracketMatches) {
+			if (match.nextMatchId === undefined) continue;
+			const bucket = map.get(match.nextMatchId);
+			if (bucket) bucket.push(match);
+			else map.set(match.nextMatchId, [match]);
+		}
+		return map;
+	}, [bracketMatches]);
+
+	const columns = useMemo(() => {
+		const lastMatch = bracketMatches.find((match) => !match.nextMatchId);
 		if (!lastMatch) return [];
 
-		const columns: Match[][] = [];
+		const result: Match[][] = [];
 		let currentColumn = [lastMatch];
 
 		while (currentColumn.length > 0) {
-			columns.unshift(currentColumn);
+			result.unshift(currentColumn);
 			const nextColumn = currentColumn.reduce<Match[]>((acc, match) => {
-				const previousMatches = matches.filter((m) => m.nextMatchId === match.id);
+				const previousMatches = previousMatchesByNextId.get(match.id) ?? [];
 				return [...acc, ...previousMatches];
 			}, []);
 			currentColumn = nextColumn;
 		}
 
-		return columns;
-	};
+		return result;
+	}, [bracketMatches, previousMatchesByNextId]);
 
 	const getRoundTitle = (matchCount: number): string => {
 		if (matchCount === 1) return 'Finals';
@@ -134,24 +148,27 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({ matches = [], onMatc
 		return `Round (${matchCount} teams)`;
 	};
 
-	const columns = generateBracket(bracketMatches);
 	const bracketWidth = Math.max(columns.length * columnWidth + padding * 2, 400);
+
+	const bracketHeight = useMemo(
+		() =>
+			Math.max(
+				...columns.map((col, i) => {
+					const totalMatches = col.length;
+					const spaceBetweenMatches = rowHeight * Math.pow(2, i);
+					return (totalMatches - 1) * spaceBetweenMatches + rowHeight;
+				}),
+			) +
+			padding * 2,
+		[columns, rowHeight, padding],
+	);
+
 	const getYPosition = (columnIndex: number, matchIndex: number): number => {
 		const totalMatches = columns[columnIndex].length;
 		const spaceBetweenMatches = rowHeight * Math.pow(2, columnIndex);
 		const startY = (bracketHeight - (totalMatches - 1) * spaceBetweenMatches) / 2;
 		return startY + matchIndex * spaceBetweenMatches;
 	};
-
-	const bracketHeight =
-		Math.max(
-			...columns.map((col, i) => {
-				const totalMatches = col.length;
-				const spaceBetweenMatches = rowHeight * Math.pow(2, i);
-				return (totalMatches - 1) * spaceBetweenMatches + rowHeight;
-			}),
-		) +
-		padding * 2;
 
 	const renderMatch = (match: Match, x: number, y: number) => {
 		const boxHeight = 70;
@@ -244,7 +261,7 @@ const SingleEliminationBracket: React.FC<BracketProps> = ({ matches = [], onMatc
 	const renderConnectors = (match: Match, x: number, y: number, columnIndex: number) => {
 		if (columnIndex === 0) return null;
 
-		const previousMatches = bracketMatches.filter((m) => m.nextMatchId === match.id);
+		const previousMatches = previousMatchesByNextId.get(match.id) ?? [];
 		if (previousMatches.length === 0) return null;
 
 		return (

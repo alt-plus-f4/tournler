@@ -13,10 +13,10 @@ interface TeamActionsProps {
 	invitedPlayers?: any[];
 }
 
-export default function TeamActions({ team, userId, isUserTeamCaptain }: TeamActionsProps) {
+export default function TeamActions({ team, isUserTeamCaptain }: TeamActionsProps) {
 	const [isEditOpen, setIsEditOpen] = useState(false);
 
-	const handleSave = (updatedTeam: Cs2Team) => {
+	const handleSave = () => {
 		// Simple UX: reload to reflect changes
 		window.location.reload();
 	};

@@ -37,6 +37,15 @@ export async function PATCH(request: Request) {
   if (!avatar || typeof avatar !== 'string')
     return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
 
+  const MAX_AVATAR_BYTES = 100 * 1024;
+  const trimmed = avatar.trim();
+  const looksLikeSvg = trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
+  const hasDangerousContent = /<script|on[a-z]+\s*=|javascript:|<foreignObject/i.test(avatar);
+
+  if (avatar.length > MAX_AVATAR_BYTES || !looksLikeSvg || hasDangerousContent) {
+    return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
+  }
+
   try {
     const buffer = Buffer.from(avatar, 'utf-8');
 

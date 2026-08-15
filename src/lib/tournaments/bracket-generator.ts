@@ -40,26 +40,13 @@ export function generateSingleEliminationBracket(teams: Cs2Team[]): BracketMatch
 	// Sort teams to ensure consistent seeding
 	const sortedTeams = [...teams].sort((a, b) => a.id - b.id);
 
-	// For single elimination, we need teams to be a power of 2
-	// If not, add byes or duplicate teams as needed
-	let bracketTeams = sortedTeams;
-	if (bracketTeams.length !== 0 && (bracketTeams.length & (bracketTeams.length - 1)) !== 0) {
-		// Not a power of 2, round up to next power of 2
-		const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(bracketTeams.length)));
-		// Duplicate first team to fill byes (simple solution)
-		const teamsCopy = [...bracketTeams];
-		while (teamsCopy.length < nextPowerOf2) {
-			teamsCopy.push(teamsCopy[0]);
-		}
-		bracketTeams = teamsCopy;
-	}
-
-	// Generate first round matches
+	// For an odd number of teams, the last team gets a bye (no round-1 match)
+	// rather than being paired against a duplicate of another team.
 	let position = 0;
-	for (let i = 0; i < bracketTeams.length; i += 2) {
+	for (let i = 0; i < sortedTeams.length - 1; i += 2) {
 		matches.push({
-			teamAId: bracketTeams[i].id,
-			teamBId: bracketTeams[i + 1]?.id || bracketTeams[0].id, // Handle odd teams
+			teamAId: sortedTeams[i].id,
+			teamBId: sortedTeams[i + 1].id,
 			round: 1,
 			position: position++,
 		});
@@ -76,22 +63,13 @@ export function generateDoubleEliminationBracket(teams: Cs2Team[]): BracketMatch
 	const matches: BracketMatch[] = [];
 	const sortedTeams = [...teams].sort((a, b) => a.id - b.id);
 
-	let bracketTeams = sortedTeams;
-	if (bracketTeams.length !== 0 && (bracketTeams.length & (bracketTeams.length - 1)) !== 0) {
-		const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(bracketTeams.length)));
-		const teamsCopy = [...bracketTeams];
-		while (teamsCopy.length < nextPowerOf2) {
-			teamsCopy.push(teamsCopy[0]);
-		}
-		bracketTeams = teamsCopy;
-	}
-
-	// Winners bracket first round (round 1)
+	// For an odd number of teams, the last team gets a bye (no round-1 match)
+	// rather than being paired against a duplicate of another team.
 	let position = 0;
-	for (let i = 0; i < bracketTeams.length; i += 2) {
+	for (let i = 0; i < sortedTeams.length - 1; i += 2) {
 		matches.push({
-			teamAId: bracketTeams[i].id,
-			teamBId: bracketTeams[i + 1]?.id || bracketTeams[0].id,
+			teamAId: sortedTeams[i].id,
+			teamBId: sortedTeams[i + 1].id,
 			round: 1,
 			position: position++,
 		});

@@ -16,3 +16,15 @@ DISCORD_GUILD_ID=your_guild_id
 
 BLOB_READ_WRITE_TOKEN=your_blob_read_write_token
 STEAM_API_KEY=your_steam_api_key
+
+# Tournament automation / game-server integration (see TOURNAMENT_GUIDE.md)
+GAME_SERVER_IP=your-game-server-ip.com
+GAME_SERVER_TOKEN=your_game_server_shared_secret
+
+# Auth for GET /api/tournaments/check-start (the tournament auto-start cron).
+# Set CRON_API_KEY if triggering via the x-api-key header (e.g. the
+# .github/workflows/check-tournaments.yml GitHub Actions cron). Set CRON_SECRET
+# instead (or as well) if using Vercel's native Cron Jobs (see vercel.json),
+# which authenticates via `Authorization: Bearer <CRON_SECRET>` automatically.
+CRON_API_KEY=your_cron_shared_secret
+CRON_SECRET=your_vercel_cron_secret

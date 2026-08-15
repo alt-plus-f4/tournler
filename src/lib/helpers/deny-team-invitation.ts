@@ -17,10 +17,8 @@ export async function denyTeamInvite(
 		});
 
 		const data = await response.json();
-		if (response.ok) {
-			console.log(data.message); // Success message
-		} else {
-			console.error(data.message); // Error message
+		if (!response.ok) {
+			console.error(data.message);
 		}
 	} catch (error) {
 		console.error('Error:', error);

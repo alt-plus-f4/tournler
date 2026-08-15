@@ -2,6 +2,7 @@ import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { NextResponse } from 'next/server';
+import { randomBytes } from 'crypto';
 
 /**
  * POST /api/matches/[matchId]/game-server
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		// For now, we'll simulate it
 		const connectIp = process.env.GAME_SERVER_IP || 'localhost';
 		const port = 27015 + match.id; // Simple port allocation
-		const password = Math.random().toString(36).substring(7);
+		const password = randomBytes(9).toString('base64url');
 
 		// Create game server record
 		const gameServer = await db.gameServer.create({
@@ -90,6 +91,32 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 		const parsedMatchId = Number.parseInt(matchId, 10);
 		if (Number.isNaN(parsedMatchId)) {
 			return NextResponse.json({ error: 'Invalid match ID' }, { status: 400 });
+		}
+
+		const session = await getAuthSession();
+		if (!session) {
+			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		}
+
+		const match = await db.matches.findUnique({
+			where: { id: parsedMatchId },
+			include: {
+				teamA: { include: { members: true } },
+				teamB: { include: { members: true } },
+				tournament: { select: { organizerId: true } },
+			},
+		});
+
+		if (!match) {
+			return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+		}
+
+		const isParticipant = [...match.teamA.members, ...match.teamB.members].some((member) => member.id === session.user.id);
+		const isOrganizer = match.tournament.organizerId === session.user.id;
+		const canManageServers = await userHasPermission(session.user.id, 'servers:manage');
+
+		if (!isParticipant && !isOrganizer && !canManageServers) {
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		const gameServer = await db.gameServer.findUnique({

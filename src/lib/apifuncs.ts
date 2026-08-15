@@ -25,26 +25,6 @@ export async function completeOnboarding() {
 	}
 }
 
-export async function removeMemberRequest(teamId: number, userId: string) {
-	try {
-		const response = await fetch(`/api/teams/${teamId}/invites/${userId}`, {
-			method: 'DELETE',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-
-		if (!response.ok) {
-			const errorData = await response.json();
-			return { error: errorData.message };
-		}
-
-		return { success: true };
-	} catch (error) {
-		return { error: 'An unexpected error occurred' + error };
-	}
-}
-
 export async function fetchOnboardingStatus() {
 	try {
 		const response = await fetch('/api/user/onboarding', {

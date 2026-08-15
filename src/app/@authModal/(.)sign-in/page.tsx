@@ -13,7 +13,9 @@ const Page = () => {
 			if (!sessionStorage.getItem('preAuthPath')) {
 				sessionStorage.setItem('preAuthPath', window.location.pathname || '/');
 			}
-		} catch (e) {}
+		} catch {
+			// sessionStorage may be unavailable (e.g. private browsing) — safe to ignore
+		}
 	}, []);
 
 	return (

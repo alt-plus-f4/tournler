@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { TournamentStatus } from '@prisma/client';
 
 export async function GET() {
 	try {
@@ -12,18 +13,18 @@ export async function GET() {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
-		if (!(await userHasPermission(sessionUser.id, 'users:manage'))) {
+		if (!(await userHasPermission(sessionUser.id, 'tournaments:manage'))) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
-		const [usersInTeam, usersNotInTeam] = await Promise.all([
-			db.user.count({ where: { cs2TeamId: { not: null } } }),
-			db.user.count({ where: { cs2TeamId: null } }),
+		const [ended, upcoming] = await Promise.all([
+			db.cs2Tournament.count({ where: { status: TournamentStatus.COMPLETED } }),
+			db.cs2Tournament.count({ where: { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } } }),
 		]);
 
-		return NextResponse.json({ usersInTeam, usersNotInTeam });
+		return NextResponse.json({ ended, upcoming });
 	} catch (error) {
-		console.error('Error fetching user stats:', error);
+		console.error('Error fetching tournament stats:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}
 }

@@ -1,10 +1,16 @@
 # Dialog and Modal Component Usage Report
 
+> **Status (2026-08-14): Resolved.** All of `dialog.tsx`, `drawer.tsx`,
+> `dropdown-menu.tsx`, and `select.tsx` now have `suppressHydrationWarning` on
+> their `data-state`-driven elements. The rest of this report is kept for
+> historical component-inventory context only — don't treat the "Key Finding"
+> below as current.
+
 ## Summary
 
 This report identifies all Dialog, Drawer, and related modal components used in the Tournler application, with a focus on hydration mismatches and suppressHydrationWarning usage.
 
-### Key Finding
+### Key Finding (historical — see status note above)
 
 **⚠️ CRITICAL**: None of the Dialog, Drawer, DropdownMenu, or Select components have `suppressHydrationWarning` attributes, which may cause hydration mismatches due to their use of Radix UI's `data-state` attributes.
 
