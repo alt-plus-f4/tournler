@@ -34,6 +34,47 @@ enum TournamentType {
   @@map("tournament_type")
 }
 
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  ROUND_ROBIN
+  DOUBLE_ELIMINATION
+
+  @@map("tournament_format")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  PAUSED
+  COMPLETED
+
+  @@map("match_status")
+}
+
+enum BracketSlot {
+  WINNERS
+  LOSERS
+  GRAND_FINAL
+  THIRD_PLACE
+
+  @@map("bracket_slot")
+}
+
+enum MatchSlot {
+  TEAM_A
+  TEAM_B
+
+  @@map("match_slot")
+}
+
+enum MapActionType {
+  BAN
+  PICK
+  DECIDER
+
+  @@map("map_action_type")
+}
+
 model Account {
   id                String   @id @default(uuid()) @map("id") @db.Uuid
   userId            String?  @map("user_id") @db.Uuid
@@ -88,7 +129,11 @@ model User {
   cs2TeamCaptain     Cs2Team?            @relation(name: "CS2TeamCaptain")
   cs2TeamInvitations Cs2TeamInvitation[]
 
-  organizedTournaments Cs2Tournament[] @relation("TournamentOrganizers")
+  organizedTournaments Cs2Tournament[]    @relation("TournamentOrganizers")
+  playerMatchStats     PlayerMatchStat[]
+  badges               UserBadge[]
+  newsPosts            NewsPost[]
+  matchParticipations  MatchParticipant[]
 
   accounts Account[]
   sessions Session[]
@@ -106,8 +151,9 @@ model Cs2Tournament {
   startDate DateTime @map("start_date")
   endDate   DateTime @map("end_date")
 
-  bannerUrl String? @map("banner_url")
-  logoUrl   String? @map("logo_url")
+  bannerUrl   String? @map("banner_url")
+  logoUrl     String? @map("logo_url")
+  description String? @map("description")
 
   prizePool    Int?      @map("prize_pool")
   teams        Cs2Team[] @relation("TournamentTeams")
@@ -116,6 +162,14 @@ model Cs2Tournament {
   location String           @map("location")
   type     TournamentType   @map("type")
   status   TournamentStatus @map("status")
+  format   TournamentFormat @default(SINGLE_ELIMINATION) @map("format")
+
+  bestOf  Int      @default(1) @map("best_of")
+  mapPool String[] @default([]) @map("map_pool")
+
+  isFeatured    Boolean @default(false) @map("is_featured")
+  featuredOrder Int?    @map("featured_order")
+  isSystem      Boolean @default(false) @map("is_system")
 
   organizerId String @map("organizer_id")
   organizer   User   @relation("TournamentOrganizers", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -144,9 +198,12 @@ model Cs2Team {
   Cs2Tournament   Cs2Tournament?      @relation("TournamentTeams", fields: [cs2TournamentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   cs2TournamentId Int?                @map("cs2_tournament_id")
 
-  matchesAsTeamA  Matches[] @relation("MatchTeamA")
-  matchesAsTeamB  Matches[] @relation("MatchTeamB")
-  matchesAsWinner Matches[] @relation("MatchWinner")
+  matchesAsTeamA   Matches[]         @relation("MatchTeamA")
+  matchesAsTeamB   Matches[]         @relation("MatchTeamB")
+  matchesAsWinner  Matches[]         @relation("MatchWinner")
+  playerMatchStats PlayerMatchStat[]
+  mapActions       MatchMapAction[]
+  mapWins          MatchMap[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -209,10 +266,10 @@ model Matches {
   tournamentId Int           @map("tournament_id")
   tournament   Cs2Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
 
-  teamAId  Int      @map("team_a_id")
-  teamA    Cs2Team  @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
-  teamBId  Int      @map("team_b_id")
-  teamB    Cs2Team  @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
+  teamAId  Int?     @map("team_a_id")
+  teamA    Cs2Team? @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: Cascade)
+  teamBId  Int?     @map("team_b_id")
+  teamB    Cs2Team? @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: Cascade)
   winnerId Int?     @map("winner_id")
   winner   Cs2Team? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
 
@@ -220,7 +277,41 @@ model Matches {
   scoreTeamB Int?     @map("score_team_b")
   matchDate  DateTime @map("match_date")
 
-  gameServer GameServer?
+  // Nullable override of Cs2Tournament.bestOf for this specific match (null = inherit tournament default).
+  bestOf Int? @map("best_of")
+
+  status      MatchStatus @default(SCHEDULED) @map("status")
+  round       Int         @default(1) @map("round")
+  position    Int         @default(0) @map("position")
+  bracketSlot BracketSlot @default(WINNERS) @map("bracket_slot")
+  isPickup    Boolean     @default(false) @map("is_pickup")
+
+  // Pickup-lobby-only display names ("Side A"/"Side B" otherwise) — set by that side's captain
+  // (the first player to join it) via PATCH /api/matches/[matchId]/team-name. Unused for
+  // real Cs2Team matches, which already have a real team name via teamA/teamB.
+  teamAName String? @map("team_a_name")
+  teamBName String? @map("team_b_name")
+
+  startedAt   DateTime? @map("started_at")
+  pausedAt    DateTime? @map("paused_at")
+  completedAt DateTime? @map("completed_at")
+
+  // Plain (non-relational) self-pointers: explicit bracket-feeder wiring computed once at
+  // generation time. Deliberately NOT modeled as Prisma @relation fields — self-relation
+  // cascade cycles require onUpdate/onDelete: NoAction, which relationMode="prisma" (emulated
+  // FKs, no real DB constraint) does not support. Plain columns avoid that entirely; callers
+  // fetch the target row by id when they need to follow the pointer.
+  nextMatchId   Int?       @map("next_match_id")
+  nextMatchSlot MatchSlot? @map("next_match_slot")
+
+  nextLoserMatchId   Int?       @map("next_loser_match_id")
+  nextLoserMatchSlot MatchSlot? @map("next_loser_match_slot")
+
+  gameServer   GameServer?
+  playerStats  PlayerMatchStat[]
+  participants MatchParticipant[]
+  mapActions   MatchMapAction[]
+  maps         MatchMap[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -229,6 +320,9 @@ model Matches {
   @@index([teamAId])
   @@index([teamBId])
   @@index([winnerId])
+  @@index([tournamentId, bracketSlot, round])
+  @@index([nextMatchId])
+  @@index([nextLoserMatchId])
   @@map("matches")
 }
 
@@ -242,6 +336,11 @@ model GameServer {
   password  String @map("password")
 
   status GameServerStatus @default(PENDING) @map("status")
+
+  // Set once RCON successfully pushes this match's config (teams/players/maps/password) to the
+  // real server. Null means either not attempted yet, or the push failed — see the warning
+  // surfaced by startMatch()/the game-server route, and the manual sync fallback.
+  matchConfigLoadedAt DateTime? @map("match_config_loaded_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -257,4 +356,170 @@ enum GameServerStatus {
   FAILED
 
   @@map("game_server_status")
+}
+
+model MatchMapAction {
+  id      Int     @id @default(autoincrement()) @map("id")
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // Null only for the system-generated DECIDER action (the last remaining map, not chosen by either team).
+  teamId Int?     @map("team_id")
+  team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  action  MapActionType @map("action")
+  mapName String        @map("map_name")
+  order   Int           @map("order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([matchId, order])
+  @@unique([matchId, mapName])
+  @@index([matchId])
+  @@map("match_map_actions")
+}
+
+model MatchMap {
+  id      Int     @id @default(autoincrement()) @map("id")
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  mapName String @map("map_name")
+  order   Int    @map("order")
+
+  scoreTeamA Int?     @map("score_team_a")
+  scoreTeamB Int?     @map("score_team_b")
+  winnerId   Int?     @map("winner_id")
+  winner     Cs2Team? @relation(fields: [winnerId], references: [id], onDelete: Cascade)
+
+  status MatchStatus @default(SCHEDULED) @map("status")
+
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([matchId, order])
+  @@unique([matchId, mapName])
+  @@index([matchId])
+  @@map("match_maps")
+}
+
+model PlayerMatchStat {
+  id Int @id @default(autoincrement()) @map("id")
+
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  teamId Int     @map("team_id")
+  team   Cs2Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  kills   Int @default(0) @map("kills")
+  deaths  Int @default(0) @map("deaths")
+  assists Int @default(0) @map("assists")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([matchId, userId])
+  @@index([matchId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("player_match_stats")
+}
+
+model Badge {
+  id          Int     @id @default(autoincrement()) @map("id")
+  name        String  @unique @map("name")
+  description String? @map("description")
+  icon        String  @map("icon")
+  color       String  @default("#facc15") @map("color")
+  isOverlay   Boolean @default(false) @map("is_overlay")
+
+  awards UserBadge[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id Int @id @default(autoincrement()) @map("id")
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  badgeId Int   @map("badge_id")
+  badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+model NewsPost {
+  id            Int      @id @default(autoincrement()) @map("id")
+  title         String   @map("title")
+  blurb         String   @map("blurb")
+  imageUrl      String?  @map("image_url")
+  link          String?  @map("link")
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  featuredOrder Int?     @map("featured_order")
+  publishedAt   DateTime @default(now()) @map("published_at")
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([authorId])
+  @@map("news_posts")
+}
+
+enum FeaturedSource {
+  TOURNAMENTS
+  NEWS
+  MIXED
+}
+
+enum FeaturedLayout {
+  GRID
+  CAROUSEL
+}
+
+model HomepageSettings {
+  id             Int            @id @default(1)
+  featuredSource FeaturedSource @default(TOURNAMENTS) @map("featured_source")
+  featuredLayout FeaturedLayout @default(GRID) @map("featured_layout")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  @@map("homepage_settings")
+}
+
+model MatchParticipant {
+  id Int @id @default(autoincrement()) @map("id")
+
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  side MatchSlot @map("side")
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  @@unique([matchId, userId])
+  @@index([matchId])
+  @@index([userId])
+  @@map("match_participants")
 }

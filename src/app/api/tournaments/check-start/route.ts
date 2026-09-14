@@ -1,16 +1,8 @@
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { safeEqual } from '@/lib/helpers/safe-equal';
 import { checkAndStartTournaments } from '@/lib/tournaments/tournament-service';
 import { NextResponse } from 'next/server';
-import { timingSafeEqual } from 'crypto';
-
-function safeEqual(provided: string, expected: string): boolean {
-	const providedBuf = Buffer.from(provided);
-	const expectedBuf = Buffer.from(expected);
-	if (providedBuf.length !== expectedBuf.length) return false;
-
-	return timingSafeEqual(providedBuf, expectedBuf);
-}
 
 function isValidCronRequest(request: Request): boolean {
 	// Custom scheme, e.g. for a GitHub Actions-triggered cron: `x-api-key: <CRON_API_KEY>`.

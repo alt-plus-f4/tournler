@@ -10,12 +10,13 @@ import { Trophy, Zap, BarChart3, Bell, Pin } from 'lucide-react';
 
 interface Match {
 	id: number;
-	teamA: { id: number; name: string; logo?: string | null };
-	teamB: { id: number; name: string; logo?: string | null };
+	teamA: { id: number; name: string; logo?: string | null } | null;
+	teamB: { id: number; name: string; logo?: string | null } | null;
 	scoreTeamA: number | null;
 	scoreTeamB: number | null;
 	winner: { id: number; name: string } | null;
 	matchDate: string;
+	status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
 	bestOf?: number;
 }
 
@@ -81,26 +82,26 @@ const Matches: React.FC<MatchesProps> = ({ tournament }) => {
 								{/* Team A */}
 								<div className='flex-1 flex items-center gap-3 justify-end'>
 									<div className='text-right'>
-										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamA.name}</p>
+										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamA?.name ?? 'TBD'}</p>
 										{match.scoreTeamA !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamA}</p>}
 									</div>
-									{match.teamA.logo && <img src={match.teamA.logo} alt={match.teamA.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
+									{match.teamA?.logo && <img src={match.teamA.logo} alt={match.teamA.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
 								</div>
 
 								{/* Score/Status */}
 								<div className='text-center px-6'>
-									{match.winner ? (
+									{match.status === 'COMPLETED' && match.winner ? (
 										<Badge className='bg-white text-black gap-2 font-bold mb-3 px-3 py-1'>
 											<Trophy className='h-4 w-4' />
 											{match.winner.name}
 										</Badge>
-									) : match.scoreTeamA !== null ? (
+									) : match.status === 'LIVE' ? (
 										<Badge className='bg-black border-2 border-white text-white gap-2 font-bold mb-3 px-3 py-1 animate-pulse'>
 											<Zap className='h-4 w-4' />
 											LIVE
 										</Badge>
 									) : (
-										<Badge className='bg-neutral-900 border border-neutral-700 text-neutral-400 font-bold mb-3 px-3 py-1'>UPCOMING</Badge>
+										<Badge className='bg-neutral-900 border border-neutral-700 text-neutral-400 font-bold mb-3 px-3 py-1'>{match.teamA && match.teamB ? 'UPCOMING' : 'TBD'}</Badge>
 									)}
 
 									<p className='text-xs text-neutral-500 font-mono'>{new Date(match.matchDate).toLocaleDateString()}</p>
@@ -108,9 +109,9 @@ const Matches: React.FC<MatchesProps> = ({ tournament }) => {
 
 								{/* Team B */}
 								<div className='flex-1 flex items-center gap-3'>
-									{match.teamB.logo && <img src={match.teamB.logo} alt={match.teamB.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
+									{match.teamB?.logo && <img src={match.teamB.logo} alt={match.teamB.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
 									<div className='text-left'>
-										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamB.name}</p>
+										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamB?.name ?? 'TBD'}</p>
 										{match.scoreTeamB !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamB}</p>}
 									</div>
 								</div>

@@ -23,33 +23,52 @@ export function TeamTable({ isLoading, teams, onEdit }: TeamTableProps) {
 				</thead>
 				{isLoading ? (
 					<TeamTableSkeleton />
+				) : !teams || teams.length === 0 ? (
+					<tbody>
+						<tr>
+							<td colSpan={7} className='py-8 px-4 border text-center text-muted-foreground'>
+								No teams found.
+							</td>
+						</tr>
+					</tbody>
 				) : (
 					<tbody>
-						{teams &&
-							teams.map((team) => (
-								<tr key={team.id} onClick={() => onEdit(team)} className='cursor-pointer hover:opacity-80 transition-colors text-center'>
-									<td className='py-2 px-4 border'>{team.id}</td>
-									<td className='py-2 px-4 border'>{team.name}</td>
-									<td className='py-2 px-4 border'>
-										<div className='flex items-center justify-center gap-2'>
-											<div className='w-8 h-8 rounded-sm border overflow-hidden' style={{ backgroundColor: team.background || '#000000' }}>
-												{team.logo ? <Image src={team.logo} alt={team.name} width={32} height={32} loading='eager' className='w-full h-full object-contain' /> : null}
-											</div>
-											{team.logo ? (
-												<a href={team.logo} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline'>
-													View
-												</a>
-											) : (
-												'-'
-											)}
+						{teams.map((team) => (
+							<tr
+								key={team.id}
+								onClick={() => onEdit(team)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										onEdit(team);
+									}
+								}}
+								tabIndex={0}
+								role='button'
+								className='cursor-pointer hover:opacity-80 transition-colors text-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset'
+							>
+								<td className='py-2 px-4 border'>{team.id}</td>
+								<td className='py-2 px-4 border'>{team.name}</td>
+								<td className='py-2 px-4 border'>
+									<div className='flex items-center justify-center gap-2'>
+										<div className='w-8 h-8 rounded-sm border overflow-hidden' style={{ backgroundColor: team.background || '#000000' }}>
+											{team.logo ? <Image src={team.logo} alt={team.name} width={32} height={32} loading='eager' className='w-full h-full object-contain' /> : null}
 										</div>
-									</td>
-									<td className='py-2 px-4 border'>{team.capitanId || '-'}</td>
-									<td className='py-2 px-4 border'>{team.members?.length || 0}</td>
-									<td className='py-2 px-4 border'>{new Date(team.createdAt).toLocaleDateString()}</td>
-									<td className='py-2 px-4 border'>{new Date(team.updatedAt).toLocaleDateString()}</td>
-								</tr>
-							))}
+										{team.logo ? (
+											<a href={team.logo} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline' onClick={(e) => e.stopPropagation()}>
+												View
+											</a>
+										) : (
+											'-'
+										)}
+									</div>
+								</td>
+								<td className='py-2 px-4 border'>{team.capitanId || '-'}</td>
+								<td className='py-2 px-4 border'>{team.members?.length || 0}</td>
+								<td className='py-2 px-4 border'>{new Date(team.createdAt).toLocaleDateString()}</td>
+								<td className='py-2 px-4 border'>{new Date(team.updatedAt).toLocaleDateString()}</td>
+							</tr>
+						))}
 					</tbody>
 				)}
 			</table>

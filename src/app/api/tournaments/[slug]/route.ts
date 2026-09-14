@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
@@ -83,7 +84,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			return NextResponse.json({ error: 'No fields to update provided' }, { status: 400 });
 		}
 
-		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl'];
+		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl', 'description', 'isFeatured', 'featuredOrder'];
 
 		const dataToUpdate: Record<string, any> = {};
 		for (const key of allowedFields) {
@@ -148,6 +149,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			dataToUpdate.teamCapacity = n;
 		}
 
+		if (dataToUpdate.description !== undefined) {
+			dataToUpdate.description = dataToUpdate.description ? sanitizeRichText(dataToUpdate.description) : null;
+		}
+
 		const updatedTournament = await db.cs2Tournament.update({
 			where: { id: numericId },
 			data: dataToUpdate,
@@ -192,9 +197,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 	const canManage = existingTournament.organizerId === session.user.id || (await userHasPermission(session.user.id, 'tournaments:manage'));
 	if (!canManage) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-	const isDeleted = await db.cs2Tournament.delete({
-		where: { id: numericId },
-	});
-	if (isDeleted) return NextResponse.json({ message: 'Tournament deleted!' }, { status: 200 });
-	else return NextResponse.json({ error: 'Tournament not found or other Error!' }, { status: 500 });
+	try {
+		await db.cs2Tournament.delete({ where: { id: numericId } });
+		return NextResponse.json({ message: 'Tournament deleted!' }, { status: 200 });
+	} catch (error) {
+		console.error('Error deleting tournament:', error);
+		return NextResponse.json({ error: 'Cannot delete tournament while teams are still registered. Remove its teams first.' }, { status: 409 });
+	}
 }

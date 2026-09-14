@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch } from '@/lib/tournaments/bracket-advancement';
 import { NextResponse } from 'next/server';
 
 /**
@@ -29,6 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						name: true,
 						logo: true,
 						background: true,
+						capitanId: true,
 						members: {
 							select: {
 								id: true,
@@ -45,6 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						name: true,
 						logo: true,
 						background: true,
+						capitanId: true,
 						members: {
 							select: {
 								id: true,
@@ -57,6 +60,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 				},
 				winner: true,
 				gameServer: true,
+				participants: {
+					include: { user: { select: { id: true, name: true, image: true } } },
+					orderBy: { joinedAt: 'asc' },
+				},
+				mapActions: { orderBy: { order: 'asc' } },
+				maps: { orderBy: { order: 'asc' } },
 			},
 		});
 
@@ -104,14 +113,36 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		const updatedMatch = await db.matches.update({
+		if (data.action !== undefined) {
+			switch (data.action) {
+				case 'START':
+					await startMatch(parsedMatchId);
+					break;
+				case 'PAUSE':
+					await pauseMatch(parsedMatchId);
+					break;
+				case 'RESUME':
+					await resumeMatch(parsedMatchId);
+					break;
+				default:
+					return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+			}
+		}
+
+		if (data.matchDate !== undefined) {
+			await db.matches.update({ where: { id: parsedMatchId }, data: { matchDate: new Date(data.matchDate) } });
+		}
+
+		if (data.scoreTeamA !== undefined || data.scoreTeamB !== undefined || data.winnerId !== undefined) {
+			await recordMatchResult(parsedMatchId, {
+				scoreTeamA: data.scoreTeamA,
+				scoreTeamB: data.scoreTeamB,
+				winnerId: data.winnerId,
+			});
+		}
+
+		const updatedMatch = await db.matches.findUniqueOrThrow({
 			where: { id: parsedMatchId },
-			data: {
-				scoreTeamA: data.scoreTeamA !== undefined ? data.scoreTeamA : match.scoreTeamA,
-				scoreTeamB: data.scoreTeamB !== undefined ? data.scoreTeamB : match.scoreTeamB,
-				winnerId: data.winnerId !== undefined ? data.winnerId : match.winnerId,
-				matchDate: data.matchDate !== undefined ? new Date(data.matchDate) : match.matchDate,
-			},
 			include: {
 				teamA: true,
 				teamB: true,
@@ -124,6 +155,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			match: updatedMatch,
 		});
 	} catch (error) {
+		if (error instanceof MatchResultConflictError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
+		if (error instanceof MatchLifecycleError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
 		console.error('Error updating match:', error);
 		return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
 	}

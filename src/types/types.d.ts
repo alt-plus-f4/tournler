@@ -1,6 +1,10 @@
 export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN';
 export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 export type TournamentType = 'ONLINE' | 'OFFLINE';
+export type TournamentFormat = 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION';
+export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
+export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
+export type MatchSlot = 'TEAM_A' | 'TEAM_B';
 
 export interface ReducedUser {
 	id: string;
@@ -27,6 +31,7 @@ export interface User {
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];
 	sessions: Session[];
+	badges?: { badge: { id: number; name: string; icon: string; color: string; isOverlay: boolean } }[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -62,10 +67,10 @@ export interface Session {
 export interface ReducedTournament {
 	id: number;
 	name: string;
-	bannerUrl: string;
-	logoUrl: string;
+	bannerUrl: string | null;
+	logoUrl: string | null;
 	startDate: string;
-	prizePool: number;
+	prizePool: number | null;
 	teams: [];
 	location: string;
 	teamCapacity: number;
@@ -78,12 +83,17 @@ export interface Cs2Tournament {
 	endDate: string;
 	bannerUrl?: string;
 	logoUrl?: string;
+	description?: string | null;
 	prizePool?: number;
 	teams: Cs2Team[];
 	teamCapacity: number;
 	location: string;
 	type: TournamentType;
 	status: TournamentStatus;
+	format: TournamentFormat;
+	isFeatured: boolean;
+	featuredOrder?: number | null;
+	isSystem: boolean;
 	organizerId: string;
 	organizer: User;
 	matches: Match[];
@@ -150,18 +160,42 @@ export interface Match {
 	id: number;
 	tournamentId: number;
 	tournament: Cs2Tournament;
-	teamAId: number;
-	teamA: Cs2Team;
-	teamBId: number;
-	teamB: Cs2Team;
+	teamAId: number | null;
+	teamA: Cs2Team | null;
+	teamBId: number | null;
+	teamB: Cs2Team | null;
 	winnerId?: number;
 	winner?: Cs2Team;
 	scoreTeamA?: number;
 	scoreTeamB?: number;
 	matchDate: string;
+	status: MatchStatus;
+	round: number;
+	position: number;
+	bracketSlot: BracketSlot;
+	startedAt?: string | null;
+	pausedAt?: string | null;
+	completedAt?: string | null;
+	nextMatchId?: number | null;
+	nextMatchSlot?: MatchSlot | null;
+	nextLoserMatchId?: number | null;
+	nextLoserMatchSlot?: MatchSlot | null;
+	isPickup: boolean;
+	teamAName?: string | null;
+	teamBName?: string | null;
+	participants?: MatchParticipant[];
 	gameServer?: GameServer;
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface MatchParticipant {
+	id: number;
+	matchId: number;
+	userId: string;
+	user: { id: string; name: string | null; image: string | null };
+	side: MatchSlot;
+	joinedAt: string;
 }
 
 export interface GameServer {

@@ -7,6 +7,11 @@ const nextConfig = {
 				hostname: '6q0iedxcfemxlbr8.public.blob.vercel-storage.com',
 				pathname: '/**',
 			},
+			{
+				protocol: 'https',
+				hostname: 'www.google.com',
+				pathname: '/**',
+			},
 		],
 	},
 };

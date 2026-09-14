@@ -16,7 +16,7 @@ interface PaginationProps {
 					&lt;
 				</Button>
 				<span className='py-2 px-4 border bg-muted text-white'>
-					{currentPage}
+					Page {currentPage} of {totalPages}
 				</span>
 				<Button
 					onClick={() => onPageChange(currentPage + 1)}

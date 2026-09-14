@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
-import { TournamentStatus, TournamentType } from '@prisma/client';
+import { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -14,6 +15,12 @@ const statusMap: { [key: number]: TournamentStatus } = {
 const typeMap: { [key: number]: TournamentType } = {
 	0: TournamentType.ONLINE,
 	1: TournamentType.OFFLINE,
+};
+
+const formatMap: { [key: number]: TournamentFormat } = {
+	0: TournamentFormat.SINGLE_ELIMINATION,
+	1: TournamentFormat.ROUND_ROBIN,
+	2: TournamentFormat.DOUBLE_ELIMINATION,
 };
 
 function parseStatusFilter(rawStatus: string | null): TournamentStatus[] | null {
@@ -72,9 +79,24 @@ function parseTournamentType(rawType: string): TournamentType | null {
 	return null;
 }
 
+function parseTournamentFormat(rawFormat: string): TournamentFormat | null {
+	const normalized = rawFormat.trim().toUpperCase().replace(/-/g, '_');
+	if (normalized in TournamentFormat) {
+		return TournamentFormat[normalized as keyof typeof TournamentFormat];
+	}
+
+	const formatInt = Number.parseInt(rawFormat, 10);
+	if (!Number.isNaN(formatInt) && formatMap[formatInt]) {
+		return formatMap[formatInt];
+	}
+
+	return null;
+}
+
 export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
 	const status = searchParams.get('status');
+	const search = searchParams.get('search')?.trim();
 	const page = parseInt(searchParams.get('page') || '1', 10);
 	const limit = parseInt(searchParams.get('limit') || '10', 10);
 
@@ -87,15 +109,15 @@ export async function GET(request: Request) {
 		return NextResponse.json({ error: 'Invalid status parameter' }, { status: 400 });
 	}
 
+	const where = {
+		isSystem: false,
+		...(statusFilter ? { status: { in: statusFilter } } : {}),
+		...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+	};
+
 	try {
 		const tournaments = await db.cs2Tournament.findMany({
-			where: statusFilter
-				? {
-						status: {
-							in: statusFilter,
-						},
-					}
-				: undefined,
+			where: Object.keys(where).length > 0 ? where : undefined,
 			orderBy: {
 				prizePool: 'desc',
 			},
@@ -132,8 +154,10 @@ export async function POST(req: Request) {
 		const prizePool = formData.get('prizePool')?.toString();
 		const teamCapacity = formData.get('teamCapacity')?.toString();
 		const location = formData.get('location')?.toString() || '';
+		const description = formData.get('description')?.toString();
 		const statusValue = formData.get('status')?.toString();
 		const typeValue = formData.get('type')?.toString();
+		const formatValue = formData.get('format')?.toString();
 
 		let bannerUrl: string | null = null;
 		let logoUrl: string | null = null;
@@ -164,9 +188,14 @@ export async function POST(req: Request) {
 
 		const parsedStatus = parseTournamentStatus(statusValue || 'UPCOMING');
 		const parsedType = typeValue ? parseTournamentType(typeValue) : null;
+		const parsedFormat = formatValue ? parseTournamentFormat(formatValue) : TournamentFormat.SINGLE_ELIMINATION;
 
 		if (!parsedStatus || !parsedType) {
 			return NextResponse.json({ error: 'Invalid status or type value' }, { status: 400 });
+		}
+
+		if (!parsedFormat) {
+			return NextResponse.json({ error: 'Invalid format value' }, { status: 400 });
 		}
 
 		const newTournament = await db.cs2Tournament.create({
@@ -179,8 +208,10 @@ export async function POST(req: Request) {
 				location,
 				bannerUrl,
 				logoUrl,
+				description: description ? sanitizeRichText(description) : null,
 				status: parsedStatus,
 				type: parsedType,
+				format: parsedFormat,
 				organizerId: session.user.id,
 			},
 		});

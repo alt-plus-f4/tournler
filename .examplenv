@@ -21,6 +21,23 @@ STEAM_API_KEY=your_steam_api_key
 GAME_SERVER_IP=your-game-server-ip.com
 GAME_SERVER_TOKEN=your_game_server_shared_secret
 
+# CS2 dedicated server pool (see cs-docker/README.md and CS2_SERVER_GUIDE.md) — a fixed set of
+# persistent servers, one match at a time each; NOT one container per match. Prefer
+# CS2_SERVER_POOL (a JSON array, one entry per server in cs-docker/docker-compose.yml) for more
+# than one server. Each entry's ip/port/rconPort/rconPassword must match that server's
+# CS2_SERVER_<N>_PORT/CS2_SERVER_<N>_RCON_PORT/CS2_SERVER_<N>_RCONPW in cs-docker/.env.
+CS2_SERVER_POOL=[{"id":"01","ip":"your-cs2-server-ip.com","port":27015,"rconPort":27016,"rconPassword":"your_rcon_password_1"},{"id":"02","ip":"your-cs2-server-ip.com","port":27025,"rconPort":27026,"rconPassword":"your_rcon_password_2"}]
+
+# Alternative to CS2_SERVER_POOL: if unset, these define a single-server pool (kept for
+# backwards compatibility with earlier single-server setups).
+# CS2_SERVER_IP=your-cs2-server-ip.com
+# CS2_SERVER_PORT=27015
+# CS2_RCON_HOST=your-cs2-server-ip.com
+# CS2_RCON_PORT=27016
+# CS2_RCON_PASSWORD=your_rcon_password
+
+CS2_DEFAULT_MAP=de_dust2
+
 # Auth for GET /api/tournaments/check-start (the tournament auto-start cron).
 # Set CRON_API_KEY if triggering via the x-api-key header (e.g. the
 # .github/workflows/check-tournaments.yml GitHub Actions cron). Set CRON_SECRET

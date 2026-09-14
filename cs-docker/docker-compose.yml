@@ -1,46 +1,53 @@
+# A fixed-size pool of persistent CS2 servers, one match at a time each (see ../CS2_SERVER_GUIDE.md
+# and src/lib/cs2/server-pool.ts). Two are defined below as a working example — copy the
+# `cs2-dedicated-02` block to add a third/fourth/etc, bumping the container name and every
+# `_N_` env var index (and picking new, non-colliding host ports), then add the matching entry
+# to CS2_SERVER_POOL in the app's own .env.
 services:
     cs2-dedicated-01:
         image: joedwards32/cs2
         container_name: cs2-dedicated-01
         environment:
             - SRCDS_TOKEN=${SRCDS_TOKEN}
-            - CS2_SERVERNAME=[Tournler]
+            - CS2_SERVERNAME=${CS2_SERVER_1_NAME:-[Tournler] CS2 Dedicated Server 01}
             - CS2_LAN=0
-            - CS2_PORT=27015
-            - CS2_RCON_PORT=27016
-            - CS2_PW=connectpw
-            - CS2_RCONPW=rconpw
-            - TV_PW=tvpw
+            - CS2_PORT=${CS2_SERVER_1_PORT:-27015}
+            - CS2_RCON_PORT=${CS2_SERVER_1_RCON_PORT:-27016}
+            - CS2_PW=${CS2_SERVER_1_PW}
+            - CS2_RCONPW=${CS2_SERVER_1_RCONPW}
+            - TV_PW=${CS2_SERVER_1_TV_PW}
             - TV_ENABLE=1
-            - CS2_MAPGROUP=""
+            - CS2_MAPGROUP=${CS2_MAPGROUP:-}
         volumes:
-            - C:\Users\valen\cs2-dedicated-01:/home/steam/cs2-dedicated
+            - ./data/cs2-dedicated-01:/home/steam/cs2-dedicated
         ports:
-            - '27015:27015/tcp'
-            - '27016:27016/tcp'
-            - '27015:27015/udp'
-            - '27020:27020/udp'
+            - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/tcp'
+            - '${CS2_SERVER_1_RCON_PORT:-27016}:${CS2_SERVER_1_RCON_PORT:-27016}/tcp'
+            - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/udp'
+            - '${CS2_SERVER_1_TV_PORT:-27020}:${CS2_SERVER_1_TV_PORT:-27020}/udp'
         stdin_open: true
         tty: true
 
-    # cs2-dedicated-02:
-    #   image: joedwards32/cs2
-    #   container_name: cs2-dedicated-02
-    #   environment:
-    #     - SRCDS_TOKEN=${SRCDS_TOKEN}
-    #     - CS2_SERVERNAME=[TOURNLER] CS2 Dedicated Tournament Server 02
-    #     - CS2_LAN=0
-    #     - CS2_PORT=27025
-    #     - CS2_PW="insertpassword"
-    #     - CS2_RCONPW="insertpassword"
-    #     - TV_PW="insertpassword"
-    #     - TV_ENABLE=1
-    #     - CS2_MAPGROUP=""
-    #   volumes:
-    #     - C:\Users\valen\cs2-dedicated-01:/home/steam/cs2-dedicated
-    #   ports:
-    #     - "27025:27025/tcp"
-    #     - "27025:27025/udp"
-    #     - "27030:27020/udp"
-    #   stdin_open: true
-    #   tty: true
+    cs2-dedicated-02:
+        image: joedwards32/cs2
+        container_name: cs2-dedicated-02
+        environment:
+            - SRCDS_TOKEN=${SRCDS_TOKEN}
+            - CS2_SERVERNAME=${CS2_SERVER_2_NAME:-[Tournler] CS2 Dedicated Server 02}
+            - CS2_LAN=0
+            - CS2_PORT=${CS2_SERVER_2_PORT:-27025}
+            - CS2_RCON_PORT=${CS2_SERVER_2_RCON_PORT:-27026}
+            - CS2_PW=${CS2_SERVER_2_PW}
+            - CS2_RCONPW=${CS2_SERVER_2_RCONPW}
+            - TV_PW=${CS2_SERVER_2_TV_PW}
+            - TV_ENABLE=1
+            - CS2_MAPGROUP=${CS2_MAPGROUP:-}
+        volumes:
+            - ./data/cs2-dedicated-02:/home/steam/cs2-dedicated
+        ports:
+            - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/tcp'
+            - '${CS2_SERVER_2_RCON_PORT:-27026}:${CS2_SERVER_2_RCON_PORT:-27026}/tcp'
+            - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/udp'
+            - '${CS2_SERVER_2_TV_PORT:-27030}:${CS2_SERVER_2_TV_PORT:-27030}/udp'
+        stdin_open: true
+        tty: true

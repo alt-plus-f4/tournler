@@ -1,8 +1,9 @@
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { ensureGameServer } from '@/lib/tournaments/game-server';
+import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
 
 /**
  * POST /api/matches/[matchId]/game-server
@@ -42,38 +43,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		// Check if game server already exists for this match
-		const existingServer = await db.gameServer.findUnique({
-			where: { matchId: match.id },
-		});
+		const { gameServer, created } = await ensureGameServer(db, match.id);
 
-		if (existingServer) {
-			return NextResponse.json({ gameServer: existingServer }, { status: 200 });
+		if (!created) {
+			return NextResponse.json({ gameServer }, { status: 200 });
 		}
 
-		// Generate connect IP and credentials
-		// In production, this would call a Docker API to create a container
-		// For now, we'll simulate it
-		const connectIp = process.env.GAME_SERVER_IP || 'localhost';
-		const port = 27015 + match.id; // Simple port allocation
-		const password = randomBytes(9).toString('base64url');
-
-		// Create game server record
-		const gameServer = await db.gameServer.create({
-			data: {
-				matchId: match.id,
-				connectIp,
-				port,
-				password,
-				status: 'RUNNING',
-			},
-		});
+		try {
+			await pushMatchConfigToServer(match.id);
+		} catch (error) {
+			console.error(`Failed to push match config to game server for match ${match.id}:`, error);
+		}
 
 		return NextResponse.json({
 			success: true,
 			gameServer,
-			connectUrl: `${connectIp}:${port}`,
-			password,
+			connectUrl: `${gameServer.connectIp}:${gameServer.port}`,
+			password: gameServer.password,
 		});
 	} catch (error) {
 		console.error('Error creating game server:', error);
@@ -111,7 +97,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 			return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 		}
 
-		const isParticipant = [...match.teamA.members, ...match.teamB.members].some((member) => member.id === session.user.id);
+		const isParticipant = [...(match.teamA?.members ?? []), ...(match.teamB?.members ?? [])].some((member) => member.id === session.user.id);
 		const isOrganizer = match.tournament.organizerId === session.user.id;
 		const canManageServers = await userHasPermission(session.user.id, 'servers:manage');
 

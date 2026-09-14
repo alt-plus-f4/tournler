@@ -10,13 +10,13 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { displayName, bio, avatarUrl } = await request.json();
+    const { name, bio, avatarUrl } = await request.json();
 
-    if (!displayName || typeof displayName !== 'string') {
-      return NextResponse.json({ error: 'Invalid displayName' }, { status: 400 });
+    if (!name || typeof name !== 'string') {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
     }
 
-    if (bio && (typeof bio !== 'string' || bio.length > 160)) {
+    if (bio !== undefined && (typeof bio !== 'string' || bio.length > 160)) {
       return NextResponse.json({ error: 'Invalid bio' }, { status: 400 });
     }
 
@@ -24,16 +24,15 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid avatarUrl' }, { status: 400 });
     }
 
-
-    session.user.name = displayName;
-    session.user.bio = bio || '';
+    session.user.name = name;
+    if (bio !== undefined) session.user.bio = bio;
     session.user.image = avatarUrl;
 
     const updatedUser = await db.user.update({
       where: { email: session.user.email || '' },
       data: {
-        name: displayName,
-        bio: bio || '',
+        name,
+        ...(bio !== undefined ? { bio } : {}),
         image: avatarUrl
       },
     });

@@ -1,6 +1,7 @@
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { computePlayerCareerStats, getPlayerRecentMatches } from '@/lib/tournaments/player-stats';
 import { NextResponse } from 'next/server';
 
 const PUBLIC_USER_SELECT = {
@@ -17,6 +18,20 @@ const PUBLIC_USER_SELECT = {
 	discord: {
 		select: {
 			discordId: true,
+		},
+	},
+	cs2Team: {
+		select: {
+			id: true,
+			name: true,
+			logo: true,
+		},
+	},
+	badges: {
+		orderBy: { awardedAt: 'desc' },
+		select: {
+			awardedAt: true,
+			badge: true,
 		},
 	},
 	createdAt: true,
@@ -45,7 +60,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		return NextResponse.json({ user });
+		const [stats, recentMatches] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id)]);
+
+		return NextResponse.json({ user, stats, recentMatches });
 	} catch (error) {
 		console.error('Error fetching user:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

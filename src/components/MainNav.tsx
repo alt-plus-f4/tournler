@@ -28,6 +28,15 @@ export function MainNav({
 					Tournaments
 				</Link>
 				<Link
+					href='/matches'
+					className={cn(
+						buttonVariants({ variant: 'ghost' }),
+						'text-xs px-3 lg:text-sm lg:px-12 border-x navbar-color hover:navbar-color'
+					)}
+				>
+					Matches
+				</Link>
+				<Link
 					href='/teams'
 					className={cn(
 						buttonVariants({ variant: 'ghost' }),

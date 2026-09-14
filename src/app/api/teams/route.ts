@@ -8,8 +8,11 @@ export async function GET(req: NextRequest) {
 	const parsedLimit = parseInt(searchParams.get('limit') || '10', 10);
 	const page = isNaN(parsedPage) || parsedPage < 1 ? 1 : parsedPage;
 	const limit = isNaN(parsedLimit) || parsedLimit < 1 ? 10 : Math.min(parsedLimit, 100);
+	const search = searchParams.get('search')?.trim();
+	const where = search ? { name: { contains: search, mode: 'insensitive' as const } } : undefined;
 
 	const teams = await db.cs2Team.findMany({
+		where,
 		select: {
 			id: true,
 			name: true,
@@ -18,6 +21,7 @@ export async function GET(req: NextRequest) {
 					id: true,
 					name: true,
 					image: true,
+					bio: true,
 				},
 			},
 			capitanId: true,

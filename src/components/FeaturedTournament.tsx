@@ -19,15 +19,17 @@ export function FeaturedTournament({
 			href={`/tournaments/${id}`}
 			className='relative flex flex-col items-center justify-center rounded-lg shadow-lg overflow-hidden transform transition-transform duration-200 hover:'
 		>
-			<div className='relative w-full h-64 group'>
-				<Image
-					src={bannerUrl}
-					alt={name}
-					fill
-					sizes='78vw'
-                    priority
-					className='object-cover w-full h-64'
-				/>
+			<div className='relative w-full h-64 group bg-neutral-900'>
+				{bannerUrl && (
+					<Image
+						src={bannerUrl}
+						alt={name}
+						fill
+						sizes='78vw'
+						priority
+						className='object-cover w-full h-64'
+					/>
+				)}
 				<div className='absolute inset-2 flex items-end justify-center'>
 					<h1 className='text-white text-xl sm:text-3xl p-4 font-extrabold'>
 						{name}

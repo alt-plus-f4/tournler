@@ -1,114 +1,102 @@
-'use client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 
-import { useState, useEffect } from 'react';
-import { useToast } from '@/lib/hooks/use-toast';
-import { TournamentForm } from '@/components/TournamentForm';
-import { TournamentTable } from '@/components/TournamentTable';
-import { Pagination } from '@/components/Pagination';
-import EditTournamentDialog from '@/components/EditTournamentDialog';
-import { FaExclamation } from 'react-icons/fa';
-import { Tournament } from '@/types/types';
+interface StatusGroup {
+	title: string;
+	description: string;
+	checks: { label: string; configured: boolean }[];
+}
 
-const TOURNAMENTS_PER_PAGE = 10;
+function envConfigured(name: string): boolean {
+	return Boolean(process.env[name]?.trim());
+}
 
-export default function AdminTournamentsPage() {
-	const [tournaments, setTournaments] = useState<Tournament[]>([]);
-	const [page, setPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
-	const [editingTournament, setEditingTournament] =
-		useState<Tournament | null>(null);
-	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-	const { toast } = useToast();
+function buildStatusGroups(): StatusGroup[] {
+	return [
+		{
+			title: 'Database',
+			description: 'Primary Postgres connection.',
+			checks: [{ label: 'DATABASE_URL', configured: envConfigured('DATABASE_URL') }],
+		},
+		{
+			title: 'Authentication',
+			description: 'NextAuth session signing and magic-link email.',
+			checks: [
+				{ label: 'NEXTAUTH_URL', configured: envConfigured('NEXTAUTH_URL') },
+				{ label: 'NEXTAUTH_SECRET', configured: envConfigured('NEXTAUTH_SECRET') },
+				{ label: 'EMAIL_SERVER_HOST', configured: envConfigured('EMAIL_SERVER_HOST') },
+				{ label: 'EMAIL_SERVER_PORT', configured: envConfigured('EMAIL_SERVER_PORT') },
+				{ label: 'EMAIL_FROM', configured: envConfigured('EMAIL_FROM') },
+			],
+		},
+		{
+			title: 'Discord',
+			description: 'Discord OAuth login and bot integration.',
+			checks: [
+				{ label: 'DISCORD_CLIENT_ID', configured: envConfigured('DISCORD_CLIENT_ID') },
+				{ label: 'DISCORD_CLIENT_SECRET', configured: envConfigured('DISCORD_CLIENT_SECRET') },
+				{ label: 'DISCORD_BOT_TOKEN', configured: envConfigured('DISCORD_BOT_TOKEN') },
+				{ label: 'DISCORD_GUILD_ID', configured: envConfigured('DISCORD_GUILD_ID') },
+			],
+		},
+		{
+			title: 'Steam',
+			description: 'Steam OpenID login.',
+			checks: [
+				{ label: 'STEAM_API_KEY', configured: envConfigured('STEAM_API_KEY') },
+				{ label: 'STEAM_REDIRECT_URI', configured: envConfigured('STEAM_REDIRECT_URI') },
+			],
+		},
+		{
+			title: 'Storage',
+			description: 'Avatar, team logo, and tournament banner uploads.',
+			checks: [{ label: 'BLOB_READ_WRITE_TOKEN', configured: envConfigured('BLOB_READ_WRITE_TOKEN') }],
+		},
+		{
+			title: 'CS2 Game Servers',
+			description: 'Dedicated server connect info and score-ingestion auth.',
+			checks: [
+				{ label: 'GAME_SERVER_IP', configured: envConfigured('GAME_SERVER_IP') },
+				{ label: 'GAME_SERVER_TOKEN', configured: envConfigured('GAME_SERVER_TOKEN') },
+			],
+		},
+		{
+			title: 'Cron / Automation',
+			description: 'External scheduler that auto-starts tournaments (see /api/tournaments/check-start).',
+			checks: [
+				{ label: 'CRON_API_KEY', configured: envConfigured('CRON_API_KEY') },
+				{ label: 'CRON_SECRET', configured: envConfigured('CRON_SECRET') },
+			],
+		},
+	];
+}
 
-	useEffect(() => {
-		async function fetchTournaments() {
-			const response = await fetch(
-				`/api/tournaments?page=${page}&limit=${TOURNAMENTS_PER_PAGE}`
-			);
-			const data = await response.json();
-			if (Array.isArray(data)) {
-				setTournaments(data);
-			} else {
-				console.error('API response is not an array:', data);
-			}
-		}
-		async function fetchTournamentCount() {
-			const response = await fetch('/api/tournaments/count');
-			const count = await response.json();
-			setTotalPages(count);
-		}
-		fetchTournamentCount();
-		fetchTournaments();
-	}, [page]);
-
-	const handleSubmit = async (formData: FormData) => {
-		const response = await fetch('/api/tournaments', {
-			method: 'POST',
-			body: formData,
-		});
-		if (response.ok) {
-			toast({
-				title: 'Success',
-				description: 'Tournament created successfully',
-				variant: 'default',
-			});
-			const newTournament = await response.json();
-			setTournaments((prevTournaments) => [
-				...prevTournaments,
-				newTournament,
-			]);
-		} else {
-			toast({
-				title: 'Error',
-				description: 'Failed to create tournament',
-				variant: 'destructive',
-			});
-		}
-	};
-
-	const handlePageChange = (newPage: number) => {
-		setPage(newPage);
-	};
-
-	const handleSave = (updatedTournament: Tournament) => {
-		setTournaments(
-			tournaments.map((t) =>
-				t.id === updatedTournament.id ? updatedTournament : t
-			)
-		);
-	};
+export default function AdminSettingsPage() {
+	const groups = buildStatusGroups();
 
 	return (
 		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<div className='flex flex-row justify-between mb-4'>
-				<h1 className='text-2xl font-bold mb-4'>Tournaments</h1>
-				<TournamentForm onSubmit={handleSubmit} />
+			<h1 className='text-2xl font-bold mb-2'>System Status</h1>
+			<p className='text-muted-foreground mb-6'>Read-only view of which integrations are configured for this environment. Values are never shown, only whether each is set.</p>
+
+			<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+				{groups.map((group) => (
+					<Card key={group.title}>
+						<CardHeader>
+							<CardTitle className='text-base'>{group.title}</CardTitle>
+							<p className='text-sm text-muted-foreground'>{group.description}</p>
+						</CardHeader>
+						<CardContent className='space-y-2'>
+							{group.checks.map((check) => (
+								<div key={check.label} className='flex items-center justify-between text-sm'>
+									<span className='font-mono'>{check.label}</span>
+									{check.configured ? <FaCheckCircle className='text-green-500' /> : <FaTimesCircle className='text-red-500' />}
+								</div>
+							))}
+						</CardContent>
+					</Card>
+				))}
 			</div>
-			<div className='w-full border p-2 mb-4 rounded-sm flex flex-row items-center'>
-				<FaExclamation className='mt-[3px] w-4 h-4 text-2xl text-red-500 mr-2' />
-				<p className='text-md border-b border-b-red-500'>
-					Click on a row to edit Tournaments.
-				</p>
-			</div>
-			<TournamentTable
-				isLoading={!tournaments.length}
-				tournaments={tournaments}
-				onEdit={(tournament) => {
-					setEditingTournament(tournament);
-					setIsEditDialogOpen(true);
-				}}
-			/>
-			<Pagination
-				totalPages={totalPages}
-				currentPage={page}
-				onPageChange={handlePageChange}
-			/>
-			<EditTournamentDialog
-				tournament={editingTournament}
-				isOpen={isEditDialogOpen}
-				onClose={() => setIsEditDialogOpen(false)}
-				onSave={handleSave}
-			/>
 		</div>
 	);
 }

@@ -4,11 +4,7 @@ interface TournamentTableProps {
 	isLoading?: boolean;
 }
 
-export function TournamentTable({
-	isLoading,
-	tournaments,
-	onEdit,
-}: TournamentTableProps) {
+export function TournamentTable({ isLoading, tournaments, onEdit }: TournamentTableProps) {
 	return (
 		<div className='overflow-auto h-[70%]'>
 			<table className='w-full border'>
@@ -32,81 +28,62 @@ export function TournamentTable({
 				</thead>
 				{isLoading ? (
 					<TournamentTableSkeleton />
+				) : !tournaments || tournaments.length === 0 ? (
+					<tbody>
+						<tr>
+							<td colSpan={14} className='py-8 px-4 border text-center text-muted-foreground'>
+								No tournaments found.
+							</td>
+						</tr>
+					</tbody>
 				) : (
 					<tbody>
-						{tournaments &&
-							tournaments.map((tour) => (
-								<tr
-									key={tour.id}
-									onClick={() => onEdit(tour)}
-									className='cursor-pointer hover:opacity-80 transition-colors text-center pb-8'
-								>
-									<td className='py-2 px-4 border'>
-										{tour.id}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.name}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.location}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.prizePool || '-'}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.status}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.type}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.teamCapacity}
-									</td>
-									<td className='py-2 px-4 border'>
-										{new Date(
-											tour.startDate
-										).toLocaleDateString()}
-									</td>
-									<td className='py-2 px-4 border'>
-										{new Date(
-											tour.endDate
-										).toLocaleDateString()}
-									</td>
-									<td className='py-2 px-4 border'>
-										{tour.organizerId || '-'}
-									</td>
-									<td className='py-2 px-4 border'>
-										<a
-											href={tour.bannerUrl}
-											target='_blank'
-											rel='noopener noreferrer'
-											className='text-foregroundgray underline'
-										>
-											{tour.bannerUrl ? 'View' : '-'}
+						{tournaments.map((tour) => (
+							<tr
+								key={tour.id}
+								onClick={() => onEdit(tour)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										onEdit(tour);
+									}
+								}}
+								tabIndex={0}
+								role='button'
+								className='cursor-pointer hover:opacity-80 transition-colors text-center pb-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset'
+							>
+								<td className='py-2 px-4 border'>{tour.id}</td>
+								<td className='py-2 px-4 border'>{tour.name}</td>
+								<td className='py-2 px-4 border'>{tour.location}</td>
+								<td className='py-2 px-4 border'>{tour.prizePool || '-'}</td>
+								<td className='py-2 px-4 border'>{tour.status}</td>
+								<td className='py-2 px-4 border'>{tour.type}</td>
+								<td className='py-2 px-4 border'>{tour.teamCapacity}</td>
+								<td className='py-2 px-4 border'>{new Date(tour.startDate).toLocaleDateString()}</td>
+								<td className='py-2 px-4 border'>{new Date(tour.endDate).toLocaleDateString()}</td>
+								<td className='py-2 px-4 border'>{tour.organizerId || '-'}</td>
+								<td className='py-2 px-4 border'>
+									{tour.bannerUrl ? (
+										<a href={tour.bannerUrl} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline' onClick={(e) => e.stopPropagation()}>
+											View
 										</a>
-									</td>
-									<td className='py-2 px-4 border'>
-										<a
-											href={tour.logoUrl}
-											target='_blank'
-											rel='noopener noreferrer'
-											className='text-foregroundgray underline'
-										>
-											{tour.logoUrl ? 'View' : '-'}
+									) : (
+										'-'
+									)}
+								</td>
+								<td className='py-2 px-4 border'>
+									{tour.logoUrl ? (
+										<a href={tour.logoUrl} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline' onClick={(e) => e.stopPropagation()}>
+											View
 										</a>
-									</td>
-									<td className='py-2 px-4 border'>
-										{new Date(
-											tour.createdAt
-										).toLocaleDateString()}
-									</td>
-									<td className='py-2 px-4 border'>
-										{new Date(
-											tour.updatedAt
-										).toLocaleDateString()}
-									</td>
-								</tr>
-							))}
+									) : (
+										'-'
+									)}
+								</td>
+								<td className='py-2 px-4 border'>{new Date(tour.createdAt).toLocaleDateString()}</td>
+								<td className='py-2 px-4 border'>{new Date(tour.updatedAt).toLocaleDateString()}</td>
+							</tr>
+						))}
 					</tbody>
 				)}
 			</table>

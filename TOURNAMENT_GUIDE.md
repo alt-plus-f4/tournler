@@ -110,6 +110,62 @@ Response: {
 
 ### Match APIs
 
+**List Matches (Admin)**
+
+```
+GET /api/matches?page=1&limit=10&search=teamOrTournamentName
+Auth: matches:manage
+Response: { "matches": Match[], "totalPages": number }
+```
+
+**List Matches (Public)**
+
+```
+GET /api/matches/public?status=ALL|SCHEDULED|LIVE|COMPLETED&tournamentId=number&page=1&limit=20
+Response: { "matches": Match[], "totalPages": number }
+```
+Used by the public `/matches` page. No auth required.
+
+**Create a Standalone Match (Admin)**
+
+```
+POST /api/matches
+Auth: matches:manage
+Body: {
+  "tournamentId": number,
+  "teamAId": number,
+  "teamBId": number,
+  "matchDate": ISO8601Date
+}
+Response: { "match": Match }
+```
+Creates a single `SCHEDULED` match not wired into any bracket (`nextMatchId`/`nextMatchSlot` are left null) — intended for manually testing the live-match/game-server flow without starting a whole tournament. `tournamentId` must reference an existing tournament (the schema requires it), but the two teams don't need to already be on that tournament's roster.
+
+**Create an Open Pickup Match (Admin)**
+
+```
+POST /api/matches
+Auth: matches:manage
+Body: { "isPickup": true, "matchDate": ISO8601Date }
+Response: { "match": Match }
+```
+No tournament or teams to pick — `tournamentId`/`teamAId`/`teamBId` are omitted. The match attaches internally to a hidden, auto-created "Pickup Matches" system tournament (`Cs2Tournament.isSystem: true`, created lazily on first use) so the required `tournamentId` FK is satisfied without a real tournament existing. `teamAId`/`teamBId` stay null — sides are filled by individual players via the join endpoint below, not by `Cs2Team`s. The system tournament is excluded from all tournament listings/counts (`isSystem: false` filters).
+
+**Join / Leave a Pickup Match**
+
+```
+POST /api/matches/[matchId]/join
+Auth: any signed-in user
+Body: { "side": "TEAM_A" | "TEAM_B" }
+Response: { "participants": MatchParticipant[] }
+```
+```
+DELETE /api/matches/[matchId]/join
+Auth: any signed-in user
+Response: { "participants": MatchParticipant[] }
+```
+Only works on `isPickup` matches still `SCHEDULED`, max 5 players per side. Re-joining with a different `side` switches you rather than erroring (upsert on `matchId`+`userId`). Note: pickup matches can be started/paused/resumed/scored like any other match, but **cannot be completed with a winner** — there's no `Cs2Team` to be the winner, so `recordMatchResult` rejects any `winnerId` for them (the `winnerId` check requires it to equal `teamAId`/`teamBId`, which are always null here).
+
 **Get Match Details**
 
 ```
@@ -123,13 +179,25 @@ Response: {
 
 ```
 PATCH /api/matches/[matchId]
+Auth: matches:manage, or the tournament's organizer
 Body: {
+  "action": "START" | "PAUSE" | "RESUME",
   "scoreTeamA": number,
   "scoreTeamB": number,
   "winnerId": number,
   "matchDate": ISO8601Date
 }
 ```
+`action`, score/winner fields, and `matchDate` can each be sent independently (or combined in one request; `action` is applied first).
+
+- `action: "START"` — `SCHEDULED` → `LIVE`, sets `startedAt`. Requires both `teamAId`/`teamBId` to be filled (skipped for pickup matches). Also provisions the match's `GameServer` (or reuses one that already exists) in the same transaction via `ensureGameServer()`, so connect IP/port/password — the data the game-state pipeline is keyed on — exist immediately, without a separate manual "create game server" step.
+- `action: "PAUSE"` — `LIVE` → `PAUSED`, sets `pausedAt`.
+- `action: "RESUME"` — `PAUSED` → `LIVE`, shifts `startedAt` forward by the paused duration (so elapsed-time math stays correct) and clears `pausedAt`.
+- Sending `scoreTeamA`/`scoreTeamB` without `winnerId` updates the score and moves the match to `LIVE` (via `recordMatchResult`, the same write path the game server uses).
+- Sending `winnerId` completes the match (`COMPLETED`), triggering bracket advancement — rejected with `409` if the match is already completed with a *different* winner.
+- Invalid action / wrong-status transitions (e.g. pausing a non-live match) return `409`.
+
+These are also exposed as an "Admin Controls" panel directly on the public match page (`/matches/[matchId]`) for `ADMIN`/`TOURNAMENT_ADMIN` users — Start/Pause/Resume buttons, live score editing, and an End Match (pick winner) action.
 
 **Update Game State (From Game Server)**
 
@@ -214,29 +282,72 @@ model Matches {
 
 ```env
 # Game Server Configuration
-GAME_SERVER_IP=your-server-ip.com  # IP to show in match details
-GAME_SERVER_TOKEN=your-secret-token # Token for game server authentication
+GAME_SERVER_IP=your-server-ip.com  # IP to show in match details (fallback if CS2_SERVER_IP unset)
+GAME_SERVER_TOKEN=your-secret-token # Shared secret: game-state webhook, MatchZy remote-log header, match-config route
 CRON_API_KEY=your-cron-secret        # For scheduled tournament checks
+
+# CS2 dedicated server pool (see cs-docker/) — a fixed-size set of persistent servers, one
+# match at a time each, NOT one container per match / dynamically created containers.
+CS2_SERVER_POOL=[{"id":"01","ip":"your-cs2-server-ip.com","port":27015,"rconPort":27016,"rconPassword":"..."},{"id":"02","ip":"your-cs2-server-ip.com","port":27025,"rconPort":27026,"rconPassword":"..."}]
+
+# If CS2_SERVER_POOL is unset, these define a single-server pool instead (backwards-compatible
+# with earlier single-server setups):
+CS2_SERVER_IP=your-cs2-server-ip.com   # Real server's public address (preferred over GAME_SERVER_IP)
+CS2_SERVER_PORT=27015                  # Must match CS2_PORT in cs-docker/.env
+CS2_RCON_HOST=your-cs2-server-ip.com   # Usually the same host as CS2_SERVER_IP
+CS2_RCON_PORT=27016                    # Must match CS2_RCON_PORT in cs-docker/.env
+CS2_RCON_PASSWORD=your-rcon-password   # Must match CS2_RCONPW in cs-docker/.env
+
+CS2_DEFAULT_MAP=de_dust2               # Fallback map when a match has no completed veto (e.g. pickups)
+
+# NEXTAUTH_URL (already required for auth) doubles as the base URL the CS2 server calls back to
+# for GET /api/matches/[matchId]/game-server/match-config — it must be a URL reachable from the
+# CS2 server's host, not just from browsers.
 ```
+
+A fixed-size CS2 server pool also means only as many matches can be `LIVE` at once as there are
+servers in the pool — `startMatch()` rejects starting another match once every server is already
+claimed by a `LIVE`/`PAUSED` match (`NoAvailableGameServerError`, surfaced as a 409). See
+`CS2_SERVER_GUIDE.md` for a full setup + testing walkthrough, and `cs-docker/README.md` for the
+hosting topology (the CS2 containers need a separate always-on host; they cannot run on Vercel
+alongside the Next.js app).
 
 ## Cron Jobs
 
 ### Auto-Start Tournaments
 
-Set up a cron job to periodically check for tournaments that should be started:
+`GET /api/tournaments/check-start` finds every `UPCOMING` tournament whose `startDate` has
+passed and starts it (generates the bracket, creates matches). There is no in-process
+scheduler — something has to hit this endpoint periodically. Two ways are already wired up in
+this repo; **use exactly one**, not both:
 
-```bash
-# Run every 5 minutes
-*/5 * * * * curl -X GET https://yoursite.com/api/tournaments/check-start \
-  -H "x-api-key: $CRON_API_KEY"
+**Option A — Vercel's native Cron Jobs** (`vercel.json`, already in the repo):
+
+```json
+{ "crons": [{ "path": "/api/tournaments/check-start", "schedule": "0 0 * * *" }] }
 ```
 
-Or use a service like:
+Vercel calls this automatically once deployed — no extra setup beyond setting `CRON_SECRET` in
+the project's environment variables (Vercel signs the request itself, `Authorization: Bearer
+<CRON_SECRET>`, checked by `isValidCronRequest()` in the route). **Caveat:** Vercel's free
+Hobby plan only allows daily-granularity cron schedules (`0 0 * * *` here) — a tournament won't
+auto-start until up to ~24h after its scheduled time on that plan. Pro/Enterprise plans support
+finer schedules; edit the `schedule` string in `vercel.json` accordingly.
 
-- AWS EventBridge
-- Google Cloud Scheduler
-- GitHub Actions
-- Node-cron in background worker
+**Option B — GitHub Actions** (`.github/workflows/check-tournaments.yml`, already in the repo),
+runs every 5 minutes regardless of Vercel plan:
+
+1. In the GitHub repo → Settings → Secrets and variables → Actions, add:
+   - `APP_URL` — the deployed app's base URL (e.g. `https://tournler.example.com`)
+   - `CRON_API_KEY` — must match the `CRON_API_KEY` env var set on the deployed app
+2. Set `CRON_API_KEY` in the app's own environment variables (Vercel project settings, or
+   wherever it's hosted) to the same value.
+3. If you're using Option A (Vercel's native cron) instead, **delete or disable this workflow**
+   (or just don't set the secrets) to avoid double-starting tournaments from two triggers.
+
+Either way, `checkAndStartTournaments()` is idempotent per tournament (it only acts on
+`UPCOMING` tournaments whose start date has passed, and flips status atomically), so overlapping
+triggers are safe — but there's no reason to run both when one is enough.
 
 ## Usage Examples
 

@@ -9,7 +9,7 @@ import {
 	CommandGroup,
 	CommandItem,
 } from '@/components/ui/command';
-import { ReactNode, Suspense, useState } from 'react';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -23,7 +23,28 @@ interface UsersSearchProps {
 	invitedPlayers: any;
 }
 
-export function UsersSearch({
+/**
+ * Convex's `useMutation` depends on a client-only provider that isn't
+ * available during SSR, which was causing this subtree (and its search
+ * command palette) to render differently on the server than on the client —
+ * a hydration mismatch that got reported against a nearby sibling
+ * (LeaveTeamDialog's button) rather than this component itself. Rendering
+ * `children` immediately but deferring everything that depends on Convex
+ * until after mount (same pattern already used for TeamMemberAvatar's
+ * HoverCard) avoids ever calling `useMutation` during the SSR pass.
+ */
+export function UsersSearch(props: UsersSearchProps) {
+	const [isMounted, setIsMounted] = useState(false);
+	useEffect(() => setIsMounted(true), []);
+
+	if (!isMounted) {
+		return props.children ? <div className='cursor-pointer'>{props.children}</div> : null;
+	}
+
+	return <UsersSearchInner {...props} />;
+}
+
+function UsersSearchInner({
 	children,
 	teamId,
 	teamName,
@@ -88,11 +109,13 @@ export function UsersSearch({
 			<>
 				<div className='mr-2'>
 					<Avatar>
-						<AvatarImage
-							className='w-12 h-12'
-							src={user.image ?? ''}
-							alt={`${user.name} avatar`}
-						/>
+						{user.image && (
+							<AvatarImage
+								className='w-12 h-12'
+								src={user.image}
+								alt={`${user.name} avatar`}
+							/>
+						)}
 						<AvatarFallback>
 							{user.name?.charAt(0) ?? 'X'}
 						</AvatarFallback>
