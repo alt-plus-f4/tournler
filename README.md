@@ -1,5 +1,5 @@
 
-# 🏆 TOURNLER - Tournament Management System 🏆
+# TOURNLER - Tournament Management System
 
 ![Next.js](https://img.shields.io/badge/Next.js-13.5+-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
@@ -9,7 +9,7 @@
 
 A comprehensive platform for organizing and managing esports tournaments, with a focus on Counter-Strike 2 competitions.
 
-## ✨ Features
+## Features
 
 - **Tournament Management**: Create, edit, and manage tournaments with bracket systems
 - **Team Management**: Create teams, invite players, and manage team rosters
@@ -18,7 +18,7 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 - **Real-time Updates**: Stay informed with live tournament data and notifications
 - **Interactive Brackets**: Visualize tournament progress
 
-## 🚀 Tech Stack
+## Tech Stack
 
 - **Frontend**: Next.js 13+ (App Router), React, TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui components
@@ -26,13 +26,13 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 - **Testing**: Jest, React Testing Library
 - **Deployment**: Vercel
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Node.js 18.x or higher
 - npm or yarn
 - Git
 
-## 🛠️ Installation
+## Installation
 
 1. Clone the repository:
 ```bash
@@ -45,7 +45,7 @@ npx prisma generate
 npm run dev
 ```
 
-## 🖼️ Images
+## Images
 
 ## Home Page
 <img width="1511" alt="image" src="https://github.com/user-attachments/assets/9ecac702-55f2-47ca-bff5-22cb459abe6f" />
