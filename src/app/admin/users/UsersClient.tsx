@@ -21,6 +21,7 @@ export default function UsersClient() {
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 	const [searchInput, setSearchInput] = useState('');
 	const [search, setSearch] = useState('');
+	const [verifyingUserIds, setVerifyingUserIds] = useState<Set<string>>(new Set());
 
 	useEffect(() => {
 		const timeout = setTimeout(() => {
@@ -76,6 +77,35 @@ export default function UsersClient() {
 		setUsers((prev) => prev.filter((u) => u.id !== userId));
 	};
 
+	const handleToggleVerify = async (user: User, verified: boolean) => {
+		setVerifyingUserIds((prev) => new Set(prev).add(user.id));
+		try {
+			const response = await fetch('/api/admin/badges/verify', {
+				method: verified ? 'POST' : 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId: user.id }),
+			});
+			if (!response.ok) throw new Error('Failed to update verification');
+
+			setUsers((prev) =>
+				prev.map((u) => {
+					if (u.id !== user.id) return u;
+					const badges = u.badges?.filter((b) => b.badge.name !== 'Verified') ?? [];
+					if (verified) badges.push({ badge: { id: 0, name: 'Verified', icon: 'verified', color: '#3b82f6', isOverlay: true } });
+					return { ...u, badges };
+				}),
+			);
+		} catch (error) {
+			console.error('Failed to toggle verification', error);
+		} finally {
+			setVerifyingUserIds((prev) => {
+				const next = new Set(prev);
+				next.delete(user.id);
+				return next;
+			});
+		}
+	};
+
 	return (
 		<div className='mt-12 mx-12 w-[80%] overflow-hidden'>
 			<h1 className='text-2xl font-bold mb-4'>User Management</h1>
@@ -84,7 +114,16 @@ export default function UsersClient() {
 				<p className='text-md border-b border-red-500'>Click on a row (or press Enter) to edit a user.</p>
 			</div>
 			<Input placeholder='Search by name or email...' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
-			<UserTable isLoading={isLoading && !hasLoadedOnce} users={users} currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} onEdit={handleEdit} />
+			<UserTable
+				isLoading={isLoading && !hasLoadedOnce}
+				users={users}
+				currentPage={currentPage}
+				totalPages={totalPages}
+				onPageChange={handlePageChange}
+				onEdit={handleEdit}
+				onToggleVerify={handleToggleVerify}
+				verifyingUserIds={verifyingUserIds}
+			/>
 			<Pagination totalPages={totalPages} currentPage={currentPage} onPageChange={handlePageChange} />
 			{isDialogOpen && selectedUser && <EditUserDialog isOpen={isDialogOpen} user={selectedUser} onSave={handleSave} onClose={handleDialogClose} onDelete={handleDelete} />}
 		</div>

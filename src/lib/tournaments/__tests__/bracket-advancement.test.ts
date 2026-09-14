@@ -158,7 +158,7 @@ function findMatch(round: number, bracketSlot: string, position = 0) {
 describe('recordMatchResult — single elimination', () => {
 	beforeEach(() => resetState(makeTeams(4)));
 
-	it('advances the winner into round 2 and completes the tournament after the final', async () => {
+	it('advances the winner into round 2 and completes the tournament after the final and 3rd-place match', async () => {
 		const generated = generateSingleEliminationBracket(makeTeams(4));
 		seed(generated);
 
@@ -173,7 +173,14 @@ describe('recordMatchResult — single elimination', () => {
 		expect(final.teamBId).toBe(r1m1.teamBId);
 		expect((db as any).__state.tournament.status).toBe('ONGOING');
 
+		const thirdPlace = findMatch(1, 'THIRD_PLACE', 0);
+		expect(thirdPlace.teamAId).toBe(r1m0.teamBId); // round-1 losers feed the decider
+		expect(thirdPlace.teamBId).toBe(r1m1.teamAId);
+
 		await recordMatchResult(final.id, { scoreTeamA: 16, scoreTeamB: 3, winnerId: final.teamAId });
+		expect((db as any).__state.tournament.status).toBe('ONGOING'); // 3rd-place match still pending
+
+		await recordMatchResult(thirdPlace.id, { winnerId: thirdPlace.teamAId });
 		expect((db as any).__state.tournament.status).toBe('COMPLETED');
 	});
 

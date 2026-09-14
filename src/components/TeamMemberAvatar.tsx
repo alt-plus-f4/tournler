@@ -7,6 +7,7 @@ import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
 import { ExtendedUser } from '@/lib/models/user-model';
 import Image from 'next/image';
+import Link from 'next/link';
 import { RemoveMemberButton } from './RemoveMemberButton';
 
 function MemberAvatarImage({ image, name }: { image: string | null; name: string | null }) {
@@ -37,8 +38,10 @@ export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capi
 
 	const avatar = (
 		<div className='group relative'>
-			{member.id == capitanId && <FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500' />}
-			<MemberAvatarImage image={member.image} name={member.name} />
+			{member.id == capitanId && <FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500 z-10' />}
+			<Link href={`/profile/${member.id}`} onClick={(e) => e.stopPropagation()} className='block'>
+				<MemberAvatarImage image={member.image} name={member.name} />
+			</Link>
 
 			{enableTeamCapitanControls && userId && member.id !== userId && <RemoveMemberButton teamId={team.id} memberId={member.id} memberName={member.name ?? ''} />}
 		</div>

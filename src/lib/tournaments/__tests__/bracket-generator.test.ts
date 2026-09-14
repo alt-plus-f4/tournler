@@ -47,16 +47,33 @@ describe('generateRoundRobinBracket', () => {
 describe('generateSingleEliminationBracket', () => {
 	it('builds a full tree with no byes for a power-of-2 team count', () => {
 		const matches = generateSingleEliminationBracket(makeTeams(8));
-		expect(matches).toHaveLength(7);
+		expect(matches).toHaveLength(8); // 4+2+1 winners bracket + 1 third-place decider
 
 		const round1 = matches.filter((m) => m.round === 1);
 		expect(round1).toHaveLength(4);
 		expect(round1.every((m) => m.teamAId !== null && m.teamBId !== null)).toBe(true);
 		expect(round1.every((m) => m.status === 'SCHEDULED')).toBe(true);
 
-		const rootMatches = matches.filter((m) => m.nextMatchLocalIndex === null);
-		expect(rootMatches).toHaveLength(1);
-		expect(rootMatches[0].round).toBe(3);
+		const final = matches.find((m) => m.bracketSlot === 'WINNERS' && m.nextMatchLocalIndex === null)!;
+		expect(final.round).toBe(3);
+	});
+
+	it('adds a 3rd-place decider fed by both semifinal losers', () => {
+		const matches = generateSingleEliminationBracket(makeTeams(8));
+
+		const thirdPlace = matches.find((m) => m.bracketSlot === 'THIRD_PLACE')!;
+		expect(thirdPlace).toBeTruthy();
+		expect(thirdPlace.round).toBe(2);
+
+		const semifinals = matches.filter((m) => m.bracketSlot === 'WINNERS' && m.round === 2);
+		expect(semifinals).toHaveLength(2);
+		expect(semifinals.every((m) => m.nextLoserMatchLocalIndex === thirdPlace.localIndex)).toBe(true);
+		expect(semifinals.map((m) => m.nextLoserMatchSlot).sort()).toEqual(['TEAM_A', 'TEAM_B']);
+	});
+
+	it('skips the 3rd-place decider for a 2-team bracket (no semifinal round to feed it)', () => {
+		const matches = generateSingleEliminationBracket(makeTeams(2));
+		expect(matches.some((m) => m.bracketSlot === 'THIRD_PLACE')).toBe(false);
 	});
 
 	it('resolves byes to top seeds and pre-fills the winner into round 2', () => {

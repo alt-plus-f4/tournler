@@ -1,32 +1,9 @@
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { ensureGameServer } from '@/lib/tournaments/game-server';
+import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
 import { NextResponse } from 'next/server';
-import { randomBytes } from 'crypto';
-
-const PORT_MIN = Number.parseInt(process.env.GAME_SERVER_PORT_MIN || '27015', 10);
-const PORT_MAX = Number.parseInt(process.env.GAME_SERVER_PORT_MAX || '27099', 10);
-
-/**
- * Picks the lowest port in the configured range not currently held by a
- * non-terminal (PENDING/RUNNING) game server. COMPLETED/FAILED servers don't
- * reserve their port, or the range would exhaust over time. This is still a
- * simulated allocation (no real container binds to it) — see the CS2 Docker
- * provisioning issue tracked on GitHub for the real integration.
- */
-async function allocatePort(): Promise<number> {
-	const reserved = await db.gameServer.findMany({
-		where: { status: { in: ['PENDING', 'RUNNING'] } },
-		select: { port: true },
-	});
-	const reservedPorts = new Set(reserved.map((r) => r.port));
-
-	for (let port = PORT_MIN; port <= PORT_MAX; port++) {
-		if (!reservedPorts.has(port)) return port;
-	}
-
-	throw new Error('No available game server ports in the configured range');
-}
 
 /**
  * POST /api/matches/[matchId]/game-server
@@ -66,38 +43,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		// Check if game server already exists for this match
-		const existingServer = await db.gameServer.findUnique({
-			where: { matchId: match.id },
-		});
+		const { gameServer, created } = await ensureGameServer(db, match.id);
 
-		if (existingServer) {
-			return NextResponse.json({ gameServer: existingServer }, { status: 200 });
+		if (!created) {
+			return NextResponse.json({ gameServer }, { status: 200 });
 		}
 
-		// Generate connect IP and credentials
-		// In production, this would call a Docker API to create a container
-		// For now, we'll simulate it
-		const connectIp = process.env.GAME_SERVER_IP || 'localhost';
-		const port = await allocatePort();
-		const password = randomBytes(9).toString('base64url');
-
-		// Create game server record
-		const gameServer = await db.gameServer.create({
-			data: {
-				matchId: match.id,
-				connectIp,
-				port,
-				password,
-				status: 'RUNNING',
-			},
-		});
+		try {
+			await pushMatchConfigToServer(match.id);
+		} catch (error) {
+			console.error(`Failed to push match config to game server for match ${match.id}:`, error);
+		}
 
 		return NextResponse.json({
 			success: true,
 			gameServer,
-			connectUrl: `${connectIp}:${port}`,
-			password,
+			connectUrl: `${gameServer.connectIp}:${gameServer.port}`,
+			password: gameServer.password,
 		});
 	} catch (error) {
 		console.error('Error creating game server:', error);

@@ -4,6 +4,7 @@ import { put } from '@vercel/blob';
 import { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -109,6 +110,7 @@ export async function GET(request: Request) {
 	}
 
 	const where = {
+		isSystem: false,
 		...(statusFilter ? { status: { in: statusFilter } } : {}),
 		...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
 	};
@@ -152,6 +154,7 @@ export async function POST(req: Request) {
 		const prizePool = formData.get('prizePool')?.toString();
 		const teamCapacity = formData.get('teamCapacity')?.toString();
 		const location = formData.get('location')?.toString() || '';
+		const description = formData.get('description')?.toString();
 		const statusValue = formData.get('status')?.toString();
 		const typeValue = formData.get('type')?.toString();
 		const formatValue = formData.get('format')?.toString();
@@ -205,6 +208,7 @@ export async function POST(req: Request) {
 				location,
 				bannerUrl,
 				logoUrl,
+				description: description ? sanitizeRichText(description) : null,
 				status: parsedStatus,
 				type: parsedType,
 				format: parsedFormat,

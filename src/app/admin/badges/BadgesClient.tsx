@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { BadgeIcon } from '@/lib/badge-icons';
 import EditBadgeDialog, { BadgeDefinition } from '@/components/EditBadgeDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +13,7 @@ export default function BadgesClient() {
 	const [editingBadge, setEditingBadge] = useState<BadgeDefinition | null>(null);
 	const [isCreatingNew, setIsCreatingNew] = useState(false);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [search, setSearch] = useState('');
 
 	const fetchBadges = async () => {
 		setIsLoading(true);
@@ -48,6 +50,12 @@ export default function BadgesClient() {
 		setBadges((prev) => prev.filter((b) => b.id !== badgeId));
 	};
 
+	const filteredBadges = badges.filter((badge) => {
+		const q = search.trim().toLowerCase();
+		if (!q) return true;
+		return badge.name.toLowerCase().includes(q) || (badge.description ?? '').toLowerCase().includes(q);
+	});
+
 	return (
 		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
 			<div className='flex items-center justify-between mb-6'>
@@ -58,6 +66,8 @@ export default function BadgesClient() {
 				<Button onClick={openCreate}>Create Badge</Button>
 			</div>
 
+			<Input placeholder='Search badges by name or description...' value={search} onChange={(e) => setSearch(e.target.value)} className='mb-4' />
+
 			{isLoading ? (
 				<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
 					{Array.from({ length: 6 }).map((_, i) => (
@@ -66,9 +76,11 @@ export default function BadgesClient() {
 				</div>
 			) : badges.length === 0 ? (
 				<div className='text-center py-24 text-muted-foreground'>No badges yet. Create your first one.</div>
+			) : filteredBadges.length === 0 ? (
+				<div className='text-center py-24 text-muted-foreground'>No badges match &quot;{search}&quot;.</div>
 			) : (
 				<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-					{badges.map((badge) => (
+					{filteredBadges.map((badge) => (
 						<button
 							key={badge.id}
 							onClick={() => openEdit(badge)}

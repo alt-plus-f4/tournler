@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
@@ -83,7 +84,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			return NextResponse.json({ error: 'No fields to update provided' }, { status: 400 });
 		}
 
-		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl'];
+		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl', 'description', 'isFeatured', 'featuredOrder'];
 
 		const dataToUpdate: Record<string, any> = {};
 		for (const key of allowedFields) {
@@ -146,6 +147,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 				return NextResponse.json({ error: 'teamCapacity must be an integer' }, { status: 400 });
 			}
 			dataToUpdate.teamCapacity = n;
+		}
+
+		if (dataToUpdate.description !== undefined) {
+			dataToUpdate.description = dataToUpdate.description ? sanitizeRichText(dataToUpdate.description) : null;
 		}
 
 		const updatedTournament = await db.cs2Tournament.update({

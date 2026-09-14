@@ -35,16 +35,16 @@ export async function GET() {
 		const [totalUsers, totalTeams, totalTournaments, ongoingTournaments, usersInTeam, usersNotInTeam, teamsForVerification, ended, upcoming, recentUsers, recentTeams, recentTournaments] = await Promise.all([
 			db.user.count(),
 			db.cs2Team.count(),
-			db.cs2Tournament.count(),
-			db.cs2Tournament.count({ where: { status: TournamentStatus.ONGOING } }),
+			db.cs2Tournament.count({ where: { isSystem: false } }),
+			db.cs2Tournament.count({ where: { isSystem: false, status: TournamentStatus.ONGOING } }),
 			db.user.count({ where: { cs2TeamId: { not: null } } }),
 			db.user.count({ where: { cs2TeamId: null } }),
 			db.cs2Team.findMany({ where: { members: { some: {} } }, select: { _count: { select: { members: true } } } }),
-			db.cs2Tournament.count({ where: { status: TournamentStatus.COMPLETED } }),
-			db.cs2Tournament.count({ where: { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } } }),
+			db.cs2Tournament.count({ where: { isSystem: false, status: TournamentStatus.COMPLETED } }),
+			db.cs2Tournament.count({ where: { isSystem: false, status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } } }),
 			db.user.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, email: true, createdAt: true } }),
 			db.cs2Team.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, createdAt: true } }),
-			db.cs2Tournament.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, createdAt: true } }),
+			db.cs2Tournament.findMany({ where: { isSystem: false }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, name: true, createdAt: true } }),
 		]);
 
 		const verifiedTeams = teamsForVerification.filter((team) => team._count.members === 5).length;

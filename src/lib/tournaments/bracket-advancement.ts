@@ -1,6 +1,9 @@
 import { db } from '@/lib/db';
 import { Matches, MatchSlot, Prisma } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
+import { ensureGameServer, NoAvailableGameServerError } from './game-server';
+import { getVetoState } from './veto';
+import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
 
 type Tx = Prisma.TransactionClient;
 
@@ -76,7 +79,11 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 	return db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 
-		if (match.teamAId === null || match.teamBId === null) {
+		// Pickup matches never have real teamAId/teamBId (sides are MatchParticipant rows, not
+		// Cs2Teams), so score writes must be allowed without slots filled — but a winnerId still
+		// can't be recorded for them, since there's no team to be the winner (the check below
+		// rejects any winnerId since it can't equal null teamAId/teamBId).
+		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new Error('Cannot record a result for a match whose bracket slots are not both filled yet');
 		}
 
@@ -102,6 +109,7 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 				winnerId: input.winnerId,
 				status: isCompleting ? 'COMPLETED' : 'LIVE',
 				startedAt: match.startedAt ?? now,
+				pausedAt: null,
 				completedAt: isCompleting ? now : undefined,
 			},
 		});
@@ -124,6 +132,88 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		}
 
 		return updated;
+	});
+}
+
+/** Thrown when a lifecycle action (start/pause/resume) doesn't apply to the match's current status. */
+export class MatchLifecycleError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'MatchLifecycleError';
+	}
+}
+
+/**
+ * Manually transitions a scheduled match to live, without requiring a score yet — used by
+ * admin controls to test the live-match flow. Also provisions the match's game server (or
+ * reuses one that already exists) in the same transaction, so the connect info the
+ * game-state pipeline is keyed on exists as soon as the match goes live — this deployment runs
+ * a fixed-size pool of real CS2 servers (see `src/lib/cs2/server-pool.ts`), so `ensureGameServer`
+ * rejects starting the match if every server in the pool is already claimed by another
+ * LIVE/PAUSED match, surfaced here as `MatchLifecycleError`. Once the transaction commits,
+ * pushes the match config to the real server over RCON — a network side effect kept outside the
+ * transaction, and treated as non-fatal (logged, not thrown) so a temporarily unreachable game
+ * server never blocks the match itself from going live in the app.
+ */
+export async function startMatch(matchId: number): Promise<Matches> {
+	const updated = await db.$transaction(async (tx) => {
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true } });
+		if (match.status !== 'SCHEDULED') {
+			throw new MatchLifecycleError(`Match ${matchId} is not scheduled (current status: ${match.status})`);
+		}
+		// Pickup matches have no Cs2Team slots to fill (sides are MatchParticipant rows).
+		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
+			throw new MatchLifecycleError('Cannot start a match whose bracket slots are not both filled yet');
+		}
+		// Pickup matches have no team-vs-team veto; every other match must finish map veto first.
+		if (!match.isPickup) {
+			const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
+			if (vetoState.phase !== 'COMPLETE') {
+				throw new MatchLifecycleError('Map veto is not complete');
+			}
+		}
+		const updatedMatch = await tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date() } });
+		try {
+			await ensureGameServer(tx, matchId);
+		} catch (error) {
+			if (error instanceof NoAvailableGameServerError) {
+				throw new MatchLifecycleError(error.message);
+			}
+			throw error;
+		}
+		return updatedMatch;
+	});
+
+	try {
+		await pushMatchConfigToServer(matchId);
+	} catch (error) {
+		console.error(`Failed to push match config to game server for match ${matchId}:`, error);
+	}
+
+	return updated;
+}
+
+/** Pauses a live match, freezing its elapsed-time display until resumed. */
+export async function pauseMatch(matchId: number): Promise<Matches> {
+	return db.$transaction(async (tx) => {
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
+		if (match.status !== 'LIVE') {
+			throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
+		}
+		return tx.matches.update({ where: { id: matchId }, data: { status: 'PAUSED', pausedAt: new Date() } });
+	});
+}
+
+/** Resumes a paused match, shifting `startedAt` forward by the paused duration so elapsed-time math stays correct across multiple pause/resume cycles. */
+export async function resumeMatch(matchId: number): Promise<Matches> {
+	return db.$transaction(async (tx) => {
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
+		if (match.status !== 'PAUSED') {
+			throw new MatchLifecycleError(`Match ${matchId} is not paused (current status: ${match.status})`);
+		}
+		const pausedMs = match.pausedAt ? Date.now() - match.pausedAt.getTime() : 0;
+		const newStartedAt = match.startedAt ? new Date(match.startedAt.getTime() + pausedMs) : new Date();
+		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: newStartedAt, pausedAt: null } });
 	});
 }
 

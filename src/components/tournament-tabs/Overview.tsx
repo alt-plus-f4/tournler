@@ -15,6 +15,9 @@ const Overview: React.FC<{
 		<div className='p-4'>
 			<div className='grid grid-cols-1 md:grid-cols-5 gap-4'>
 				<div className='col-span-3'>
+					{tournament.description && (
+						<div className='prose prose-sm prose-invert max-w-none mt-6 ml-1' dangerouslySetInnerHTML={{ __html: tournament.description }} />
+					)}
 					<h1 className='text-2xl font-bold mt-6 mb-2 ml-1'>
 						Details
 					</h1>

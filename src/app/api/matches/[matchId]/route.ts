@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
-import { MatchResultConflictError, recordMatchResult } from '@/lib/tournaments/bracket-advancement';
+import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch } from '@/lib/tournaments/bracket-advancement';
 import { NextResponse } from 'next/server';
 
 /**
@@ -30,6 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						name: true,
 						logo: true,
 						background: true,
+						capitanId: true,
 						members: {
 							select: {
 								id: true,
@@ -46,6 +47,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						name: true,
 						logo: true,
 						background: true,
+						capitanId: true,
 						members: {
 							select: {
 								id: true,
@@ -58,6 +60,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 				},
 				winner: true,
 				gameServer: true,
+				participants: {
+					include: { user: { select: { id: true, name: true, image: true } } },
+					orderBy: { joinedAt: 'asc' },
+				},
+				mapActions: { orderBy: { order: 'asc' } },
+				maps: { orderBy: { order: 'asc' } },
 			},
 		});
 
@@ -105,6 +113,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
+		if (data.action !== undefined) {
+			switch (data.action) {
+				case 'START':
+					await startMatch(parsedMatchId);
+					break;
+				case 'PAUSE':
+					await pauseMatch(parsedMatchId);
+					break;
+				case 'RESUME':
+					await resumeMatch(parsedMatchId);
+					break;
+				default:
+					return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+			}
+		}
+
 		if (data.matchDate !== undefined) {
 			await db.matches.update({ where: { id: parsedMatchId }, data: { matchDate: new Date(data.matchDate) } });
 		}
@@ -132,6 +156,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 		});
 	} catch (error) {
 		if (error instanceof MatchResultConflictError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
+		if (error instanceof MatchLifecycleError) {
 			return NextResponse.json({ error: error.message }, { status: 409 });
 		}
 		console.error('Error updating match:', error);

@@ -18,8 +18,8 @@ export async function GET() {
 		}
 
 		const [ended, upcoming] = await Promise.all([
-			db.cs2Tournament.count({ where: { status: TournamentStatus.COMPLETED } }),
-			db.cs2Tournament.count({ where: { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } } }),
+			db.cs2Tournament.count({ where: { isSystem: false, status: TournamentStatus.COMPLETED } }),
+			db.cs2Tournament.count({ where: { isSystem: false, status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } } }),
 		]);
 
 		return NextResponse.json({ ended, upcoming });

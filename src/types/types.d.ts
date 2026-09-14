@@ -2,7 +2,7 @@ export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMI
 export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 export type TournamentType = 'ONLINE' | 'OFFLINE';
 export type TournamentFormat = 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION';
-export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'COMPLETED';
+export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
 export type MatchSlot = 'TEAM_A' | 'TEAM_B';
 
@@ -31,6 +31,7 @@ export interface User {
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];
 	sessions: Session[];
+	badges?: { badge: { id: number; name: string; icon: string; color: string; isOverlay: boolean } }[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -82,6 +83,7 @@ export interface Cs2Tournament {
 	endDate: string;
 	bannerUrl?: string;
 	logoUrl?: string;
+	description?: string | null;
 	prizePool?: number;
 	teams: Cs2Team[];
 	teamCapacity: number;
@@ -89,6 +91,9 @@ export interface Cs2Tournament {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	isFeatured: boolean;
+	featuredOrder?: number | null;
+	isSystem: boolean;
 	organizerId: string;
 	organizer: User;
 	matches: Match[];
@@ -169,14 +174,28 @@ export interface Match {
 	position: number;
 	bracketSlot: BracketSlot;
 	startedAt?: string | null;
+	pausedAt?: string | null;
 	completedAt?: string | null;
 	nextMatchId?: number | null;
 	nextMatchSlot?: MatchSlot | null;
 	nextLoserMatchId?: number | null;
 	nextLoserMatchSlot?: MatchSlot | null;
+	isPickup: boolean;
+	teamAName?: string | null;
+	teamBName?: string | null;
+	participants?: MatchParticipant[];
 	gameServer?: GameServer;
 	createdAt: string;
 	updatedAt: string;
+}
+
+export interface MatchParticipant {
+	id: number;
+	matchId: number;
+	userId: string;
+	user: { id: string; name: string | null; image: string | null };
+	side: MatchSlot;
+	joinedAt: string;
 }
 
 export interface GameServer {

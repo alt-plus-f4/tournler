@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
+import { RichTextEditor } from '@/components/RichTextEditor';
 
 export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
 export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
@@ -131,6 +132,10 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						<div className='space-y-2'>
 							<Label htmlFor='edit-location'>Location</Label>
 							<Input id='edit-location' value={editingTournament?.location || ''} onChange={(e) => handleChange('location', e.target.value)} required />
+						</div>
+						<div className='space-y-2'>
+							<Label htmlFor='edit-description'>Description</Label>
+							<RichTextEditor value={editingTournament?.description || ''} onChange={(html) => handleChange('description', html)} placeholder='Tell players what this tournament is about' />
 						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>

@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
 				where,
 				skip: (page - 1) * limit,
 				take: limit,
+				include: { badges: { include: { badge: true } } },
 			}),
 			db.user.count({ where }),
 		]);

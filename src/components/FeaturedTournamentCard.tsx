@@ -11,7 +11,7 @@ interface FeaturedTournamentCardProps {
 	location: string;
 }
 
-export function FeaturedNewsCard({
+export function FeaturedTournamentCard({
 	id,
 	name,
 	startDate,

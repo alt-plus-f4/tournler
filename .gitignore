@@ -53,3 +53,7 @@ yarn-error.log*
 next-env.d.ts
 
 .env.local
+
+# CS2 dedicated server local data (persisted game files, logs, demos)
+/cs-docker/data/
+/cs-docker/.env

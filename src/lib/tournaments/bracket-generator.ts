@@ -1,6 +1,6 @@
 import { Cs2Team, TournamentFormat } from '@prisma/client';
 
-export type GeneratedBracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
+export type GeneratedBracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL' | 'THIRD_PLACE';
 export type GeneratedMatchSlot = 'TEAM_A' | 'TEAM_B';
 export type GeneratedMatchStatus = 'SCHEDULED' | 'COMPLETED';
 
@@ -270,10 +270,28 @@ export function generateRoundRobinBracket(teams: Cs2Team[]): GeneratedMatch[] {
 	return builder.matches;
 }
 
-/** Single-elimination: winners bracket only, with seeded byes for non-power-of-2 team counts. */
+/**
+ * Single-elimination: winners bracket, with seeded byes for non-power-of-2 team counts, plus a
+ * 3rd-place decider match fed by both semifinal losers (skipped for a 2-team bracket, which has
+ * only a final and no semifinal round to draw losers from). Reuses the same
+ * `nextLoserMatchLocalIndex`/`nextLoserMatchSlot` feeder plumbing double-elimination's losers
+ * bracket already relies on — `propagateWinner` handles it generically, no advancement-code
+ * changes needed.
+ */
 export function generateSingleEliminationBracket(teams: Cs2Team[]): GeneratedMatch[] {
 	const builder = new MatchBuilder();
-	buildWinnersBracket(builder, teams);
+	const { roundMatches, rounds } = buildWinnersBracket(builder, teams);
+
+	if (rounds >= 2) {
+		const semifinalMatches = roundMatches[rounds - 2];
+		const thirdPlaceLocalIndex = builder.create({ round: rounds - 1, position: 0, bracketSlot: 'THIRD_PLACE' });
+		semifinalMatches.forEach((semiLocalIndex, i) => {
+			const semi = builder.get(semiLocalIndex);
+			semi.nextLoserMatchLocalIndex = thirdPlaceLocalIndex;
+			semi.nextLoserMatchSlot = i === 0 ? 'TEAM_A' : 'TEAM_B';
+		});
+	}
+
 	return builder.matches;
 }
 

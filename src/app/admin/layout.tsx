@@ -5,11 +5,7 @@ import { isAdmin } from '@/lib/helpers/is-admin';
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 
-export default async function AdminLayout({
-	children,
-}: {
-	children: ReactNode;
-}) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
 	const session = await getAuthSession();
 	const isAdminStatus = session ? await isAdmin(session.user.id) : false;
 

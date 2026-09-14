@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { MatchTable } from '@/components/MatchTable';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { FaExclamation } from 'react-icons/fa';
 import { Match } from '@/types/types';
 import EditMatchDialog from '@/components/EditMatchDialog';
+import CreateMatchDialog from '@/components/CreateMatchDialog';
 
 const MATCHES_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -21,6 +23,7 @@ export default function MatchesClient() {
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 	const [searchInput, setSearchInput] = useState('');
 	const [search, setSearch] = useState('');
+	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
 	useEffect(() => {
 		const timeout = setTimeout(() => {
@@ -58,9 +61,16 @@ export default function MatchesClient() {
 		setMatches(matches.map((m) => (m.id === updatedMatch.id ? updatedMatch : m)));
 	};
 
+	const handleCreate = (newMatch: Match) => {
+		setMatches((prev) => [newMatch, ...prev]);
+	};
+
 	return (
 		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<h1 className='text-2xl font-bold mb-4'>Match Management</h1>
+			<div className='flex items-center justify-between mb-4'>
+				<h1 className='text-2xl font-bold'>Match Management</h1>
+				<Button onClick={() => setIsCreateDialogOpen(true)}>Create Match</Button>
+			</div>
 			<div className='w-full border p-2 mb-4 rounded-sm flex items-center'>
 				<FaExclamation className='text-red-500 mr-2' />
 				<p className='text-md border-b border-red-500'>Click on a row (or press Enter) to edit a match&apos;s score, winner, or date.</p>
@@ -76,6 +86,7 @@ export default function MatchesClient() {
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
 			<EditMatchDialog match={editingMatch} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} />
+			<CreateMatchDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={handleCreate} />
 		</div>
 	);
 }

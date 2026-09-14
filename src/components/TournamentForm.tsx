@@ -20,6 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { RichTextEditor } from '@/components/RichTextEditor';
 
 const FORMAT_OPTIONS = [
 	{ value: 0, label: 'Single Elimination' },
@@ -36,6 +37,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 	const [prizePool, setPrizePool] = useState<number | ''>('');
 	const [teamCapacity, setTeamCapacity] = useState<number | ''>('');
 	const [location, setLocation] = useState('');
+	const [description, setDescription] = useState('');
 	const [startDate, setStartDate] = useState('');
 	const [endDate, setEndDate] = useState('');
 	const [bannerFile, setBannerFile] = useState<File | null>(null);
@@ -52,6 +54,7 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 		formData.append('prizePool', prizePool.toString());
 		formData.append('teamCapacity', teamCapacity.toString());
 		formData.append('location', location);
+		formData.append('description', description);
 		formData.append('startDate', startDate);
 		formData.append('endDate', endDate);
 		if (bannerFile) formData.append('bannerFile', bannerFile);
@@ -109,6 +112,8 @@ export function TournamentForm({ onSubmit }: TournamentFormProps) {
 						onChange={(e) => setLocation(e.target.value)}
 						required
 					/>
+					<Label htmlFor='description'>Description</Label>
+					<RichTextEditor value={description} onChange={setDescription} placeholder='Tell players what this tournament is about' />
 					<Label htmlFor='startDate'>Start Date</Label>
 					<Input
 						id='startDate'

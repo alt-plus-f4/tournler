@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { FeaturedNewsCard } from '../FeaturedNewsCard';
+import { FeaturedTournamentCard } from '../FeaturedTournamentCard';
 
 const mockProps = {
 	id: 1,
@@ -10,9 +10,9 @@ const mockProps = {
 	location: 'Featured Location',
 };
 
-describe('FeaturedNewsCard', () => {
+describe('FeaturedTournamentCard', () => {
 	it('renders tournament information correctly', () => {
-		render(<FeaturedNewsCard {...mockProps} />);
+		render(<FeaturedTournamentCard {...mockProps} />);
 
 		// Check if tournament name is rendered
 		expect(screen.getByText('Featured Tournament')).toBeInTheDocument();
@@ -31,7 +31,7 @@ describe('FeaturedNewsCard', () => {
 	});
 
 	it('links to the correct tournament page', () => {
-		render(<FeaturedNewsCard {...mockProps} />);
+		render(<FeaturedTournamentCard {...mockProps} />);
 
 		// Check if the link points to the correct tournament
 		const link = screen.getByRole('link');
@@ -39,7 +39,7 @@ describe('FeaturedNewsCard', () => {
 	});
 
 	it('has the correct hover effects', () => {
-		render(<FeaturedNewsCard {...mockProps} />);
+		render(<FeaturedTournamentCard {...mockProps} />);
 
 		// Check if the card has hover effect classes
 		const card = screen.getByRole('link').firstChild;

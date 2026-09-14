@@ -16,7 +16,7 @@ import {
 	SidebarRail,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { FaUsers, FaUsersCog, FaTrophy, FaCog, FaGamepad, FaAward } from 'react-icons/fa';
+import { FaUsers, FaUsersCog, FaTrophy, FaCog, FaGamepad, FaAward, FaStar } from 'react-icons/fa';
 import {
 	Collapsible,
 	CollapsibleTrigger,
@@ -59,6 +59,12 @@ const data = {
 					url: '/admin/badges',
 					isActive: false,
 					icon: FaAward,
+				},
+				{
+					title: 'Featured',
+					url: '/admin/featured',
+					isActive: false,
+					icon: FaStar,
 				},
 			],
 		},
