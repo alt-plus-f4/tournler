@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag } from 'lucide-react';
+import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName } from '@/lib/tournaments/maps';
 
 interface TeamMember {
@@ -68,6 +68,7 @@ interface GameServer {
 	port: number;
 	status: string;
 	password?: string | null;
+	matchConfigLoadedAt?: string | null;
 }
 
 interface Participant {
@@ -217,6 +218,9 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 			});
 			const payload = await response.json().catch(() => null);
 			if (!response.ok) throw new Error(payload?.error || 'Action failed');
+			if (payload?.configPushError) {
+				toast({ variant: 'destructive', title: 'Match started, but the server config push failed', description: `${payload.configPushError} — use the RCON console below to retry.` });
+			}
 			onChanged();
 		} catch (error) {
 			console.error(`Failed to ${action}`, error);
@@ -301,6 +305,113 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 					</Button>
 				</div>
 			)}
+		</div>
+	);
+}
+
+interface ConsoleEntry {
+	command: string;
+	output: string;
+	isError: boolean;
+	at: string;
+}
+
+/**
+ * Admin-only panel for talking to the real CS2 server directly: run arbitrary RCON commands and
+ * re-push the match config (map veto result, teams, password) when the automated push
+ * (`pushMatchConfigToServer`, triggered on match start) failed or the MatchZy webhook seems stuck.
+ */
+function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: GameServer }) {
+	const [command, setCommand] = useState('');
+	const [history, setHistory] = useState<ConsoleEntry[]>([]);
+	const [isRunning, setIsRunning] = useState(false);
+	const [isSyncing, setIsSyncing] = useState(false);
+	const { toast } = useToast();
+
+	const runCommand = async (cmd: string) => {
+		const trimmed = cmd.trim();
+		if (!trimmed || isRunning) return;
+		setIsRunning(true);
+		try {
+			const response = await fetch(`/api/matches/${matchId}/game-server/rcon`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ command: trimmed }),
+			});
+			const payload = await response.json().catch(() => null);
+			if (!response.ok) throw new Error(payload?.error || 'Command failed');
+			setHistory((prev) => [...prev, { command: trimmed, output: String(payload?.output ?? ''), isError: false, at: new Date().toISOString() }]);
+			setCommand('');
+		} catch (error) {
+			setHistory((prev) => [...prev, { command: trimmed, output: error instanceof Error ? error.message : 'Command failed', isError: true, at: new Date().toISOString() }]);
+		} finally {
+			setIsRunning(false);
+		}
+	};
+
+	const resync = async () => {
+		setIsSyncing(true);
+		try {
+			const response = await fetch(`/api/matches/${matchId}/game-server/sync`, { method: 'POST' });
+			const payload = await response.json().catch(() => null);
+			if (!response.ok) throw new Error(payload?.error || 'Sync failed');
+			setHistory((prev) => [...prev, { command: '(resync match config)', output: String(payload?.serverStatus ?? 'Config re-pushed successfully.'), isError: false, at: new Date().toISOString() }]);
+			toast({ title: 'Match config re-pushed to the game server' });
+		} catch (error) {
+			toast({ variant: 'destructive', title: 'Could not re-sync', description: error instanceof Error ? error.message : undefined });
+		} finally {
+			setIsSyncing(false);
+		}
+	};
+
+	return (
+		<div className='bg-neutral-950 border border-border rounded-lg p-6 mb-12'>
+			<div className='flex items-center justify-between mb-4'>
+				<p className='text-xs font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-2'>
+					<Terminal className='w-4 h-4' /> RCON Console
+				</p>
+				<Button size='sm' variant='outline' onClick={resync} disabled={isSyncing} className='border-border text-white hover:bg-neutral-800'>
+					<RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} /> Re-sync match config
+				</Button>
+			</div>
+
+			{!gameServer.matchConfigLoadedAt && (
+				<div className='flex items-start gap-2 text-yellow-400 text-xs bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3 mb-4'>
+					<AlertTriangle className='w-4 h-4 shrink-0 mt-0.5' />
+					<span>The server hasn&apos;t confirmed loading this match&apos;s config yet (maps/teams/password). If players can&apos;t connect or the veto result isn&apos;t live, use &quot;Re-sync match config&quot; or run <code>status</code> below.</span>
+				</div>
+			)}
+
+			<div className='bg-black border border-border rounded-md p-3 h-56 overflow-y-auto font-mono text-xs mb-3 space-y-2'>
+				{history.length === 0 ? (
+					<p className='text-neutral-600'>No commands run yet. Try `status`.</p>
+				) : (
+					history.map((entry, i) => (
+						<div key={i}>
+							<p className='text-neutral-500'>
+								$ <span className='text-white'>{entry.command}</span>
+							</p>
+							<p className={`whitespace-pre-wrap break-all ${entry.isError ? 'text-red-400' : 'text-neutral-300'}`}>{entry.output || '(no output)'}</p>
+						</div>
+					))
+				)}
+			</div>
+
+			<div className='flex gap-2'>
+				<Input
+					value={command}
+					onChange={(e) => setCommand(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') runCommand(command);
+					}}
+					placeholder='Enter RCON command, e.g. status'
+					disabled={isRunning}
+					className='bg-black border-border text-white font-mono text-sm'
+				/>
+				<Button onClick={() => runCommand(command)} disabled={isRunning || !command.trim()} className='bg-white text-black hover:bg-neutral-200 shrink-0'>
+					{isRunning ? 'Running...' : 'Run'}
+				</Button>
+			</div>
 		</div>
 	);
 }
@@ -700,6 +811,8 @@ export default function MatchPage() {
 				</div>
 
 				{canManage && <AdminControls match={match} vetoComplete={!showVeto || veto?.phase === 'COMPLETE'} onChanged={() => mutate()} />}
+
+				{canManage && match.gameServer && <RconConsole matchId={matchId} gameServer={match.gameServer} />}
 
 				{showVeto && veto && (
 					<VetoPanel

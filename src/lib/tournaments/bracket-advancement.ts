@@ -155,7 +155,15 @@ export class MatchLifecycleError extends Error {
  * transaction, and treated as non-fatal (logged, not thrown) so a temporarily unreachable game
  * server never blocks the match itself from going live in the app.
  */
-export async function startMatch(matchId: number): Promise<Matches> {
+export interface StartMatchResult {
+	match: Matches;
+	/** Non-null if the match was marked LIVE but pushing its config (map veto result, teams, password) to the
+	 * real game server over RCON failed — the caller should surface this so an organizer can retry via the
+	 * manual sync endpoint, instead of it only reaching a server log (see `pushMatchConfigToServer`'s doc comment). */
+	configPushError: string | null;
+}
+
+export async function startMatch(matchId: number): Promise<StartMatchResult> {
 	const updated = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true } });
 		if (match.status !== 'SCHEDULED') {
@@ -184,13 +192,15 @@ export async function startMatch(matchId: number): Promise<Matches> {
 		return updatedMatch;
 	});
 
+	let configPushError: string | null = null;
 	try {
 		await pushMatchConfigToServer(matchId);
 	} catch (error) {
 		console.error(`Failed to push match config to game server for match ${matchId}:`, error);
+		configPushError = error instanceof Error ? error.message : 'Failed to push match config to game server';
 	}
 
-	return updated;
+	return { match: updated, configPushError };
 }
 
 /** Pauses a live match, freezing its elapsed-time display until resumed. */

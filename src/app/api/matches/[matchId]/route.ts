@@ -113,11 +113,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
+		let configPushError: string | null = null;
 		if (data.action !== undefined) {
 			switch (data.action) {
-				case 'START':
-					await startMatch(parsedMatchId);
+				case 'START': {
+					const result = await startMatch(parsedMatchId);
+					configPushError = result.configPushError;
 					break;
+				}
 				case 'PAUSE':
 					await pauseMatch(parsedMatchId);
 					break;
@@ -153,6 +156,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 		return NextResponse.json({
 			success: true,
 			match: updatedMatch,
+			// Set only when a START action's RCON push to the game server failed — the match is still
+			// LIVE in the DB, but the veto result/teams/password may not actually be loaded on the real
+			// server. The UI should surface this and offer the manual sync endpoint as a retry.
+			configPushError,
 		});
 	} catch (error) {
 		if (error instanceof MatchResultConflictError) {

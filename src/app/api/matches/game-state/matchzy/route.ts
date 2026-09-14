@@ -13,13 +13,21 @@ import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
  * `applyGameStateUpdate()` contract the direct `/api/matches/game-state` route uses, so there
  * is exactly one place that owns "what happens when a result arrives" regardless of producer.
  *
- * CAVEAT: the JSON field names read below (`event`, `matchid`, `map_number`, `team1`/`team2`
- * scores, `winner.side`) are inferred from MatchZy's public docs and `Events.cs` event type
- * names (`map_result`, `series_end`) and have NOT been verified against a live server response
- * for the MatchZy version `cs-docker/settings/pre.sh` installs — treat this as a best-effort
- * mapping and adjust the field lookups here once real payloads are captured. There is also a
- * known reliability caveat with `matchzy_remote_log_*` on some setups (see GitHub issue
- * shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
+ * Field mapping verified against MatchZy's `dev` branch source (`Events.cs` / `MatchData.cs` /
+ * `Utility.cs::HandleMatchEnd`), not just its docs:
+ *   - `event` / `matchid` — `MatchZyEvent`/`MatchZyMatchEvent` base classes.
+ *   - `winner.team` — `Winner.Team` is the literal string `"team1"`/`"team2"` (constructed as
+ *     `t1score > t2score ? "team1" : "team2"`); `winner.side` is a *different* field holding the
+ *     CT/T designation (`"2"`/`"3"`), not the team — do not read `.side` for this.
+ *   - `map_result`: `team1`/`team2` are `MatchZyStatsTeam` objects with a `.score` field (that
+ *     map's score) — `data.team1.score`/`data.team2.score` is correct here.
+ *   - `series_end`: score fields are flat on the event, `team1_series_score`/
+ *     `team2_series_score` (`MatchZySeriesResultEvent`), NOT nested under `team1`/`team2`.
+ *   - `map_number` (`MapResultEvent.MapNumber`) is `matchConfig.CurrentMapNumber`, which is
+ *     already 0-indexed (used directly as the `Maplist` array index in MatchZy) — same indexing
+ *     as `MatchMap.order`, so no +/-1 adjustment belongs here.
+ * There is also a known reliability caveat with `matchzy_remote_log_*` on some setups (see
+ * GitHub issue shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
  * exists as a manual fallback, not because this adapter is expected to be unreliable by design.
  */
 export async function POST(request: Request) {
@@ -51,14 +59,16 @@ export async function POST(request: Request) {
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
 		const data = body as Record<string, any>;
-		const teamAScore = Number(data.team1?.score ?? 0);
-		const teamBScore = Number(data.team2?.score ?? 0);
-		const winnerSide = data.winner?.side as 'team1' | 'team2' | undefined;
-		const winnerId = winnerSide === 'team1' ? (match.teamAId ?? undefined) : winnerSide === 'team2' ? (match.teamBId ?? undefined) : undefined;
+		// series_end reports series-level scores flat on the event; map_result reports that map's
+		// score nested under team1/team2 (see the field-mapping comment above).
+		const teamAScore = Number(event === 'series_end' ? (data.team1_series_score ?? 0) : (data.team1?.score ?? 0));
+		const teamBScore = Number(event === 'series_end' ? (data.team2_series_score ?? 0) : (data.team2?.score ?? 0));
+		const winnerTeam = data.winner?.team as 'team1' | 'team2' | undefined;
+		const winnerId = winnerTeam === 'team1' ? (match.teamAId ?? undefined) : winnerTeam === 'team2' ? (match.teamBId ?? undefined) : undefined;
 
-		// MatchZy's map_number is expected to be 1-indexed (Get5-compatible convention); MatchMap.order is 0-indexed.
+		// MatchZy's map_number is already 0-indexed, same as MatchMap.order — no adjustment needed.
 		const mapNumberRaw = data.map_number;
-		const mapOrder = event === 'map_result' && typeof mapNumberRaw === 'number' ? mapNumberRaw - 1 : undefined;
+		const mapOrder = event === 'map_result' && typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
 
 		const updated = await applyGameStateUpdate({
 			matchId,
