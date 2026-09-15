@@ -1,6 +1,30 @@
 import { db } from '@/lib/db';
 import { withRcon } from './rcon-client';
-import { findServerByConnect } from './server-pool';
+import { findServerByConnect, Cs2ServerConfig } from './server-pool';
+
+/** Resolves the real CS2 server (pool entry) a match was assigned to, by its recorded GameServer row. */
+async function resolveMatchServer(matchId: number): Promise<Cs2ServerConfig> {
+	const gameServer = await db.gameServer.findUniqueOrThrow({ where: { matchId } });
+	const server = findServerByConnect(gameServer.connectIp, gameServer.port);
+	if (!server) {
+		throw new Error(`No CS2_SERVER_POOL entry matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was the pool config changed after the match started?`);
+	}
+	return server;
+}
+
+/**
+ * Runs one raw admin console command against a match's assigned server over RCON — the shared
+ * primitive behind pauseMatch/resumeMatch/restartMatch pushing their action through to the real
+ * server (MatchZy's `css_forcepause`/`css_forceunpause`/`css_restart` — all verified against
+ * MatchZy's `dev` branch `ConsoleCommands.cs`; RCON invocations run with `player == null`, which
+ * MatchZy's own admin check — `IsPlayerAdmin` in `Utility.cs` — treats as admin, so no separate
+ * MatchZy admin config is needed for these). Callers should invoke this *after* their own DB
+ * transaction commits and treat failures as non-fatal, same as `pushMatchConfigToServer`.
+ */
+export async function pushRconCommand(matchId: number, command: string): Promise<void> {
+	const server = await resolveMatchServer(matchId);
+	await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute(command));
+}
 
 /**
  * Pushes a match's config (teams/players/maps/connect password) to whichever real CS2 server in

@@ -3,7 +3,7 @@ import { Matches, MatchSlot, Prisma } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
-import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
+import { pushMatchConfigToServer, pushRconCommand } from '@/lib/cs2/provisioning';
 
 type Tx = Prisma.TransactionClient;
 
@@ -176,15 +176,27 @@ export class MatchLifecycleError extends Error {
  * transaction, and treated as non-fatal (logged, not thrown) so a temporarily unreachable game
  * server never blocks the match itself from going live in the app.
  */
-export interface StartMatchResult {
+export interface MatchActionResult {
 	match: Matches;
-	/** Non-null if the match was marked LIVE but pushing its config (map veto result, teams, password) to the
-	 * real game server over RCON failed — the caller should surface this so an organizer can retry via the
-	 * manual sync endpoint, instead of it only reaching a server log (see `pushMatchConfigToServer`'s doc comment). */
+	/** Non-null if the DB write succeeded but pushing the corresponding action to the real game server over
+	 * RCON failed — the caller should surface this so an organizer can retry (via the RCON console or the
+	 * manual sync endpoint) instead of it only reaching a server log. */
 	configPushError: string | null;
 }
 
-export async function startMatch(matchId: number): Promise<StartMatchResult> {
+/** Runs `command` against `matchId`'s assigned server after its DB write already committed, treating a failure as non-fatal (logged and returned as `configPushError`, never thrown) — the app-side state change already succeeded and shouldn't be rolled back over a flaky RCON connection. */
+async function pushRconAfterCommit(matchId: number, match: Matches, command: string): Promise<MatchActionResult> {
+	let configPushError: string | null = null;
+	try {
+		await pushRconCommand(matchId, command);
+	} catch (error) {
+		console.error(`Failed to push RCON command "${command}" for match ${matchId}:`, error);
+		configPushError = error instanceof Error ? error.message : `Failed to push "${command}" to game server`;
+	}
+	return { match, configPushError };
+}
+
+export async function startMatch(matchId: number): Promise<MatchActionResult> {
 	const updated = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true } });
 		if (match.status !== 'SCHEDULED') {
@@ -224,20 +236,30 @@ export async function startMatch(matchId: number): Promise<StartMatchResult> {
 	return { match: updated, configPushError };
 }
 
-/** Pauses a live match, freezing its elapsed-time display until resumed. */
-export async function pauseMatch(matchId: number): Promise<Matches> {
-	return db.$transaction(async (tx) => {
+/**
+ * Pauses a live match, freezing its elapsed-time display until resumed, and pushes the equivalent
+ * admin pause to the real server over RCON (`css_forcepause` — verified against MatchZy's `dev`
+ * branch `ConsoleCommands.cs`; see `pushRconCommand`'s doc comment) so the actual game pauses too,
+ * not just the app's record of it.
+ */
+export async function pauseMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 		if (match.status !== 'LIVE') {
 			throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
 		}
 		return tx.matches.update({ where: { id: matchId }, data: { status: 'PAUSED', pausedAt: new Date() } });
 	});
+	return pushRconAfterCommit(matchId, match, 'css_forcepause');
 }
 
-/** Resumes a paused match, shifting `startedAt` forward by the paused duration so elapsed-time math stays correct across multiple pause/resume cycles. */
-export async function resumeMatch(matchId: number): Promise<Matches> {
-	return db.$transaction(async (tx) => {
+/**
+ * Resumes a paused match, shifting `startedAt` forward by the paused duration so elapsed-time
+ * math stays correct across multiple pause/resume cycles, and pushes the equivalent admin
+ * unpause to the real server over RCON (`css_forceunpause`).
+ */
+export async function resumeMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 		if (match.status !== 'PAUSED') {
 			throw new MatchLifecycleError(`Match ${matchId} is not paused (current status: ${match.status})`);
@@ -246,6 +268,54 @@ export async function resumeMatch(matchId: number): Promise<Matches> {
 		const newStartedAt = match.startedAt ? new Date(match.startedAt.getTime() + pausedMs) : new Date();
 		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: newStartedAt, pausedAt: null } });
 	});
+	return pushRconAfterCommit(matchId, match, 'css_forceunpause');
+}
+
+/**
+ * Resets a LIVE/PAUSED match back to SCHEDULED — clears its score, winner, and timer state (and,
+ * for bo1/bo3 series, every MatchMap's result and this match's player stats) so it can be started
+ * fresh, e.g. after the server-side match got into a broken state. Team assignments, the map veto
+ * result, and the assigned game server (see ensureGameServer — it reuses an existing GameServer
+ * row) are left untouched: the admin re-runs Start Match afterwards, which re-pushes a clean
+ * config to the same server. Also pushes the equivalent admin restart to the real server itself
+ * over RCON (`css_restart`) so the live game resets immediately too, not just the app's record.
+ *
+ * Deliberately not allowed on a COMPLETED match — that already propagated its winner into the
+ * bracket (propagateWinner) and possibly finalized the tournament; unwinding that safely is out
+ * of scope here.
+ */
+export async function restartMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
+		if (match.status !== 'LIVE' && match.status !== 'PAUSED') {
+			throw new MatchLifecycleError(`Match ${matchId} is not live or paused (current status: ${match.status}) — a completed match can't be restarted`);
+		}
+
+		// No-op for pickups (no MatchMap rows — see finalizeVeto) and for bo1 matches before any
+		// map result was recorded; otherwise clears each map back to its pre-play state so
+		// recordMapResult's "already completed" idempotency doesn't block replaying it.
+		await tx.matchMap.updateMany({
+			where: { matchId },
+			data: { scoreTeamA: null, scoreTeamB: null, winnerId: null, status: 'SCHEDULED', startedAt: null, completedAt: null },
+		});
+
+		await tx.playerMatchStat.deleteMany({ where: { matchId } });
+
+		return tx.matches.update({
+			where: { id: matchId },
+			data: {
+				status: 'SCHEDULED',
+				scoreTeamA: null,
+				scoreTeamB: null,
+				winnerId: null,
+				winnerSide: null,
+				startedAt: null,
+				pausedAt: null,
+				completedAt: null,
+			},
+		});
+	});
+	return pushRconAfterCommit(matchId, match, 'css_restart');
 }
 
 export interface RoundRobinStanding {

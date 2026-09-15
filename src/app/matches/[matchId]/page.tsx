@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3, RotateCcw } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName } from '@/lib/tournaments/maps';
 
 interface TeamMember {
@@ -235,7 +235,7 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 			const payload = await response.json().catch(() => null);
 			if (!response.ok) throw new Error(payload?.error || 'Action failed');
 			if (payload?.configPushError) {
-				toast({ variant: 'destructive', title: 'Match started, but the server config push failed', description: `${payload.configPushError} — use the RCON console below to retry.` });
+				toast({ variant: 'destructive', title: "Saved, but the game server didn't confirm it", description: `${payload.configPushError} — the app's state is updated, but the real server may not match it yet. Use the RCON console below to check/retry.` });
 			}
 			onChanged();
 		} catch (error) {
@@ -247,6 +247,10 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 	};
 
 	const updateScore = () => patch('update score', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB) });
+	const restartMatch = () => {
+		if (!window.confirm('Restart this match? Its score, timer, and any map results will be cleared back to zero. Team assignments and the map veto stay as they are.')) return;
+		patch('restart', { action: 'RESTART' });
+	};
 	const endMatch = () => {
 		if (!winnerId) {
 			toast({ variant: 'destructive', title: 'Pick a winner to end the match' });
@@ -279,6 +283,11 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 				{match.status === 'PAUSED' && (
 					<Button onClick={() => patch('resume', { action: 'RESUME' })} disabled={pendingAction !== null} className='bg-white text-black hover:bg-neutral-200'>
 						<Play className='h-4 w-4 mr-2' /> Resume
+					</Button>
+				)}
+				{(match.status === 'LIVE' || match.status === 'PAUSED') && (
+					<Button onClick={restartMatch} disabled={pendingAction !== null} variant='outline' className='border-border text-white hover:bg-neutral-800'>
+						<RotateCcw className='h-4 w-4 mr-2' /> Restart
 					</Button>
 				)}
 			</div>

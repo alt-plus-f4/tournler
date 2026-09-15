@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
-import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch } from '@/lib/tournaments/bracket-advancement';
+import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch, restartMatch } from '@/lib/tournaments/bracket-advancement';
 import { NextResponse } from 'next/server';
 
 /**
@@ -125,12 +125,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 					configPushError = result.configPushError;
 					break;
 				}
-				case 'PAUSE':
-					await pauseMatch(parsedMatchId);
+				case 'PAUSE': {
+					const result = await pauseMatch(parsedMatchId);
+					configPushError = result.configPushError;
 					break;
-				case 'RESUME':
-					await resumeMatch(parsedMatchId);
+				}
+				case 'RESUME': {
+					const result = await resumeMatch(parsedMatchId);
+					configPushError = result.configPushError;
 					break;
+				}
+				case 'RESTART': {
+					const result = await restartMatch(parsedMatchId);
+					configPushError = result.configPushError;
+					break;
+				}
 				default:
 					return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 			}
