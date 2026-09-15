@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3, RotateCcw } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName } from '@/lib/tournaments/maps';
+import { LevelBadge } from '@/components/LevelBadge';
 
 interface TeamMember {
 	id: string;
@@ -1146,7 +1147,7 @@ export default function MatchPage() {
 												<div className='w-10 h-10 rounded-full border border-border flex items-center justify-center text-xs text-neutral-400'>{(member.name || 'P').charAt(0).toUpperCase()}</div>
 											)}
 											<span className='text-white font-medium flex-1'>{member.name || 'Unknown Player'}</span>
-											<Badge className='bg-black border border-border text-neutral-200 text-xs'>LVL {getMemberLevel(member, index)}</Badge>
+											<LevelBadge level={getMemberLevel(member, index)} size='sm' />
 										</Link>
 									);
 								})}
@@ -1191,7 +1192,7 @@ export default function MatchPage() {
 												<div className='w-10 h-10 rounded-full border border-border flex items-center justify-center text-xs text-neutral-400'>{(member.name || 'P').charAt(0).toUpperCase()}</div>
 											)}
 											<span className='text-white font-medium flex-1'>{member.name || 'Unknown Player'}</span>
-											<Badge className='bg-black border border-border text-neutral-200 text-xs'>LVL {getMemberLevel(member, index)}</Badge>
+											<LevelBadge level={getMemberLevel(member, index)} size='sm' />
 										</Link>
 									);
 								})}
