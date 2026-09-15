@@ -20,7 +20,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 		const id = Number.parseInt(matchId, 10);
 		if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid match ID' }, { status: 400 });
 
-		const config = await buildMatchConfig(id);
+		// Set by pushMatchConfigToServer's pre-warm call — see buildMatchConfig's bots option.
+		const bots = new URL(request.url).searchParams.get('bots') === '1';
+
+		const config = await buildMatchConfig(id, { bots });
 		return NextResponse.json(config);
 	} catch (error) {
 		console.error('Error building match config:', error);

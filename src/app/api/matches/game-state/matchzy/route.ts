@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { safeEqual } from '@/lib/helpers/safe-equal';
-import { MatchResultConflictError } from '@/lib/tournaments/bracket-advancement';
+import { MatchResultConflictError, goLiveFromServer } from '@/lib/tournaments/bracket-advancement';
 import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
 import { updateLiveScore } from '@/lib/tournaments/live-score';
 
@@ -31,6 +31,10 @@ import { updateLiveScore } from '@/lib/tournaments/live-score';
  *     `team2` `.score` shape as `map_result` — this is the live, in-progress round score, routed
  *     through `updateLiveScore()` (not `applyGameStateUpdate()`) since it must never touch
  *     status/winner/completion, only the score display.
+ *   - `series_start` (`MatchZySeriesStartedEvent`) fires once ready-up actually completes and the
+ *     series begins — routed through `goLiveFromServer()` so a match pre-warmed by
+ *     `prewarmUpcomingMatches` (loaded early, before an admin clicks Start) still flips to LIVE in
+ *     the app the moment it's genuinely being played, instead of sitting stale as SCHEDULED.
  * There is also a known reliability caveat with `matchzy_remote_log_*` on some setups (see
  * GitHub issue shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
  * exists as a manual fallback, not because this adapter is expected to be unreliable by design.
@@ -49,9 +53,8 @@ export async function POST(request: Request) {
 		}
 
 		const event = (body as Record<string, unknown>).event;
-		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end') {
-			// Other MatchZy event types (player_connect, series_start, ...) carry nothing this
-			// pipeline needs.
+		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end' && event !== 'series_start') {
+			// Other MatchZy event types (player_connect, ...) carry nothing this pipeline needs.
 			return NextResponse.json({ success: true, ignored: typeof event === 'string' ? event : 'unknown' });
 		}
 
@@ -59,6 +62,11 @@ export async function POST(request: Request) {
 		const matchId = typeof matchIdRaw === 'string' ? Number.parseInt(matchIdRaw, 10) : Number(matchIdRaw);
 		if (!matchId || Number.isNaN(matchId)) {
 			return NextResponse.json({ error: 'Missing or invalid matchid' }, { status: 400 });
+		}
+
+		if (event === 'series_start') {
+			await goLiveFromServer(matchId);
+			return NextResponse.json({ success: true });
 		}
 
 		const match = await db.matches.findUnique({ where: { id: matchId } });

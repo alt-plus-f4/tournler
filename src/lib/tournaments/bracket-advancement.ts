@@ -237,6 +237,26 @@ export async function startMatch(matchId: number): Promise<MatchActionResult> {
 }
 
 /**
+ * Auto-transitions a match from SCHEDULED to LIVE when the real server reports its series has
+ * actually begun — MatchZy's `series_start` event, fired once ready-up completes, regardless of
+ * whether the match got there via `prewarmUpcomingMatches`'s early load or a manually-pushed
+ * config. Without this, a pre-warmed match that players ready up on their own (before an admin
+ * ever clicks Start) would sit "SCHEDULED" in the app while actually being played on the server —
+ * exactly the drift pre-warming would otherwise risk introducing.
+ *
+ * A no-op if the match isn't SCHEDULED (already started through the app, or a stale/duplicate
+ * webhook delivery) — doesn't re-provision or re-configure anything, only catches up the app's
+ * own status/timer to match reality.
+ */
+export async function goLiveFromServer(matchId: number): Promise<Matches | null> {
+	return db.$transaction(async (tx) => {
+		const match = await tx.matches.findUnique({ where: { id: matchId } });
+		if (!match || match.status !== 'SCHEDULED') return match;
+		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: match.startedAt ?? new Date() } });
+	});
+}
+
+/**
  * Pauses a live match, freezing its elapsed-time display until resumed, and pushes the equivalent
  * admin pause to the real server over RCON (`css_forcepause` — verified against MatchZy's `dev`
  * branch `ConsoleCommands.cs`; see `pushRconCommand`'s doc comment) so the actual game pauses too,

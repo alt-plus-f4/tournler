@@ -39,7 +39,7 @@ export async function pushRconCommand(matchId: number, command: string): Promise
  * as non-fatal (log and surface a warning; the match can still be marked LIVE in the app while
  * an organizer retries manually).
  */
-export async function pushMatchConfigToServer(matchId: number): Promise<void> {
+export async function pushMatchConfigToServer(matchId: number, options: { bots?: boolean } = {}): Promise<void> {
 	const appBaseUrl = process.env.NEXTAUTH_URL;
 	const gameServerToken = process.env.GAME_SERVER_TOKEN;
 	if (!appBaseUrl || !gameServerToken) {
@@ -52,7 +52,9 @@ export async function pushMatchConfigToServer(matchId: number): Promise<void> {
 		throw new Error(`No CS2_SERVER_POOL entry matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was the pool config changed after the match started?`);
 	}
 
-	const configUrl = `${appBaseUrl}/api/matches/${matchId}/game-server/match-config`;
+	// The `bots` flag rides on the URL the server fetches (see buildMatchConfig's bots option),
+	// not the RCON command itself — the server calls this URL asynchronously after the RCON push.
+	const configUrl = `${appBaseUrl}/api/matches/${matchId}/game-server/match-config${options.bots ? '?bots=1' : ''}`;
 
 	await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, async (rcon) => {
 		await rcon.execute(`matchzy_loadmatch_url "${configUrl}" x-game-server-token ${gameServerToken}`);

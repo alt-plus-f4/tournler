@@ -173,6 +173,16 @@ function MatchTimer({ match }: { match: Match }) {
 
 	if (match.status === 'SCHEDULED') {
 		const msUntilStart = new Date(match.matchDate).getTime() - Date.now();
+		// Pre-warmed (see prewarmUpcomingMatches, ~5 min before start) — the server is already
+		// loaded and joinable even though the app hasn't marked the match LIVE yet (that happens
+		// on its own once MatchZy reports the series actually began — see goLiveFromServer).
+		if (match.gameServer?.matchConfigLoadedAt) {
+			return (
+				<span className='inline-flex items-center gap-2 text-white text-sm font-bold'>
+					<span className='w-2 h-2 rounded-full bg-green-500 animate-pulse' /> Server ready — join now &middot; {msUntilStart > 0 ? `starts in ${formatDuration(msUntilStart)}` : 'starting soon'}
+				</span>
+			);
+		}
 		if (msUntilStart <= 0) {
 			return (
 				<span className='inline-flex items-center gap-2 text-neutral-400 text-sm'>
@@ -897,7 +907,10 @@ export default function MatchPage() {
 	// live score is the aggregate scoreTeamA/scoreTeamB shown directly on the big score digits.
 	const currentMap = match.maps.find((m) => m.status !== 'COMPLETED');
 	const connectAddress = match.gameServer ? `${match.gameServer.connectIp}:${match.gameServer.port}` : null;
-	const connectCommand = connectAddress ? `connect ${connectAddress}${match.gameServer?.password ? `; password ${match.gameServer.password}` : ''}` : null;
+	// The `password` cvar must be set BEFORE `connect` runs — it's read as part of the connection
+	// handshake, so `connect ip:port; password x` (setting it after) is a well-known cause of
+	// "Bad Password" on Source-engine servers even with the right password.
+	const connectCommand = connectAddress ? `${match.gameServer?.password ? `password ${match.gameServer.password}; ` : ''}connect ${connectAddress}` : null;
 	const steamConnectUrl = connectCommand ? `steam://run/730//+${encodeURIComponent(connectCommand)}` : null;
 
 	const copyToClipboard = (text: string) => {
@@ -1010,6 +1023,22 @@ export default function MatchPage() {
 								</div>
 							)}
 
+							{match.status === 'SCHEDULED' && match.gameServer && (
+								<div className='mb-4 flex items-center gap-2 text-sm bg-black border border-border rounded px-3 py-1.5'>
+									{match.gameServer.matchConfigLoadedAt ? (
+										<>
+											<span className='w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse' />
+											<span className='text-white'>Warming up with bots — join early to practice</span>
+										</>
+									) : (
+										<>
+											<span className='w-1.5 h-1.5 rounded-full bg-yellow-500' />
+											<span className='text-neutral-400'>Provisioning server…</span>
+										</>
+									)}
+								</div>
+							)}
+
 							{match.gameServer && connectAddress ? (
 								<div className='w-full border border-border rounded-md p-4 mb-4 space-y-3'>
 									<div className='text-left'>
@@ -1029,7 +1058,7 @@ export default function MatchPage() {
 								</div>
 							) : (
 								<div className='w-full border border-dashed border-border rounded-md p-4 mb-4 text-center'>
-									<p className='text-sm text-neutral-500'>Server not yet provisioned</p>
+									<p className='text-sm text-neutral-500'>{match.status === 'SCHEDULED' ? 'Server opens ~5 min before match start' : 'Server not yet provisioned'}</p>
 								</div>
 							)}
 

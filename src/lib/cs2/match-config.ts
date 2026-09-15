@@ -11,13 +11,24 @@ function playersOf(users: RosterUser[]): Record<string, string> {
 	return Object.fromEntries(users.filter((u) => u.steam !== null).map((u) => [u.steam!.steamId, u.name ?? u.id]));
 }
 
+export interface BuildMatchConfigOptions {
+	/**
+	 * Fill empty slots with bots — used only for the early "pre-warm" load
+	 * (`prewarmUpcomingMatches`, ~5 minutes before the scheduled start) so players can connect and
+	 * look around before everyone's ready. `bot_quota` is set explicitly either way (0 when this
+	 * is off) rather than just omitted, since a *reload* of an already-loaded match (e.g. the real
+	 * Start after a pre-warm) doesn't otherwise reset a cvar a previous load already changed.
+	 */
+	bots?: boolean;
+}
+
 /**
  * Builds MatchZy's match-config JSON (https://shobhit-pathak.github.io/MatchZy/match_setup/)
  * for a match — served by `GET /api/matches/[matchId]/game-server/match-config` and fetched by
  * the real server via `matchzy_loadmatch_url` at match-start time (see
  * `src/lib/cs2/provisioning.ts`).
  */
-export async function buildMatchConfig(matchId: number) {
+export async function buildMatchConfig(matchId: number, options: BuildMatchConfigOptions = {}) {
 	const match = await db.matches.findUniqueOrThrow({
 		where: { id: matchId },
 		include: {
@@ -56,6 +67,11 @@ export async function buildMatchConfig(matchId: number) {
 		maplist,
 		cvars: {
 			sv_password: match.gameServer.password,
+			// Fill with easy bots during pre-warm so the server isn't empty while players trickle
+			// in early; always explicit (never omitted) so a later reload without bots actually
+			// clears them instead of leaving whatever bot_quota the pre-warm load left behind.
+			bot_quota: options.bots ? '5' : '0',
+			bot_quota_mode: options.bots ? 'fill' : 'normal',
 			...(appBaseUrl
 				? {
 						matchzy_demo_upload_url: `${appBaseUrl}/api/matches/${match.id}/demo`,
