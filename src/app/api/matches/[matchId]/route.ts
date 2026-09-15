@@ -66,6 +66,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 				},
 				mapActions: { orderBy: { order: 'asc' } },
 				maps: { orderBy: { order: 'asc' } },
+				playerStats: {
+					include: { user: { select: { id: true, name: true, image: true } } },
+					orderBy: { kills: 'desc' },
+				},
 			},
 		});
 
@@ -136,11 +140,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			await db.matches.update({ where: { id: parsedMatchId }, data: { matchDate: new Date(data.matchDate) } });
 		}
 
-		if (data.scoreTeamA !== undefined || data.scoreTeamB !== undefined || data.winnerId !== undefined) {
+		if (data.winnerSide !== undefined && data.winnerSide !== 'TEAM_A' && data.winnerSide !== 'TEAM_B') {
+			return NextResponse.json({ error: 'winnerSide must be TEAM_A or TEAM_B' }, { status: 400 });
+		}
+
+		if (data.scoreTeamA !== undefined || data.scoreTeamB !== undefined || data.winnerId !== undefined || data.winnerSide !== undefined) {
 			await recordMatchResult(parsedMatchId, {
 				scoreTeamA: data.scoreTeamA,
 				scoreTeamB: data.scoreTeamB,
 				winnerId: data.winnerId,
+				winnerSide: data.winnerSide,
 			});
 		}
 

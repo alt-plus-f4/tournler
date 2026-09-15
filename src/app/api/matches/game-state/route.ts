@@ -24,8 +24,8 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
 		}
 
-		if (body.isCompleted && body.winnerId === undefined) {
-			return NextResponse.json({ error: 'winnerId is required when isCompleted is true' }, { status: 400 });
+		if (body.isCompleted && body.winnerId === undefined && body.winnerSide === undefined) {
+			return NextResponse.json({ error: 'winnerId (or winnerSide, for pickup matches) is required when isCompleted is true' }, { status: 400 });
 		}
 
 		const match = await applyGameStateUpdate(body);

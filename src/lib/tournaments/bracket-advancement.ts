@@ -18,7 +18,10 @@ export class MatchResultConflictError extends Error {
 export interface MatchResultInput {
 	scoreTeamA?: number;
 	scoreTeamB?: number;
+	/** Non-pickup matches only — the winning Cs2Team's id. */
 	winnerId?: number;
+	/** Pickup matches only — which side won (they have no Cs2Team to use as winnerId). */
+	winnerSide?: MatchSlot;
 }
 
 function slotField(slot: MatchSlot): 'teamAId' | 'teamBId' {
@@ -80,36 +83,53 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 
 		// Pickup matches never have real teamAId/teamBId (sides are MatchParticipant rows, not
-		// Cs2Teams), so score writes must be allowed without slots filled — but a winnerId still
-		// can't be recorded for them, since there's no team to be the winner (the check below
-		// rejects any winnerId since it can't equal null teamAId/teamBId).
+		// Cs2Teams), so score writes must be allowed without slots filled — and their winner is
+		// recorded via winnerSide (which side, TEAM_A/TEAM_B) instead of winnerId (a Cs2Team id),
+		// since there's no Cs2Team to be the winner.
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new Error('Cannot record a result for a match whose bracket slots are not both filled yet');
 		}
 
-		if (input.winnerId !== undefined && input.winnerId !== match.teamAId && input.winnerId !== match.teamBId) {
-			throw new Error('winnerId must be one of the match participants');
+		if (match.isPickup) {
+			if (input.winnerId !== undefined) {
+				throw new Error('Pickup matches have no Cs2Team winner — pass winnerSide instead of winnerId');
+			}
+		} else {
+			if (input.winnerSide !== undefined) {
+				throw new Error('winnerSide only applies to pickup matches — pass winnerId instead');
+			}
+			if (input.winnerId !== undefined && input.winnerId !== match.teamAId && input.winnerId !== match.teamBId) {
+				throw new Error('winnerId must be one of the match participants');
+			}
 		}
 
+		const incomingWinner = match.isPickup ? input.winnerSide : input.winnerId;
+
 		if (match.status === 'COMPLETED') {
-			if (input.winnerId !== undefined && input.winnerId !== match.winnerId) {
+			const currentWinner = match.isPickup ? match.winnerSide : match.winnerId;
+			if (incomingWinner !== undefined && incomingWinner !== currentWinner) {
 				throw new MatchResultConflictError(`Match ${matchId} is already completed with a different winner`);
 			}
 			return match;
 		}
 
 		const now = new Date();
-		const isCompleting = input.winnerId !== undefined;
+		const isCompleting = incomingWinner !== undefined;
 
 		const { count } = await tx.matches.updateMany({
 			where: { id: matchId, status: { not: 'COMPLETED' } },
 			data: {
 				scoreTeamA: input.scoreTeamA,
 				scoreTeamB: input.scoreTeamB,
-				winnerId: input.winnerId,
-				status: isCompleting ? 'COMPLETED' : 'LIVE',
+				winnerId: match.isPickup ? undefined : input.winnerId,
+				winnerSide: match.isPickup ? input.winnerSide : undefined,
+				// A plain score update (no winner) must not disturb the match's current
+				// LIVE/PAUSED state or its elapsed-time bookkeeping — forcing status back to LIVE
+				// here used to silently un-pause a PAUSED match (clearing pausedAt without shifting
+				// startedAt the way resumeMatch() does), corrupting the displayed timer.
+				status: isCompleting ? 'COMPLETED' : match.status,
 				startedAt: match.startedAt ?? now,
-				pausedAt: null,
+				pausedAt: isCompleting ? null : match.pausedAt,
 				completedAt: isCompleting ? now : undefined,
 			},
 		});
@@ -118,7 +138,8 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 			// Lost a race to another concurrent writer — re-check whether it converged to the
 			// same result (idempotent) or a genuine conflict.
 			const raced = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
-			if (input.winnerId !== undefined && raced.winnerId !== input.winnerId) {
+			const racedWinner = match.isPickup ? raced.winnerSide : raced.winnerId;
+			if (incomingWinner !== undefined && racedWinner !== incomingWinner) {
 				throw new MatchResultConflictError(`Match ${matchId} was completed concurrently with a different winner`);
 			}
 			return raced;

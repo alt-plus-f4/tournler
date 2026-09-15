@@ -273,6 +273,11 @@ model Matches {
   winnerId Int?     @map("winner_id")
   winner   Cs2Team? @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: Cascade)
 
+  // Pickup-match winner: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
+  // Cs2Team id winnerId could reference. This records which side won instead. Mutually exclusive
+  // with winnerId in practice — non-pickup matches use winnerId, pickups use winnerSide.
+  winnerSide MatchSlot? @map("winner_side")
+
   scoreTeamA Int?     @map("score_team_a")
   scoreTeamB Int?     @map("score_team_b")
   matchDate  DateTime @map("match_date")

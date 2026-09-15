@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3 } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName } from '@/lib/tournaments/maps';
 
 interface TeamMember {
@@ -77,6 +77,15 @@ interface Participant {
 	user: { id: string; name: string | null; image: string | null };
 }
 
+interface PlayerStatRow {
+	userId: string;
+	teamId: number;
+	kills: number;
+	deaths: number;
+	assists: number;
+	user: { id: string; name: string | null; image: string | null };
+}
+
 interface Match {
 	id: number;
 	tournament: {
@@ -89,6 +98,8 @@ interface Match {
 	scoreTeamA: number | null;
 	scoreTeamB: number | null;
 	winner: Team | null;
+	// Pickup-match winner — see Matches.winnerSide. null for non-pickup matches (they use `winner`).
+	winnerSide: 'TEAM_A' | 'TEAM_B' | null;
 	matchDate: string;
 	status: 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 	startedAt: string | null;
@@ -101,6 +112,7 @@ interface Match {
 	bestOf: number | null;
 	maps: MatchMapRow[];
 	participants: Participant[];
+	playerStats: PlayerStatRow[];
 }
 
 const getMemberLevel = (member: TeamMember, index: number) => {
@@ -155,7 +167,9 @@ function useTicker(active: boolean) {
 }
 
 function MatchTimer({ match }: { match: Match }) {
-	useTicker(match.status === 'LIVE');
+	// Ticks the SCHEDULED countdown too, so "Starts in X" counts down smoothly instead of only
+	// jumping when the 4s SWR poll happens to land.
+	useTicker(match.status === 'LIVE' || match.status === 'SCHEDULED');
 
 	if (match.status === 'SCHEDULED') {
 		const msUntilStart = new Date(match.matchDate).getTime() - Date.now();
@@ -206,7 +220,9 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 	const [pendingAction, setPendingAction] = useState<string | null>(null);
 	const { toast } = useToast();
 
-	const canEndMatch = match.teamA !== null && match.teamB !== null && (match.status === 'LIVE' || match.status === 'PAUSED');
+	const canEndMatch = (match.isPickup || (match.teamA !== null && match.teamB !== null)) && (match.status === 'LIVE' || match.status === 'PAUSED');
+	const teamALabel = match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'Team A');
+	const teamBLabel = match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'Team B');
 
 	const patch = async (action: string, body: Record<string, unknown>) => {
 		setPendingAction(action);
@@ -236,7 +252,8 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 			toast({ variant: 'destructive', title: 'Pick a winner to end the match' });
 			return;
 		}
-		patch('end', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB), winnerId: Number(winnerId) });
+		const winnerField = match.isPickup ? { winnerSide: winnerId } : { winnerId: Number(winnerId) };
+		patch('end', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB), ...winnerField });
 	};
 
 	if (match.status === 'COMPLETED') return null;
@@ -270,13 +287,13 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 				<div className='grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end'>
 					<div className='space-y-1.5'>
 						<Label htmlFor='admin-score-a' className='text-neutral-400'>
-							{match.teamA?.name ?? 'Team A'} Score
+							{teamALabel} Score
 						</Label>
 						<Input id='admin-score-a' type='number' value={scoreA} onChange={(e) => setScoreA(e.target.value)} className='bg-black border-border text-white' />
 					</div>
 					<div className='space-y-1.5'>
 						<Label htmlFor='admin-score-b' className='text-neutral-400'>
-							{match.teamB?.name ?? 'Team B'} Score
+							{teamBLabel} Score
 						</Label>
 						<Input id='admin-score-b' type='number' value={scoreB} onChange={(e) => setScoreB(e.target.value)} className='bg-black border-border text-white' />
 					</div>
@@ -295,8 +312,17 @@ function AdminControls({ match, vetoComplete, onChanged }: { match: Match; vetoC
 								<SelectValue placeholder='Select the winner' />
 							</SelectTrigger>
 							<SelectContent>
-								{match.teamA && <SelectItem value={String(match.teamA.id)}>{match.teamA.name}</SelectItem>}
-								{match.teamB && <SelectItem value={String(match.teamB.id)}>{match.teamB.name}</SelectItem>}
+								{match.isPickup ? (
+									<>
+										<SelectItem value='TEAM_A'>{teamALabel}</SelectItem>
+										<SelectItem value='TEAM_B'>{teamBLabel}</SelectItem>
+									</>
+								) : (
+									<>
+										{match.teamA && <SelectItem value={String(match.teamA.id)}>{match.teamA.name}</SelectItem>}
+										{match.teamB && <SelectItem value={String(match.teamB.id)}>{match.teamB.name}</SelectItem>}
+									</>
+								)}
 							</SelectContent>
 						</Select>
 					</div>
@@ -645,6 +671,100 @@ function VetoPanel({ matchId, match, veto, currentUserId, onVetoUpdated }: { mat
 	);
 }
 
+const MAP_STATUS_LABEL: Record<string, string> = { SCHEDULED: 'Upcoming', LIVE: 'Live', PAUSED: 'Paused', COMPLETED: 'Final' };
+
+/**
+ * Per-map score breakdown (bo1/bo3 series, non-pickup only — pickups have no MatchMap rows, see
+ * finalizeVeto) plus the player K/D/A table fed by the game server's playerStats payload
+ * (upsertPlayerMatchStats). Renders nothing if there's simply no data yet (e.g. match hasn't
+ * started, or the server hasn't posted any stats).
+ */
+function Scoreboard({ match, teamALabel, teamBLabel }: { match: Match; teamALabel: string; teamBLabel: string }) {
+	const maps = match.maps;
+	const statsByTeam = new Map<number, PlayerStatRow[]>();
+	for (const stat of match.playerStats) {
+		const list = statsByTeam.get(stat.teamId) ?? [];
+		list.push(stat);
+		statsByTeam.set(stat.teamId, list);
+	}
+	const teamAStats = match.teamA ? (statsByTeam.get(match.teamA.id) ?? []) : [];
+	const teamBStats = match.teamB ? (statsByTeam.get(match.teamB.id) ?? []) : [];
+
+	if (maps.length === 0 && match.playerStats.length === 0) return null;
+
+	return (
+		<div className='bg-neutral-950 border border-border rounded-lg p-6 mb-12'>
+			<p className='text-xs font-bold uppercase tracking-widest text-neutral-500 mb-4 flex items-center gap-2'>
+				<BarChart3 className='w-4 h-4' /> Scoreboard
+			</p>
+
+			{maps.length > 0 && (
+				<div className='mb-6'>
+					<table className='w-full text-sm'>
+						<thead>
+							<tr className='text-neutral-500 text-xs uppercase tracking-wide text-left'>
+								<th className='pb-2 font-medium'>Map</th>
+								<th className='pb-2 font-medium text-right'>{teamALabel}</th>
+								<th className='pb-2 font-medium text-right'>{teamBLabel}</th>
+								<th className='pb-2 font-medium text-right'>Status</th>
+							</tr>
+						</thead>
+						<tbody className='divide-y divide-border'>
+							{maps.map((m) => (
+								<tr key={m.id}>
+									<td className='py-2 text-white font-medium'>{getMapDisplayName(m.mapName)}</td>
+									<td className={`py-2 text-right font-mono ${m.winnerId !== null && m.winnerId === match.teamA?.id ? 'text-white font-bold' : 'text-neutral-400'}`}>{m.scoreTeamA ?? '-'}</td>
+									<td className={`py-2 text-right font-mono ${m.winnerId !== null && m.winnerId === match.teamB?.id ? 'text-white font-bold' : 'text-neutral-400'}`}>{m.scoreTeamB ?? '-'}</td>
+									<td className='py-2 text-right text-neutral-500 text-xs uppercase'>{MAP_STATUS_LABEL[m.status] ?? m.status}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</div>
+			)}
+
+			{match.playerStats.length > 0 && (
+				<div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+					{[
+						{ label: teamALabel, stats: teamAStats },
+						{ label: teamBLabel, stats: teamBStats },
+					].map(({ label, stats }) => (
+						<div key={label}>
+							<p className='text-white font-semibold text-sm mb-2'>{label}</p>
+							{stats.length === 0 ? (
+								<p className='text-neutral-600 text-xs'>No stats yet</p>
+							) : (
+								<table className='w-full text-sm'>
+									<thead>
+										<tr className='text-neutral-500 text-xs uppercase tracking-wide text-left'>
+											<th className='pb-2 font-medium'>Player</th>
+											<th className='pb-2 font-medium text-right'>K</th>
+											<th className='pb-2 font-medium text-right'>D</th>
+											<th className='pb-2 font-medium text-right'>A</th>
+											<th className='pb-2 font-medium text-right'>K/D</th>
+										</tr>
+									</thead>
+									<tbody className='divide-y divide-border'>
+										{stats.map((s) => (
+											<tr key={s.userId}>
+												<td className='py-2 text-white'>{s.user.name || 'Unknown Player'}</td>
+												<td className='py-2 text-right font-mono text-neutral-300'>{s.kills}</td>
+												<td className='py-2 text-right font-mono text-neutral-300'>{s.deaths}</td>
+												<td className='py-2 text-right font-mono text-neutral-300'>{s.assists}</td>
+												<td className='py-2 text-right font-mono text-neutral-300'>{(s.deaths > 0 ? s.kills / s.deaths : s.kills).toFixed(2)}</td>
+											</tr>
+										))}
+									</tbody>
+								</table>
+							)}
+						</div>
+					))}
+				</div>
+			)}
+		</div>
+	);
+}
+
 const fetcher = async (url: string) => {
 	const response = await fetch(url);
 	if (!response.ok) throw new Error('Failed to fetch match');
@@ -760,6 +880,13 @@ export default function MatchPage() {
 	// first entry for a side is that side's "captain" — the only one allowed to rename it.
 	const canRenameSideA = canJoinPickup && sideAParticipants[0]?.userId === currentUserId;
 	const canRenameSideB = canJoinPickup && sideBParticipants[0]?.userId === currentUserId;
+	const teamALabel = match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'Team A');
+	const teamBLabel = match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'Team B');
+	const winnerName = match.isPickup ? (match.winnerSide === 'TEAM_A' ? teamALabel : match.winnerSide === 'TEAM_B' ? teamBLabel : null) : (match.winner?.name ?? null);
+	// The map currently in progress (maps are pre-sorted by order) — its score is kept live by
+	// MatchZy's round_end webhook (see updateLiveScore). Pickups have no MatchMap rows; their
+	// live score is the aggregate scoreTeamA/scoreTeamB shown directly on the big score digits.
+	const currentMap = match.maps.find((m) => m.status !== 'COMPLETED');
 	const connectAddress = match.gameServer ? `${match.gameServer.connectIp}:${match.gameServer.port}` : null;
 	const connectCommand = connectAddress ? `connect ${connectAddress}${match.gameServer?.password ? `; password ${match.gameServer.password}` : ''}` : null;
 	const steamConnectUrl = connectCommand ? `steam://run/730//+${encodeURIComponent(connectCommand)}` : null;
@@ -866,6 +993,13 @@ export default function MatchPage() {
 								</div>
 								<p className='text-neutral-500 text-sm'>{match.tournament.name}</p>
 							</div>
+
+							{!match.isPickup && match.status === 'LIVE' && currentMap && (
+								<div className='mb-4 flex items-center gap-2 text-white text-sm font-mono bg-black border border-border rounded px-3 py-1.5'>
+									<span className='w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse' />
+									{getMapDisplayName(currentMap.mapName)} &middot; {currentMap.scoreTeamA ?? 0}-{currentMap.scoreTeamB ?? 0}
+								</div>
+							)}
 
 							{match.gameServer && connectAddress ? (
 								<div className='w-full border border-border rounded-md p-4 mb-4 space-y-3'>
@@ -1029,13 +1163,13 @@ export default function MatchPage() {
 				</div>
 
 				{/* Winner Card */}
-				{match.status === 'COMPLETED' && match.winner && (
+				{match.status === 'COMPLETED' && winnerName && (
 					<div className='bg-black border-2 border-white rounded-lg overflow-hidden mb-12'>
 						<div className='px-8 py-12 text-center'>
 							<div className='inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-6'>
 								<Trophy className='w-8 h-8 text-black' />
 							</div>
-							<h2 className='text-4xl font-black uppercase tracking-wider mb-4'>{match.winner?.name} Wins!</h2>
+							<h2 className='text-4xl font-black uppercase tracking-wider mb-4'>{winnerName} Wins!</h2>
 							<div className='flex items-center justify-center gap-6'>
 								<div className='text-center'>
 									<p className='text-neutral-400 text-xs uppercase tracking-widest mb-1'>Final Score</p>
@@ -1047,6 +1181,8 @@ export default function MatchPage() {
 						</div>
 					</div>
 				)}
+
+				<Scoreboard match={match} teamALabel={teamALabel} teamBLabel={teamBLabel} />
 			</div>
 		</div>
 	);

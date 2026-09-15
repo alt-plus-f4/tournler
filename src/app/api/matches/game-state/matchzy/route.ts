@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { safeEqual } from '@/lib/helpers/safe-equal';
 import { MatchResultConflictError } from '@/lib/tournaments/bracket-advancement';
 import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
+import { updateLiveScore } from '@/lib/tournaments/live-score';
 
 /**
  * POST /api/matches/game-state/matchzy
@@ -26,6 +27,10 @@ import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
  *   - `map_number` (`MapResultEvent.MapNumber`) is `matchConfig.CurrentMapNumber`, which is
  *     already 0-indexed (used directly as the `Maplist` array index in MatchZy) — same indexing
  *     as `MatchMap.order`, so no +/-1 adjustment belongs here.
+ *   - `round_end` (`MatchZyRoundEndedEvent`) fires after every round with the same `team1`/
+ *     `team2` `.score` shape as `map_result` — this is the live, in-progress round score, routed
+ *     through `updateLiveScore()` (not `applyGameStateUpdate()`) since it must never touch
+ *     status/winner/completion, only the score display.
  * There is also a known reliability caveat with `matchzy_remote_log_*` on some setups (see
  * GitHub issue shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
  * exists as a manual fallback, not because this adapter is expected to be unreliable by design.
@@ -44,8 +49,9 @@ export async function POST(request: Request) {
 		}
 
 		const event = (body as Record<string, unknown>).event;
-		if (event !== 'map_result' && event !== 'series_end') {
-			// round_end and other MatchZy event types carry nothing this pipeline needs.
+		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end') {
+			// Other MatchZy event types (player_connect, series_start, ...) carry nothing this
+			// pipeline needs.
 			return NextResponse.json({ success: true, ignored: typeof event === 'string' ? event : 'unknown' });
 		}
 
@@ -59,24 +65,44 @@ export async function POST(request: Request) {
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
 		const data = body as Record<string, any>;
+
+		// Pickup matches skip map veto (see startMatch()) and so have no MatchMap rows for
+		// recordMapResult/updateLiveScore to write into — MatchZy still numbers maps internally
+		// even for a 1-map pickup, so mapOrder must be forced off for them (map_result would
+		// otherwise 404, and a live score update would silently no-op against a missing row).
+		const mapNumberRaw = data.map_number;
+		const mapOrder = !match.isPickup && typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
+
+		if (event === 'round_end') {
+			// Live, in-progress round score — team1/team2.score here is the same shape as
+			// map_result's (see the field-mapping comment above), just fired every round instead
+			// of once at the end. Deliberately not run through applyGameStateUpdate: this must
+			// never affect status/winner/completion, only the live score display.
+			const teamAScore = Number(data.team1?.score ?? 0);
+			const teamBScore = Number(data.team2?.score ?? 0);
+			await updateLiveScore(matchId, mapOrder, teamAScore, teamBScore);
+			return NextResponse.json({ success: true });
+		}
+
 		// series_end reports series-level scores flat on the event; map_result reports that map's
 		// score nested under team1/team2 (see the field-mapping comment above).
 		const teamAScore = Number(event === 'series_end' ? (data.team1_series_score ?? 0) : (data.team1?.score ?? 0));
 		const teamBScore = Number(event === 'series_end' ? (data.team2_series_score ?? 0) : (data.team2?.score ?? 0));
 		const winnerTeam = data.winner?.team as 'team1' | 'team2' | undefined;
-		const winnerId = winnerTeam === 'team1' ? (match.teamAId ?? undefined) : winnerTeam === 'team2' ? (match.teamBId ?? undefined) : undefined;
-
-		// MatchZy's map_number is already 0-indexed, same as MatchMap.order — no adjustment needed.
-		const mapNumberRaw = data.map_number;
-		const mapOrder = event === 'map_result' && typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
+		// Pickup matches have no Cs2Team to use as winnerId (see recordMatchResult) — use
+		// winnerSide instead. Non-pickup matches use winnerId, resolved via the veto-assigned teams.
+		const winnerId = !match.isPickup && winnerTeam ? ((winnerTeam === 'team1' ? match.teamAId : match.teamBId) ?? undefined) : undefined;
+		const winnerSide = match.isPickup && winnerTeam ? (winnerTeam === 'team1' ? 'TEAM_A' : 'TEAM_B') : undefined;
+		const isCompleted = winnerId !== undefined || winnerSide !== undefined;
 
 		const updated = await applyGameStateUpdate({
 			matchId,
-			mapOrder,
+			mapOrder: event === 'map_result' ? mapOrder : undefined,
 			teamAScore,
 			teamBScore,
-			isCompleted: winnerId !== undefined,
+			isCompleted,
 			winnerId,
+			winnerSide,
 		});
 
 		return NextResponse.json({ success: true, match: updated });

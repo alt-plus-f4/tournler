@@ -1,3 +1,4 @@
+import { MatchSlot } from '@prisma/client';
 import { db } from '@/lib/db';
 import { recordMatchResult } from './bracket-advancement';
 import { recordMapResult } from './map-advancement';
@@ -6,12 +7,16 @@ import { upsertPlayerMatchStats, PlayerStatInput } from './player-stats';
 export interface GameStateUpdate {
 	matchId: number;
 	// Present for bo1/bo3 series matches with per-map scoring (MatchMap.order); absent for
-	// pickup/legacy matches that still write the aggregate Matches score directly.
+	// pickup/legacy matches (which have no MatchMap rows — see finalizeVeto) that still write the
+	// aggregate Matches score directly.
 	mapOrder?: number;
 	teamAScore: number;
 	teamBScore: number;
 	isCompleted: boolean;
+	// Non-pickup matches only — see recordMatchResult's MatchResultInput.
 	winnerId?: number;
+	// Pickup matches only — which side won (pickups have no Cs2Team to use as winnerId).
+	winnerSide?: MatchSlot;
 	playerStats?: PlayerStatInput[];
 }
 
@@ -31,6 +36,7 @@ export function isValidGameStateUpdate(payload: unknown): payload is GameStateUp
 	}
 	if (data.mapOrder !== undefined && typeof data.mapOrder !== 'number') return false;
 	if (data.winnerId !== undefined && typeof data.winnerId !== 'number') return false;
+	if (data.winnerSide !== undefined && data.winnerSide !== 'TEAM_A' && data.winnerSide !== 'TEAM_B') return false;
 	if (data.playerStats !== undefined && !isValidPlayerStats(data.playerStats)) return false;
 	return true;
 }
@@ -57,6 +63,7 @@ export async function applyGameStateUpdate(update: GameStateUpdate) {
 			scoreTeamA: update.teamAScore,
 			scoreTeamB: update.teamBScore,
 			winnerId: update.isCompleted ? update.winnerId : undefined,
+			winnerSide: update.isCompleted ? update.winnerSide : undefined,
 		});
 	}
 
