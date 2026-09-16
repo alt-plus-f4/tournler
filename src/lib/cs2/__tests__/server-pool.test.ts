@@ -17,7 +17,16 @@ describe('getServerPool', () => {
 
 		const pool = getServerPool();
 		expect(pool).toHaveLength(2);
-		expect(pool[0]).toEqual({ id: '01', ip: '1.2.3.4', port: 27015, rconHost: '1.2.3.4', rconPort: 27016, rconPassword: 'pw1' });
+		expect(pool[0]).toEqual({
+			id: '01',
+			ip: '1.2.3.4',
+			port: 27015,
+			rconHost: '1.2.3.4',
+			rconPort: 27016,
+			rconPassword: 'pw1',
+			containerName: 'cs2-dedicated-01',
+			startMapEnvVar: 'CS2_SERVER_1_STARTMAP',
+		});
 		expect(pool[1].id).toBe('02');
 	});
 
@@ -42,7 +51,18 @@ describe('getServerPool', () => {
 		process.env.CS2_RCON_PASSWORD = 'secret';
 
 		const pool = getServerPool();
-		expect(pool).toEqual([{ id: 'default', ip: 'example.com', port: 27015, rconHost: 'example.com', rconPort: 27016, rconPassword: 'secret' }]);
+		expect(pool).toEqual([
+			{
+				id: 'default',
+				ip: 'example.com',
+				port: 27015,
+				rconHost: 'example.com',
+				rconPort: 27016,
+				rconPassword: 'secret',
+				containerName: 'cs2-dedicated-01',
+				startMapEnvVar: 'CS2_SERVER_1_STARTMAP',
+			},
+		]);
 	});
 
 	it('returns an empty pool when nothing is configured', () => {

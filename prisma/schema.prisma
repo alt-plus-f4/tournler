@@ -63,8 +63,26 @@ enum BracketSlot {
 enum MatchSlot {
   TEAM_A
   TEAM_B
+  // Captain-draft pickups only (see PickupMode.CAPTAIN_DRAFT): a joined player who hasn't been
+  // drafted onto a side yet. Never used outside a draft-mode pickup's join/draft flow — every
+  // other MatchSlot usage (veto turn order, stat rows, map/match winners) only ever sees
+  // TEAM_A/TEAM_B, since a match can't start until the draft (like veto) is complete and every
+  // participant has a real side.
+  POOL
 
   @@map("match_slot")
+}
+
+enum PickupMode {
+  // Today's behavior: any signed-in player joins Side A or Side B directly. Default for all
+  // existing/new pickups unless CAPTAIN_DRAFT is chosen at creation.
+  OPEN
+  // Old-FPL-style captain draft: the first 2 joiners become captains (one per side), the next 8
+  // join a shared pool, then captains alternately draft 4 players each onto their side (see
+  // src/lib/tournaments/draft.ts) until the pool is empty and every side has 5.
+  CAPTAIN_DRAFT
+
+  @@map("pickup_mode")
 }
 
 enum MapActionType {
@@ -134,6 +152,7 @@ model User {
   badges               UserBadge[]
   newsPosts            NewsPost[]
   matchParticipations  MatchParticipant[]
+  draftPicks           MatchDraftPick[]
 
   accounts Account[]
   sessions Session[]
@@ -290,6 +309,8 @@ model Matches {
   position    Int         @default(0) @map("position")
   bracketSlot BracketSlot @default(WINNERS) @map("bracket_slot")
   isPickup    Boolean     @default(false) @map("is_pickup")
+  // Only meaningful when isPickup is true (see PickupMode) — null for non-pickup matches.
+  pickupMode PickupMode? @map("pickup_mode")
 
   // Pickup-lobby-only display names ("Side A"/"Side B" otherwise) — set by that side's captain
   // (the first player to join it) via PATCH /api/matches/[matchId]/team-name. Unused for
@@ -300,6 +321,11 @@ model Matches {
   startedAt   DateTime? @map("started_at")
   pausedAt    DateTime? @map("paused_at")
   completedAt DateTime? @map("completed_at")
+
+  // Fallback for matches with no MatchMap rows (pickups, and any bo1 match created without a
+  // veto-generated map — see finalizeVeto). Series matches with real MatchMap rows store the
+  // demo per-map on MatchMap.demoUrl instead, since each map in a bo3 gets its own demo.
+  demoUrl String? @map("demo_url")
 
   // Plain (non-relational) self-pointers: explicit bracket-feeder wiring computed once at
   // generation time. Deliberately NOT modeled as Prisma @relation fields — self-relation
@@ -315,6 +341,7 @@ model Matches {
   gameServer   GameServer?
   playerStats  PlayerMatchStat[]
   participants MatchParticipant[]
+  draftPicks   MatchDraftPick[]
   mapActions   MatchMapAction[]
   maps         MatchMap[]
 
@@ -368,9 +395,14 @@ model MatchMapAction {
   matchId Int     @map("match_id")
   match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
-  // Null only for the system-generated DECIDER action (the last remaining map, not chosen by either team).
+  // Null only for the system-generated DECIDER action (the last remaining map, not chosen by either team) — or for any pickup-match action, which uses `side` instead (pickups have no Cs2Team).
   teamId Int?     @map("team_id")
   team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  // Pickup-match veto actor: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
+  // Cs2Team id `teamId` could reference. Null for non-pickup actions (which use `teamId`) and for
+  // the system-generated DECIDER action either way. Mirrors PlayerMatchStat's teamId/side split.
+  side MatchSlot? @map("side")
 
   action  MapActionType @map("action")
   mapName String        @map("map_name")
@@ -397,10 +429,19 @@ model MatchMap {
   winnerId   Int?     @map("winner_id")
   winner     Cs2Team? @relation(fields: [winnerId], references: [id], onDelete: Cascade)
 
+  // Pickup-match map winner: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
+  // Cs2Team id `winnerId` could reference. Null for non-pickup maps (which use `winnerId`).
+  // Mirrors Matches.winnerSide/PlayerMatchStat.side/MatchMapAction.side.
+  winnerSide MatchSlot? @map("winner_side")
+
   status MatchStatus @default(SCHEDULED) @map("status")
 
   startedAt   DateTime? @map("started_at")
   completedAt DateTime? @map("completed_at")
+
+  // Set once MatchZy's demo upload for this map arrives (see POST /api/matches/[matchId]/demo) —
+  // one demo per map in a bo1/bo3 series.
+  demoUrl String? @map("demo_url")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -420,8 +461,12 @@ model PlayerMatchStat {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  teamId Int     @map("team_id")
-  team   Cs2Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  // Real (non-pickup) matches use teamId, a real Cs2Team. Pickup matches have no Cs2Team (sides
+  // are MatchParticipant rows, not teams — see Matches.winnerSide for the same distinction), so
+  // they record which side the player was on instead. Mutually exclusive in practice.
+  teamId Int?     @map("team_id")
+  team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  side   MatchSlot? @map("side")
 
   kills   Int @default(0) @map("kills")
   deaths  Int @default(0) @map("deaths")
@@ -520,6 +565,11 @@ model MatchParticipant {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   side MatchSlot @map("side")
+  // CAPTAIN_DRAFT pickups only (see PickupMode) — the first joiner onto each side, before any
+  // picks happen. Always false for OPEN pickups and non-pickup matches. Kept as an explicit flag
+  // rather than inferred from join order, since a drafted pool player's `side` also becomes
+  // TEAM_A/TEAM_B once picked, at which point join order alone can't tell captain from pick.
+  isCaptain Boolean @default(false) @map("is_captain")
 
   joinedAt DateTime @default(now()) @map("joined_at")
 
@@ -527,4 +577,27 @@ model MatchParticipant {
   @@index([matchId])
   @@index([userId])
   @@map("match_participants")
+}
+
+/** One captain's pick in a CAPTAIN_DRAFT pickup (see PickupMode) — mirrors MatchMapAction's role for veto: an ordered, append-only history the draft's current-turn/completion state is derived from. */
+model MatchDraftPick {
+  id Int @id @default(autoincrement()) @map("id")
+
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // Which captain made this pick.
+  captainSide MatchSlot @map("captain_side")
+  // Which pool player got drafted onto captainSide.
+  pickedUserId String @map("picked_user_id")
+  pickedUser   User   @relation(fields: [pickedUserId], references: [id], onDelete: Cascade)
+
+  order Int @map("order")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([matchId, order])
+  @@unique([matchId, pickedUserId])
+  @@index([matchId])
+  @@map("match_draft_picks")
 }

@@ -35,6 +35,8 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 	const [teamBId, setTeamBId] = useState('');
 	const [matchDate, setMatchDate] = useState(defaultMatchDate());
 	const [isPickup, setIsPickup] = useState(false);
+	const [bestOf, setBestOf] = useState<'1' | '3'>('1');
+	const [pickupMode, setPickupMode] = useState<'OPEN' | 'CAPTAIN_DRAFT'>('OPEN');
 	const [isSaving, setIsSaving] = useState(false);
 	const { toast } = useToast();
 
@@ -45,6 +47,8 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 		setTeamBId('');
 		setMatchDate(defaultMatchDate());
 		setIsPickup(false);
+		setBestOf('1');
+		setPickupMode('OPEN');
 
 		fetch('/api/tournaments?limit=100')
 			.then((r) => r.json())
@@ -71,7 +75,7 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 		setIsSaving(true);
 		try {
 			const body = isPickup
-				? { isPickup: true, matchDate: new Date(matchDate).toISOString() }
+				? { isPickup: true, matchDate: new Date(matchDate).toISOString(), bestOf: Number(bestOf), pickupMode }
 				: {
 						tournamentId: Number(tournamentId),
 						teamAId: Number(teamAId),
@@ -110,10 +114,40 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 					<label htmlFor='create-match-pickup' className='flex items-start gap-3 rounded-lg border border-white/10 p-3 cursor-pointer'>
 						<Checkbox id='create-match-pickup' checked={isPickup} onCheckedChange={(checked) => setIsPickup(checked === true)} className='mt-0.5' />
 						<span className='text-sm'>
-							Open pickup match
-							<span className='block text-xs text-muted-foreground'>No tournament, no pre-formed teams — any signed-in player can join Side A or Side B directly.</span>
+							Pickup match
+							<span className='block text-xs text-muted-foreground'>No tournament, no pre-formed teams.</span>
 						</span>
 					</label>
+
+					{isPickup && (
+						<>
+							<div className='space-y-2'>
+								<Label htmlFor='create-match-bestof'>Best of</Label>
+								<Select value={bestOf} onValueChange={(v) => setBestOf(v as '1' | '3')}>
+									<SelectTrigger id='create-match-bestof'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='1'>Bo1</SelectItem>
+										<SelectItem value='3'>Bo3</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div className='space-y-2'>
+								<Label htmlFor='create-match-mode'>Roster mode</Label>
+								<Select value={pickupMode} onValueChange={(v) => setPickupMode(v as 'OPEN' | 'CAPTAIN_DRAFT')}>
+									<SelectTrigger id='create-match-mode'>
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='OPEN'>Open join — anyone picks Side A or B directly</SelectItem>
+										<SelectItem value='CAPTAIN_DRAFT'>Captain draft — first 2 joiners captain, draft 4 each from an 8-player pool</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+						</>
+					)}
 
 					{!isPickup && (
 						<>

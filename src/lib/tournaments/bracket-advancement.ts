@@ -3,7 +3,8 @@ import { Matches, MatchSlot, Prisma } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
-import { pushMatchConfigToServer, pushRconCommand } from '@/lib/cs2/provisioning';
+import { getDraftState } from './draft';
+import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
 
 type Tx = Prisma.TransactionClient;
 
@@ -79,7 +80,9 @@ async function propagateWinner(tx: Tx, match: Matches) {
  * already-completed match throws `MatchResultConflictError`.
  */
 export async function recordMatchResult(matchId: number, input: MatchResultInput): Promise<Matches> {
-	return db.$transaction(async (tx) => {
+	let justCompleted = false;
+
+	const result = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 
 		// Pickup matches never have real teamAId/teamBId (sides are MatchParticipant rows, not
@@ -150,10 +153,24 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		if (updated.status === 'COMPLETED') {
 			await propagateWinner(tx, updated);
 			await finalizeTournamentIfComplete(tx, updated.tournamentId);
+			justCompleted = true;
 		}
 
 		return updated;
 	});
+
+	// Outside the transaction — RCON is a network side effect, and must run only once the DB write
+	// actually committed. Only for the call that just flipped the match to COMPLETED, not a repeat/
+	// idempotent call on an already-completed match (see this function's own idempotency contract).
+	if (justCompleted) {
+		try {
+			await releaseGameServerAfterMatch(matchId);
+		} catch (error) {
+			console.error(`Failed to release game server after match ${matchId} completed:`, error);
+		}
+	}
+
+	return result;
 }
 
 /** Thrown when a lifecycle action (start/pause/resume) doesn't apply to the match's current status. */
@@ -198,7 +215,7 @@ async function pushRconAfterCommit(matchId: number, match: Matches, command: str
 
 export async function startMatch(matchId: number): Promise<MatchActionResult> {
 	const updated = await db.$transaction(async (tx) => {
-		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true } });
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true, participants: true, draftPicks: true } });
 		if (match.status !== 'SCHEDULED') {
 			throw new MatchLifecycleError(`Match ${matchId} is not scheduled (current status: ${match.status})`);
 		}
@@ -206,12 +223,20 @@ export async function startMatch(matchId: number): Promise<MatchActionResult> {
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new MatchLifecycleError('Cannot start a match whose bracket slots are not both filled yet');
 		}
-		// Pickup matches have no team-vs-team veto; every other match must finish map veto first.
-		if (!match.isPickup) {
-			const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
-			if (vetoState.phase !== 'COMPLETE') {
-				throw new MatchLifecycleError('Map veto is not complete');
+		// Captain-draft pickups must finish drafting the pool onto sides before veto/start — an
+		// undrafted POOL player has no side to act on behalf of in veto, and no side to load onto
+		// the real server's roster either.
+		if (match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT') {
+			const draftState = getDraftState(match.participants, match.draftPicks);
+			if (draftState.phase !== 'COMPLETE') {
+				throw new MatchLifecycleError('Captain draft is not complete');
 			}
+		}
+		// Both pickup and bracket matches must finish map veto before going live — pickups veto by
+		// side instead of by Cs2Team (see getVetoState), but the requirement is the same either way.
+		const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
+		if (vetoState.phase !== 'COMPLETE') {
+			throw new MatchLifecycleError('Map veto is not complete');
 		}
 		const updatedMatch = await tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date() } });
 		try {
@@ -289,6 +314,23 @@ export async function resumeMatch(matchId: number): Promise<MatchActionResult> {
 		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: newStartedAt, pausedAt: null } });
 	});
 	return pushRconAfterCommit(matchId, match, 'css_forceunpause');
+}
+
+/**
+ * Skips the real server's in-progress ready-up wait (MatchZy holds warmup until enough players
+ * on both sides type `.ready`/`!ready`) — for when players won't or can't ready up themselves,
+ * e.g. testing, or a no-show. Purely an RCON nudge to the already-`LIVE` server (the app already
+ * flipped to LIVE the moment Start was clicked, well before MatchZy's own ready-up phase even
+ * begins) — no app-side state changes of its own, so no DB transaction or MatchActionResult
+ * `match` update is meaningful here beyond what's already LIVE.
+ */
+export async function forceStartMatch(matchId: number): Promise<{ configPushError: string | null }> {
+	const match = await db.matches.findUniqueOrThrow({ where: { id: matchId } });
+	if (match.status !== 'LIVE') {
+		throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
+	}
+	const { configPushError } = await pushRconAfterCommit(matchId, match, 'css_forcestart');
+	return { configPushError };
 }
 
 /**

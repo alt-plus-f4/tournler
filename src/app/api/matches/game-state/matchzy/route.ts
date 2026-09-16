@@ -74,12 +74,11 @@ export async function POST(request: Request) {
 
 		const data = body as Record<string, any>;
 
-		// Pickup matches skip map veto (see startMatch()) and so have no MatchMap rows for
-		// recordMapResult/updateLiveScore to write into — MatchZy still numbers maps internally
-		// even for a 1-map pickup, so mapOrder must be forced off for them (map_result would
-		// otherwise 404, and a live score update would silently no-op against a missing row).
+		// Every match (pickup or bracket) now goes through veto and gets a real MatchMap row per
+		// confirmed map (see finalizeVeto) — pickups aren't special-cased here anymore. MatchZy's
+		// own map_number is already 0-indexed, same as MatchMap.order, for both.
 		const mapNumberRaw = data.map_number;
-		const mapOrder = !match.isPickup && typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
+		const mapOrder = typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
 
 		if (event === 'round_end') {
 			// Live, in-progress round score — team1/team2.score here is the same shape as

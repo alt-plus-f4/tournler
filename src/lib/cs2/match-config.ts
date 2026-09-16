@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { normalizeBestOf, getConfirmedMaps } from '@/lib/tournaments/veto';
+import { gameServerCallbackUrl } from './callback-url';
 
 interface RosterUser {
 	id: string;
@@ -7,6 +8,13 @@ interface RosterUser {
 	steam: { steamId: string } | null;
 }
 
+// team1/team2.players below isn't just a display roster — MatchZy enforces it as a hard whitelist
+// the moment a match JSON is loaded: any connecting SteamID that isn't listed gets kicked
+// immediately ("NOT ALLOWED!"), and per shobhit-pathak/MatchZy#372 this is mandatory rather than
+// something `matchzy_kick_invalid_players`/`matchzy_whitelist_enabled_default` can turn off once a
+// match is active. So restricting the server to "only SteamIDs that joined through the match
+// page" needs no RCON-side enforcement of our own — it falls out of populating this correctly
+// (pickup participants for pickups, real team members otherwise), which playersOf already does.
 function playersOf(users: RosterUser[]): Record<string, string> {
 	return Object.fromEntries(users.filter((u) => u.steam !== null).map((u) => [u.steam!.steamId, u.name ?? u.id]));
 }
@@ -46,8 +54,8 @@ export async function buildMatchConfig(matchId: number, options: BuildMatchConfi
 	}
 
 	const bestOf = normalizeBestOf(match.bestOf ?? match.tournament.bestOf);
-	// Pickup matches have no map veto (see startMatch()); everything else must have completed
-	// veto before this is ever called, but fall back to a single default map defensively.
+	// Every match (pickup or bracket) must have completed veto before this is ever called (see
+	// startMatch()) — the CS2_DEFAULT_MAP fallback below is just defensive, not the normal path.
 	const confirmedMaps = getConfirmedMaps(match);
 	const maplist = confirmedMaps.length > 0 ? confirmedMaps : [process.env.CS2_DEFAULT_MAP || 'de_dust2'];
 
@@ -56,14 +64,14 @@ export async function buildMatchConfig(matchId: number, options: BuildMatchConfi
 	const team1Players = match.isPickup ? playersOf(match.participants.filter((p) => p.side === 'TEAM_A').map((p) => p.user)) : playersOf(match.teamA?.members ?? []);
 	const team2Players = match.isPickup ? playersOf(match.participants.filter((p) => p.side === 'TEAM_B').map((p) => p.user)) : playersOf(match.teamB?.members ?? []);
 
-	const appBaseUrl = process.env.NEXTAUTH_URL;
+	const appBaseUrl = gameServerCallbackUrl();
 	const gameServerToken = process.env.GAME_SERVER_TOKEN;
 
 	return {
 		matchid: String(match.id),
 		team1: { name: team1Name, players: team1Players },
 		team2: { name: team2Name, players: team2Players },
-		num_maps: match.isPickup ? 1 : bestOf,
+		num_maps: bestOf,
 		maplist,
 		cvars: {
 			sv_password: match.gameServer.password,

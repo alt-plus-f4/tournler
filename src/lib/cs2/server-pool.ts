@@ -5,6 +5,10 @@ export interface Cs2ServerConfig {
 	rconHost: string;
 	rconPort: number;
 	rconPassword: string;
+	/** This server's `docker compose` service/container name — see `cs-docker/pool-controller/`. */
+	containerName: string;
+	/** The `CS2_SERVER_<N>_STARTMAP` env var `pool-controller` sets before recreating this specific container — see `docker-compose.yml`. */
+	startMapEnvVar: string;
 }
 
 interface RawPoolEntry {
@@ -14,6 +18,8 @@ interface RawPoolEntry {
 	rconHost?: string;
 	rconPort?: number;
 	rconPassword: string;
+	containerName?: string;
+	startMapEnvVar?: string;
 }
 
 /**
@@ -33,13 +39,15 @@ export function getServerPool(): Cs2ServerConfig[] {
 		} catch {
 			throw new Error('CS2_SERVER_POOL is not valid JSON');
 		}
-		return parsed.map((entry) => ({
+		return parsed.map((entry, index) => ({
 			id: entry.id,
 			ip: entry.ip,
 			port: entry.port,
 			rconHost: entry.rconHost ?? entry.ip,
 			rconPort: entry.rconPort ?? entry.port + 1,
 			rconPassword: entry.rconPassword,
+			containerName: entry.containerName ?? `cs2-dedicated-${String(index + 1).padStart(2, '0')}`,
+			startMapEnvVar: entry.startMapEnvVar ?? `CS2_SERVER_${index + 1}_STARTMAP`,
 		}));
 	}
 
@@ -50,7 +58,7 @@ export function getServerPool(): Cs2ServerConfig[] {
 	const rconPassword = process.env.CS2_RCON_PASSWORD;
 	if (!rconPassword) return [];
 
-	return [{ id: 'default', ip, port, rconHost, rconPort, rconPassword }];
+	return [{ id: 'default', ip, port, rconHost, rconPort, rconPassword, containerName: 'cs2-dedicated-01', startMapEnvVar: 'CS2_SERVER_1_STARTMAP' }];
 }
 
 /** Finds the pool entry matching a `GameServer` row's `connectIp`/`port` (the values recorded at allocation time). */

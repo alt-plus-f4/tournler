@@ -11,7 +11,6 @@ import TeamActions from '@/components/TeamActions';
 import { UsersSearch } from '@/components/UsersSearch';
 import fetchTeam from '@/lib/helpers/fetch-team';
 import { getAuthSession } from '@/lib/auth';
-import { fetchUsersNotInTheTeam } from '@/lib/helpers/fetch-users-not-in-team';
 import { LiaDoorOpenSolid } from 'react-icons/lia';
 import fetchInvitedPlayers from '@/lib/helpers/fetch-invited-players';
 import { notFound } from 'next/navigation';
@@ -37,7 +36,6 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 
 	const isUserTeamCaptain = team?.capitan.id === user?.id;
 	const isUserMember = team?.members.some((member: { id: string | undefined }) => member.id === user?.id);
-	const allUsers = await fetchUsersNotInTheTeam(teamId);
 	const invitedPlayers = await fetchInvitedPlayers(teamId);
 
 	return (
@@ -64,7 +62,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 
 						{isUserTeamCaptain && team.members.length < 5 && (
 							<Suspense fallback={null}>
-								<UsersSearch teamName={team.name} teamId={team.id} allUsers={allUsers} invitedPlayers={invitedPlayers}>
+								<UsersSearch teamName={team.name} teamId={team.id} invitedPlayers={invitedPlayers}>
 									<Button>
 										<FaUserPlus className='h-4 w-4' />
 										<p className='hidden md:block'>Invite Players</p>

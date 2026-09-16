@@ -43,7 +43,7 @@ export async function ensureGameServer(tx: Db, matchId: number): Promise<{ gameS
 	const freeSlot = pool.find((s) => !claimedKeys.has(`${s.ip}:${s.port}`));
 
 	if (!freeSlot) {
-		throw new NoAvailableGameServerError(`All ${pool.length} CS2 server(s) in the pool are currently in use`);
+		throw new NoAvailableGameServerError(`All ${pool.length} CS2 server(s) in the pool are currently in use — wait for one to free up and try again.`);
 	}
 
 	const password = randomBytes(9).toString('base64url');

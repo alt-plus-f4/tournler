@@ -4,50 +4,75 @@
 # `_N_` env var index (and picking new, non-colliding host ports), then add the matching entry
 # to CS2_SERVER_POOL in the app's own .env.
 services:
-    cs2-dedicated-01:
-        image: joedwards32/cs2
-        container_name: cs2-dedicated-01
-        environment:
-            - SRCDS_TOKEN=${SRCDS_TOKEN}
-            - CS2_SERVERNAME=${CS2_SERVER_1_NAME:-[Tournler] CS2 Dedicated Server 01}
-            - CS2_LAN=0
-            - CS2_PORT=${CS2_SERVER_1_PORT:-27015}
-            - CS2_RCON_PORT=${CS2_SERVER_1_RCON_PORT:-27016}
-            - CS2_PW=${CS2_SERVER_1_PW}
-            - CS2_RCONPW=${CS2_SERVER_1_RCONPW}
-            - TV_PW=${CS2_SERVER_1_TV_PW}
-            - TV_ENABLE=1
-            - CS2_MAPGROUP=${CS2_MAPGROUP:-}
-        volumes:
-            - ./data/cs2-dedicated-01:/home/steam/cs2-dedicated
-        ports:
-            - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/tcp'
-            - '${CS2_SERVER_1_RCON_PORT:-27016}:${CS2_SERVER_1_RCON_PORT:-27016}/tcp'
-            - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/udp'
-            - '${CS2_SERVER_1_TV_PORT:-27020}:${CS2_SERVER_1_TV_PORT:-27020}/udp'
-        stdin_open: true
-        tty: true
+  cs2-dedicated-01:
+    image: joedwards32/cs2
+    container_name: cs2-dedicated-01
+    environment:
+      - SRCDS_TOKEN=${SRCDS_TOKEN}
+      - CS2_SERVERNAME=${CS2_SERVER_1_NAME:-[Tournler] CS2 Dedicated Server 01}
+      - CS2_LAN=0
+      - CS2_PORT=${CS2_SERVER_1_PORT:-27015}
+      - CS2_RCON_PORT=${CS2_SERVER_1_RCON_PORT:-27016}
+      - CS2_PW=${CS2_SERVER_1_PW}
+      - CS2_RCONPW=${CS2_SERVER_1_RCONPW}
+      - TV_PW=${CS2_SERVER_1_TV_PW}
+      - TV_ENABLE=1
+      - CS2_MAPGROUP=${CS2_MAPGROUP:-}
+      # The map this container boots directly onto (`+map ...` at launch) — see
+      # pool-controller/index.js and cs-docker/README.md's "map change crashes the server" section
+      # for why this is set via a full container recreate rather than a live RCON changelevel.
+      # pool-controller overrides this per restart; the default here only matters before the app
+      # ever assigns this server a match.
+      - CS2_STARTMAP=${CS2_SERVER_1_STARTMAP:-de_dust2}
+    volumes:
+      - ./data/cs2-dedicated-01:/home/steam/cs2-dedicated
+      # The joedwards32/cs2 image runs pre.sh/post.sh from *inside* this volume
+      # (/home/steam/cs2-dedicated/pre.sh|post.sh) — without overriding them, it silently falls
+      # back to its own auto-generated no-op stubs, and settings/pre.sh's Metamod/CounterStrikeSharp/
+      # MatchZy install (and settings/game/csgo/cfg/MatchZy's Tournler-specific config, notably
+      # matchzy_kick_when_no_match_loaded — see CS2_SERVER_GUIDE.md) never actually runs.
+      - ./settings/pre.sh:/home/steam/cs2-dedicated/pre.sh
+      - ./settings/post.sh:/home/steam/cs2-dedicated/post.sh
+      - ./settings/game/csgo/cfg/MatchZy:/home/steam/cs2-dedicated/game/csgo/cfg/MatchZy
+      # Read-only: an optional from-source CounterStrikeSharp build, if you ever make one (see
+      # cs-docker/README.md) — pre.sh prefers it over its default install (mrc4tt's
+      # CounterStrikeSharp/MatchZy forks, which is what actually works against a current CS2
+      # build; the official releases don't). Mounted at a separate path, not directly over
+      # addons/counterstrikesharp, so pre.sh can fall back cleanly when this is empty.
+      - ./.build-cache/counterstrikesharp-custom:/home/steam/cs2-dedicated/custom-counterstrikesharp:ro
+    ports:
+      - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/tcp'
+      - '${CS2_SERVER_1_RCON_PORT:-27016}:${CS2_SERVER_1_RCON_PORT:-27016}/tcp'
+      - '${CS2_SERVER_1_PORT:-27015}:${CS2_SERVER_1_PORT:-27015}/udp'
+      - '${CS2_SERVER_1_TV_PORT:-27020}:${CS2_SERVER_1_TV_PORT:-27020}/udp'
+    stdin_open: true
+    tty: true
 
-    cs2-dedicated-02:
-        image: joedwards32/cs2
-        container_name: cs2-dedicated-02
-        environment:
-            - SRCDS_TOKEN=${SRCDS_TOKEN}
-            - CS2_SERVERNAME=${CS2_SERVER_2_NAME:-[Tournler] CS2 Dedicated Server 02}
-            - CS2_LAN=0
-            - CS2_PORT=${CS2_SERVER_2_PORT:-27025}
-            - CS2_RCON_PORT=${CS2_SERVER_2_RCON_PORT:-27026}
-            - CS2_PW=${CS2_SERVER_2_PW}
-            - CS2_RCONPW=${CS2_SERVER_2_RCONPW}
-            - TV_PW=${CS2_SERVER_2_TV_PW}
-            - TV_ENABLE=1
-            - CS2_MAPGROUP=${CS2_MAPGROUP:-}
-        volumes:
-            - ./data/cs2-dedicated-02:/home/steam/cs2-dedicated
-        ports:
-            - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/tcp'
-            - '${CS2_SERVER_2_RCON_PORT:-27026}:${CS2_SERVER_2_RCON_PORT:-27026}/tcp'
-            - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/udp'
-            - '${CS2_SERVER_2_TV_PORT:-27030}:${CS2_SERVER_2_TV_PORT:-27030}/udp'
-        stdin_open: true
-        tty: true
+  # cs2-dedicated-02:
+  #     image: joedwards32/cs2
+  #     container_name: cs2-dedicated-02
+  #     environment:
+  #         - SRCDS_TOKEN=${SRCDS_TOKEN}
+  #         - CS2_SERVERNAME=${CS2_SERVER_2_NAME:-[Tournler] CS2 Dedicated Server 02}
+  #         - CS2_LAN=0
+  #         - CS2_PORT=${CS2_SERVER_2_PORT:-27025}
+  #         - CS2_RCON_PORT=${CS2_SERVER_2_RCON_PORT:-27026}
+  #         - CS2_PW=${CS2_SERVER_2_PW}
+  #         - CS2_RCONPW=${CS2_SERVER_2_RCONPW}
+  #         - TV_PW=${CS2_SERVER_2_TV_PW}
+  #         - TV_ENABLE=1
+  #         - CS2_MAPGROUP=${CS2_MAPGROUP:-}
+  #         - CS2_STARTMAP=${CS2_SERVER_2_STARTMAP:-de_dust2}
+  #     volumes:
+  #         - ./data/cs2-dedicated-02:/home/steam/cs2-dedicated
+  #         - ./settings/pre.sh:/home/steam/cs2-dedicated/pre.sh
+  #         - ./settings/post.sh:/home/steam/cs2-dedicated/post.sh
+  #         - ./settings/game/csgo/cfg/MatchZy:/home/steam/cs2-dedicated/game/csgo/cfg/MatchZy
+  #         - ./.build-cache/counterstrikesharp-custom:/home/steam/cs2-dedicated/custom-counterstrikesharp:ro
+  #     ports:
+  #         - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/tcp'
+  #         - '${CS2_SERVER_2_RCON_PORT:-27026}:${CS2_SERVER_2_RCON_PORT:-27026}/tcp'
+  #         - '${CS2_SERVER_2_PORT:-27025}:${CS2_SERVER_2_PORT:-27025}/udp'
+  #         - '${CS2_SERVER_2_TV_PORT:-27030}:${CS2_SERVER_2_TV_PORT:-27030}/udp'
+  #     stdin_open: true
+  #     tty: true

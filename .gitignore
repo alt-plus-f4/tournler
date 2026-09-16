@@ -57,3 +57,12 @@ next-env.d.ts
 # CS2 dedicated server local data (persisted game files, logs, demos)
 /cs-docker/data/
 /cs-docker/.env
+
+# Locally-built CounterStrikeSharp package (native .so + managed API + bundled .NET runtime,
+# ~120MB) — see cs-docker/settings/pre.sh's Step 2 for why this exists (a from-source build with
+# an unmerged upstream fix, since no compatible official release exists yet). Machine-specific
+# build output, not something to commit — rebuild it per the instructions there if it's missing.
+/cs-docker/.build-cache/
+
+# Claude Code session-local runtime state (session id/pid/lock), not project config.
+/.claude/scheduled_tasks.lock

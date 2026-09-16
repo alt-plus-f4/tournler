@@ -27,6 +27,25 @@ FACEIT_API_KEY=your_faceit_server_side_api_key
 GAME_SERVER_IP=your-game-server-ip.com
 GAME_SERVER_TOKEN=your_game_server_shared_secret
 
+# Optional — base URL the *real CS2 server* calls back to (matchzy_loadmatch_url,
+# matchzy_remote_log_url, matchzy_demo_upload_url), if different from NEXTAUTH_URL. Needed
+# whenever the CS2 server can't reach NEXTAUTH_URL's host directly — e.g. local dev, where the
+# app runs on the host at http://localhost:3000 but the CS2 server runs in a Docker container
+# ("localhost" there means the container itself, not the host). Falls back to NEXTAUTH_URL if
+# unset, which is fine when the app and CS2 server pool share one public hostname in production.
+# GAME_SERVER_CALLBACK_URL=http://host.docker.internal:3000
+
+# Required to start a match — see cs-docker/pool-controller/index.js. A live RCON changelevel/map
+# command segfaults the CS2 dedicated server unconditionally on this Metamod build (a long-standing
+# upstream bug, not something fixable from plugin config — see cs-docker/README.md), so starting a
+# match works by recreating its assigned server's container booted directly onto the right map
+# instead. POOL_CONTROLLER_TOKEN must match the value pool-controller is run with. Unlike
+# GAME_SERVER_CALLBACK_URL above, this is host-to-host: pool-controller runs directly on the CS2
+# host (not inside a container), same as wherever this app runs — in local dev, where both run on
+# the same machine, that's plain http://localhost:9800, not host.docker.internal.
+POOL_CONTROLLER_URL=http://your-cs2-host:9800
+POOL_CONTROLLER_TOKEN=your_pool_controller_shared_secret
+
 # CS2 dedicated server pool (see cs-docker/README.md and CS2_SERVER_GUIDE.md) — a fixed set of
 # persistent servers, one match at a time each; NOT one container per match. Prefer
 # CS2_SERVER_POOL (a JSON array, one entry per server in cs-docker/docker-compose.yml) for more

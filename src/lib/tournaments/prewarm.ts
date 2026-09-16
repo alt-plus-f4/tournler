@@ -12,12 +12,19 @@ export interface PrewarmResult {
 }
 
 /**
- * Finds SCHEDULED matches starting within the next 5 minutes that haven't been provisioned yet,
- * and loads them onto a real server early — config, teams, maps, and bots filling empty slots —
- * so players can connect and look around ahead of the official start. `goLiveFromServer`
- * (triggered by MatchZy's `series_start` webhook event once everyone actually readies up) is
- * what flips the match to LIVE in the app; this function only provisions and loads, it never
- * changes match status.
+ * Finds SCHEDULED, non-pickup matches starting within the next 5 minutes that haven't been
+ * provisioned yet, and loads them onto a real server early — config, teams, maps, and bots
+ * filling empty slots — so players can connect and look around ahead of the official start.
+ * `goLiveFromServer` (triggered by MatchZy's `series_start` webhook event once everyone actually
+ * readies up) is what flips the match to LIVE in the app; this function only provisions and
+ * loads, it never changes match status.
+ *
+ * Pickup matches are excluded entirely: a pickup's `matchDate` is just "whenever it was
+ * created," not a real scheduled-start countdown, so pre-warming would claim a real server (and
+ * fill every slot with bots) before anyone has actually joined either side — letting people
+ * connect without joining, and starving other open pickups of the pool's one free server. Pickups
+ * only get a server when someone actually starts them (`startMatch` -> `ensureGameServer`), by
+ * which point the participants who joined via the match page are the real, final roster.
  *
  * Piggybacks on whatever already periodically hits `GET /api/tournaments/check-start` (see
  * `TOURNAMENT_GUIDE.md` — GitHub Actions every 5 minutes, or Vercel Cron) rather than adding a
@@ -31,7 +38,7 @@ export async function prewarmUpcomingMatches(): Promise<PrewarmResult[]> {
 	const windowEnd = new Date(now.getTime() + PREWARM_WINDOW_MS);
 
 	const candidates = await db.matches.findMany({
-		where: { status: 'SCHEDULED', matchDate: { gte: now, lte: windowEnd } },
+		where: { status: 'SCHEDULED', isPickup: false, matchDate: { gte: now, lte: windowEnd } },
 		include: { tournament: true, mapActions: true, gameServer: true },
 	});
 
@@ -40,14 +47,12 @@ export async function prewarmUpcomingMatches(): Promise<PrewarmResult[]> {
 	for (const match of candidates) {
 		if (match.gameServer) continue; // already pre-warmed (or started) — nothing to do
 
-		if (!match.isPickup) {
-			// Not ready to load yet — will be picked up on a later tick if it becomes ready
-			// before matchDate passes, otherwise it just never gets pre-warmed (no harder than
-			// today, where it wouldn't get a server until an admin manually starts it either).
-			if (match.teamAId === null || match.teamBId === null) continue;
-			const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
-			if (vetoState.phase !== 'COMPLETE') continue;
-		}
+		// Not ready to load yet — will be picked up on a later tick if it becomes ready
+		// before matchDate passes, otherwise it just never gets pre-warmed (no harder than
+		// today, where it wouldn't get a server until an admin manually starts it either).
+		if (match.teamAId === null || match.teamBId === null) continue;
+		const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
+		if (vetoState.phase !== 'COMPLETE') continue;
 
 		try {
 			await ensureGameServer(db, match.id);

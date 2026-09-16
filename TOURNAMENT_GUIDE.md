@@ -301,8 +301,11 @@ CS2_RCON_PASSWORD=your-rcon-password   # Must match CS2_RCONPW in cs-docker/.env
 CS2_DEFAULT_MAP=de_dust2               # Fallback map when a match has no completed veto (e.g. pickups)
 
 # NEXTAUTH_URL (already required for auth) doubles as the base URL the CS2 server calls back to
-# for GET /api/matches/[matchId]/game-server/match-config — it must be a URL reachable from the
-# CS2 server's host, not just from browsers.
+# for GET /api/matches/[matchId]/game-server/match-config (and the demo-upload/remote-log
+# webhooks) — it must be a URL reachable from the CS2 server's host, not just from browsers. If
+# it isn't (e.g. local dev, where the CS2 server runs in a Docker container and NEXTAUTH_URL is
+# http://localhost:3000 — "localhost" there is the container itself, not the host), set
+# GAME_SERVER_CALLBACK_URL instead; see CS2_SERVER_GUIDE.md §4.
 ```
 
 A fixed-size CS2 server pool also means only as many matches can be `LIVE` at once as there are

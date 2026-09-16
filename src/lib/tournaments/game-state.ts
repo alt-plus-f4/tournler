@@ -6,9 +6,10 @@ import { upsertPlayerMatchStats, PlayerStatInput } from './player-stats';
 
 export interface GameStateUpdate {
 	matchId: number;
-	// Present for bo1/bo3 series matches with per-map scoring (MatchMap.order); absent for
-	// pickup/legacy matches (which have no MatchMap rows — see finalizeVeto) that still write the
-	// aggregate Matches score directly.
+	// Present whenever this update is one specific map's result within a series (MatchMap.order) —
+	// true for pickups too now (they go through veto and get real MatchMap rows, see
+	// finalizeVeto). Absent only for legacy matches with no MatchMap rows at all, which still
+	// write the aggregate Matches score directly.
 	mapOrder?: number;
 	teamAScore: number;
 	teamBScore: number;
@@ -22,7 +23,18 @@ export interface GameStateUpdate {
 
 export function isValidPlayerStats(value: unknown): value is PlayerStatInput[] {
 	if (!Array.isArray(value)) return false;
-	return value.every((entry) => entry && typeof entry === 'object' && typeof (entry as Record<string, unknown>).userId === 'string' && typeof (entry as Record<string, unknown>).teamId === 'number' && typeof (entry as Record<string, unknown>).kills === 'number' && typeof (entry as Record<string, unknown>).deaths === 'number' && typeof (entry as Record<string, unknown>).assists === 'number');
+	return value.every((entry) => {
+		if (!entry || typeof entry !== 'object') return false;
+		const e = entry as Record<string, unknown>;
+		if (typeof e.userId !== 'string' || typeof e.kills !== 'number' || typeof e.deaths !== 'number' || typeof e.assists !== 'number') return false;
+		// Real matches identify the player's team via teamId (a Cs2Team id); pickups have no
+		// Cs2Team, so they use side instead (see Matches.winnerSide for the same distinction).
+		// Exactly one of the two is expected, but only presence/type is validated here.
+		if (e.teamId !== undefined && typeof e.teamId !== 'number') return false;
+		if (e.side !== undefined && e.side !== 'TEAM_A' && e.side !== 'TEAM_B') return false;
+		if (e.teamId === undefined && e.side === undefined) return false;
+		return true;
+	});
 }
 
 export function isValidGameStateUpdate(payload: unknown): payload is GameStateUpdate {
@@ -57,6 +69,7 @@ export async function applyGameStateUpdate(update: GameStateUpdate) {
 			scoreTeamA: update.teamAScore,
 			scoreTeamB: update.teamBScore,
 			winnerId: update.isCompleted ? update.winnerId : undefined,
+			winnerSide: update.isCompleted ? update.winnerSide : undefined,
 		});
 	} else {
 		await recordMatchResult(update.matchId, {

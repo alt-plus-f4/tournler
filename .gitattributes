@@ -1,0 +1,5 @@
+# cs-docker/settings/*.sh get bind-mounted straight into the CS2 container's Linux shell
+# (see cs-docker/docker-compose.yml) — CRLF line endings there break bash with a `$'\r':
+# command not found` / syntax error the moment the script does anything past a comment line.
+# Force LF regardless of the checking-out OS's core.autocrlf setting.
+*.sh text eol=lf

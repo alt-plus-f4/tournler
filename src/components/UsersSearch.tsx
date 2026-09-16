@@ -9,7 +9,7 @@ import {
 	CommandGroup,
 	CommandItem,
 } from '@/components/ui/command';
-import { ReactNode, Suspense, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -19,8 +19,44 @@ interface UsersSearchProps {
 	children: ReactNode;
 	teamId: number;
 	teamName: string;
-	allUsers: ReducedUser[];
 	invitedPlayers: any;
+}
+
+/**
+ * Debounced as-you-type player search, backed by `GET /api/teams/[slug]/invitable-users` — the
+ * previous version received every invitable user prefetched into the page as an `allUsers` prop
+ * (see GitHub issue #69), which meant fetching and shipping the entire non-team-member user list
+ * on every team page load whether or not the captain ever opened the invite dialog.
+ */
+function useInvitableUsers(teamId: number, query: string, isOpen: boolean) {
+	const [users, setUsers] = useState<ReducedUser[]>([]);
+	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		if (!isOpen) return;
+		let cancelled = false;
+		setLoading(true);
+		const timer = setTimeout(async () => {
+			try {
+				const response = await fetch(`/api/teams/${teamId}/invitable-users?search=${encodeURIComponent(query)}`);
+				if (!response.ok) throw new Error('Search failed');
+				const data = await response.json();
+				if (!cancelled) setUsers(data.users ?? []);
+			} catch (error) {
+				console.error('Failed to search invitable users:', error);
+				if (!cancelled) setUsers([]);
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		}, 250);
+
+		return () => {
+			cancelled = true;
+			clearTimeout(timer);
+		};
+	}, [teamId, query, isOpen]);
+
+	return { users, loading };
 }
 
 /**
@@ -48,12 +84,13 @@ function UsersSearchInner({
 	children,
 	teamId,
 	teamName,
-	allUsers,
 	invitedPlayers,
 }: UsersSearchProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const [dialog, setDialog] = useState<JSX.Element | undefined>();
     const [localInvitedUserIds, setLocalInvitedUserIds] = useState<string[]>([]);
+	const [query, setQuery] = useState('');
+	const { users: allUsers, loading } = useInvitableUsers(teamId, query, isOpen);
 
 	const inviteNotif = useMutation(
 		api.notifications.createTeamInviteNotification
@@ -135,38 +172,40 @@ function UsersSearchInner({
 	return (
 		<>
 			<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
-				<CommandInput placeholder='Search for users...' />
+				<CommandInput placeholder='Search for users...' value={query} onValueChange={setQuery} />
 				<CommandList>
-					<CommandEmpty>No users found.</CommandEmpty>
-					<Suspense
-						fallback={<CommandGroup>Loading...</CommandGroup>}
-					>
-						{allUsers.length > 0 && (
-							<CommandGroup heading='All Users'>
-								{allUsers.map((user) => {
-									const isInvited = invitedUserIds.includes(
-										user.id
-									);
-									return (
-										<CommandItem
-											className='cursor-pointer'
-											key={user.id}
-											onSelect={() =>
-												!isInvited &&
-												openInviteConfirmation(user)
-											}
-											disabled={isInvited}
-										>
-											{commandItemProfile(
-												user,
-												isInvited
-											)}
-										</CommandItem>
-									);
-								})}
-							</CommandGroup>
-						)}
-					</Suspense>
+					{loading ? (
+						<CommandGroup>Searching...</CommandGroup>
+					) : (
+						<>
+							<CommandEmpty>No users found.</CommandEmpty>
+							{allUsers.length > 0 && (
+								<CommandGroup heading='Players'>
+									{allUsers.map((user) => {
+										const isInvited = invitedUserIds.includes(
+											user.id
+										);
+										return (
+											<CommandItem
+												className='cursor-pointer'
+												key={user.id}
+												onSelect={() =>
+													!isInvited &&
+													openInviteConfirmation(user)
+												}
+												disabled={isInvited}
+											>
+												{commandItemProfile(
+													user,
+													isInvited
+												)}
+											</CommandItem>
+										);
+									})}
+								</CommandGroup>
+							)}
+						</>
+					)}
 				</CommandList>
 			</CommandDialog>
 

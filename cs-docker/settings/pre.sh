@@ -34,23 +34,52 @@ extract_content() {
 ServerFilesPath=$STEAMAPPDIR
 
 # Step 1: Download and Install Metamod
-wget -q -O /tmp/mmsource.tar.gz https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1293-linux.tar.gz
+# git1468 (2026-09-15, SourceHook interface 18, includes upstream commit 399ccf3 "Tentative fix
+# for shutdown crash"): the newest build confirmed to boot the current CS2 engine cleanly, under
+# real play, with no crash. The *official* CounterStrikeSharp/MatchZy releases can't load against
+# an interface-18 Metamod at all (they're still on SourceHook/interface 17) — see Step 2/3 for the
+# forks that actually work here, and cs-docker/README.md for the full compatibility history this
+# pin comes out of.
+wget -q -O /tmp/mmsource.tar.gz https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1468-linux.tar.gz
 ensure_directory "${ServerFilesPath}/game/csgo"
 extract_content "/tmp/mmsource.tar.gz" "${ServerFilesPath}/game/csgo"
 
-# Step 2: Download and Install CounterStrikeSharp Plugin
-cssharp_url=$(curl -s https://api.github.com/repos/roflmuffin/CounterStrikeSharp/releases/latest | grep "with-runtime-build" | grep "linux" | grep "browser_download_url" | cut -d '"' -f 4)
-echo $cssharp_url
-if [ -z "$cssharp_url" ]; then
-  echo "Error: Unable to find CounterStrikeSharp download URL."
-  exit 1
+# Step 2: Install CounterStrikeSharp Plugin
+# Prefers a locally-built package (mounted read-only at custom-counterstrikesharp — see
+# docker-compose.yml) if one is present, otherwise installs mrc4tt/CounterStrikeSharp — a
+# maintained fork ported to Metamod's new KHook hooking library (its v1.0.399 release notes:
+# "METAMOD v1461 or later REQUIRED!", "KHook" support). The *official* roflmuffin release is still
+# built against the old SourceHook API and can't load against git1468 at all ("Plugin uses old
+# SourceHook Metamod build ... (17 < 18)") — see cs-docker/README.md for why. Confirmed working
+# with this Metamod pin: `meta list` shows CounterStrikeSharp with no <ERROR> tag, and the server
+# survives real play (round resets, bot warmup) — the actual bar that kept failing before this.
+custom_cssharp_dir="${ServerFilesPath}/custom-counterstrikesharp"
+if [ -d "$custom_cssharp_dir" ] && [ -n "$(ls -A "$custom_cssharp_dir" 2>/dev/null)" ]; then
+  echo "Installing CounterStrikeSharp from the locally-built package at $custom_cssharp_dir"
+  mkdir -p "${ServerFilesPath}/game/csgo/addons"
+  cp -r "$custom_cssharp_dir"/. "${ServerFilesPath}/game/csgo/addons/"
+else
+  cssharp_url=$(curl -s https://api.github.com/repos/mrc4tt/CounterStrikeSharp/releases/latest | grep "with-runtime" | grep "linux" | grep "browser_download_url" | cut -d '"' -f 4)
+  echo $cssharp_url
+  if [ -z "$cssharp_url" ]; then
+    echo "Error: Unable to find CounterStrikeSharp download URL."
+    exit 1
+  fi
+
+  wget -q -O /tmp/cssharp.zip "$cssharp_url"
+  extract_content "/tmp/cssharp.zip" "${ServerFilesPath}/game/csgo"
 fi
 
-wget -q -O /tmp/cssharp.zip "$cssharp_url"
-extract_content "/tmp/cssharp.zip" "${ServerFilesPath}/game/csgo"
-
 # Step 3: Download and Install MatchZy Plugin
-matchzy_url=$(curl -s https://api.github.com/repos/shobhit-pathak/MatchZy/releases/latest | grep "MatchZy-[d+].[d+].[d+].zip" | grep "browser_download_url" | cut -d '"' -f 4)
+# Using mrc4tt/MatchZy (a fork by the same author as the CounterStrikeSharp fork above, kept in
+# sync with it) instead of the official shobhit-pathak/MatchZy release: paired with the official
+# MatchZy, the mrc4tt CounterStrikeSharp fork still loaded fine but the server segfaulted on the
+# very next round reset (caught as a diagnostic crash dump by this CSS fork's own handler rather
+# than a hard kill, but still fatal to the process). Swapping in this matching MatchZy fork
+# resolved it — confirmed stable for 2+ minutes of real play (bot warmup, round resets), where
+# every prior combination crashed within ~15 seconds. Asset naming here is plain "MatchZy-X.Y.zip"
+# (no bracket-expression regex or with-cssharp bundle to exclude like the official release has).
+matchzy_url=$(curl -s https://api.github.com/repos/mrc4tt/MatchZy/releases/latest | grep "browser_download_url" | grep -E "MatchZy-[0-9]+\.[0-9]+(\.[0-9]+)?\.zip" | cut -d '"' -f 4)
 if [ -z "$matchzy_url" ]; then
   echo "Error: Unable to find MatchZy download URL."
   exit 1
