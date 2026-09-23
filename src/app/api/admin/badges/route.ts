@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
-import { BADGE_ICON_KEYS } from '@/lib/badge-icons';
+import { BADGE_ICON_KEYS, isBadgeImageUrl } from '@/lib/badge-icons';
 
 const HEX_COLOR = /^#([0-9A-Fa-f]{6})$/;
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 		}
 
 		const body = await request.json();
-		const { name, description, icon, color, isOverlay } = body;
+		const { name, description, icon, color, isOverlay, imageUrl } = body;
 
 		if (!name || typeof name !== 'string') {
 			return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -52,6 +52,10 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Color must be a hex value like #facc15' }, { status: 400 });
 		}
 
+		if (imageUrl !== undefined && imageUrl !== null && !isBadgeImageUrl(imageUrl)) {
+			return NextResponse.json({ error: 'Image must be uploaded through the badge image uploader' }, { status: 400 });
+		}
+
 		const badge = await db.badge.create({
 			data: {
 				name,
@@ -59,6 +63,7 @@ export async function POST(request: Request) {
 				icon,
 				color: color || undefined,
 				isOverlay: Boolean(isOverlay),
+				imageUrl: imageUrl ?? null,
 			},
 		});
 

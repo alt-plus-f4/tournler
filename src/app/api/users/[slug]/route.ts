@@ -33,7 +33,8 @@ const PUBLIC_USER_SELECT = {
 		orderBy: { awardedAt: 'desc' },
 		select: {
 			awardedAt: true,
-			badge: true,
+			// Explicit fields only: the badge row also carries timestamps that aren't public profile data.
+			badge: { select: { id: true, name: true, description: true, icon: true, color: true, isOverlay: true, imageUrl: true } },
 		},
 	},
 	createdAt: true,

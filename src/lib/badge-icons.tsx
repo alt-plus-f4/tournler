@@ -32,3 +32,18 @@ export function BadgeIcon({ name, className, style }: BadgeIconProps) {
 	const Icon = BADGE_ICONS[name] ?? Award;
 	return <Icon className={className} style={style} />;
 }
+
+/** Uploaded trophy artwork: allowed types and size cap, shared by the admin upload route and the dialog. */
+export const BADGE_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'] as const;
+export const BADGE_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
+/** True only for an https URL in this project's Vercel Blob store under the `badges/` prefix the upload route writes to. */
+export function isBadgeImageUrl(value: unknown): value is string {
+	if (typeof value !== 'string' || value.length > 2048) return false;
+	try {
+		const url = new URL(value);
+		return url.protocol === 'https:' && url.hostname.endsWith('.public.blob.vercel-storage.com') && url.pathname.startsWith('/badges/');
+	} catch {
+		return false;
+	}
+}

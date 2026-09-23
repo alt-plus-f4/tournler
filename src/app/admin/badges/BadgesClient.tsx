@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BadgeIcon } from '@/lib/badge-icons';
+import { TrophyIcon } from '@/components/trophies/TrophyIcon';
 import EditBadgeDialog, { BadgeDefinition } from '@/components/EditBadgeDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
@@ -118,9 +118,7 @@ export default function BadgesClient() {
 								<tr key={badge.id} className={t.tr}>
 									<td className={t.td}>
 										<div className='flex items-center gap-3'>
-											<span aria-hidden className='flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border' style={{ backgroundColor: `${badge.color}20` }}>
-												<BadgeIcon name={badge.icon} className='h-4 w-4' style={{ color: badge.color }} />
-											</span>
+											<TrophyIcon badge={badge} size={32} fallback='tint' decorative />
 											<button type='button' onClick={() => openEdit(badge)} className={t.rowAction} aria-label={`Edit ${badge.name} badge`}>
 												{badge.name}
 											</button>

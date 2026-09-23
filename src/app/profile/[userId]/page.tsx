@@ -14,7 +14,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
 import { AccountDataSection } from '@/components/profile/AccountDataSection';
-import { BadgeIcon } from '@/lib/badge-icons';
+import { TrophyIcon } from '@/components/trophies/TrophyIcon';
+import { TrophySlider } from '@/components/trophies/TrophySlider';
 import { LevelBadge } from '@/components/LevelBadge';
 import { faceitLevelProgress } from '@/lib/faceit';
 
@@ -38,6 +39,7 @@ interface ProfileBadge {
 		icon: string;
 		color: string;
 		isOverlay: boolean;
+		imageUrl: string | null;
 	};
 }
 
@@ -77,7 +79,7 @@ interface PlayerRecentMatch {
 	assists: number;
 }
 
-type ProfileTab = 'overview' | 'matches' | 'trophies';
+type ProfileTab = 'overview' | 'matches';
 
 function formatDate(isoDate: string): string {
 	return new Date(isoDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
@@ -329,7 +331,7 @@ export default function PublicProfilePage() {
 	};
 
 	const overlayBadges = (profile.badges ?? []).filter((b) => b.badge.isOverlay).slice(0, 2);
-	const trophies = [...(profile.badges ?? []).filter((b) => !b.badge.isOverlay)].sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime());
+	const trophies = (profile.badges ?? []).filter((b) => !b.badge.isOverlay);
 	const progress = faceit ? faceitLevelProgress(faceit.level, faceit.elo) : null;
 	const form = recentMatches.slice(0, 5);
 	const avgKills = stats && stats.matchesPlayed > 0 ? stats.kills / stats.matchesPlayed : 0;
@@ -412,10 +414,10 @@ export default function PublicProfilePage() {
 									<span
 										key={badge.id}
 										title={badge.description ?? badge.name}
-										className='absolute -left-2 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-black'
-										style={{ backgroundColor: badge.color, top: `${-6 + i * 24}px`, zIndex: 10 - i }}
+										className='absolute -left-2 flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-black ring-2 ring-black'
+										style={{ top: `${-6 + i * 24}px`, zIndex: 10 - i }}
 									>
-										<BadgeIcon name={badge.icon} className='h-3.5 w-3.5 text-white' />
+										<TrophyIcon badge={badge} size={24} priority />
 									</span>
 								))}
 							</div>
@@ -515,6 +517,9 @@ export default function PublicProfilePage() {
 					</div>
 				</section>
 
+				{/* HLTV-style trophy row, attached under the hero. Hidden entirely when the player has none. */}
+				<TrophySlider trophies={trophies} className='border-x border-b border-border bg-neutral-950 px-5 py-4 sm:px-8' />
+
 				<TabsPrimitive.Root value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
 					<div className='flex items-center justify-between gap-4 overflow-x-auto rounded-b-md border-x border-b border-border bg-neutral-950 pr-4'>
 						<TabsPrimitive.List aria-label='Profile sections' className='flex'>
@@ -524,10 +529,6 @@ export default function PublicProfilePage() {
 							<TabsPrimitive.Trigger value='matches' className={tabTrigger}>
 								Matches
 								<span className='font-mono text-xs tabular-nums text-neutral-400'>{recentMatches.length}</span>
-							</TabsPrimitive.Trigger>
-							<TabsPrimitive.Trigger value='trophies' className={tabTrigger}>
-								Trophies
-								<span className='font-mono text-xs tabular-nums text-neutral-400'>{trophies.length}</span>
 							</TabsPrimitive.Trigger>
 						</TabsPrimitive.List>
 						{form.length > 0 && (
@@ -702,33 +703,6 @@ export default function PublicProfilePage() {
 										</div>
 									</div>
 								</section>
-
-								{trophies.length > 0 && (
-									<section>
-										<SectionLabel
-											action={
-												<button type='button' onClick={() => setTab('trophies')} className='flex items-center gap-1 text-xs font-medium text-neutral-400 transition-colors hover:text-white'>
-													All <ArrowRight className='h-3.5 w-3.5' />
-												</button>
-											}
-										>
-											Trophies
-										</SectionLabel>
-										<div className='grid grid-cols-4 gap-2'>
-											{trophies.slice(0, 8).map(({ badge }) => (
-												<span
-													key={badge.id}
-													title={badge.name}
-													className='flex aspect-square items-center justify-center rounded-md border border-border bg-neutral-950'
-												>
-													<span className='flex h-9 w-9 items-center justify-center rounded-full' style={{ backgroundColor: badge.color }}>
-														<BadgeIcon name={badge.icon} className='h-5 w-5 text-white' />
-													</span>
-												</span>
-											))}
-										</div>
-									</section>
-								)}
 							</aside>
 						</div>
 					</TabsPrimitive.Content>
@@ -744,29 +718,6 @@ export default function PublicProfilePage() {
 						)}
 					</TabsPrimitive.Content>
 
-					<TabsPrimitive.Content value='trophies' className='mt-6 focus-visible:outline-none'>
-						<SectionLabel>Trophy cabinet</SectionLabel>
-						{trophies.length > 0 ? (
-							<div className='grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4'>
-								{trophies.map(({ badge, awardedAt }) => (
-									<div key={badge.id} className='flex items-start gap-3 rounded-md border border-border bg-neutral-950 p-4 transition-colors hover:border-neutral-600'>
-										<span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-full' style={{ backgroundColor: badge.color }}>
-											<BadgeIcon name={badge.icon} className='h-6 w-6 text-white' />
-										</span>
-										<div className='min-w-0'>
-											<p className='truncate text-sm font-bold text-white'>{badge.name}</p>
-											{badge.description && <p className='mt-0.5 line-clamp-2 text-xs text-neutral-400'>{badge.description}</p>}
-											<p className='mt-1.5 font-mono text-xs tabular-nums text-neutral-400'>{formatDate(awardedAt)}</p>
-										</div>
-									</div>
-								))}
-							</div>
-						) : (
-							<EmptyPanel icon={<Trophy className='h-10 w-10' />} title='No trophies yet'>
-								Trophies are awarded by Tournler staff.
-							</EmptyPanel>
-						)}
-					</TabsPrimitive.Content>
 				</TabsPrimitive.Root>
 
 				{isOwner && <AccountDataSection />}
