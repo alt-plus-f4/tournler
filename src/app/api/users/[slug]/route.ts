@@ -2,6 +2,7 @@ import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { computePlayerCareerStats, getPlayerRecentMatches } from '@/lib/tournaments/player-stats';
+import { getFaceitInfo } from '@/lib/faceit';
 import { NextResponse } from 'next/server';
 
 const PUBLIC_USER_SELECT = {
@@ -60,9 +61,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		const [stats, recentMatches] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id)]);
+		const [stats, recentMatches, faceit] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id), user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null)]);
 
-		return NextResponse.json({ user, stats, recentMatches });
+		return NextResponse.json({ user, stats, recentMatches, faceit });
 	} catch (error) {
 		console.error('Error fetching user:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -3,7 +3,8 @@ import { Matches, MatchSlot, Prisma } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
-import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
+import { getDraftState } from './draft';
+import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
 
 type Tx = Prisma.TransactionClient;
 
@@ -18,7 +19,10 @@ export class MatchResultConflictError extends Error {
 export interface MatchResultInput {
 	scoreTeamA?: number;
 	scoreTeamB?: number;
+	/** Non-pickup matches only — the winning Cs2Team's id. */
 	winnerId?: number;
+	/** Pickup matches only — which side won (they have no Cs2Team to use as winnerId). */
+	winnerSide?: MatchSlot;
 }
 
 function slotField(slot: MatchSlot): 'teamAId' | 'teamBId' {
@@ -76,40 +80,59 @@ async function propagateWinner(tx: Tx, match: Matches) {
  * already-completed match throws `MatchResultConflictError`.
  */
 export async function recordMatchResult(matchId: number, input: MatchResultInput): Promise<Matches> {
-	return db.$transaction(async (tx) => {
+	let justCompleted = false;
+
+	const result = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 
 		// Pickup matches never have real teamAId/teamBId (sides are MatchParticipant rows, not
-		// Cs2Teams), so score writes must be allowed without slots filled — but a winnerId still
-		// can't be recorded for them, since there's no team to be the winner (the check below
-		// rejects any winnerId since it can't equal null teamAId/teamBId).
+		// Cs2Teams), so score writes must be allowed without slots filled — and their winner is
+		// recorded via winnerSide (which side, TEAM_A/TEAM_B) instead of winnerId (a Cs2Team id),
+		// since there's no Cs2Team to be the winner.
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new Error('Cannot record a result for a match whose bracket slots are not both filled yet');
 		}
 
-		if (input.winnerId !== undefined && input.winnerId !== match.teamAId && input.winnerId !== match.teamBId) {
-			throw new Error('winnerId must be one of the match participants');
+		if (match.isPickup) {
+			if (input.winnerId !== undefined) {
+				throw new Error('Pickup matches have no Cs2Team winner — pass winnerSide instead of winnerId');
+			}
+		} else {
+			if (input.winnerSide !== undefined) {
+				throw new Error('winnerSide only applies to pickup matches — pass winnerId instead');
+			}
+			if (input.winnerId !== undefined && input.winnerId !== match.teamAId && input.winnerId !== match.teamBId) {
+				throw new Error('winnerId must be one of the match participants');
+			}
 		}
 
+		const incomingWinner = match.isPickup ? input.winnerSide : input.winnerId;
+
 		if (match.status === 'COMPLETED') {
-			if (input.winnerId !== undefined && input.winnerId !== match.winnerId) {
+			const currentWinner = match.isPickup ? match.winnerSide : match.winnerId;
+			if (incomingWinner !== undefined && incomingWinner !== currentWinner) {
 				throw new MatchResultConflictError(`Match ${matchId} is already completed with a different winner`);
 			}
 			return match;
 		}
 
 		const now = new Date();
-		const isCompleting = input.winnerId !== undefined;
+		const isCompleting = incomingWinner !== undefined;
 
 		const { count } = await tx.matches.updateMany({
 			where: { id: matchId, status: { not: 'COMPLETED' } },
 			data: {
 				scoreTeamA: input.scoreTeamA,
 				scoreTeamB: input.scoreTeamB,
-				winnerId: input.winnerId,
-				status: isCompleting ? 'COMPLETED' : 'LIVE',
+				winnerId: match.isPickup ? undefined : input.winnerId,
+				winnerSide: match.isPickup ? input.winnerSide : undefined,
+				// A plain score update (no winner) must not disturb the match's current
+				// LIVE/PAUSED state or its elapsed-time bookkeeping — forcing status back to LIVE
+				// here used to silently un-pause a PAUSED match (clearing pausedAt without shifting
+				// startedAt the way resumeMatch() does), corrupting the displayed timer.
+				status: isCompleting ? 'COMPLETED' : match.status,
 				startedAt: match.startedAt ?? now,
-				pausedAt: null,
+				pausedAt: isCompleting ? null : match.pausedAt,
 				completedAt: isCompleting ? now : undefined,
 			},
 		});
@@ -118,7 +141,8 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 			// Lost a race to another concurrent writer — re-check whether it converged to the
 			// same result (idempotent) or a genuine conflict.
 			const raced = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
-			if (input.winnerId !== undefined && raced.winnerId !== input.winnerId) {
+			const racedWinner = match.isPickup ? raced.winnerSide : raced.winnerId;
+			if (incomingWinner !== undefined && racedWinner !== incomingWinner) {
 				throw new MatchResultConflictError(`Match ${matchId} was completed concurrently with a different winner`);
 			}
 			return raced;
@@ -129,10 +153,24 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		if (updated.status === 'COMPLETED') {
 			await propagateWinner(tx, updated);
 			await finalizeTournamentIfComplete(tx, updated.tournamentId);
+			justCompleted = true;
 		}
 
 		return updated;
 	});
+
+	// Outside the transaction — RCON is a network side effect, and must run only once the DB write
+	// actually committed. Only for the call that just flipped the match to COMPLETED, not a repeat/
+	// idempotent call on an already-completed match (see this function's own idempotency contract).
+	if (justCompleted) {
+		try {
+			await releaseGameServerAfterMatch(matchId);
+		} catch (error) {
+			console.error(`Failed to release game server after match ${matchId} completed:`, error);
+		}
+	}
+
+	return result;
 }
 
 /** Thrown when a lifecycle action (start/pause/resume) doesn't apply to the match's current status. */
@@ -155,9 +193,29 @@ export class MatchLifecycleError extends Error {
  * transaction, and treated as non-fatal (logged, not thrown) so a temporarily unreachable game
  * server never blocks the match itself from going live in the app.
  */
-export async function startMatch(matchId: number): Promise<Matches> {
+export interface MatchActionResult {
+	match: Matches;
+	/** Non-null if the DB write succeeded but pushing the corresponding action to the real game server over
+	 * RCON failed — the caller should surface this so an organizer can retry (via the RCON console or the
+	 * manual sync endpoint) instead of it only reaching a server log. */
+	configPushError: string | null;
+}
+
+/** Runs `command` against `matchId`'s assigned server after its DB write already committed, treating a failure as non-fatal (logged and returned as `configPushError`, never thrown) — the app-side state change already succeeded and shouldn't be rolled back over a flaky RCON connection. */
+async function pushRconAfterCommit(matchId: number, match: Matches, command: string): Promise<MatchActionResult> {
+	let configPushError: string | null = null;
+	try {
+		await pushRconCommand(matchId, command);
+	} catch (error) {
+		console.error(`Failed to push RCON command "${command}" for match ${matchId}:`, error);
+		configPushError = error instanceof Error ? error.message : `Failed to push "${command}" to game server`;
+	}
+	return { match, configPushError };
+}
+
+export async function startMatch(matchId: number): Promise<MatchActionResult> {
 	const updated = await db.$transaction(async (tx) => {
-		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true } });
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true, participants: true, draftPicks: true } });
 		if (match.status !== 'SCHEDULED') {
 			throw new MatchLifecycleError(`Match ${matchId} is not scheduled (current status: ${match.status})`);
 		}
@@ -165,12 +223,20 @@ export async function startMatch(matchId: number): Promise<Matches> {
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new MatchLifecycleError('Cannot start a match whose bracket slots are not both filled yet');
 		}
-		// Pickup matches have no team-vs-team veto; every other match must finish map veto first.
-		if (!match.isPickup) {
-			const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
-			if (vetoState.phase !== 'COMPLETE') {
-				throw new MatchLifecycleError('Map veto is not complete');
+		// Captain-draft pickups must finish drafting the pool onto sides before veto/start — an
+		// undrafted POOL player has no side to act on behalf of in veto, and no side to load onto
+		// the real server's roster either.
+		if (match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT') {
+			const draftState = getDraftState(match.participants, match.draftPicks);
+			if (draftState.phase !== 'COMPLETE') {
+				throw new MatchLifecycleError('Captain draft is not complete');
 			}
+		}
+		// Both pickup and bracket matches must finish map veto before going live — pickups veto by
+		// side instead of by Cs2Team (see getVetoState), but the requirement is the same either way.
+		const vetoState = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
+		if (vetoState.phase !== 'COMPLETE') {
+			throw new MatchLifecycleError('Map veto is not complete');
 		}
 		const updatedMatch = await tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date() } });
 		try {
@@ -184,29 +250,61 @@ export async function startMatch(matchId: number): Promise<Matches> {
 		return updatedMatch;
 	});
 
+	let configPushError: string | null = null;
 	try {
 		await pushMatchConfigToServer(matchId);
 	} catch (error) {
 		console.error(`Failed to push match config to game server for match ${matchId}:`, error);
+		configPushError = error instanceof Error ? error.message : 'Failed to push match config to game server';
 	}
 
-	return updated;
+	return { match: updated, configPushError };
 }
 
-/** Pauses a live match, freezing its elapsed-time display until resumed. */
-export async function pauseMatch(matchId: number): Promise<Matches> {
+/**
+ * Auto-transitions a match from SCHEDULED to LIVE when the real server reports its series has
+ * actually begun — MatchZy's `series_start` event, fired once ready-up completes, regardless of
+ * whether the match got there via `prewarmUpcomingMatches`'s early load or a manually-pushed
+ * config. Without this, a pre-warmed match that players ready up on their own (before an admin
+ * ever clicks Start) would sit "SCHEDULED" in the app while actually being played on the server —
+ * exactly the drift pre-warming would otherwise risk introducing.
+ *
+ * A no-op if the match isn't SCHEDULED (already started through the app, or a stale/duplicate
+ * webhook delivery) — doesn't re-provision or re-configure anything, only catches up the app's
+ * own status/timer to match reality.
+ */
+export async function goLiveFromServer(matchId: number): Promise<Matches | null> {
 	return db.$transaction(async (tx) => {
+		const match = await tx.matches.findUnique({ where: { id: matchId } });
+		if (!match || match.status !== 'SCHEDULED') return match;
+		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: match.startedAt ?? new Date() } });
+	});
+}
+
+/**
+ * Pauses a live match, freezing its elapsed-time display until resumed, and pushes the equivalent
+ * admin pause to the real server over RCON (`css_forcepause` — verified against MatchZy's `dev`
+ * branch `ConsoleCommands.cs`; see `pushRconCommand`'s doc comment) so the actual game pauses too,
+ * not just the app's record of it.
+ */
+export async function pauseMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 		if (match.status !== 'LIVE') {
 			throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
 		}
 		return tx.matches.update({ where: { id: matchId }, data: { status: 'PAUSED', pausedAt: new Date() } });
 	});
+	return pushRconAfterCommit(matchId, match, 'css_forcepause');
 }
 
-/** Resumes a paused match, shifting `startedAt` forward by the paused duration so elapsed-time math stays correct across multiple pause/resume cycles. */
-export async function resumeMatch(matchId: number): Promise<Matches> {
-	return db.$transaction(async (tx) => {
+/**
+ * Resumes a paused match, shifting `startedAt` forward by the paused duration so elapsed-time
+ * math stays correct across multiple pause/resume cycles, and pushes the equivalent admin
+ * unpause to the real server over RCON (`css_forceunpause`).
+ */
+export async function resumeMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
 		if (match.status !== 'PAUSED') {
 			throw new MatchLifecycleError(`Match ${matchId} is not paused (current status: ${match.status})`);
@@ -215,6 +313,71 @@ export async function resumeMatch(matchId: number): Promise<Matches> {
 		const newStartedAt = match.startedAt ? new Date(match.startedAt.getTime() + pausedMs) : new Date();
 		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: newStartedAt, pausedAt: null } });
 	});
+	return pushRconAfterCommit(matchId, match, 'css_forceunpause');
+}
+
+/**
+ * Skips the real server's in-progress ready-up wait (MatchZy holds warmup until enough players
+ * on both sides type `.ready`/`!ready`) — for when players won't or can't ready up themselves,
+ * e.g. testing, or a no-show. Purely an RCON nudge to the already-`LIVE` server (the app already
+ * flipped to LIVE the moment Start was clicked, well before MatchZy's own ready-up phase even
+ * begins) — no app-side state changes of its own, so no DB transaction or MatchActionResult
+ * `match` update is meaningful here beyond what's already LIVE.
+ */
+export async function forceStartMatch(matchId: number): Promise<{ configPushError: string | null }> {
+	const match = await db.matches.findUniqueOrThrow({ where: { id: matchId } });
+	if (match.status !== 'LIVE') {
+		throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
+	}
+	const { configPushError } = await pushRconAfterCommit(matchId, match, 'css_forcestart');
+	return { configPushError };
+}
+
+/**
+ * Resets a LIVE/PAUSED match back to SCHEDULED — clears its score, winner, and timer state (and,
+ * for bo1/bo3 series, every MatchMap's result and this match's player stats) so it can be started
+ * fresh, e.g. after the server-side match got into a broken state. Team assignments, the map veto
+ * result, and the assigned game server (see ensureGameServer — it reuses an existing GameServer
+ * row) are left untouched: the admin re-runs Start Match afterwards, which re-pushes a clean
+ * config to the same server. Also pushes the equivalent admin restart to the real server itself
+ * over RCON (`css_restart`) so the live game resets immediately too, not just the app's record.
+ *
+ * Deliberately not allowed on a COMPLETED match — that already propagated its winner into the
+ * bracket (propagateWinner) and possibly finalized the tournament; unwinding that safely is out
+ * of scope here.
+ */
+export async function restartMatch(matchId: number): Promise<MatchActionResult> {
+	const match = await db.$transaction(async (tx) => {
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
+		if (match.status !== 'LIVE' && match.status !== 'PAUSED') {
+			throw new MatchLifecycleError(`Match ${matchId} is not live or paused (current status: ${match.status}) — a completed match can't be restarted`);
+		}
+
+		// No-op for pickups (no MatchMap rows — see finalizeVeto) and for bo1 matches before any
+		// map result was recorded; otherwise clears each map back to its pre-play state so
+		// recordMapResult's "already completed" idempotency doesn't block replaying it.
+		await tx.matchMap.updateMany({
+			where: { matchId },
+			data: { scoreTeamA: null, scoreTeamB: null, winnerId: null, status: 'SCHEDULED', startedAt: null, completedAt: null },
+		});
+
+		await tx.playerMatchStat.deleteMany({ where: { matchId } });
+
+		return tx.matches.update({
+			where: { id: matchId },
+			data: {
+				status: 'SCHEDULED',
+				scoreTeamA: null,
+				scoreTeamB: null,
+				winnerId: null,
+				winnerSide: null,
+				startedAt: null,
+				pausedAt: null,
+				completedAt: null,
+			},
+		});
+	});
+	return pushRconAfterCommit(matchId, match, 'css_restart');
 }
 
 export interface RoundRobinStanding {

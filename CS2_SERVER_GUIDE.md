@@ -58,6 +58,18 @@ Wait until the logs show both servers have fully started (map loaded, listening)
 kicked immediately on connect until the app loads a real match onto that specific server —
 that's expected, not a bug; don't try to join before starting a match from the app.
 
+Also start `pool-controller` (still from `cs-docker/`) — the app needs it to start any match at
+all, since it's what boots a server directly onto a match's map instead of a live RCON map change
+(which segfaults this Metamod build unconditionally — see `cs-docker/README.md`'s compatibility
+section):
+
+```bash
+node pool-controller/index.js
+```
+
+Set `POOL_CONTROLLER_TOKEN` in `cs-docker/.env` and the app's own `.env` (same value in both),
+and `POOL_CONTROLLER_URL` in the app's `.env` pointing at wherever this ends up running.
+
 ### Want more than two servers?
 
 Copy the `cs2-dedicated-02` block in `docker-compose.yml`, rename it (`cs2-dedicated-03`), bump
@@ -86,19 +98,35 @@ Each pool entry's `port`/`rconPort`/`rconPassword` must exactly match that serve
 and use the older `CS2_SERVER_IP`/`CS2_SERVER_PORT`/`CS2_RCON_HOST`/`CS2_RCON_PORT`/
 `CS2_RCON_PASSWORD` vars instead — see `.examplenv`.)
 
-`NEXTAUTH_URL` (already required for auth) doubles as the base URL every CS2 server calls back
-to for match config and result reporting — it must be a URL the CS2 host(s) can actually reach,
-not just `localhost`, if they're on a different machine than the app (see §6).
+`NEXTAUTH_URL` (already required for auth) doubles as the *default* base URL every CS2 server
+calls back to for match config and result reporting — it must be a URL the CS2 host(s) can
+actually reach, not just `localhost`, if they're on a different machine than the app (see §6). If
+it isn't (see §4 for the common local-dev case), set `GAME_SERVER_CALLBACK_URL` instead —
+`src/lib/cs2/callback-url.ts` prefers it over `NEXTAUTH_URL` whenever it's set.
 
 Restart the Next.js dev server after editing `.env` so it picks up the new values.
 
 ## 4. Local network wrinkle
 
-If you run the Next.js app directly with `npm run dev` on your host machine (not in Docker), you
-don't need to do anything extra — `localhost`/`127.0.0.1` already reaches the CS2 containers'
-published ports, and `NEXTAUTH_URL=http://localhost:3000` is reachable from the containers too
-(Docker Desktop maps container `localhost`→host on Mac/Windows; on Linux use
-`http://host.docker.internal:3000` or your host's LAN IP instead).
+If you run the Next.js app directly with `npm run dev` on your host machine (not in Docker),
+`localhost`/`127.0.0.1` reaches the CS2 containers' published ports fine *from the app's side* —
+but the reverse direction (the CS2 container fetching `matchzy_loadmatch_url` back into the app)
+does **not** just work with `NEXTAUTH_URL=http://localhost:3000`: `localhost` inside a container
+is the container itself, not the host, on every platform (confirmed directly — `curl
+http://localhost:3000` from inside the container fails, `curl
+http://host.docker.internal:3000` from the same container succeeds). A previous version of this
+guide claimed Docker Desktop maps container `localhost` to the host on Mac/Windows — it does not.
+
+Set `GAME_SERVER_CALLBACK_URL=http://host.docker.internal:3000` in the app's `.env` (Docker
+Desktop's fixed DNS name for the host machine; on Linux, use your host's LAN IP instead if
+`host.docker.internal` isn't available). Getting this wrong doesn't throw anywhere visible: the
+container's own fetch just fails silently (`[MatchZy] [LoadMatchFromURL - FATAL] Async fetch
+error: Connection refused`), no match config ever loads, and
+`matchzy_kick_when_no_match_loaded` then kicks *every* connecting player — including ones who
+did join a side through the match page — because MatchZy never actually has a match loaded to
+check them against. The same broken URL also silently breaks the `matchzy_remote_log_url` score
+webhook, so scores drift and never show live on the match page. If you're seeing either symptom,
+check this first — `docker logs <container> | grep -i "connection refused"` confirms it.
 
 If you *also* run the app in Docker, put both compose stacks on one shared network so they can
 address each other by service name:
@@ -176,9 +204,20 @@ in production.
   first, don't join manually.
 - **RCON auth fails**: the `CS2_SERVER_POOL` entry's `rconPassword` doesn't match that server's
   `CS2_SERVER_<N>_RCONPW` (cs-docker), or the RCON port isn't reachable (firewall, wrong `ip`).
-- **Match config never loads on the server**: check the CS2 server can reach `NEXTAUTH_URL`
-  (§4) — `matchzy_loadmatch_url` is an HTTP GET *from the game server*, so `localhost` only
-  works if they're genuinely on the same machine/network namespace.
+- **Match config never loads on the server, or you're kicked despite having joined a side**:
+  check the CS2 server can reach `GAME_SERVER_CALLBACK_URL`/`NEXTAUTH_URL` (§4) —
+  `matchzy_loadmatch_url` is an HTTP GET *from the game server*, so `localhost` only works if
+  they're genuinely on the same machine/network namespace (never true for a Dockerized CS2
+  server — see §4). When this fetch fails, MatchZy never actually loads a match, so
+  `matchzy_kick_when_no_match_loaded` kicks *everyone*, including players who did join a side —
+  it isn't whitelist logic being wrong. `docker logs <container> | grep -i "connection refused"`
+  confirms it.
+- **Starting a match fails, or the server crashes/disappears right as a match starts**: check
+  `pool-controller` is actually running and reachable (`POOL_CONTROLLER_URL`/`POOL_CONTROLLER_TOKEN`
+  — see §2). Without it, starting a match falls back to a live RCON map change, which segfaults
+  this Metamod build unconditionally (`cs-docker/README.md`'s compatibility section) — the
+  container will show `Exited (0)` shortly after `docker ps -a` and its logs end with
+  `Segmentation fault (core dumped)` right after a `Host activate: Changelevel` line.
 - **Score never updates in the app**: MatchZy's remote-log webhook may not be firing (see §6
   step 5) — use the manual sync endpoint as a stopgap and enter the score by hand.
 - **"All N CS2 server(s) in the pool are currently in use"**: expected once every server is

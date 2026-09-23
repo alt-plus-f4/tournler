@@ -7,17 +7,25 @@ import Link from 'next/link';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FaDiscord, FaSteam } from 'react-icons/fa6';
-import { ExternalLink, User as UserIcon } from 'lucide-react';
+import { ExternalLink, User as UserIcon, Trophy } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { BadgeIcon } from '@/lib/badge-icons';
+import { LevelBadge, levelColor } from '@/components/LevelBadge';
+import { faceitLevelProgress } from '@/lib/faceit';
 
 interface SteamData {
 	steamId: string;
 	createdAt: string;
+}
+
+interface FaceitInfo {
+	level: number;
+	elo: number;
+	faceitUrl: string | null;
 }
 
 interface ProfileBadge {
@@ -65,15 +73,6 @@ interface PlayerRecentMatch {
 	matchDate: string;
 }
 
-const HEXAGON_CLIP = 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)';
-
-function levelColor(level: number): string {
-	if (level >= 20) return '#facc15';
-	if (level >= 10) return '#a855f7';
-	if (level >= 5) return '#3b82f6';
-	return '#22c55e';
-}
-
 function formatDate(isoDate: string): string {
 	return new Date(isoDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 }
@@ -102,6 +101,7 @@ export default function PublicProfilePage() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [notFound, setNotFound] = useState(false);
 	const [profile, setProfile] = useState<PublicProfileData | null>(null);
+	const [faceit, setFaceit] = useState<FaceitInfo | null>(null);
 	const [stats, setStats] = useState<PlayerCareerStats | null>(null);
 	const [recentMatches, setRecentMatches] = useState<PlayerRecentMatch[]>([]);
 	const [isEditing, setIsEditing] = useState(false);
@@ -129,6 +129,7 @@ export default function PublicProfilePage() {
 			const pub = data.user as PublicProfileData;
 			setStats(data.stats ?? null);
 			setRecentMatches(data.recentMatches ?? []);
+			setFaceit(data.faceit ?? null);
 
 			if (meRes?.ok) {
 				const meJson = await meRes.json();
@@ -175,11 +176,10 @@ export default function PublicProfilePage() {
 
 	const isOwner = currentUserId === profile.id;
 
-	const memberDays = Math.max(0, Math.floor((Date.now() - new Date(profile.createdAt).getTime()) / (1000 * 60 * 60 * 24)));
-	const level = Math.floor(memberDays / 30) + (profile.steam ? 1 : 0);
-	const xp = memberDays * 10;
-	const xpForNext = (level + 1) * 300;
-	const accentColor = levelColor(level);
+	// Real FACEIT CS2 level, looked up server-side by the player's linked Steam account (see
+	// src/lib/faceit.ts) — not a homegrown activity metric. Null if Steam isn't linked, the
+	// player has no FACEIT account for CS2, or FACEIT_API_KEY isn't configured.
+	const accentColor = faceit ? levelColor(faceit.level) : '#FFFFFF';
 
 	const startEdit = () => {
 		setEditName(profile.name || '');
@@ -225,12 +225,16 @@ export default function PublicProfilePage() {
 
 	const overlayBadges = (profile.badges ?? []).filter((b) => b.badge.isOverlay).slice(0, 2);
 	const showcaseBadges = (profile.badges ?? []).filter((b) => !b.badge.isOverlay);
+	const progress = faceit ? faceitLevelProgress(faceit.level, faceit.elo) : null;
 
 	return (
 		<div className='min-h-screen py-8 sm:py-12 bg-black'>
 			<div className='max-w-4xl mx-auto px-4'>
-				{/* Header bar: identity + headline stats */}
-				<div className='flex flex-col border border-border bg-neutral-950 sm:flex-row sm:items-stretch'>
+				{/* Header bar: identity + headline stats. Top edge tinted to the FACEIT skill color, and
+				    the nickname itself picks up that color — both mirror how FACEIT colors a profile by rank. */}
+				<div className='border border-border bg-neutral-950'>
+					{faceit && <div className='h-1' style={{ backgroundColor: accentColor }} />}
+					<div className='flex flex-col sm:flex-row sm:items-stretch'>
 					<div className='flex items-center gap-4 p-5 flex-1 min-w-0'>
 						<div className='relative h-20 w-20 shrink-0'>
 							{isOwner && isEditing ? (
@@ -258,30 +262,31 @@ export default function PublicProfilePage() {
 							)}
 							{!avatarLoaded && <Skeleton className='absolute inset-0 h-20 w-20 rounded-full bg-gray-800' />}
 
-							<div
-								className='absolute -bottom-1 -right-1 flex h-6 w-7 items-center justify-center text-[11px] font-black text-black'
-								style={{ backgroundColor: accentColor, clipPath: HEXAGON_CLIP }}
-								title={`Level ${level}`}
-							>
-								{level}
-							</div>
+							{faceit && (
+								<div className='absolute -bottom-1 -right-1'>
+									<LevelBadge level={faceit.level} size='lg' />
+								</div>
+							)}
 
 							{overlayBadges.map(({ badge }, i) => (
 								<span
 									key={badge.id}
 									title={badge.description ?? badge.name}
-									className='absolute -left-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-neutral-950'
-									style={{ backgroundColor: badge.color, top: `${-2 + i * 18}px`, zIndex: 10 - i }}
+									className='absolute -left-1.5 flex h-6 w-6 items-center justify-center rounded-full ring-2 ring-black'
+									style={{ backgroundColor: badge.color, top: `${-2 + i * 22}px`, zIndex: 10 - i }}
 								>
-									<BadgeIcon name={badge.icon} className='h-2.5 w-2.5 text-white' />
+									<BadgeIcon name={badge.icon} className='h-4 w-4 text-white' />
 								</span>
 							))}
 						</div>
 
 						<div className='min-w-0 flex-1'>
-							<div className='flex items-center gap-2 flex-wrap'>
+							<div className='flex items-center gap-2.5 flex-wrap'>
 								{!isEditing ? (
-									<h1 className='text-xl font-bold text-white truncate'>{profile.name}</h1>
+									// FACEIT colors the nickname itself by skill level rather than leaving it plain white.
+									<h1 className='text-xl font-bold truncate' style={{ color: faceit ? accentColor : '#fff' }}>
+										{profile.name}
+									</h1>
 								) : (
 									<Input value={editName} onChange={(e) => setEditName(e.target.value)} className='bg-gray-800 border-border text-white h-8 max-w-xs' />
 								)}
@@ -289,14 +294,41 @@ export default function PublicProfilePage() {
 									<span
 										key={badge.id}
 										title={badge.description ?? badge.name}
-										className='flex h-5 w-5 items-center justify-center rounded-full border border-border'
-										style={{ backgroundColor: `${badge.color}20` }}
+										className='flex h-7 w-7 items-center justify-center rounded-full ring-2 ring-black'
+										style={{ backgroundColor: badge.color }}
 									>
-										<BadgeIcon name={badge.icon} className='h-2.5 w-2.5' style={{ color: badge.color }} />
+										<BadgeIcon name={badge.icon} className='h-4 w-4 text-white' />
 									</span>
 								))}
 							</div>
-							<p className='text-xs text-gray-500 mt-0.5'>Member since {formatDate(profile.createdAt)}</p>
+
+							{/* FACEIT level — real data from FACEIT's Data API (src/lib/faceit.ts), not a homegrown
+							    activity metric. Elo bar shows progress through the current level's band. */}
+							{faceit && (
+								<div className='flex items-center gap-2 mt-1'>
+									<LevelBadge level={faceit.level} size='sm' />
+									<span className='text-xs font-semibold' style={{ color: accentColor }}>
+										Level {faceit.level}
+									</span>
+									<span className='text-xs text-gray-500'>{faceit.elo.toLocaleString()} Elo</span>
+									{progress && progress.ceiling !== null && (
+										<div className='hidden items-center gap-1.5 sm:flex'>
+											<div className='h-1 w-20 overflow-hidden rounded-full bg-gray-800'>
+												<div className='h-full rounded-full' style={{ width: `${progress.percent}%`, backgroundColor: accentColor }} />
+											</div>
+											<span className='text-[10px] text-gray-600'>{(progress.ceiling - faceit.elo + 1).toLocaleString()} to Lvl {faceit.level + 1}</span>
+										</div>
+									)}
+									{faceit.faceitUrl && (
+										<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='text-gray-600 hover:text-white' title='View on FACEIT'>
+											<ExternalLink className='h-3 w-3' />
+										</a>
+									)}
+								</div>
+							)}
+							{!faceit && isOwner && !profile.steam && <p className='text-xs text-gray-500 mt-1'>Link your Steam account below to show your FACEIT level</p>}
+
+							<p className='text-xs text-gray-500 mt-1'>Member since {formatDate(profile.createdAt)}</p>
 							{!isEditing ? (
 								profile.bio && <p className='text-sm text-gray-400 mt-1.5 truncate'>{profile.bio}</p>
 							) : (
@@ -333,17 +365,7 @@ export default function PublicProfilePage() {
 							))}
 						</div>
 					)}
-				</div>
-
-				{/* Level progress */}
-				<div className='flex items-center gap-3 border border-t-0 border-border bg-neutral-950 px-5 py-2.5'>
-					<span className='text-[10px] uppercase tracking-widest text-gray-500 shrink-0'>Level {level}</span>
-					<div className='h-1 flex-1 overflow-hidden rounded-full bg-gray-800'>
-						<div className='h-full rounded-full' style={{ width: `${Math.min(100, (xp / xpForNext) * 100)}%`, backgroundColor: accentColor }} />
 					</div>
-					<span className='text-[10px] text-gray-500 shrink-0'>
-						{xp}/{xpForNext} XP
-					</span>
 				</div>
 
 				{isOwner && isEditing && (
@@ -370,6 +392,35 @@ export default function PublicProfilePage() {
 							/>
 						</DialogContent>
 					</Dialog>
+				)}
+
+				{/* Trophies — HLTV-style achievement cabinet: every earned (non-overlay) badge as its own
+				    card (icon, name, date). Overlay badges (e.g. Verified) are status markers pinned to the
+				    avatar, not achievements, so they're excluded here — same overlay/showcase split already
+				    used for the avatar/name badges above. Sits right under the header since it's the first
+				    thing a visitor should see. */}
+				{showcaseBadges.length > 0 && (
+					<div className='mt-8'>
+						<h2 className='text-lg font-bold text-white mb-3 flex items-center gap-2'>
+							<Trophy className='h-4 w-4 text-yellow-500' /> Trophies
+						</h2>
+						<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3'>
+							{[...showcaseBadges]
+								.sort((a, b) => new Date(b.awardedAt).getTime() - new Date(a.awardedAt).getTime())
+								.map(({ badge, awardedAt }) => (
+									<div key={badge.id} className='border border-border bg-neutral-950 p-4 flex flex-col items-center text-center gap-2 hover:border-white/40 transition-colors'>
+										<span className='flex h-12 w-12 items-center justify-center rounded-full ring-1 ring-white/10' style={{ backgroundColor: badge.color }}>
+											<BadgeIcon name={badge.icon} className='h-6 w-6 text-white' />
+										</span>
+										<div className='min-w-0'>
+											<p className='text-sm font-semibold text-white truncate'>{badge.name}</p>
+											{badge.description && <p className='text-xs text-gray-500 mt-0.5 line-clamp-2'>{badge.description}</p>}
+											<p className='text-[10px] text-gray-600 mt-1.5 uppercase tracking-wide'>{formatDate(awardedAt)}</p>
+										</div>
+									</div>
+								))}
+						</div>
+					</div>
 				)}
 
 				{/* Statistics — sits directly below the player, not behind a tab */}

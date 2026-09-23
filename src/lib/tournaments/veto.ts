@@ -1,4 +1,4 @@
-import { Prisma, MapActionType } from '@prisma/client';
+import { Prisma, MapActionType, MatchSlot } from '@prisma/client';
 import { ACTIVE_DUTY_MAPS } from './maps';
 
 type Tx = Prisma.TransactionClient;
@@ -22,12 +22,16 @@ export function normalizeBestOf(bestOf: number | null | undefined): 1 | 3 {
 
 export interface MatchMapActionLike {
 	teamId: number | null;
+	// Pickup-match actor (see MatchMapAction.side) — null for non-pickup actions (which use
+	// teamId) and for the system-generated DECIDER action either way.
+	side: MatchSlot | null;
 	action: MapActionType;
 	mapName: string;
 	order: number;
 }
 
 export interface VetoMatchLike {
+	isPickup: boolean;
 	teamAId: number | null;
 	teamBId: number | null;
 	bestOf: number | null;
@@ -41,7 +45,10 @@ export interface VetoState {
 	mapPool: string[];
 	availableMaps: string[];
 	actions: MatchMapActionLike[];
+	// Exactly one of currentTurnTeamId/currentTurnSide is meaningful, matching whether the match
+	// is a pickup — see MatchMapAction's own teamId/side split.
 	currentTurnTeamId: number | null;
+	currentTurnSide: MatchSlot | null;
 	nextActionType: VetoAction | null;
 	confirmedMaps: string[];
 }
@@ -68,14 +75,16 @@ export function getVetoState(match: VetoMatchLike, tournamentMapPool: string[], 
 
 	const nextIndex = banPickActions.length;
 	const nextActionType = phase === 'COMPLETE' ? null : (sequence[nextIndex] ?? null);
-	// teamAId always acts first (order parity 0 = team A); no coin-flip mechanic for MVP.
-	const currentTurnTeamId = phase === 'COMPLETE' || nextActionType === null ? null : nextIndex % 2 === 0 ? match.teamAId : match.teamBId;
+	const isActing = phase !== 'COMPLETE' && nextActionType !== null;
+	// Side/team A always acts first (order parity 0); no coin-flip mechanic for MVP.
+	const currentTurnTeamId = !isActing || match.isPickup ? null : nextIndex % 2 === 0 ? match.teamAId : match.teamBId;
+	const currentTurnSide: MatchSlot | null = !isActing || !match.isPickup ? null : nextIndex % 2 === 0 ? 'TEAM_A' : 'TEAM_B';
 
 	const confirmedMaps = actions
 		.filter((a) => a.action === 'PICK' || a.action === 'DECIDER')
 		.map((a) => a.mapName);
 
-	return { phase, bestOf, sequenceLength: sequence.length, mapPool, availableMaps, actions, currentTurnTeamId, nextActionType, confirmedMaps };
+	return { phase, bestOf, sequenceLength: sequence.length, mapPool, availableMaps, actions, currentTurnTeamId, currentTurnSide, nextActionType, confirmedMaps };
 }
 
 /** The final ordered map list for the series (bo1: one decider map; bo3: pick1, pick2, decider), in play order. */
@@ -123,7 +132,7 @@ export async function finalizeVeto(tx: Tx, matchId: number): Promise<void> {
 
 	const confirmedMaps = getConfirmedMaps({
 		...match,
-		mapActions: [...match.mapActions, { teamId: null, action: 'DECIDER', mapName: deciderMap, order: deciderOrder }],
+		mapActions: [...match.mapActions, { teamId: null, side: null, action: 'DECIDER', mapName: deciderMap, order: deciderOrder }],
 	});
 
 	for (let i = 0; i < confirmedMaps.length; i++) {

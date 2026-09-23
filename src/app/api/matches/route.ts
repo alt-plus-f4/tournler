@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 		}
 
 		const body = await request.json();
-		const { tournamentId, teamAId, teamBId, matchDate, isPickup } = body;
+		const { tournamentId, teamAId, teamBId, matchDate, isPickup, bestOf, pickupMode } = body;
 
 		if (!matchDate) {
 			return NextResponse.json({ error: 'matchDate is required' }, { status: 400 });
@@ -85,6 +85,13 @@ export async function POST(request: Request) {
 		}
 
 		if (isPickup) {
+			if (bestOf !== undefined && bestOf !== 1 && bestOf !== 3) {
+				return NextResponse.json({ error: 'bestOf must be 1 or 3' }, { status: 400 });
+			}
+			if (pickupMode !== undefined && pickupMode !== 'OPEN' && pickupMode !== 'CAPTAIN_DRAFT') {
+				return NextResponse.json({ error: 'pickupMode must be OPEN or CAPTAIN_DRAFT' }, { status: 400 });
+			}
+
 			const pickupTournament = await getOrCreatePickupTournament(session.user.id);
 			const round = 1;
 			const position = await db.matches.count({ where: { tournamentId: pickupTournament.id, round } });
@@ -98,6 +105,8 @@ export async function POST(request: Request) {
 					position,
 					bracketSlot: 'WINNERS',
 					isPickup: true,
+					bestOf: bestOf ?? 1,
+					pickupMode: pickupMode ?? 'OPEN',
 				},
 				include: {
 					tournament: { select: { id: true, name: true } },

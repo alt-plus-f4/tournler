@@ -11,7 +11,7 @@ import { getAuthSession } from '@/lib/auth';
 import { InteractiveBackground } from '@/components/InteractiveBackground';
 
 const roboto = Roboto({
-	weight: '400',
+	weight: ['400', '500', '700', '900'],
 	subsets: ['latin'],
 	display: 'swap',
 });
@@ -33,6 +33,9 @@ export default async function RootLayout({
 	return (
 		<html lang='en' data-scroll-behavior='smooth'>
 			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
+				<a href='#content' className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black'>
+					Skip to content
+				</a>
 				<InteractiveBackground />
 				<ConvexClientProvider>
 					<Navbar session={session} />
@@ -43,7 +46,9 @@ export default async function RootLayout({
 						<OnboardingStatus session={session} />
 					</Providers>
 
-					{children}
+					<main id='content' className='flex-1'>
+						{children}
+					</main>
 
 					<Toaster />
 				</ConvexClientProvider>

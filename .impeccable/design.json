@@ -1,0 +1,400 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-23T00:00:00Z",
+  "title": "Design System: Tournler",
+  "extensions": {
+    "colorMeta": {
+      "stage-black": {
+        "role": "neutral",
+        "displayName": "Stage Black",
+        "canonical": "#000000",
+        "tonalRamp": [
+          "#000000",
+          "#09090b",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#737373",
+          "#d4d4d4",
+          "#fafafa"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "hsl(240 10% 3.9%)",
+        "tonalRamp": [
+          "#09090b",
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#e4e4e7"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#171717",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#e5e5e5"
+        ]
+      },
+      "panel-raised": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#262626",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#e5e5e5"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "hsl(240 3.7% 15.9%)",
+        "tonalRamp": [
+          "#09090b",
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#e4e4e7"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Broadcast Ink",
+        "canonical": "hsl(0 0% 98%)",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#e5e5e5",
+          "#fafafa"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#d4d4d4",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#e5e5e5",
+          "#fafafa"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "hsl(240 5% 64.9%)",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#f4f4f5"
+        ]
+      },
+      "label-grey": {
+        "role": "neutral",
+        "displayName": "Label Grey",
+        "canonical": "#737373",
+        "tonalRamp": [
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#f5f5f5"
+        ]
+      },
+      "on-air-red": {
+        "role": "secondary",
+        "displayName": "On-Air Red",
+        "canonical": "#ef4444",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#ef4444",
+          "#f87171",
+          "#fecaca"
+        ]
+      },
+      "ready-green": {
+        "role": "tertiary",
+        "displayName": "Ready Green",
+        "canonical": "#22c55e",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#22c55e",
+          "#4ade80",
+          "#bbf7d0"
+        ]
+      },
+      "hold-amber": {
+        "role": "tertiary",
+        "displayName": "Hold Amber",
+        "canonical": "#facc15",
+        "tonalRamp": [
+          "#422006",
+          "#713f12",
+          "#854d0e",
+          "#a16207",
+          "#ca8a04",
+          "#eab308",
+          "#facc15",
+          "#fef08a"
+        ]
+      },
+      "danger-deep": {
+        "role": "secondary",
+        "displayName": "Danger Deep",
+        "canonical": "hsl(0 62.8% 30.6%)",
+        "tonalRamp": [
+          "#2a0808",
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#fecaca"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles and team names on scoreboard/veto; 900 uppercase. Currently faux-bold (Roboto 400 only loaded)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section and card headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "List card titles, single line."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default working text at 14px."
+      },
+      "label": {
+        "displayName": "Section Label",
+        "purpose": "Tracked uppercase panel headers and table column heads in Label Grey."
+      },
+      "numeric": {
+        "displayName": "Readout",
+        "purpose": "Scores, timers, stats, console lines; tabular monospace."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-hairline",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "shadcn Card default; effectively invisible on black."
+      },
+      {
+        "name": "hover-lift-legacy",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Featured/upcoming tournament card hover with scale(1.02-1.05). Incumbent exception; don't spread."
+      }
+    ],
+    "motion": [
+      {
+        "name": "pulse-live",
+        "value": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "purpose": "Status dots only, and only for server-reported live/ready/on-the-clock states."
+      },
+      {
+        "name": "colors-standard",
+        "value": "color, background-color, border-color 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default button/link state transition."
+      },
+      {
+        "name": "spotlight-follow",
+        "value": "background-position 150ms ease-out",
+        "purpose": "Pointer spotlight on the canvas; disabled under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink-filled control-desk switch for the single primary action.",
+      "html": "<button class=\"ds-btn-primary\">Start tournament</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:8px; height:40px; padding:8px 16px; border:none; border-radius:6px; background:#fafafa; color:#18181b; font:500 14px/1 Roboto, system-ui, sans-serif; cursor:pointer; transition: background-color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: rgb(250 250 250 / 0.9); } .ds-btn-primary:focus-visible { outline:none; box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #d4d4d8; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action: canvas fill, hairline stroke.",
+      "html": "<button class=\"ds-btn-outline\">View bracket</button>",
+      "css": ".ds-btn-outline { display:inline-flex; align-items:center; height:40px; padding:8px 16px; border:1px solid #27272a; border-radius:6px; background:#09090b; color:#fafafa; font:500 14px/1 Roboto, system-ui, sans-serif; cursor:pointer; transition: background-color 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-outline:hover { background:#27272a; } .ds-btn-outline:focus-visible { outline:none; box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #d4d4d8; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Canvas field with hairline stroke and light focus ring.",
+      "html": "<input class=\"ds-input\" placeholder=\"Tournament name\" />",
+      "css": ".ds-input { height:40px; width:260px; padding:8px 12px; border:1px solid #27272a; border-radius:6px; background:#09090b; color:#fafafa; font:400 14px/1.5 Roboto, system-ui, sans-serif; } .ds-input::placeholder { color:#a1a1aa; } .ds-input:focus-visible { outline:none; box-shadow: 0 0 0 2px #09090b, 0 0 0 4px #d4d4d8; }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "description": "Sticky halftone-glass bar with ghost links divided by hairlines.",
+      "html": "<nav class=\"ds-nav\"><span class=\"ds-nav-logo\">TOURNLER</span><div class=\"ds-nav-links\"><a>Information</a><a>Tournaments</a><a>Matches</a><a>Teams</a></div><span class=\"ds-nav-admin\">ADMIN</span></nav>",
+      "css": ".ds-nav { display:grid; grid-template-columns:25% 50% 25%; align-items:center; height:56px; padding:0 16px; border-top:1px solid #27272a; border-bottom:1px solid #27272a; background-image: radial-gradient(transparent 1px, #000 1px); background-size:4px 4px; backdrop-filter:saturate(50%) blur(12px); color:#fafafa; font:400 14px Roboto, system-ui, sans-serif; } .ds-nav-logo { font-weight:900; letter-spacing:0.05em; } .ds-nav-links { display:flex; justify-content:center; } .ds-nav-links a { padding:10px 24px; border-left:1px solid #27272a; border-right:1px solid #27272a; font-weight:500; cursor:pointer; transition: background-color 150ms; } .ds-nav-links a:hover { background:#27272a; } .ds-nav-admin { justify-self:end; background:#ef4444; color:#fff; border-radius:12px; padding:4px 8px; font-size:12px; text-transform:uppercase; }"
+    },
+    {
+      "name": "Status Readout",
+      "kind": "custom",
+      "description": "Signature: dot + state word + mono timer for server-reported states.",
+      "html": "<div class=\"ds-status-row\"><span class=\"ds-status ds-live\"><i></i>LIVE · <b>12:34</b></span><span class=\"ds-status ds-ready\"><i></i>Server ready — join now · <b>3:12</b></span><span class=\"ds-status ds-paused\"><i></i>PAUSED · <b>18:02</b></span></div>",
+      "css": ".ds-status-row { display:flex; flex-direction:column; gap:10px; } .ds-status { display:inline-flex; align-items:center; gap:8px; color:#fafafa; font:700 14px Roboto, system-ui, sans-serif; } .ds-status b { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; } .ds-status i { width:8px; height:8px; border-radius:9999px; display:inline-block; } .ds-live i { background:#ef4444; animation: ds-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; } .ds-ready i { background:#22c55e; animation: ds-pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; } .ds-paused { color:#facc15; } .ds-paused i { background:#facc15; } @keyframes ds-pulse { 50% { opacity:.5; } } @media (prefers-reduced-motion: reduce) { .ds-status i { animation:none; } }"
+    },
+    {
+      "name": "Section Label",
+      "kind": "custom",
+      "refersTo": "section-label",
+      "description": "Signature: tracked uppercase panel header.",
+      "html": "<p class=\"ds-section-label\">Map Veto · Best of 3</p>",
+      "css": ".ds-section-label { margin:0; color:#737373; font:700 12px/1 Roboto, system-ui, sans-serif; text-transform:uppercase; letter-spacing:0.1em; }"
+    },
+    {
+      "name": "Console Panel",
+      "kind": "custom",
+      "refersTo": "panel-console",
+      "description": "Signature: RCON history log on stage black.",
+      "html": "<div class=\"ds-console\"><div>&gt; css_forcepause</div><div class=\"ds-console-muted\">[MatchZy] Match paused by admin.</div><div>&gt; css_forceunpause</div></div>",
+      "css": ".ds-console { width:320px; padding:12px; background:#000; border:1px solid #27272a; border-radius:6px; color:#fafafa; font:400 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; display:flex; flex-direction:column; gap:8px; } .ds-console-muted { color:#a1a1aa; }"
+    },
+    {
+      "name": "Tournament Card",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Banner card: cropped art over hairline-bordered canvas body.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-banner\"></div><div class=\"ds-card-body\"><h3>Autumn Community Cup</h3><div class=\"ds-card-meta\"><span>Oct 12, 2026</span><span>$500</span></div></div></div>",
+      "css": ".ds-card { width:300px; overflow:hidden; border:1px solid #27272a; border-radius:8px; background:#09090b; color:#fafafa; font-family: Roboto, system-ui, sans-serif; transition: border-color 150ms, filter 150ms; } .ds-card:hover { border-color:#52525b; filter:brightness(1.1); } .ds-card-banner { height:128px; background: linear-gradient(to top, #000, #262626); } .ds-card-body { padding:16px; } .ds-card-body h3 { margin:0 0 8px; font-size:18px; font-weight:600; } .ds-card-meta { display:flex; justify-content:space-between; color:#a1a1aa; font-size:14px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Broadcast Booth",
+    "overview": "Tournler looks like the control room behind an esports broadcast. The stage is black, the chrome recedes, and whatever is on air takes over the screen. Team names are set heavy and uppercase like overlay graphics, scores and timers run in monospaced numerals, and a pulsing red dot means one thing: this is live, right now. The rest of the interface is equipment for the operator (organizers, admins and players checking in), and it stays out of the way until something needs attention.\n\nThe product is dark-only. `.dark` is forced on `<body>` and there is no theme switch. Depth comes from light, not lift. A faint 42px grid texture covers the whole canvas, and a soft white spotlight (500px radial glow) follows the pointer. The navbar is dotted glass: a 4px halftone dot screen over a saturated blur. Nearly everything is monochrome. Color is a signal and never decoration.\n\nDensity is moderate to high on operate surfaces (match page, admin) and looser on public surfaces (home, lists). Components are meant to feel like hard-edged hardware: switches and readouts on a control desk, not soft consumer cards.\n\nThe Booth has two rooms. **On air** covers public and match surfaces (home, tournaments, brackets, match pages): broadcast energy, heavy names, the live signal front and center. **The control room** is `/admin` and the operator panels inside match pages. Keep them dense, monochrome and keyboard-first: tables over cards, labels over decoration, no hover lifts, and signal color only for state.",
+    "keyCharacteristics": [
+      "Black stage, white ink, neutral-grey support. No hue unless it carries meaning.",
+      "Red means on-air or danger, green means ready or your turn, amber means on hold. Nothing else is colored.",
+      "Heavy uppercase for team names and headers; tracked-out small caps for section labels.",
+      "Monospaced, tabular numerals for every score, timer, stat and console line.",
+      "Flat at rest. Light and glow are the only depth cues, reserved for the pointer spotlight and the live or active element."
+    ],
+    "rules": [
+      {
+        "name": "The On-Air Rule",
+        "body": "Color is a signal, never decoration. Red means live or danger, green means ready or your turn, amber means paused. If an element isn't reporting state, it's monochrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pulse Means Now Rule",
+        "body": "A pulsing dot is only allowed when the game server has actually reported that state (live, ready, on the clock). Never pulse something decorative, scheduled or finished.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readout Rule",
+        "body": "Any number that can change while someone is watching (score, round, timer, K/D, pool count) is set in monospace with tabular figures so it never jitters.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Voice Rule",
+        "body": "Section labels are always tiny, bold, uppercase and widely tracked in Label Grey. They name the panel; they never compete with its content.",
+        "section": "typography"
+      },
+      {
+        "name": "The Spotlight Rule",
+        "body": "Depth is light, not lift. Surfaces stay flat. What's live, focused or hovered brightens or glows. Nothing floats.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tight Corner Rule",
+        "body": "New chrome uses the small end of the scale (4–6px). Full rounding is reserved for things that are circles by nature: status dots, avatars and count badges. Don't add new pill-shaped containers.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do keep every surface monochrome (Stage Black, Canvas, Panel, Hairline, Ink) and use color only to report state (the On-Air Rule).",
+      "Do set scores, timers, stats and console output in monospace with tabular numerals (the Readout Rule).",
+      "Do head operate panels with a Section Label (12px, 700, uppercase, 0.1em tracking, Label Grey).",
+      "Do convey depth with tonal steps and hairline borders, and put emphasis on the live or active element with light or brightness (the Spotlight Rule).",
+      "Do use the Status Readout pattern (dot, state word, mono timer) for any server-reported state.",
+      "Do use the shared `ui/` primitives (Button, Card, Input, Badge) and the semantic tokens (`bg-background`, `border-border`, `text-muted-foreground`) rather than raw `neutral-*` or `gray-*` utilities."
+    ],
+    "donts": [
+      "Don't introduce decorative hues, gradients or brand-color accents. FACEIT, Discord and Steam colors stay inside their own marks.",
+      "Don't pulse anything the game server hasn't reported as live, ready or your turn (the Pulse Means Now Rule).",
+      "Don't add drop shadows or floating cards for hierarchy. Keep the hover lift on legacy tournament cards and don't spread it.",
+      "Don't add new pill-shaped containers or large radii. Hardware corners are tight (the Tight Corner Rule).",
+      "Don't mix grey families (`gray-*`, `slate-*`, `zinc-*`, `neutral-*`) for the same role. Pick the token.",
+      "Don't hotlink or imitate FACEIT's icon assets; the level badge is Tournler's own crest in FACEIT's band colors."
+    ]
+  }
+}

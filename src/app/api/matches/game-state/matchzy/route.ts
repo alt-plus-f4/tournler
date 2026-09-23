@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { safeEqual } from '@/lib/helpers/safe-equal';
-import { MatchResultConflictError } from '@/lib/tournaments/bracket-advancement';
+import { MatchResultConflictError, goLiveFromServer } from '@/lib/tournaments/bracket-advancement';
 import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
+import { updateLiveScore } from '@/lib/tournaments/live-score';
 
 /**
  * POST /api/matches/game-state/matchzy
@@ -13,13 +14,29 @@ import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
  * `applyGameStateUpdate()` contract the direct `/api/matches/game-state` route uses, so there
  * is exactly one place that owns "what happens when a result arrives" regardless of producer.
  *
- * CAVEAT: the JSON field names read below (`event`, `matchid`, `map_number`, `team1`/`team2`
- * scores, `winner.side`) are inferred from MatchZy's public docs and `Events.cs` event type
- * names (`map_result`, `series_end`) and have NOT been verified against a live server response
- * for the MatchZy version `cs-docker/settings/pre.sh` installs — treat this as a best-effort
- * mapping and adjust the field lookups here once real payloads are captured. There is also a
- * known reliability caveat with `matchzy_remote_log_*` on some setups (see GitHub issue
- * shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
+ * Field mapping verified against MatchZy's `dev` branch source (`Events.cs` / `MatchData.cs` /
+ * `Utility.cs::HandleMatchEnd`), not just its docs:
+ *   - `event` / `matchid` — `MatchZyEvent`/`MatchZyMatchEvent` base classes.
+ *   - `winner.team` — `Winner.Team` is the literal string `"team1"`/`"team2"` (constructed as
+ *     `t1score > t2score ? "team1" : "team2"`); `winner.side` is a *different* field holding the
+ *     CT/T designation (`"2"`/`"3"`), not the team — do not read `.side` for this.
+ *   - `map_result`: `team1`/`team2` are `MatchZyStatsTeam` objects with a `.score` field (that
+ *     map's score) — `data.team1.score`/`data.team2.score` is correct here.
+ *   - `series_end`: score fields are flat on the event, `team1_series_score`/
+ *     `team2_series_score` (`MatchZySeriesResultEvent`), NOT nested under `team1`/`team2`.
+ *   - `map_number` (`MapResultEvent.MapNumber`) is `matchConfig.CurrentMapNumber`, which is
+ *     already 0-indexed (used directly as the `Maplist` array index in MatchZy) — same indexing
+ *     as `MatchMap.order`, so no +/-1 adjustment belongs here.
+ *   - `round_end` (`MatchZyRoundEndedEvent`) fires after every round with the same `team1`/
+ *     `team2` `.score` shape as `map_result` — this is the live, in-progress round score, routed
+ *     through `updateLiveScore()` (not `applyGameStateUpdate()`) since it must never touch
+ *     status/winner/completion, only the score display.
+ *   - `series_start` (`MatchZySeriesStartedEvent`) fires once ready-up actually completes and the
+ *     series begins — routed through `goLiveFromServer()` so a match pre-warmed by
+ *     `prewarmUpcomingMatches` (loaded early, before an admin clicks Start) still flips to LIVE in
+ *     the app the moment it's genuinely being played, instead of sitting stale as SCHEDULED.
+ * There is also a known reliability caveat with `matchzy_remote_log_*` on some setups (see
+ * GitHub issue shobhit-pathak/MatchZy#369) — that's why `POST /api/matches/[matchId]/game-server/sync`
  * exists as a manual fallback, not because this adapter is expected to be unreliable by design.
  */
 export async function POST(request: Request) {
@@ -36,8 +53,8 @@ export async function POST(request: Request) {
 		}
 
 		const event = (body as Record<string, unknown>).event;
-		if (event !== 'map_result' && event !== 'series_end') {
-			// round_end and other MatchZy event types carry nothing this pipeline needs.
+		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end' && event !== 'series_start') {
+			// Other MatchZy event types (player_connect, ...) carry nothing this pipeline needs.
 			return NextResponse.json({ success: true, ignored: typeof event === 'string' ? event : 'unknown' });
 		}
 
@@ -47,26 +64,52 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Missing or invalid matchid' }, { status: 400 });
 		}
 
+		if (event === 'series_start') {
+			await goLiveFromServer(matchId);
+			return NextResponse.json({ success: true });
+		}
+
 		const match = await db.matches.findUnique({ where: { id: matchId } });
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
 		const data = body as Record<string, any>;
-		const teamAScore = Number(data.team1?.score ?? 0);
-		const teamBScore = Number(data.team2?.score ?? 0);
-		const winnerSide = data.winner?.side as 'team1' | 'team2' | undefined;
-		const winnerId = winnerSide === 'team1' ? (match.teamAId ?? undefined) : winnerSide === 'team2' ? (match.teamBId ?? undefined) : undefined;
 
-		// MatchZy's map_number is expected to be 1-indexed (Get5-compatible convention); MatchMap.order is 0-indexed.
+		// Every match (pickup or bracket) now goes through veto and gets a real MatchMap row per
+		// confirmed map (see finalizeVeto) — pickups aren't special-cased here anymore. MatchZy's
+		// own map_number is already 0-indexed, same as MatchMap.order, for both.
 		const mapNumberRaw = data.map_number;
-		const mapOrder = event === 'map_result' && typeof mapNumberRaw === 'number' ? mapNumberRaw - 1 : undefined;
+		const mapOrder = typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
+
+		if (event === 'round_end') {
+			// Live, in-progress round score — team1/team2.score here is the same shape as
+			// map_result's (see the field-mapping comment above), just fired every round instead
+			// of once at the end. Deliberately not run through applyGameStateUpdate: this must
+			// never affect status/winner/completion, only the live score display.
+			const teamAScore = Number(data.team1?.score ?? 0);
+			const teamBScore = Number(data.team2?.score ?? 0);
+			await updateLiveScore(matchId, mapOrder, teamAScore, teamBScore);
+			return NextResponse.json({ success: true });
+		}
+
+		// series_end reports series-level scores flat on the event; map_result reports that map's
+		// score nested under team1/team2 (see the field-mapping comment above).
+		const teamAScore = Number(event === 'series_end' ? (data.team1_series_score ?? 0) : (data.team1?.score ?? 0));
+		const teamBScore = Number(event === 'series_end' ? (data.team2_series_score ?? 0) : (data.team2?.score ?? 0));
+		const winnerTeam = data.winner?.team as 'team1' | 'team2' | undefined;
+		// Pickup matches have no Cs2Team to use as winnerId (see recordMatchResult) — use
+		// winnerSide instead. Non-pickup matches use winnerId, resolved via the veto-assigned teams.
+		const winnerId = !match.isPickup && winnerTeam ? ((winnerTeam === 'team1' ? match.teamAId : match.teamBId) ?? undefined) : undefined;
+		const winnerSide = match.isPickup && winnerTeam ? (winnerTeam === 'team1' ? 'TEAM_A' : 'TEAM_B') : undefined;
+		const isCompleted = winnerId !== undefined || winnerSide !== undefined;
 
 		const updated = await applyGameStateUpdate({
 			matchId,
-			mapOrder,
+			mapOrder: event === 'map_result' ? mapOrder : undefined,
 			teamAScore,
 			teamBScore,
-			isCompleted: winnerId !== undefined,
+			isCompleted,
 			winnerId,
+			winnerSide,
 		});
 
 		return NextResponse.json({ success: true, match: updated });

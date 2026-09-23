@@ -13,6 +13,9 @@ function loadMatchForVeto(matchId: number) {
 			mapActions: { orderBy: { order: 'asc' } },
 			teamA: { include: { members: { select: { id: true } } } },
 			teamB: { include: { members: { select: { id: true } } } },
+			// Pickup sides have no Cs2Team to check membership against — participants + side is the
+			// pickup equivalent of teamA/teamB.members.
+			participants: { select: { userId: true, side: true } },
 		},
 	});
 }
@@ -50,8 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 
 		const match = await loadMatchForVeto(id);
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
-		if (match.isPickup) return NextResponse.json({ error: 'Pickup matches have no map veto' }, { status: 400 });
-		if (match.teamAId === null || match.teamBId === null) {
+		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			return NextResponse.json({ error: 'Both team slots must be filled before veto can start' }, { status: 400 });
 		}
 		if (match.status !== 'SCHEDULED') {
@@ -69,20 +71,27 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 			return NextResponse.json({ error: 'Map is not available' }, { status: 400 });
 		}
 
-		const actingTeamId = state.currentTurnTeamId;
-		const actingTeam = actingTeamId === match.teamAId ? match.teamA : match.teamB;
-		const isTeamMember = actingTeam?.members.some((member) => member.id === session.user.id) ?? false;
 		const isOrganizer = match.tournament.organizerId === session.user.id;
 		const canManage = await userHasPermission(session.user.id, 'matches:manage');
 
-		if (!isTeamMember && !isOrganizer && !canManage) {
+		let isActingSideMember: boolean;
+		if (match.isPickup) {
+			isActingSideMember = match.participants.some((p) => p.userId === session.user.id && p.side === state.currentTurnSide);
+		} else {
+			const actingTeam = state.currentTurnTeamId === match.teamAId ? match.teamA : match.teamB;
+			isActingSideMember = actingTeam?.members.some((member) => member.id === session.user.id) ?? false;
+		}
+
+		if (!isActingSideMember && !isOrganizer && !canManage) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		await db.$transaction(async (tx) => {
 			try {
 				await tx.matchMapAction.create({
-					data: { matchId: id, teamId: actingTeamId, action, mapName, order: state.actions.length },
+					data: match.isPickup
+						? { matchId: id, side: state.currentTurnSide, action, mapName, order: state.actions.length }
+						: { matchId: id, teamId: state.currentTurnTeamId, action, mapName, order: state.actions.length },
 				});
 			} catch (error) {
 				if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

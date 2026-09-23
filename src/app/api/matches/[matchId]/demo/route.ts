@@ -54,6 +54,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 			token: process.env.BLOB_READ_WRITE_TOKEN,
 		});
 
+		// Series matches (bo1/bo3) have one MatchMap row per map, each getting its own demo — attach
+		// to the earliest completed map that doesn't have one yet (maps finish in order, so that's
+		// the one this demo is for). Pickups/legacy matches have no MatchMap rows at all; store the
+		// single demo directly on the match instead.
+		const targetMap = await db.matchMap.findFirst({
+			where: { matchId: id, status: 'COMPLETED', demoUrl: null },
+			orderBy: { order: 'asc' },
+		});
+		if (targetMap) {
+			await db.matchMap.update({ where: { id: targetMap.id }, data: { demoUrl: blob.url } });
+		} else {
+			await db.matches.update({ where: { id }, data: { demoUrl: blob.url } });
+		}
+
 		return NextResponse.json({ success: true, url: blob.url });
 	} catch (error) {
 		console.error('Error uploading match demo:', error);

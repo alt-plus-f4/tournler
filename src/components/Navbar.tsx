@@ -19,8 +19,8 @@ export default async function Navbar({ session }: NavbarProps) {
 
 	return (
 		<>
-			<nav className='grid grid-cols-3 md:grid-cols-[25%_50%_25%] w-full md:h-14 h-16 items-center px-4 border-y navbar-color sticky top-0 z-50 overflow-x-hidden overflow-y-visible'>
-				<BurgerMenu className='block md:hidden h-4 z-50 col-start-1' />
+			<header className='grid grid-cols-3 md:grid-cols-[25%_50%_25%] w-full md:h-14 h-16 items-center px-4 border-y navbar-color sticky top-0 z-50 overflow-x-hidden overflow-y-visible'>
+				<BurgerMenu className='md:hidden z-50 col-start-1' />
 
 				<Link href='/' className='col-start-2 md:col-start-1 flex justify-center md:justify-start'>
 					<Image src={'/logo.png'} alt='Tournler' width={210} height={32} className='hover:brightness-150 h-auto w-[80px] sm:w-[140px]' />
@@ -46,7 +46,7 @@ export default async function Navbar({ session }: NavbarProps) {
 						<LoginButtons className='flex flex-row sm:inline' />
 					)}
 				</div>
-			</nav>
+			</header>
 		</>
 	);
 }
