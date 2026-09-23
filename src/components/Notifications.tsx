@@ -19,11 +19,9 @@ interface NotificationsProps {
 
 export default function Notifications({ userId }: NotificationsProps) {
 	const [mounted, setMounted] = useState(false);
-	const notifications = useQuery(api.notifications.getUserNotifications, {
-		id: userId,
-	});
+	const notifications = useQuery(api.notifications.getMyNotifications);
 	const markAsRead = useMutation(api.notifications.markNotificationAsRead);
-	const markAllAsRead = useMutation(api.notifications.markAllNotificationsAsRead);
+	const markAllAsRead = useMutation(api.notifications.markAllMyNotificationsAsRead);
 	const hasNewNotifications = (notifications?.length ?? 0) > 0;
 
 	const { toast } = useToast();
@@ -141,7 +139,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 					<>
 						<Separator />
 						<div className='p-3'>
-							<Button variant='outline' className='w-full' onClick={() => markAllAsRead({ userId })}>
+							<Button variant='outline' className='w-full' onClick={() => markAllAsRead()}>
 								Mark all as read
 							</Button>
 						</div>

@@ -8,5 +8,5 @@ export default defineSchema({
         text: v.string(),
         type: v.number(),
         isRead: v.boolean(),
-    }),
+    }).index('by_user', ['userId']),
 });

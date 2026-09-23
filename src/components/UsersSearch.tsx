@@ -12,8 +12,6 @@ import {
 import { ReactNode, useEffect, useState } from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
-import { useMutation } from 'convex/react';
-import { api } from '../../convex/_generated/api';
 import { ReducedUser } from '@/types/types';
 
 interface UsersSearchProps {
@@ -61,14 +59,9 @@ function useInvitableUsers(teamId: number, query: string, isOpen: boolean) {
 }
 
 /**
- * Convex's `useMutation` depends on a client-only provider that isn't
- * available during SSR, which was causing this subtree (and its search
- * command palette) to render differently on the server than on the client —
- * a hydration mismatch that got reported against a nearby sibling
- * (LeaveTeamDialog's button) rather than this component itself. Rendering
- * `children` immediately but deferring everything that depends on Convex
- * until after mount (same pattern already used for TeamMemberAvatar's
- * HoverCard) avoids ever calling `useMutation` during the SSR pass.
+ * Renders `children` immediately but defers the search palette until after mount (same pattern as
+ * TeamMemberAvatar's HoverCard) — rendering it during SSR caused a hydration mismatch that got
+ * reported against a nearby sibling (LeaveTeamDialog's button).
  */
 export function UsersSearch(props: UsersSearchProps) {
 	const [isMounted, setIsMounted] = useState(false);
@@ -84,7 +77,6 @@ export function UsersSearch(props: UsersSearchProps) {
 function UsersSearchInner({
 	children,
 	teamId,
-	teamName,
 	invitedPlayers,
 }: UsersSearchProps) {
 	const [isOpen, setIsOpen] = useState(false);
@@ -93,30 +85,13 @@ function UsersSearchInner({
 	const [query, setQuery] = useState('');
 	const { users: allUsers, loading } = useInvitableUsers(teamId, query, isOpen);
 
-	const inviteNotif = useMutation(
-		api.notifications.createTeamInviteNotification
-	);
-
-	async function sendInviteNotification(userId: string, teamId: number) {
-		try {
-			await inviteNotif({
-				text:
-					'You have been invited to join the team ' + teamName + '.',
-				userId,
-				teamId,
-			});
-		} catch (error) {
-			console.error('Failed to send invite notification:', error);
-		}
-	}
-
 	const invitedPlayersData = invitedPlayers?.teamInvitations || [];
     const invitedUserIds = [...invitedPlayersData.map(
         (invitation: { userId: number }) => invitation.userId
     ), ...localInvitedUserIds];
 
 	function completeSuccessfulInviteConfirmation(userId: string) {
-        sendInviteNotification(userId, teamId);
+        // The invite API route sends the Convex notification server-side.
         setLocalInvitedUserIds(prev => [...prev, userId]);
     }
 

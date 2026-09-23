@@ -41,7 +41,7 @@ export default async function RootLayout({
 					Skip to content
 				</a>
 				<InteractiveBackground />
-				<ConvexClientProvider>
+				<ConvexClientProvider signedIn={!!session?.user}>
 					<Navbar session={session} />
 
 					{authModal}
