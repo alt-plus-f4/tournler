@@ -61,7 +61,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		const [stats, recentMatches, faceit] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id), user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null)]);
+		const [stats, recentMatches, faceit] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id, 20), user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null)]);
 
 		return NextResponse.json({ user, stats, recentMatches, faceit });
 	} catch (error) {
