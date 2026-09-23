@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 
+const publicUserSelect = { id: true, name: true, image: true } as const;
+
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	const { slug } = await params;
 
@@ -23,8 +25,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			name: true,
 			logo: true,
 			background: true,
-			members: true,
-			capitan: true,
+			// Public endpoint: only the fields the team page renders. `members: true` used to
+			// return whole User rows (email, role, ...) to anonymous callers.
+			members: { select: publicUserSelect },
+			capitan: { select: publicUserSelect },
 		},
 	});
 

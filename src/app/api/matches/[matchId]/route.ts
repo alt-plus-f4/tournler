@@ -24,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						endDate: true,
 						status: true,
 						organizerId: true,
+						bestOf: true,
 					},
 				},
 				teamA: {
@@ -92,6 +93,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 		const withFaceitLevel = <T extends { steam: { steamId: string } | null }>(m: T) => ({ ...m, faceitLevel: m.steam ? (levelBySteamId.get(m.steam.steamId) ?? null) : null });
 		const matchWithFaceitLevels = {
 			...match,
+			// Effective series length: the per-match override, else the tournament default.
+			bestOf: match.bestOf ?? match.tournament.bestOf,
 			teamA: match.teamA ? { ...match.teamA, members: match.teamA.members.map(withFaceitLevel) } : null,
 			teamB: match.teamB ? { ...match.teamB, members: match.teamB.members.map(withFaceitLevel) } : null,
 			participants: match.participants.map((p) => ({ ...p, user: withFaceitLevel(p.user) })),

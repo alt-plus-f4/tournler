@@ -5,6 +5,7 @@ import { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/clie
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
+import { parseStatusFilter } from '@/lib/helpers/tournament-status-filter';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -22,34 +23,6 @@ const formatMap: { [key: number]: TournamentFormat } = {
 	1: TournamentFormat.ROUND_ROBIN,
 	2: TournamentFormat.DOUBLE_ELIMINATION,
 };
-
-function parseStatusFilter(rawStatus: string | null): TournamentStatus[] | null {
-	if (!rawStatus) {
-		return null;
-	}
-
-	const normalized = rawStatus.trim().toUpperCase();
-	if (normalized === 'ACTIVE') {
-		return [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
-	}
-
-	if (normalized in TournamentStatus) {
-		return [TournamentStatus[normalized as keyof typeof TournamentStatus]];
-	}
-
-	const statusInt = Number.parseInt(rawStatus, 10);
-	if (!Number.isNaN(statusInt)) {
-		if (statusInt === 10) {
-			return [TournamentStatus.UPCOMING, TournamentStatus.ONGOING];
-		}
-
-		if (statusMap[statusInt]) {
-			return [statusMap[statusInt]];
-		}
-	}
-
-	return [];
-}
 
 function parseTournamentStatus(rawStatus: string): TournamentStatus | null {
 	const normalized = rawStatus.trim().toUpperCase();

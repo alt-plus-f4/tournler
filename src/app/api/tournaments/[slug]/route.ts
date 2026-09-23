@@ -31,6 +31,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			logoUrl: true,
 			status: true,
 			type: true,
+			format: true,
+			bestOf: true,
+			mapPool: true,
+			description: true,
 			organizer: {
 				select: {
 					name: true,
