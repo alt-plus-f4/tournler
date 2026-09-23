@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { TeamTable } from '@/components/TeamTable';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
-import { FaExclamation } from 'react-icons/fa';
+import { Label } from '@/components/ui/label';
 import { Cs2Team } from '@/types/types';
 import EditTeamDialog from '@/components/EditTeamDialog';
 
@@ -71,17 +71,21 @@ export default function TeamsClient() {
 	};
 
 	return (
-		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<h1 className='text-2xl font-bold mb-4'>Team Management</h1>
-			<div className='w-full border p-2 mb-4 rounded-sm flex items-center'>
-				<FaExclamation className='text-red-500 mr-2' />
-				<p className='text-md border-b border-red-500'>Click on a row (or press Enter) to edit a team.</p>
-			</div>
-			<Input placeholder='Search by team name...' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
-			<TeamTable isLoading={isLoading && !hasLoadedOnce} teams={teams} onEdit={(team) => {
-				setEditingTeam(team);
-				setIsEditDialogOpen(true);
-			}} />
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<h1 className='mb-6 text-2xl font-bold'>Teams</h1>
+			<Label htmlFor='admin-team-search' className='sr-only'>
+				Search teams
+			</Label>
+			<Input id='admin-team-search' type='search' placeholder='Search by team name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+			<TeamTable
+				isLoading={isLoading && !hasLoadedOnce}
+				teams={teams}
+				emptyMessage={search ? `No teams match “${search}”.` : 'No teams yet.'}
+				onEdit={(team) => {
+					setEditingTeam(team);
+					setIsEditDialogOpen(true);
+				}}
+			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
 			<EditTeamDialog team={editingTeam} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
 		</div>

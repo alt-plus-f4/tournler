@@ -183,13 +183,13 @@ function CustomizationOption({
 }: CustomizationOptionProps) {
   return (
     <div className="flex items-center justify-between my-1">
-      <Button variant="secondary" onClick={() => onPrevious(category)}>
-        <FaArrowLeft />
+      <Button variant="secondary" size="icon" onClick={() => onPrevious(category)} aria-label={`Previous ${label.toLowerCase()}`}>
+        <FaArrowLeft aria-hidden />
       </Button>
 
-      <span className="mx-4 my-0">{label}</span>
-      <Button variant="secondary" onClick={() => onNext(category)}>
-        <FaArrowRight />
+      <span className="mx-4 my-0 text-sm">{label}</span>
+      <Button variant="secondary" size="icon" onClick={() => onNext(category)} aria-label={`Next ${label.toLowerCase()}`}>
+        <FaArrowRight aria-hidden />
       </Button>
     </div>
   );
@@ -253,15 +253,15 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
       <div className="flex justify-center items-center">
         <Image
           src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`}
-          alt=""
+          alt="Avatar preview"
           width={120}
           height={120}
         />
       </div>
       <div>
         <div className="flex flex-col items-center text-center w-full">
-          <h1 className="text-lg font-semibold">Make your own avatar</h1>
-          <p>Customize it here</p>
+          <h2 className="text-lg font-semibold">Make your own avatar</h2>
+          <p className="text-sm text-muted-foreground">Step through each feature with the arrows.</p>
         </div>
         <ScrollArea className="px-2 mt-2 text-center">
           <div className="flex flex-col sm:flex-row">
@@ -351,7 +351,7 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
           Previous
         </Button>
         <Button onClick={handleContinue} disabled={loading}>
-          {loading ? 'Loading...' : 'Continue'}
+          {loading ? 'Saving…' : 'Continue'}
         </Button>
       </DialogFooter>
     </div>

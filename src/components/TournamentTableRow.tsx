@@ -1,3 +1,4 @@
+import { formatMoney } from '@/lib/helpers/format-money';
 import { Tournament } from '@/types/types';
 
 interface TournamentTableRowProps {
@@ -5,41 +6,42 @@ interface TournamentTableRowProps {
 	onEdit: (tournament: Tournament) => void;
 }
 
-export function TournamentTableRow({
-	tournament,
-	onEdit,
-}: TournamentTableRowProps) {
+const CELL = 'py-2 px-4 border border-border';
+
+export function TournamentTableRow({ tournament, onEdit }: TournamentTableRowProps) {
 	return (
-		<tr
-			key={tournament.id}
-			onClick={() => onEdit(tournament)}
-			className='cursor-pointer hover:opacity-80 transition-colors text-xs md:text-sm'
-		>
-			<td className='py-2 px-4 border'>{tournament.id}</td>
-			<td className='py-2 px-4 border'>
-				<div className='truncate' title={tournament.name}>
+		<tr className='text-xs md:text-sm transition-colors hover:bg-neutral-950'>
+			<td className={`${CELL} font-mono tabular-nums text-muted-foreground`}>{tournament.id}</td>
+			<td className={CELL}>
+				<button
+					type='button'
+					onClick={() => onEdit(tournament)}
+					title={tournament.name}
+					className='block max-w-full truncate rounded-sm text-left font-medium text-white underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+				>
+					<span className='sr-only'>Edit </span>
 					{tournament.name}
-				</div>
+				</button>
 			</td>
-			<td className='py-2 px-4 border'>{tournament.prizePool}</td>
-			<td className='py-2 px-4 border'>{tournament.teamCapacity}</td>
-			<td className='py-2 px-4 border'>
+			<td className={`${CELL} font-mono tabular-nums`}>{tournament.prizePool !== null && tournament.prizePool !== undefined ? formatMoney(tournament.prizePool) : '—'}</td>
+			<td className={`${CELL} font-mono tabular-nums`}>{tournament.teamCapacity}</td>
+			<td className={CELL}>
 				<div className='truncate' title={tournament.location}>
 					{tournament.location}
 				</div>
 			</td>
-			<td className='py-2 px-4 border'>
-				<div className='truncate' title={tournament.startDate}>
+			<td className={CELL}>
+				<div className='truncate font-mono tabular-nums' title={tournament.startDate}>
 					{new Date(tournament.startDate).toLocaleDateString()}
 				</div>
 			</td>
-			<td className='py-2 px-4 border'>
-				<div className='truncate' title={tournament.endDate}>
+			<td className={CELL}>
+				<div className='truncate font-mono tabular-nums' title={tournament.endDate}>
 					{new Date(tournament.endDate).toLocaleDateString()}
 				</div>
 			</td>
-			<td className='py-2 px-4 border'>{tournament.status}</td>
-			<td className='py-2 px-4 border'>{tournament.type}</td>
+			<td className={CELL}>{tournament.status}</td>
+			<td className={CELL}>{tournament.type}</td>
 		</tr>
 	);
 }

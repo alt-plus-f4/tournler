@@ -11,9 +11,9 @@ export function CompletedStep({ previousStep, close }: CompletedStepProps) {
   return (
     <>
       <div className="flex flex-col items-center text-center w-full">
-        <LuPartyPopper className="w-52 h-52" />
-        <h1 className="text-lg font-semibold uppercase my-8">Congratulations!</h1>
-        <p>You have successfully completed the onboarding process.</p>
+        <LuPartyPopper aria-hidden className="h-24 w-24 sm:h-40 sm:w-40" />
+        <h2 className="my-6 text-lg font-semibold uppercase">You&apos;re set up</h2>
+        <p className="text-muted-foreground">Your profile is ready. Join a team or find a tournament to play in.</p>
       </div>
       <DialogFooter className="flex mt-8 justify-around">
       <Button
@@ -24,7 +24,6 @@ export function CompletedStep({ previousStep, close }: CompletedStepProps) {
 					Previous
 				</Button>
         <Button className='sm:w-48' onClick={close}>
-          <LuPartyPopper className="mr-2 h-4 w-4" />
           Done
         </Button>
       </DialogFooter>

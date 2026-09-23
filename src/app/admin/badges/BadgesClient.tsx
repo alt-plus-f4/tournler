@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { BadgeIcon } from '@/lib/badge-icons';
 import EditBadgeDialog, { BadgeDefinition } from '@/components/EditBadgeDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { adminTable as t } from '@/components/admin/table-styles';
+import { cn } from '@/lib/utils';
 
 export default function BadgesClient() {
 	const [badges, setBadges] = useState<BadgeDefinition[]>([]);
@@ -57,50 +60,81 @@ export default function BadgesClient() {
 	});
 
 	return (
-		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<div className='flex items-center justify-between mb-6'>
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
 				<div>
 					<h1 className='text-2xl font-bold'>Badges</h1>
-					<p className='text-muted-foreground text-sm'>Create badge types and award them to players from the Users page.</p>
+					<p className='text-sm text-muted-foreground'>Create badge types here, then award them to players from the Users page.</p>
 				</div>
-				<Button onClick={openCreate}>Create Badge</Button>
+				<Button onClick={openCreate}>Create badge</Button>
 			</div>
 
-			<Input placeholder='Search badges by name or description...' value={search} onChange={(e) => setSearch(e.target.value)} className='mb-4' />
+			<Label htmlFor='admin-badge-search' className='sr-only'>
+				Search badges
+			</Label>
+			<Input id='admin-badge-search' type='search' placeholder='Search badges by name or description…' value={search} onChange={(e) => setSearch(e.target.value)} className='mb-4' />
 
-			{isLoading ? (
-				<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-					{Array.from({ length: 6 }).map((_, i) => (
-						<Skeleton key={i} className='h-28 w-full bg-neutral-900' />
-					))}
-				</div>
-			) : badges.length === 0 ? (
-				<div className='text-center py-24 text-muted-foreground'>No badges yet. Create your first one.</div>
-			) : filteredBadges.length === 0 ? (
-				<div className='text-center py-24 text-muted-foreground'>No badges match &quot;{search}&quot;.</div>
-			) : (
-				<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-					{filteredBadges.map((badge) => (
-						<button
-							key={badge.id}
-							onClick={() => openEdit(badge)}
-							className='flex items-start gap-3 rounded-lg border border-white/10 p-4 text-left hover:border-white/30 transition-colors'
-						>
-							<div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-lg' style={{ backgroundColor: `${badge.color}20` }}>
-								<BadgeIcon name={badge.icon} className='h-6 w-6' style={{ color: badge.color }} />
-							</div>
-							<div className='min-w-0 flex-1'>
-								<div className='flex items-center gap-2'>
-									<p className='font-semibold truncate'>{badge.name}</p>
-									{badge.isOverlay && <span className='shrink-0 rounded-full border border-white/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>Avatar</span>}
-								</div>
-								{badge.description && <p className='text-sm text-muted-foreground truncate'>{badge.description}</p>}
-								<p className='text-xs text-muted-foreground mt-1'>{badge._count?.awards ?? 0} awarded</p>
-							</div>
-						</button>
-					))}
-				</div>
-			)}
+			<div className={t.wrapper}>
+				<table className={t.table}>
+					<thead className={t.thead}>
+						<tr>
+							<th scope='col' className={t.th}>
+								Badge
+							</th>
+							<th scope='col' className={t.th}>
+								Description
+							</th>
+							<th scope='col' className={t.th}>
+								Shown on
+							</th>
+							<th scope='col' className={cn(t.th, 'text-right')}>
+								Awarded
+							</th>
+						</tr>
+					</thead>
+					{isLoading ? (
+						<tbody aria-hidden>
+							{Array.from({ length: 4 }).map((_, i) => (
+								<tr key={i} className='border-b border-border last:border-0'>
+									{Array.from({ length: 4 }).map((_, j) => (
+										<td key={j} className={t.td}>
+											<Skeleton className='h-4 w-full bg-muted' />
+										</td>
+									))}
+								</tr>
+							))}
+						</tbody>
+					) : filteredBadges.length === 0 ? (
+						<tbody>
+							<tr>
+								<td colSpan={4} className={t.empty}>
+									{badges.length === 0 ? 'No badges yet. Create your first one.' : `No badges match “${search}”.`}
+								</td>
+							</tr>
+						</tbody>
+					) : (
+						<tbody className={t.tbody}>
+							{filteredBadges.map((badge) => (
+								<tr key={badge.id} className={t.tr}>
+									<td className={t.td}>
+										<div className='flex items-center gap-3'>
+											<span aria-hidden className='flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border' style={{ backgroundColor: `${badge.color}20` }}>
+												<BadgeIcon name={badge.icon} className='h-4 w-4' style={{ color: badge.color }} />
+											</span>
+											<button type='button' onClick={() => openEdit(badge)} className={t.rowAction} aria-label={`Edit ${badge.name} badge`}>
+												{badge.name}
+											</button>
+										</div>
+									</td>
+									<td className={cn(t.td, 'max-w-[40ch] truncate text-neutral-300')}>{badge.description || <span className='text-muted-foreground'>—</span>}</td>
+									<td className={cn(t.td, 'whitespace-nowrap text-neutral-300')}>{badge.isOverlay ? 'Avatar' : 'Badge row'}</td>
+									<td className={cn(t.td, t.num, 'text-right')}>{badge._count?.awards ?? 0}</td>
+								</tr>
+							))}
+						</tbody>
+					)}
+				</table>
+			</div>
 
 			<EditBadgeDialog badge={isCreatingNew ? null : editingBadge} isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
 		</div>

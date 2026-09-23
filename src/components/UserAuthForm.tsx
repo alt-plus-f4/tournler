@@ -8,9 +8,11 @@ import { usePathname } from 'next/navigation';
 import { useToast } from '@/lib/hooks/use-toast';
 import { FaDiscord } from 'react-icons/fa6';
 
-type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>;
+type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement> & {
+	mode?: 'sign-in' | 'sign-up';
+};
 
-const UserAuthForm: FC<UserAuthFormProps> = ({ className, ...props }) => {
+const UserAuthForm: FC<UserAuthFormProps> = ({ className, mode = 'sign-in', ...props }) => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const { toast } = useToast();
 
@@ -37,10 +39,12 @@ const UserAuthForm: FC<UserAuthFormProps> = ({ className, ...props }) => {
 	return (
 		<div className={cn('flex justify-center flex-col', className)} {...props}>
 			<Button onClick={loginWithDiscord} isLoading={isLoading} size='sm' className='w-full flex-row mb-3 bg-[#5865F2] hover:bg-[#4752C4] text-white gap-2'>
-				{!isLoading && <FaDiscord className='h-4 w-4' />}
-				{isLoading ? 'Signing in...' : 'Sign in with Discord'}
+				{!isLoading && <FaDiscord aria-hidden className='h-4 w-4' />}
+				{isLoading ? 'Redirecting to Discord…' : mode === 'sign-up' ? 'Sign up with Discord' : 'Sign in with Discord'}
 			</Button>
-			<div className='mt-2 text-sm text-zinc-500 text-center'>Signing in creates or links your account via Discord.</div>
+			<p className='text-center text-xs text-muted-foreground'>
+				{mode === 'sign-up' ? 'Already signed in with Discord before? This takes you to the same account.' : 'First time? Signing in with Discord creates your account.'}
+			</p>
 		</div>
 	);
 };

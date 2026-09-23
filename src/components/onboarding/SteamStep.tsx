@@ -1,7 +1,6 @@
 'use client';
 
 import { FaSteamSymbol } from 'react-icons/fa6';
-import { DialogTitle } from '@radix-ui/react-dialog';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
@@ -56,17 +55,23 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 
 	return (
 		<>
-			<div className='flex flex-col sm:px-32 sm:py-20 m-1 items-center text-center w-full cursor-pointer transition-300 hover:bg-steamColor rounded-md' onClick={handleSteamLogin}>
-				<FaSteamSymbol className='sm:w-40 sm:h-40' />
-				<DialogTitle className='text-2xl font-semibold'>Steam account linking</DialogTitle>
-			</div>
+			<h2 className='text-center text-2xl font-semibold'>Link your Steam account</h2>
+			<p className='mt-1 text-center text-sm text-muted-foreground'>You&apos;ll sign in on Steam and come straight back here.</p>
+			<button
+				type='button'
+				onClick={handleSteamLogin}
+				className='m-1 mt-4 flex w-full flex-col items-center gap-3 rounded-md border border-border p-6 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-32 sm:py-16'
+			>
+				<FaSteamSymbol aria-hidden className='h-16 w-16 sm:h-32 sm:w-32' />
+				<span className='text-base font-medium'>Sign in with Steam</span>
+			</button>
 
 			<DialogFooter className='flex mt-8 justify-around'>
 				<Button onClick={previousStep} variant='secondary' className='sm:w-48'>
 					Previous
 				</Button>
-				<Button onClick={nextStep} className='sm:w-48'>
-					Continue
+				<Button onClick={nextStep} variant='outline' className='sm:w-48'>
+					Skip for now
 				</Button>
 			</DialogFooter>
 		</>

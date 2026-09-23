@@ -25,6 +25,13 @@ const fetcher = async (url: string) => {
 	return data.match as Match;
 };
 
+// Same key + response shape as UserNav's useSWR('/api/user'), so the room shares that cached request instead of refetching.
+const userFetcher = async (url: string) => {
+	const response = await fetch(url);
+	if (!response.ok) throw new Error('Failed to fetch user');
+	return response.json() as Promise<{ user?: { id?: string; role?: string } | null }>;
+};
+
 const jsonFetcher = async <T,>(url: string) => {
 	const response = await fetch(url);
 	if (!response.ok) throw new Error(`Failed to fetch ${url}`);
@@ -55,49 +62,38 @@ function useRoomTab() {
 }
 
 const tabTriggerClass =
-	'relative h-12 shrink-0 gap-2 rounded-none bg-transparent px-3 text-xs font-bold uppercase tracking-[0.08em] sm:px-4 sm:tracking-[0.12em] text-muted-foreground transition-colors duration-150 hover:text-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:bg-white after:transition-transform after:duration-200 after:ease-out data-[state=active]:after:scale-x-100 focus-visible:ring-offset-0';
+	'relative h-12 shrink-0 gap-2 rounded-none bg-transparent px-3 text-xs font-bold uppercase tracking-[0.08em] sm:px-4 sm:tracking-[0.12em] text-muted-foreground transition-colors duration-150 hover:text-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:bg-white motion-safe:after:transition-transform motion-safe:after:duration-200 motion-safe:after:ease-out data-[state=active]:after:scale-x-100 focus-visible:ring-offset-0';
 
 export default function MatchPage() {
 	const params = useParams();
 	const router = useRouter();
 	const matchId = params.matchId as string;
-	const [canManage, setCanManage] = useState(false);
-	const [userLoaded, setUserLoaded] = useState(false);
-	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 	const [pendingSide, setPendingSide] = useState<string | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [tab, setTab] = useRoomTab();
 	const { toast } = useToast();
 
-	const { data: match, error, isLoading, mutate } = useSWR(matchId ? `/api/matches/${matchId}` : null, fetcher, { refreshInterval: 4000 });
+	// A final match can't change on its own, so stop polling once it's COMPLETED.
+	const { data: match, error, isLoading, mutate } = useSWR(matchId ? `/api/matches/${matchId}` : null, fetcher, { refreshInterval: (latest) => (latest?.status === 'COMPLETED' ? 0 : 4000) });
 	const refresh = useCallback(() => {
 		mutate();
 	}, [mutate]);
 	const admin = useMatchAdmin(matchId, refresh);
 
 	const showDraft = !!match && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
-	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: 3000 });
+	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
 	// Veto can't start until the draft has put people on sides — otherwise maps get banned before anyone's rostered.
 	const showVeto = !!match && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
-	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: 3000 });
+	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
+
+	const { data: userData, error: userError } = useSWR('/api/user', userFetcher, { revalidateOnFocus: false });
+	const userLoaded = userData !== undefined || userError !== undefined;
+	const canManage = userData?.user?.role === 'ADMIN' || userData?.user?.role === 'TOURNAMENT_ADMIN';
+	const currentUserId = userData?.user?.id ?? null;
 
 	useEffect(() => {
 		if (error) toast({ variant: 'destructive', title: 'Error loading match' });
 	}, [error, toast]);
-
-	useEffect(() => {
-		fetch('/api/user')
-			.then((r) => (r.ok ? r.json() : null))
-			.then((data) => {
-				setCanManage(data?.user?.role === 'ADMIN' || data?.user?.role === 'TOURNAMENT_ADMIN');
-				setCurrentUserId(data?.user?.id ?? null);
-			})
-			.catch(() => {
-				setCanManage(false);
-				setCurrentUserId(null);
-			})
-			.finally(() => setUserLoaded(true));
-	}, []);
 
 	// Non-staff who land on #admin fall back to the room.
 	useEffect(() => {
@@ -126,7 +122,7 @@ export default function MatchPage() {
 	const leaveMatch = () => withPending('LEAVE', () => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }), 'Could not leave match');
 
 	const deleteMatch = async () => {
-		if (!window.confirm('Permanently delete this match? This removes its scores, roster, map/veto history, and game server record. This cannot be undone.')) return;
+		// Confirmed in the Admin tab's dialog before this runs.
 		setIsDeleting(true);
 		try {
 			const response = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
@@ -215,7 +211,7 @@ export default function MatchPage() {
 				}
 				playerAction={(player) =>
 					player.isMe && canJoinPickup ? (
-						<Button variant='ghost' size='sm' onClick={leaveMatch} disabled={pendingSide !== null} className='h-7 px-2 text-xs text-muted-foreground hover:text-red-300'>
+						<Button variant='ghost' size='sm' onClick={leaveMatch} disabled={pendingSide !== null} className='h-10 px-3 text-xs text-muted-foreground hover:text-white'>
 							{pendingSide === 'LEAVE' ? 'Leaving…' : 'Leave'}
 						</Button>
 					) : null
@@ -240,7 +236,7 @@ export default function MatchPage() {
 			</TabsTrigger>
 			<TabsTrigger value='maps' className={tabTriggerClass}>
 				Maps
-				{match.maps.length > 0 && <span className='font-mono text-[11px] font-normal text-muted-foreground'>{match.maps.length}</span>}
+				{match.maps.length > 0 && <span className='font-mono text-xs font-normal text-muted-foreground'>{match.maps.length}</span>}
 			</TabsTrigger>
 			{canManage && (
 				<TabsTrigger value='admin' className={cn(tabTriggerClass, 'ml-auto')}>

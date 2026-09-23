@@ -1,29 +1,72 @@
+import Link from 'next/link';
+import { formatMoney } from '@/lib/helpers/format-money';
+import { cn } from '@/lib/utils';
+import type { Tournament } from '@/types/types';
+
 interface TournamentTableProps {
-	tournaments: any[];
-	onEdit: (tournament: any) => void;
+	tournaments: Tournament[];
+	onEdit: (tournament: Tournament) => void;
 	isLoading?: boolean;
+	/** Shown when the table is empty (e.g. no match for the current search/filter). */
+	emptyMessage?: string;
 }
 
-export function TournamentTable({ isLoading, tournaments, onEdit }: TournamentTableProps) {
+const FORMAT_LABELS: Record<string, string> = {
+	SINGLE_ELIMINATION: 'Single elim',
+	DOUBLE_ELIMINATION: 'Double elim',
+	ROUND_ROBIN: 'Round robin',
+};
+
+const COLUMN_COUNT = 7;
+
+const th = 'px-3 py-2 text-left text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap';
+const td = 'px-3 py-2 align-middle';
+
+export function TournamentStatus({ status }: { status: string }) {
+	if (status === 'ONGOING') {
+		return (
+			<span className='inline-flex items-center gap-1.5 text-foreground'>
+				<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-live' />
+				Ongoing
+			</span>
+		);
+	}
+	return <span className={cn(status === 'COMPLETED' ? 'text-muted-foreground' : 'text-foreground')}>{status === 'COMPLETED' ? 'Completed' : 'Upcoming'}</span>;
+}
+
+function formatDate(value: Date | string) {
+	const d = new Date(value);
+	if (Number.isNaN(d.getTime())) return '—';
+	return d.toLocaleString(undefined, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+export function TournamentTable({ isLoading, tournaments, onEdit, emptyMessage = 'No tournaments found.' }: TournamentTableProps) {
 	return (
-		<div className='overflow-auto h-[70%]'>
-			<table className='w-full border'>
-				<thead>
+		<div className='overflow-x-auto rounded-md border border-border'>
+			<table className='w-full text-sm'>
+				<thead className='border-b border-border'>
 					<tr>
-						<th className='py-2 px-3 border'>ID</th>
-						<th className='py-2 px-12 border'>Name</th>
-						<th className='py-2 px-12 border'>Location</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Prize Pool</th>
-						<th className='py-2 px-10 border'>Status</th>
-						<th className='py-2 px-10 border'>Type</th>
-						<th className='py-2 px-3 border whitespace-nowrap'>Team Capacity</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Start Date</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>End Date</th>
-						<th className='py-2 px-12 border'>Organizer</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Banner URL</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Logo URL</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Created At</th>
-						<th className='py-2 px-12 border whitespace-nowrap'>Updated At</th>
+						<th scope='col' className={th}>
+							Name
+						</th>
+						<th scope='col' className={th}>
+							Status
+						</th>
+						<th scope='col' className={th}>
+							Format
+						</th>
+						<th scope='col' className={th}>
+							Starts
+						</th>
+						<th scope='col' className={cn(th, 'text-right')}>
+							Teams
+						</th>
+						<th scope='col' className={cn(th, 'text-right')}>
+							Prize
+						</th>
+						<th scope='col' className={cn(th, 'text-right')}>
+							<span className='sr-only'>Actions</span>
+						</th>
 					</tr>
 				</thead>
 				{isLoading ? (
@@ -31,57 +74,39 @@ export function TournamentTable({ isLoading, tournaments, onEdit }: TournamentTa
 				) : !tournaments || tournaments.length === 0 ? (
 					<tbody>
 						<tr>
-							<td colSpan={14} className='py-8 px-4 border text-center text-muted-foreground'>
-								No tournaments found.
+							<td colSpan={COLUMN_COUNT} className='px-4 py-8 text-center text-muted-foreground'>
+								{emptyMessage}
 							</td>
 						</tr>
 					</tbody>
 				) : (
-					<tbody>
+					<tbody className='divide-y divide-border'>
 						{tournaments.map((tour) => (
-							<tr
-								key={tour.id}
-								onClick={() => onEdit(tour)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault();
-										onEdit(tour);
-									}
-								}}
-								tabIndex={0}
-								role='button'
-								className='cursor-pointer hover:opacity-80 transition-colors text-center pb-8 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-inset'
-							>
-								<td className='py-2 px-4 border'>{tour.id}</td>
-								<td className='py-2 px-4 border'>{tour.name}</td>
-								<td className='py-2 px-4 border'>{tour.location}</td>
-								<td className='py-2 px-4 border'>{tour.prizePool || '-'}</td>
-								<td className='py-2 px-4 border'>{tour.status}</td>
-								<td className='py-2 px-4 border'>{tour.type}</td>
-								<td className='py-2 px-4 border'>{tour.teamCapacity}</td>
-								<td className='py-2 px-4 border'>{new Date(tour.startDate).toLocaleDateString()}</td>
-								<td className='py-2 px-4 border'>{new Date(tour.endDate).toLocaleDateString()}</td>
-								<td className='py-2 px-4 border'>{tour.organizerId || '-'}</td>
-								<td className='py-2 px-4 border'>
-									{tour.bannerUrl ? (
-										<a href={tour.bannerUrl} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline' onClick={(e) => e.stopPropagation()}>
-											View
-										</a>
-									) : (
-										'-'
-									)}
+							<tr key={tour.id} className='hover:bg-muted/50'>
+								<td className={td}>
+									<button
+										type='button'
+										onClick={() => onEdit(tour)}
+										className='max-w-[28ch] truncate rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+										aria-label={`Edit ${tour.name}`}
+									>
+										{tour.name}
+									</button>
 								</td>
-								<td className='py-2 px-4 border'>
-									{tour.logoUrl ? (
-										<a href={tour.logoUrl} target='_blank' rel='noopener noreferrer' className='text-foregroundgray underline' onClick={(e) => e.stopPropagation()}>
-											View
-										</a>
-									) : (
-										'-'
-									)}
+								<td className={cn(td, 'whitespace-nowrap')}>
+									<TournamentStatus status={tour.status} />
 								</td>
-								<td className='py-2 px-4 border'>{new Date(tour.createdAt).toLocaleDateString()}</td>
-								<td className='py-2 px-4 border'>{new Date(tour.updatedAt).toLocaleDateString()}</td>
+								<td className={cn(td, 'whitespace-nowrap text-neutral-300')}>{FORMAT_LABELS[tour.format] ?? tour.format}</td>
+								<td className={cn(td, 'whitespace-nowrap font-mono tabular-nums text-neutral-300')}>{formatDate(tour.startDate)}</td>
+								<td className={cn(td, 'whitespace-nowrap text-right font-mono tabular-nums')}>
+									{tour.teams?.length ?? 0}/{tour.teamCapacity}
+								</td>
+								<td className={cn(td, 'whitespace-nowrap text-right font-mono tabular-nums')}>{tour.prizePool ? formatMoney(tour.prizePool) : <span className='text-muted-foreground'>—</span>}</td>
+								<td className={cn(td, 'whitespace-nowrap text-right')}>
+									<Link href={`/tournaments/${tour.id}`} className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+										View<span className='sr-only'> {tour.name} public page</span>
+									</Link>
+								</td>
 							</tr>
 						))}
 					</tbody>
@@ -93,12 +118,12 @@ export function TournamentTable({ isLoading, tournaments, onEdit }: TournamentTa
 
 export function TournamentTableSkeleton() {
 	return (
-		<tbody>
+		<tbody aria-hidden>
 			{Array.from({ length: 5 }).map((_, i) => (
-				<tr key={i}>
-					{Array.from({ length: 14 }).map((_, j) => (
-						<td key={j} className='py-2 px-4 border'>
-							<div className='h-4 bg-muted rounded-sm'></div>
+				<tr key={i} className='border-b border-border last:border-0'>
+					{Array.from({ length: COLUMN_COUNT }).map((_, j) => (
+						<td key={j} className={td}>
+							<div className='h-4 rounded-sm bg-muted' />
 						</td>
 					))}
 				</tr>

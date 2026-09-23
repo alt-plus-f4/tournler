@@ -1,5 +1,7 @@
+import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { cn } from '@/lib/utils';
 
 interface StatusGroup {
 	title: string;
@@ -71,12 +73,14 @@ function buildStatusGroups(): StatusGroup[] {
 	];
 }
 
+export const metadata: Metadata = { title: 'System status' };
+
 export default function AdminSettingsPage() {
 	const groups = buildStatusGroups();
 
 	return (
-		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<h1 className='text-2xl font-bold mb-2'>System Status</h1>
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<h1 className='text-2xl font-bold mb-2'>System status</h1>
 			<p className='text-muted-foreground mb-6'>Read-only view of which integrations are configured for this environment. Values are never shown, only whether each is set.</p>
 
 			<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
@@ -90,7 +94,10 @@ export default function AdminSettingsPage() {
 							{group.checks.map((check) => (
 								<div key={check.label} className='flex items-center justify-between text-sm'>
 									<span className='font-mono'>{check.label}</span>
-									{check.configured ? <FaCheckCircle className='text-green-500' /> : <FaTimesCircle className='text-red-500' />}
+									<span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', check.configured ? 'text-signal-ready-text' : 'text-signal-live')}>
+										{check.configured ? <FaCheckCircle aria-hidden /> : <FaTimesCircle aria-hidden />}
+										{check.configured ? 'Set' : 'Missing'}
+									</span>
 								</div>
 							))}
 						</CardContent>

@@ -13,6 +13,8 @@ interface RichTextEditorProps {
 	onChange: (html: string) => void;
 	placeholder?: string;
 	className?: string;
+	/** id of the visible label element; the editable region is announced with it. */
+	labelId?: string;
 }
 
 function ToolbarButton({ onClick, active, children, label }: { onClick: () => void; active: boolean; children: React.ReactNode; label: string }) {
@@ -23,14 +25,14 @@ function ToolbarButton({ onClick, active, children, label }: { onClick: () => vo
 			onClick={onClick}
 			aria-label={label}
 			aria-pressed={active}
-			className={cn('flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-white/10', active && 'bg-white/15 text-white')}
+			className={cn('flex h-8 w-8 items-center justify-center rounded transition-colors hover:bg-white/10', active && 'bg-white/15 text-white')}
 		>
 			{children}
 		</button>
 	);
 }
 
-export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, className, labelId }: RichTextEditorProps) {
 	const editor = useEditor({
 		extensions: [StarterKit.configure({ heading: { levels: [2, 3] } }), Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: placeholder ?? 'Write something…' })],
 		content: value,
@@ -38,6 +40,9 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
 		editorProps: {
 			attributes: {
 				class: 'prose prose-sm prose-invert max-w-none focus:outline-none min-h-[100px] px-3 py-2',
+				role: 'textbox',
+				'aria-multiline': 'true',
+				...(labelId ? { 'aria-labelledby': labelId } : {}),
 			},
 		},
 		onUpdate: ({ editor }) => onChange(editor.getHTML()),
@@ -64,8 +69,8 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
 	};
 
 	return (
-		<div className={cn('rounded-md border border-input bg-transparent', className)}>
-			<div className='flex items-center gap-1 border-b border-input p-1'>
+		<div className={cn('rounded-md border border-input bg-transparent focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background', className)}>
+			<div role='toolbar' aria-label='Formatting' className='flex items-center gap-1 border-b border-input p-1'>
 				<ToolbarButton label='Bold' active={editor.isActive('bold')} onClick={() => editor.chain().focus().toggleBold().run()}>
 					<Bold className='h-3.5 w-3.5' />
 				</ToolbarButton>

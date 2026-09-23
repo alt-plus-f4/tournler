@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ChevronDown } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { TournamentForm } from '@/components/TournamentForm';
 import { SimulateTournamentButton } from '@/components/SimulateTournamentButton';
@@ -8,14 +10,27 @@ import { DeleteSimulatedTournamentsButton } from '@/components/DeleteSimulatedTo
 import { TournamentTable } from '@/components/TournamentTable';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import EditTournamentDialog from '@/components/EditTournamentDialog';
-import { FaExclamation } from 'react-icons/fa';
 import { Tournament } from '@/types/types';
+import { cn } from '@/lib/utils';
 
 const TOURNAMENTS_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
-export default function TournamentsClient() {
+const STATUS_FILTERS = [
+	{ value: '', label: 'All' },
+	{ value: 'UPCOMING', label: 'Upcoming' },
+	{ value: 'ONGOING', label: 'Ongoing' },
+	{ value: 'COMPLETED', label: 'Completed' },
+] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number]['value'];
+
+export default function TournamentsClient({ openCreate = false }: { openCreate?: boolean }) {
+	const router = useRouter();
+	const pathname = usePathname();
 	const [tournaments, setTournaments] = useState<Tournament[]>([]);
 	const [page, setPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(1);
@@ -25,6 +40,9 @@ export default function TournamentsClient() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [searchInput, setSearchInput] = useState('');
 	const [search, setSearch] = useState('');
+	const [status, setStatus] = useState<StatusFilter>('');
+	const [devTool, setDevTool] = useState<'simulate' | 'delete' | null>(null);
+	const [reloadKey, setReloadKey] = useState(0);
 	const { toast } = useToast();
 
 	useEffect(() => {
@@ -36,15 +54,21 @@ export default function TournamentsClient() {
 	}, [searchInput]);
 
 	useEffect(() => {
+		let cancelled = false;
 		async function fetchTournaments() {
 			setIsLoading(true);
 			const params = new URLSearchParams({ page: String(page), limit: String(TOURNAMENTS_PER_PAGE) });
 			if (search) params.set('search', search);
+			if (status) params.set('status', status);
 
 			const response = await fetch(`/api/tournaments?${params.toString()}`);
 			const data = await response.json();
+			if (cancelled) return;
 			if (Array.isArray(data)) {
 				setTournaments(data);
+				// The count endpoint ignores `status`, so with a filter active we infer
+				// whether another page exists from whether this page came back full.
+				if (status) setTotalPages(data.length < TOURNAMENTS_PER_PAGE ? page : page + 1);
 			} else {
 				console.error('API response is not an array:', data);
 			}
@@ -56,11 +80,14 @@ export default function TournamentsClient() {
 			if (search) params.set('search', search);
 			const response = await fetch(`/api/tournaments/count?${params.toString()}`);
 			const count = await response.json();
-			setTotalPages(count);
+			if (!cancelled) setTotalPages(count);
 		}
-		fetchTournamentCount();
+		if (!status) fetchTournamentCount();
 		fetchTournaments();
-	}, [page, search]);
+		return () => {
+			cancelled = true;
+		};
+	}, [page, search, status, reloadKey]);
 
 	const handleSubmit = async (formData: FormData) => {
 		const response = await fetch('/api/tournaments', {
@@ -68,24 +95,23 @@ export default function TournamentsClient() {
 			body: formData,
 		});
 		if (response.ok) {
-			toast({
-				title: 'Success',
-				description: 'Tournament created successfully',
-				variant: 'default',
-			});
 			const newTournament = await response.json();
-			setTournaments((prevTournaments) => [...prevTournaments, newTournament]);
-		} else {
-			toast({
-				title: 'Error',
-				description: 'Failed to create tournament',
-				variant: 'destructive',
-			});
+			toast({ title: 'Tournament created', description: `${newTournament.name} is upcoming.` });
+			setReloadKey((k) => k + 1);
+			return true;
 		}
+		const payload = await response.json().catch(() => null);
+		toast({
+			title: 'Could not create tournament',
+			description: payload?.error ?? 'Something went wrong. Check the fields and try again.',
+			variant: 'destructive',
+		});
+		return false;
 	};
 
-	const handlePageChange = (newPage: number) => {
-		setPage(newPage);
+	const handleCreateOpenChange = (open: boolean) => {
+		// Drop ?create=1 once the dialog closes so a refresh doesn't reopen it.
+		if (!open && openCreate) router.replace(pathname);
 	};
 
 	const handleSave = (updatedTournament: Tournament) => {
@@ -96,30 +122,80 @@ export default function TournamentsClient() {
 		setTournaments((prev) => prev.filter((t) => t.id !== tournamentId));
 	};
 
+	const filterLabel = STATUS_FILTERS.find((f) => f.value === status)?.label.toLowerCase();
+
 	return (
-		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<div className='flex flex-row justify-between mb-4'>
-				<h1 className='text-2xl font-bold mb-4'>Tournaments</h1>
-				<div className='flex gap-2'>
-					<SimulateTournamentButton />
-					<DeleteSimulatedTournamentsButton />
-					<TournamentForm onSubmit={handleSubmit} />
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
+				<h1 className='text-2xl font-bold'>Tournaments</h1>
+				<div className='flex items-center gap-3'>
+					<DropdownMenu modal={false}>
+						<DropdownMenuTrigger asChild>
+							<Button variant='ghost' className='text-muted-foreground'>
+								Dev tools <ChevronDown aria-hidden />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align='end'>
+							<DropdownMenuLabel className='text-xs text-muted-foreground'>Test data</DropdownMenuLabel>
+							<DropdownMenuItem onSelect={() => setDevTool('simulate')}>Simulate tournament…</DropdownMenuItem>
+							<DropdownMenuSeparator />
+							<DropdownMenuItem onSelect={() => setDevTool('delete')} className='text-signal-live focus:text-signal-live'>
+								Delete simulated tournaments…
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
+					<span aria-hidden className='h-6 w-px bg-border' />
+					<TournamentForm onSubmit={handleSubmit} defaultOpen={openCreate} onOpenChange={handleCreateOpenChange} />
 				</div>
 			</div>
-			<div className='w-full border p-2 mb-4 rounded-sm flex flex-row items-center'>
-				<FaExclamation className='mt-[3px] w-4 h-4 text-2xl text-red-500 mr-2' />
-				<p className='text-md border-b border-b-red-500'>Click on a row (or press Enter) to edit a tournament.</p>
+
+			<SimulateTournamentButton open={devTool === 'simulate'} onOpenChange={(o) => setDevTool(o ? 'simulate' : null)} />
+			<DeleteSimulatedTournamentsButton
+				open={devTool === 'delete'}
+				onOpenChange={(o) => {
+					setDevTool(o ? 'delete' : null);
+					if (!o) setReloadKey((k) => k + 1);
+				}}
+			/>
+
+			<div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-end'>
+				<div className='flex-1 space-y-1.5'>
+					<Label htmlFor='admin-tournament-search' className='sr-only'>
+						Search tournaments
+					</Label>
+					<Input id='admin-tournament-search' type='search' placeholder='Search by tournament name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+				</div>
+				<div role='group' aria-label='Filter by status' className='inline-flex h-10 rounded-md border border-border p-0.5'>
+					{STATUS_FILTERS.map((f) => (
+						<button
+							key={f.label}
+							type='button'
+							aria-pressed={status === f.value}
+							onClick={() => {
+								setStatus(f.value);
+								setPage(1);
+							}}
+							className={cn(
+								'rounded-sm px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+								status === f.value ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
+							)}
+						>
+							{f.label}
+						</button>
+					))}
+				</div>
 			</div>
-			<Input placeholder='Search by tournament name...' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+
 			<TournamentTable
 				isLoading={isLoading && !hasLoadedOnce}
 				tournaments={tournaments}
+				emptyMessage={search || status ? `No ${status ? `${filterLabel} ` : ''}tournaments match${search ? ` “${search}”` : ''}.` : 'No tournaments yet. Create one to get started.'}
 				onEdit={(tournament) => {
 					setEditingTournament(tournament);
 					setIsEditDialogOpen(true);
 				}}
 			/>
-			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
+			<Pagination totalPages={totalPages} currentPage={page} onPageChange={setPage} />
 			<EditTournamentDialog tournament={editingTournament} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
 		</div>
 	);

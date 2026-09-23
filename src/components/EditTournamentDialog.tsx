@@ -102,12 +102,12 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						<DialogTitle>Delete this tournament?</DialogTitle>
 						<DialogDescription>{editingTournament?.name} will be permanently deleted, along with its matches. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='gap-2'>
+					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
 						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-							{isDeleting ? 'Deleting...' : 'Delete'}
+							{isDeleting ? 'Deleting…' : 'Delete tournament'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -119,12 +119,12 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className='sm:max-w-[560px] max-h-[85vh] overflow-y-auto'>
 				<DialogHeader>
-					<DialogTitle>Edit Tournament</DialogTitle>
+					<DialogTitle>Edit tournament</DialogTitle>
 					<DialogDescription>Update the tournament details.</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleEdit} className='space-y-5'>
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Details</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Details</p>
 						<div className='space-y-2'>
 							<Label htmlFor='edit-name'>Tournament Name</Label>
 							<Input id='edit-name' value={editingTournament?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
@@ -134,23 +134,23 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 							<Input id='edit-location' value={editingTournament?.location || ''} onChange={(e) => handleChange('location', e.target.value)} required />
 						</div>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-description'>Description</Label>
-							<RichTextEditor value={editingTournament?.description || ''} onChange={(html) => handleChange('description', html)} placeholder='Tell players what this tournament is about' />
+							<Label id='edit-description-label'>Description</Label>
+							<RichTextEditor labelId='edit-description-label' value={editingTournament?.description || ''} onChange={(html) => handleChange('description', html)} placeholder='Tell players what this tournament is about' />
 						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-prizePool'>Prize Pool</Label>
-								<Input id='edit-prizePool' type='number' value={editingTournament?.prizePool || ''} onChange={(e) => handleChange('prizePool', Number(e.target.value))} required />
+								<Input id='edit-prizePool' type='number' className='font-mono tabular-nums' value={editingTournament?.prizePool || ''} onChange={(e) => handleChange('prizePool', Number(e.target.value))} />
 							</div>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-teamCapacity'>Team Capacity</Label>
-								<Input id='edit-teamCapacity' type='number' value={editingTournament?.teamCapacity || ''} onChange={(e) => handleChange('teamCapacity', Number(e.target.value))} required />
+								<Input id='edit-teamCapacity' type='number' className='font-mono tabular-nums' value={editingTournament?.teamCapacity || ''} onChange={(e) => handleChange('teamCapacity', Number(e.target.value))} required />
 							</div>
 						</div>
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Schedule</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Schedule</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-startDate'>Start Date</Label>
@@ -164,7 +164,7 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Configuration</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Configuration</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-status'>Status</Label>
@@ -199,17 +199,17 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 					</div>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap gap-2 pt-2'>
 						{onDelete && (
 							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
-								Delete
+								Delete tournament…
 							</Button>
 						)}
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : 'Save changes'}
+							{isSaving ? 'Saving…' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

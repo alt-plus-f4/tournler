@@ -97,12 +97,12 @@ export async function OnAirPanel() {
 				<Link href={`/matches/${featured.id}`} className='block p-5 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-8'>
 					<div className='mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm'>
 						{isPaused ? (
-							<span className='inline-flex items-center gap-2 font-bold text-yellow-400'>
-								<span className='h-2 w-2 rounded-full bg-yellow-400' /> PAUSED
+							<span className='inline-flex items-center gap-2 font-bold text-signal-hold'>
+								<span className='h-2 w-2 rounded-full bg-signal-hold' /> PAUSED
 							</span>
 						) : (
 							<span className='inline-flex items-center gap-2 font-bold text-white'>
-								<span className='h-2 w-2 rounded-full bg-red-500 motion-safe:animate-pulse' /> LIVE
+								<span className='h-2 w-2 rounded-full bg-signal-live motion-safe:animate-pulse' /> LIVE
 							</span>
 						)}
 						<span className='truncate text-muted-foreground'>{featured.tournament.name}</span>
@@ -121,7 +121,7 @@ export async function OnAirPanel() {
 							return (
 								<li key={match.id}>
 									<Link href={`/matches/${match.id}`} className='flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.03] sm:px-8'>
-										<span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', match.status === 'PAUSED' ? 'bg-yellow-400' : 'bg-red-500 motion-safe:animate-pulse')} aria-hidden />
+										<span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', match.status === 'PAUSED' ? 'bg-signal-hold' : 'bg-signal-live motion-safe:animate-pulse')} aria-hidden />
 										<span className='sr-only'>{match.status === 'PAUSED' ? 'Paused' : 'Live'}:</span>
 										<span className='min-w-0 flex-1 truncate text-white'>
 											{a.name} <span className='text-muted-foreground'>vs</span> {b.name}

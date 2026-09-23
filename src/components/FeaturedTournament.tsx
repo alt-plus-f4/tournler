@@ -1,67 +1,46 @@
 import { formatDate } from '@/lib/helpers/format-date';
-import { formatPrize } from '@/lib/helpers/format-prize';
+import { formatMoney } from '@/lib/helpers/format-money';
 import { ReducedTournament } from '@/types/types';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export function FeaturedTournament({
-	id,
-	name,
-	startDate,
-	bannerUrl,
-	prizePool,
-	teams,
-	location,
-	teamCapacity,
-}: ReducedTournament) {
+export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity }: ReducedTournament) {
+	const hasPrize = prizePool !== null && prizePool !== undefined;
+
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className='relative flex flex-col items-center justify-center rounded-lg shadow-lg overflow-hidden transform transition-transform duration-200 hover:'
+			className='group relative flex flex-col overflow-hidden rounded-md border border-border transition-colors hover:border-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 		>
-			<div className='relative w-full h-64 group bg-neutral-900'>
-				{bannerUrl && (
-					<Image
-						src={bannerUrl}
-						alt={name}
-						fill
-						sizes='78vw'
-						priority
-						className='object-cover w-full h-64'
-					/>
+			<div className='relative h-48 w-full bg-neutral-900 sm:h-64'>
+				{bannerUrl && <Image src={bannerUrl} alt='' fill sizes='(max-width: 1400px) 100vw, 1400px' priority className='object-cover transition-[filter] duration-200 group-hover:brightness-110' />}
+				<div aria-hidden className='absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent' />
+				<div className='absolute inset-x-4 bottom-3 flex items-end'>
+					<h2 className='text-balance text-2xl font-black uppercase tracking-wide text-white sm:text-4xl'>{name}</h2>
+				</div>
+			</div>
+			<dl className='grid w-full grid-cols-2 gap-y-2 border-t border-border bg-black p-2 text-center sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none'>
+				<div className='flex flex-col-reverse sm:border-r sm:border-border'>
+					<dt className='text-xs text-muted-foreground md:text-sm'>Date</dt>
+					<dd className='text-sm font-bold md:text-base'>{formatDate(startDate)}</dd>
+				</div>
+				{hasPrize && (
+					<div className='flex flex-col-reverse sm:border-r sm:border-border'>
+						<dt className='text-xs text-muted-foreground md:text-sm'>Prize pool</dt>
+						<dd className='font-mono text-sm font-bold tabular-nums md:text-base'>{formatMoney(prizePool)}</dd>
+					</div>
 				)}
-				<div className='absolute inset-2 flex items-end justify-center'>
-					<h1 className='text-white text-xl sm:text-3xl p-4 font-extrabold'>
-						{name}
-					</h1>
+				<div className='flex flex-col-reverse sm:border-r sm:border-border'>
+					<dt className='text-xs text-muted-foreground md:text-sm'>Location</dt>
+					<dd className='truncate px-1 text-sm font-bold md:text-base'>{location}</dd>
 				</div>
-				<div className='absolute bottom-0 left-0 w-full h-[35px] bg-gradient-to-t from-black to-transparent'></div>
-				<div className='absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-200'></div>
-			</div>
-			<div className='w-full bg-black border-t-0 border p-2 text-center'>
-				<div className='grid grid-cols-4 gap-4 items-center text-center'>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
-						<span className='font-bold'>{formatDate(startDate)}</span>
-						<span className='text-slate-300 font-thin'>Date</span>
-					</div>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
-						<span className='font-bold'>
-							{formatPrize(prizePool)}
-						</span>
-						<span className='text-slate-300'>Prize Pool</span>
-					</div>
-					<div className='flex flex-col border-r transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
-						<span className='font-bold'>{location}</span>
-						<span className='text-slate-300'>Location</span>
-					</div>
-					<div className='flex flex-col transform transition-transform duration-200 hover:scale-105 text-xs md:text-base'>
-						<span className='font-bold'>
-							{teams.length}/{teamCapacity}
-						</span>
-						<span className='text-slate-300'>Teams</span>
-					</div>
+				<div className='flex flex-col-reverse'>
+					<dt className='text-xs text-muted-foreground md:text-sm'>Teams</dt>
+					<dd className='font-mono text-sm font-bold tabular-nums md:text-base'>
+						{teams.length}/{teamCapacity}
+					</dd>
 				</div>
-			</div>
+			</dl>
 		</Link>
 	);
 }

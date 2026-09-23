@@ -10,6 +10,7 @@ import {
 	CommandItem,
 } from '@/components/ui/command';
 import { ReactNode, useEffect, useState } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -150,7 +151,7 @@ function UsersSearchInner({
 							<AvatarImage
 								className='w-12 h-12'
 								src={user.image}
-								alt={`${user.name} avatar`}
+								alt=''
 							/>
 						)}
 						<AvatarFallback>
@@ -160,9 +161,9 @@ function UsersSearchInner({
 				</div>
 				<div>
 					<p className='font-semibold'>{user.name}</p>
-					<p>{user.email}</p>
+					<p className='text-sm text-muted-foreground'>{user.email}</p>
 					{isInvited && (
-						<p className='text-sm text-green-500'>Invited</p>
+						<p className='text-sm text-signal-ready-text'>Invited</p>
 					)}
 				</div>
 			</>
@@ -172,10 +173,10 @@ function UsersSearchInner({
 	return (
 		<>
 			<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
-				<CommandInput placeholder='Search for users...' value={query} onValueChange={setQuery} />
+				<CommandInput placeholder='Search for players…' value={query} onValueChange={setQuery} />
 				<CommandList>
 					{loading ? (
-						<CommandGroup>Searching...</CommandGroup>
+						<CommandGroup><p className='px-2 py-3 text-sm text-muted-foreground' role='status'>Searching…</p></CommandGroup>
 					) : (
 						<>
 							<CommandEmpty>No users found.</CommandEmpty>
@@ -209,11 +210,8 @@ function UsersSearchInner({
 				</CommandList>
 			</CommandDialog>
 
-			{children && (
-				<div onClick={() => setIsOpen(true)} className='cursor-pointer'>
-					{children}
-				</div>
-			)}
+			{/* The trigger passed in (a Button) receives the click handler directly, so it stays a real, keyboard-operable button. */}
+			{children && <Slot onClick={() => setIsOpen(true)}>{children}</Slot>}
 
 			{dialog}
 		</>

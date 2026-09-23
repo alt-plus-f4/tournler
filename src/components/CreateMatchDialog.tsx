@@ -106,12 +106,12 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className='sm:max-w-[460px]'>
 				<DialogHeader>
-					<DialogTitle>Create Match</DialogTitle>
+					<DialogTitle>Create match</DialogTitle>
 					<DialogDescription>Creates a standalone match for testing — it isn&apos;t wired into any tournament bracket.</DialogDescription>
 				</DialogHeader>
 
 				<form onSubmit={handleSubmit} className='space-y-5'>
-					<label htmlFor='create-match-pickup' className='flex items-start gap-3 rounded-lg border border-white/10 p-3 cursor-pointer'>
+					<label htmlFor='create-match-pickup' className='flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer'>
 						<Checkbox id='create-match-pickup' checked={isPickup} onCheckedChange={(checked) => setIsPickup(checked === true)} className='mt-0.5' />
 						<span className='text-sm'>
 							Pickup match
@@ -203,16 +203,16 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 					)}
 
 					<div className='space-y-2'>
-						<Label htmlFor='create-match-date'>Match Date</Label>
-						<Input id='create-match-date' type='datetime-local' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
+						<Label htmlFor='create-match-date'>Match date</Label>
+						<Input id='create-match-date' type='datetime-local' className='font-mono tabular-nums' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
 					</div>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving || !matchDate || (!isPickup && (!tournamentId || !teamAId || !teamBId))}>
-							{isSaving ? 'Creating...' : 'Create Match'}
+							{isSaving ? 'Creating…' : 'Create match'}
 						</Button>
 					</DialogFooter>
 				</form>

@@ -6,10 +6,22 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
 
-export function DeleteSimulatedTournamentsButton() {
+interface DevToolDialogProps {
+	/** When provided the dialog is controlled and no trigger button is rendered (used from the admin "Dev tools" menu). */
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}
+
+export function DeleteSimulatedTournamentsButton({ open, onOpenChange }: DevToolDialogProps = {}) {
 	const router = useRouter();
 	const { toast } = useToast();
-	const [isOpen, setIsOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const isControlled = open !== undefined;
+	const isOpen = isControlled ? open : internalOpen;
+	const setIsOpen = (next: boolean) => {
+		if (!isControlled) setInternalOpen(next);
+		onOpenChange?.(next);
+	};
 	const [isDeleting, setIsDeleting] = useState(false);
 
 	const handleDelete = async () => {
@@ -43,22 +55,24 @@ export function DeleteSimulatedTournamentsButton() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button variant='outline' className='border-red-500/40 bg-black text-red-400 hover:bg-red-500 hover:text-black'>
-					Delete Simulated Tournaments
-				</Button>
-			</DialogTrigger>
+			{!isControlled && (
+				<DialogTrigger asChild>
+					<Button variant='outline'>
+						Delete simulated tournaments
+					</Button>
+				</DialogTrigger>
+			)}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Delete all simulated tournaments?</DialogTitle>
 					<DialogDescription>This permanently deletes every tournament created by Simulate Tournament, along with their teams and fake players. Real tournaments and teams are not affected.</DialogDescription>
 				</DialogHeader>
-				<DialogFooter className='gap-2'>
+				<DialogFooter className='flex justify-end gap-2'>
 					<DialogClose asChild>
 						<Button variant='outline'>Cancel</Button>
 					</DialogClose>
 					<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-						{isDeleting ? 'Deleting...' : 'Delete'}
+						{isDeleting ? 'Deleting…' : 'Delete simulated data'}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

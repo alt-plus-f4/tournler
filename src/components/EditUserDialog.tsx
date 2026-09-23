@@ -158,15 +158,15 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					<DialogHeader>
 						<DialogTitle>Delete this user?</DialogTitle>
 						<DialogDescription>
-							{editingUser?.name || editingUser?.email} will be permanently deleted. This can&apos;t be undone.
+							{editingUser?.name || 'This user'}{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
 						</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='gap-2'>
+					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
 						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-							{isDeleting ? 'Deleting...' : 'Delete'}
+							{isDeleting ? 'Deleting…' : 'Delete user'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -178,18 +178,18 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className='sm:max-w-[480px] max-h-[85vh] overflow-y-auto'>
 				<DialogHeader>
-					<DialogTitle>Edit User</DialogTitle>
+					<DialogTitle>Edit user</DialogTitle>
 					<DialogDescription>Update the user&apos;s details, access, and badges.</DialogDescription>
 				</DialogHeader>
 
 				<form onSubmit={handleEdit} className='space-y-5'>
 					<div className='flex items-center gap-4'>
-						<div className='h-16 w-16 shrink-0 rounded-full overflow-hidden border border-white/10 bg-neutral-900 flex items-center justify-center'>
+						<div className='h-16 w-16 shrink-0 rounded-full overflow-hidden border border-border bg-neutral-900 flex items-center justify-center'>
 							{editingUser?.image ? (
 								// eslint-disable-next-line @next/next/no-img-element
 								<img src={editingUser.image} alt={editingUser.name ?? ''} className='h-full w-full object-cover' />
 							) : (
-								<span className='text-lg font-bold text-neutral-500'>{(editingUser?.name || '?').charAt(0).toUpperCase()}</span>
+								<span className='text-lg font-bold text-muted-foreground'>{(editingUser?.name || '?').charAt(0).toUpperCase()}</span>
 							)}
 						</div>
 						<div className='flex-1 space-y-2'>
@@ -199,7 +199,7 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Profile</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Profile</p>
 						<div className='space-y-2'>
 							<Label htmlFor='edit-email'>Email</Label>
 							<Input id='edit-email' type='email' value={editingUser?.email || ''} onChange={(e) => handleChange('email', e.target.value)} required />
@@ -211,7 +211,7 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Access</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Access</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-role'>Role</Label>
@@ -238,7 +238,7 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 								/>
 							</div>
 						</div>
-						<div className='flex items-center justify-between rounded-md border border-white/10 px-3 py-2'>
+						<div className='flex items-center justify-between rounded-md border border-border px-3 py-2'>
 							<Label htmlFor='edit-onboarding' className='cursor-pointer'>
 								Onboarding Completed
 							</Label>
@@ -247,15 +247,15 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Badges</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Badges</p>
 						{userBadges.length > 0 && (
 							<div className='flex flex-wrap gap-2'>
 								{userBadges.map(({ badge }) => (
-									<span key={badge.id} className='inline-flex items-center gap-1.5 rounded-full border border-white/10 py-1 pl-2 pr-1 text-xs' style={{ backgroundColor: `${badge.color}15` }}>
+									<span key={badge.id} className='inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-2 pr-1 text-xs' style={{ backgroundColor: `${badge.color}15` }}>
 										<BadgeIcon name={badge.icon} className='h-3.5 w-3.5' style={{ color: badge.color }} />
 										{badge.name}
-										<button type='button' onClick={() => handleRevokeBadge(badge.id)} className='rounded-full p-0.5 hover:bg-white/10' aria-label={`Revoke ${badge.name}`}>
-											<X className='h-3 w-3' />
+										<button type='button' onClick={() => handleRevokeBadge(badge.id)} className='flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label={`Revoke ${badge.name} badge`}>
+											<X className='h-3 w-3' aria-hidden />
 										</button>
 									</span>
 								))}
@@ -263,7 +263,7 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 						)}
 						<div className='flex gap-2'>
 							<Select value={badgeToAward} onValueChange={setBadgeToAward}>
-								<SelectTrigger className='flex-1'>
+								<SelectTrigger className='flex-1' aria-label='Badge to award'>
 									<SelectValue placeholder={availableBadgesToAward.length ? 'Award a badge...' : 'No more badges to award'} />
 								</SelectTrigger>
 								<SelectContent>
@@ -275,22 +275,22 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 								</SelectContent>
 							</Select>
 							<Button type='button' variant='outline' onClick={handleAwardBadge} disabled={!badgeToAward || isAwarding}>
-								{isAwarding ? 'Awarding...' : 'Award'}
+								{isAwarding ? 'Awarding…' : 'Award'}
 							</Button>
 						</div>
 					</div>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						{onDelete && (
 							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
-								Delete
+								Delete user…
 							</Button>
 						)}
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : 'Save changes'}
+							{isSaving ? 'Saving…' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

@@ -23,18 +23,22 @@ export default async function Navbar({ session }: NavbarProps) {
 				<BurgerMenu className='md:hidden z-50 col-start-1' />
 
 				<Link href='/' className='col-start-2 md:col-start-1 flex justify-center md:justify-start'>
-					<Image src={'/logo.png'} alt='Tournler' width={210} height={32} className='hover:brightness-150 h-auto w-[80px] sm:w-[140px]' />
+					<Image src={'/logo.png'} alt='Tournler' width={210} height={32} className='h-auto w-[80px] transition-[filter] hover:brightness-150 sm:w-[140px]' />
 				</Link>
 
 				<MainNav className='hidden md:flex col-start-2' />
 
 				<div className='ml-auto space-x-4 flex flex-row items-center col-start-3'>
 					{role === 'ADMIN' && (
-						<Link href='/admin'>
-							<div className='bg-red-500 hover:bg-red-400 transition-colors text-white rounded-xl flex justify-center items-center px-2 py-1'>
-								<HiWrenchScrewdriver width={8} height={8} />
-								<span className='hidden uppercase md:block text-md mx-2'>Admin</span>
-							</div>
+						<Link
+							href='/admin'
+							aria-label='Admin'
+							className='flex min-h-8 min-w-8 items-center justify-center gap-2 rounded-md bg-red-600 px-2 py-1 text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+						>
+							<HiWrenchScrewdriver aria-hidden className='h-4 w-4' />
+							<span aria-hidden className='hidden text-xs font-bold uppercase tracking-widest md:block'>
+								Admin
+							</span>
 						</Link>
 					)}
 					{session?.user ? (

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import { PlayerAvatar, RoomPanel, SectionLabel, SignalDot } from './room-ui';
-import { formatDuration, formatKd, getSideLabels, getStatsBySide, getWinningSide, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
+import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
 
 function useCopy() {
 	const [copied, setCopied] = useState<string | null>(null);
@@ -74,8 +74,8 @@ export function ServerPanel({ match }: { match: Match }) {
 					<div className='flex items-center gap-3 px-3 py-2'>
 						<dt className='w-16 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>IP</dt>
 						<dd className='flex-1 truncate font-mono text-sm text-white'>{address}</dd>
-						<button type='button' onClick={() => copy('ip', address)} className='rounded-sm p-1 text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label='Copy IP'>
-							{copied === 'ip' ? <Check className='h-4 w-4 text-green-400' /> : <Copy className='h-4 w-4' />}
+						<button type='button' onClick={() => copy('ip', address)} className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label={copied === 'ip' ? 'IP copied' : 'Copy IP'}>
+							{copied === 'ip' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
 						</button>
 					</div>
 					{server?.password && (
@@ -85,10 +85,10 @@ export function ServerPanel({ match }: { match: Match }) {
 							<button
 								type='button'
 								onClick={() => copy('pw', server.password ?? '')}
-								className='rounded-sm p-1 text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-								aria-label='Copy password'
+								className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+								aria-label={copied === 'pw' ? 'Password copied' : 'Copy password'}
 							>
-								{copied === 'pw' ? <Check className='h-4 w-4 text-green-400' /> : <Copy className='h-4 w-4' />}
+								{copied === 'pw' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
 							</button>
 						</div>
 					)}
@@ -100,8 +100,8 @@ export function ServerPanel({ match }: { match: Match }) {
 						<ExternalLink className='h-4 w-4' aria-hidden /> Connect
 					</Button>
 					<Button size='lg' variant='outline' disabled={!command} onClick={() => command && copy('cmd', command)} className='gap-2' title='Copy the console command (paste into the CS2 console)'>
-						{copied === 'cmd' ? <Check className='h-4 w-4 text-green-400' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
-						{copied === 'cmd' ? 'Copied' : 'Console'}
+						{copied === 'cmd' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
+						<span aria-live='polite'>{copied === 'cmd' ? 'Copied' : 'Console'}</span>
 					</Button>
 				</div>
 			)}
@@ -123,7 +123,7 @@ export function ResultPanel({ match }: { match: Match }) {
 	const { teamALabel, teamBLabel } = getSideLabels(match);
 	const winningSide = getWinningSide(match);
 	const winnerName = winningSide === 'TEAM_A' ? teamALabel : winningSide === 'TEAM_B' ? teamBLabel : null;
-	const isSeries = (match.bestOf ?? 1) > 1;
+	const isSeries = (getBestOf(match) ?? 1) > 1;
 	const decided = (match.scoreTeamA ?? 0) !== (match.scoreTeamB ?? 0);
 	const winnerScore = winningSide === 'TEAM_A' ? match.scoreTeamA : match.scoreTeamB;
 	const loserScore = winningSide === 'TEAM_A' ? match.scoreTeamB : match.scoreTeamA;
@@ -157,11 +157,11 @@ export function ResultPanel({ match }: { match: Match }) {
 
 /** The quiet facts: format, schedule, timing, map order. */
 export function MatchInfoPanel({ match }: { match: Match }) {
+	const bestOf = getBestOf(match);
+	// Series length is omitted (not guessed) when the match inherits a tournament default we don't have.
+	const format = [bestOf ? `Best of ${bestOf}` : null, match.isPickup ? (match.pickupMode === 'CAPTAIN_DRAFT' ? 'captain draft pickup' : 'open pickup') : null].filter(Boolean).join(' · ');
 	const rows: { label: string; value: ReactNode }[] = [
-		{
-			label: 'Format',
-			value: `Best of ${match.bestOf ?? 1}${match.isPickup ? (match.pickupMode === 'CAPTAIN_DRAFT' ? ' · captain draft pickup' : ' · open pickup') : ''}`,
-		},
+		...(format ? [{ label: 'Format', value: format.charAt(0).toUpperCase() + format.slice(1) }] : []),
 		{
 			label: match.status === 'SCHEDULED' ? 'Starts' : 'Scheduled',
 			value: (
@@ -236,7 +236,7 @@ function MapStatus({ match, map }: { match: Match; map: MatchMapRow }) {
 	}
 	if (map.status === 'PAUSED' || (map.status === 'LIVE' && match.status === 'PAUSED')) {
 		return (
-			<span className='inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-yellow-400'>
+			<span className='inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-signal-hold'>
 				<SignalDot tone='hold' /> Paused
 			</span>
 		);
@@ -257,9 +257,10 @@ function MapStrip({ match }: { match: Match }) {
 						<span className='flex-1 truncate text-neutral-200'>{getMapDisplayName(m.mapName)}</span>
 						{played && (
 							<span className='font-mono tabular-nums'>
-								<span className={win === 'TEAM_B' ? 'text-neutral-500' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
-								<span className='text-neutral-600'>–</span>
-								<span className={win === 'TEAM_A' ? 'text-neutral-500' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
+								<span className={win === 'TEAM_B' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
+								<span className='text-neutral-600' aria-hidden>–</span>
+								<span className='sr-only'> to </span>
+								<span className={win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
 							</span>
 						)}
 						<span className='min-w-[5.5rem] text-right'>
@@ -324,19 +325,23 @@ export function MapsTab({ match, onGoToVeto }: { match: Match; onGoToVeto?: () =
 							</div>
 						</div>
 						<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-3'>
-							<span className={cn('truncate text-sm font-bold uppercase', win === 'TEAM_B' ? 'text-neutral-500' : 'text-white')}>{teamALabel}</span>
+							<span className={cn('truncate text-sm font-bold uppercase', win === 'TEAM_B' ? 'text-muted-foreground' : 'text-white')}>{teamALabel}</span>
 							<span className='font-mono text-lg tabular-nums'>
 								{played ? (
 									<>
-										<span className={win === 'TEAM_B' ? 'text-neutral-500' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
-										<span className='mx-1 text-neutral-600'>:</span>
-										<span className={win === 'TEAM_A' ? 'text-neutral-500' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
+										<span className={win === 'TEAM_B' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
+										<span className='mx-1 text-neutral-600' aria-hidden>:</span>
+										<span className='sr-only'> to </span>
+								<span className={win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
 									</>
 								) : (
-									<span className='text-neutral-600'>– : –</span>
+									<span className='text-muted-foreground'>
+											<span aria-hidden>– : –</span>
+											<span className='sr-only'>Not played yet</span>
+										</span>
 								)}
 							</span>
-							<span className={cn('truncate text-right text-sm font-bold uppercase', win === 'TEAM_A' ? 'text-neutral-500' : 'text-white')}>{teamBLabel}</span>
+							<span className={cn('truncate text-right text-sm font-bold uppercase', win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white')}>{teamBLabel}</span>
 						</div>
 						{isFinalMap && (
 							<div className='border-t border-border px-4 py-2.5 text-sm'>
@@ -371,7 +376,7 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 		<section className='overflow-hidden rounded-md border border-border bg-neutral-950/90'>
 			<header className='flex items-center justify-between gap-3 border-b border-border px-4 py-3'>
 				<h3 className={cn('truncate text-sm font-black uppercase tracking-wide', result === 'loss' ? 'text-neutral-400' : 'text-white')}>{label}</h3>
-				{result === 'win' && <span className='rounded-sm bg-white px-1.5 py-0.5 text-[11px] font-black uppercase tracking-[0.12em] text-black'>Win</span>}
+				{result === 'win' && <span className='rounded-sm bg-white px-1.5 py-0.5 text-xs font-black uppercase tracking-[0.12em] text-black'>Win</span>}
 			</header>
 			{stats.length === 0 ? (
 				<p className='px-4 py-6 text-sm text-muted-foreground'>No stats reported for this side yet.</p>
@@ -379,7 +384,7 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 				<div className='overflow-x-auto'>
 					<table className='w-full min-w-[420px] text-sm'>
 						<thead>
-							<tr className='text-left text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground'>
+							<tr className='text-left text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>
 								<th scope='col' className='px-4 py-2 font-bold'>
 									Player
 								</th>

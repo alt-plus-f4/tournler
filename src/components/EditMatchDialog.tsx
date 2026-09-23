@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Match } from '@/types/types';
 
@@ -15,6 +14,12 @@ interface EditMatchDialogProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSave: (updatedMatch: Match) => void;
+}
+
+/** datetime-local wants local wall-clock time, not UTC. */
+function toLocalInput(value: string | Date) {
+	const d = new Date(value);
+	return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
 export default function EditMatchDialog({ match, isOpen, onClose, onSave }: EditMatchDialogProps) {
@@ -30,7 +35,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 			setScoreTeamA(match.scoreTeamA?.toString() ?? '');
 			setScoreTeamB(match.scoreTeamB?.toString() ?? '');
 			setWinnerId(match.winnerId?.toString() ?? '');
-			setMatchDate(match.matchDate ? new Date(match.matchDate).toISOString().slice(0, 16) : '');
+			setMatchDate(match.matchDate ? toLocalInput(match.matchDate) : '');
 		}
 	}, [match]);
 
@@ -72,33 +77,34 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className='sm:max-w-[460px]'>
 				<DialogHeader>
-					<DialogTitle>Edit Match</DialogTitle>
+					<DialogTitle>Edit match</DialogTitle>
 					<DialogDescription>{match.tournament?.name}</DialogDescription>
 				</DialogHeader>
 
-				<div className='flex items-center justify-center gap-4 rounded-lg border border-white/10 py-4'>
-					<span className='font-semibold'>{match.teamA?.name ?? 'TBD'}</span>
-					<span className='text-muted-foreground text-sm'>vs</span>
-					<span className='font-semibold'>{match.teamB?.name ?? 'TBD'}</span>
+				<div className='flex items-center justify-center gap-4 rounded-md border border-border py-4'>
+					<span className='font-bold uppercase'>{match.teamA?.name ?? 'TBD'}</span>
+					<span className='text-sm text-muted-foreground'>vs</span>
+					<span className='font-bold uppercase'>{match.teamB?.name ?? 'TBD'}</span>
 				</div>
 
 				<form onSubmit={handleSubmit} className='space-y-5'>
 					<div className='space-y-2'>
-						<Label htmlFor='edit-match-date'>Match Date</Label>
-						<Input id='edit-match-date' type='datetime-local' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
+						<Label htmlFor='edit-match-date'>Match date</Label>
+						<Input id='edit-match-date' type='datetime-local' className='font-mono tabular-nums' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
 					</div>
 
 					{canEditResult ? (
 						<div className='space-y-3'>
-							<p className='text-xs uppercase tracking-wide text-muted-foreground'>Result</p>
+							<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Result override</p>
+							<p className='text-sm text-muted-foreground'>Scores normally come from the game server. Anything entered here overrides what the server reported.</p>
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-2'>
-									<Label htmlFor='edit-score-a'>{match.teamA?.name} Score</Label>
-									<Input id='edit-score-a' type='number' value={scoreTeamA} onChange={(e) => setScoreTeamA(e.target.value)} />
+									<Label htmlFor='edit-score-a'>{match.teamA?.name} score</Label>
+									<Input id='edit-score-a' type='number' min={0} className='font-mono tabular-nums' value={scoreTeamA} onChange={(e) => setScoreTeamA(e.target.value)} />
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='edit-score-b'>{match.teamB?.name} Score</Label>
-									<Input id='edit-score-b' type='number' value={scoreTeamB} onChange={(e) => setScoreTeamB(e.target.value)} />
+									<Label htmlFor='edit-score-b'>{match.teamB?.name} score</Label>
+									<Input id='edit-score-b' type='number' min={0} className='font-mono tabular-nums' value={scoreTeamB} onChange={(e) => setScoreTeamB(e.target.value)} />
 								</div>
 							</div>
 							<div className='space-y-2'>
@@ -114,24 +120,22 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 								</Select>
 							</div>
 							{match.status === 'COMPLETED' && (
-								<div className='flex items-start gap-2 rounded-md border border-yellow-500/20 bg-yellow-500/5 p-2 text-xs text-yellow-500/90'>
-									<Badge variant='outline' className='border-yellow-500/40 text-yellow-500 shrink-0'>
-										Completed
-									</Badge>
-									<span>Changing the winner to a different team will be rejected to protect bracket integrity.</span>
-								</div>
+								<p className='rounded-md border border-border p-2 text-xs text-neutral-300'>
+									<span className='font-bold uppercase tracking-widest text-muted-foreground'>Completed · </span>
+									Changing the winner to a different team will be rejected to protect bracket integrity.
+								</p>
 							)}
 						</div>
 					) : (
 						<p className='text-sm text-muted-foreground'>This match&apos;s teams aren&apos;t decided yet (waiting on a previous round) &mdash; only the date can be edited.</p>
 					)}
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : 'Save changes'}
+							{isSaving ? 'Saving…' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

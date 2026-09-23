@@ -45,7 +45,7 @@ const Timer: React.FC<TimerProps> = ({ timeLeft: initialTimeLeft }) => {
   const { days, hours, minutes, seconds } = formatTime(timeLeft);
 
   return (
-    <span className='text-xs mb-1 hidden sm:block'>
+    <span className='mb-1 block text-xs font-mono tabular-nums'>
         Time left to join: {days > 0 && <span>{days}d</span>} {hours}h{' '}
         {minutes}m {seconds} s
     </span>

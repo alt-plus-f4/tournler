@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { FaPlusCircle, FaMinusCircle, FaInfo } from 'react-icons/fa';
+import { LogIn, LogOut } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { revalidateTournamentPage } from '@/lib/actions';
@@ -18,13 +18,16 @@ interface JoinLeaveButtonProps {
 		name: string;
 	} | null;
 	timeLeftToJoin: number;
+	/** Every slot is taken — a registered team can still leave, nobody else can join. */
+	isFull?: boolean;
 }
 
-export function JoinLeaveButton({ tournament, team, timeLeftToJoin }: JoinLeaveButtonProps) {
+export function JoinLeaveButton({ tournament, team, timeLeftToJoin, isFull = false }: JoinLeaveButtonProps) {
 	const { toast } = useToast();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [isInTournament, setIsInTournament] = useState(false);
 	const [loading, setLoading] = useState(true);
+	const [submitting, setSubmitting] = useState(false);
 
 	useEffect(() => {
 		async function checkIfInTournament() {
@@ -36,9 +39,7 @@ export function JoinLeaveButton({ tournament, team, timeLeftToJoin }: JoinLeaveB
 				const response = await fetch(`/api/tournaments/${tournament.id}/teams?teamId=${team.id}`);
 				if (response.ok) {
 					const data = await response.json();
-					if (data.teamInTournament) {
-						setIsInTournament(true);
-					}
+					setIsInTournament(!!data.teamInTournament);
 				}
 			} finally {
 				setLoading(false);
@@ -46,129 +47,97 @@ export function JoinLeaveButton({ tournament, team, timeLeftToJoin }: JoinLeaveB
 		}
 
 		void checkIfInTournament();
-	}, [tournament.id, team?.id]);
+	}, [tournament.id, team]);
 
-	const handleJoinClick = () => {
-		setIsDialogOpen(true);
-	};
-
-	const handleDialogClose = () => {
-		setIsDialogOpen(false);
-	};
-
-	async function joinTournament() {
+	async function submit(method: 'POST' | 'DELETE') {
 		if (!team) return;
-		const response = await fetch(`/api/tournaments/${tournament.id}/teams`, {
-			method: 'POST',
-			body: JSON.stringify({ teamId: team.id }),
-		});
-
-		setIsDialogOpen(false);
-
-		if (response.ok) {
-			toast({
-				variant: 'default',
-				title: 'Successfully joined the tournament',
+		setSubmitting(true);
+		try {
+			const response = await fetch(`/api/tournaments/${tournament.id}/teams`, {
+				method,
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ teamId: team.id }),
 			});
-			setIsInTournament(true);
-			await revalidateTournamentPage(tournament.id);
-			return;
-		}
 
-		const json = await response.json();
-		toast({
-			variant: 'destructive',
-			title: json.message || 'Error',
-			description: "Couldn't join the tournament",
-		});
+			if (response.ok) {
+				setIsDialogOpen(false);
+				toast({ title: method === 'POST' ? `${team.name} is registered` : `${team.name} left the tournament` });
+				setIsInTournament(method === 'POST');
+				await revalidateTournamentPage(tournament.id);
+				return;
+			}
+
+			const json = await response.json().catch(() => null);
+			toast({
+				variant: 'destructive',
+				title: method === 'POST' ? "Couldn't register your team" : "Couldn't leave the tournament",
+				description: json?.error || json?.message || 'Please try again.',
+			});
+		} finally {
+			setSubmitting(false);
+		}
 	}
 
-	async function leaveTournament() {
-		if (!team) return;
-		const response = await fetch(`/api/tournaments/${tournament.id}/teams`, {
-			method: 'DELETE',
-			body: JSON.stringify({ teamId: team.id }),
-		});
-		setIsDialogOpen(false);
-
-		if (response.ok) {
-			toast({
-				variant: 'default',
-				title: 'Successfully left the tournament',
-			});
-			setIsInTournament(false);
-			await revalidateTournamentPage(tournament.id);
-			return;
-		}
-
-		const json = await response.json();
-		toast({
-			variant: 'destructive',
-			title: json.message || 'Error',
-			description: "Couldn't leave the tournament",
-		});
-	}
+	if (!team) return null;
 
 	const hasStarted = new Date(tournament.startDate) <= new Date();
-	const registrationClosed = timeLeftToJoin <= 0;
-
-	if (!team) {
-		return null;
-	}
+	const registrationClosed = hasStarted || timeLeftToJoin <= 0;
+	const blockedByCapacity = isFull && !isInTournament;
 
 	return (
-		<>
-			<div className='absolute top-[-5px]'>
-				{loading ? (
-					<></>
-				) : (
-					isInTournament && (
+		<div className='flex flex-col items-start gap-2 sm:items-end'>
+			{!loading && (
+				<p className='text-sm text-muted-foreground' aria-live='polite'>
+					{isInTournament ? (
 						<>
-							<div className='flex flex-row items-center text-white bg-black text-sm p-2 rounded-md font-extralight'>
-								<FaInfo className='mr-1' />
-								You are currently in the tournament.
-							</div>
+							<span className='font-bold text-white'>{team.name}</span> is registered.
 						</>
-					)
-				)}
-			</div>
+					) : blockedByCapacity ? (
+						'Every slot is taken.'
+					) : (
+						<>
+							Register as <span className='font-bold text-white'>{team.name}</span>.
+						</>
+					)}
+				</p>
+			)}
 
-			<Button variant='default' className='p-4' onClick={handleJoinClick} disabled={hasStarted || registrationClosed || loading}>
+			<Button variant={isInTournament ? 'outline' : 'default'} onClick={() => setIsDialogOpen(true)} disabled={registrationClosed || loading || blockedByCapacity}>
 				{loading ? (
-					<span>Loading...</span>
+					'Checking registration…'
 				) : isInTournament ? (
 					<>
-						<FaMinusCircle />
-						<span className='hidden sm:block'>Leave Tournament</span>
+						<LogOut className='h-4 w-4' aria-hidden />
+						Leave tournament
 					</>
 				) : (
 					<>
-						<FaPlusCircle />
-						<span className='hidden sm:block'>Join Tournament</span>
+						<LogIn className='h-4 w-4' aria-hidden />
+						Register team
 					</>
 				)}
 			</Button>
 
-			<Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
-				<DialogContent className='sm:max-w-[375px]'>
-					<DialogHeader className='flex items-center pt-3'>
-						<DialogTitle>{isInTournament ? 'Leave Tournament Confirmation' : 'Join Tournament Confirmation'}</DialogTitle>
+			<Dialog open={isDialogOpen} onOpenChange={(open) => !submitting && setIsDialogOpen(open)}>
+				<DialogContent className='sm:max-w-sm'>
+					<DialogHeader>
+						<DialogTitle>{isInTournament ? 'Leave this tournament?' : 'Register your team?'}</DialogTitle>
 						<DialogDescription>
-							{isInTournament ? `You are about to leave the tournament "${tournament.name}" with your team "${team.name}".` : `You are about to join the tournament "${tournament.name}" with your team "${team.name}".`}
+							{isInTournament ? `${team.name} will be removed from ${tournament.name}. You can register again while slots are open.` : `${team.name} will be registered for ${tournament.name}.`}
 						</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-center gap-2 pt-2'>
+					<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
 						<DialogClose asChild>
-							<Button className='w-[40%]' variant='secondary'>
+							<Button variant='outline' disabled={submitting}>
 								Cancel
 							</Button>
 						</DialogClose>
-						<Button className='w-[40%]' onClick={isInTournament ? leaveTournament : joinTournament}>
-							{isInTournament ? 'Leave' : 'Join'}
+						<Button variant={isInTournament ? 'destructive' : 'default'} onClick={() => submit(isInTournament ? 'DELETE' : 'POST')} disabled={submitting} isLoading={submitting}>
+							{isInTournament ? 'Leave' : 'Register'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</>
+		</div>
 	);
 }

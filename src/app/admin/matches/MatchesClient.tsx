@@ -5,7 +5,7 @@ import { MatchTable } from '@/components/MatchTable';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FaExclamation } from 'react-icons/fa';
+import { Label } from '@/components/ui/label';
 import { Match } from '@/types/types';
 import EditMatchDialog from '@/components/EditMatchDialog';
 import CreateMatchDialog from '@/components/CreateMatchDialog';
@@ -66,19 +66,19 @@ export default function MatchesClient() {
 	};
 
 	return (
-		<div className='mx-12 mt-12 w-[80%] overflow-hidden'>
-			<div className='flex items-center justify-between mb-4'>
-				<h1 className='text-2xl font-bold'>Match Management</h1>
-				<Button onClick={() => setIsCreateDialogOpen(true)}>Create Match</Button>
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<div className='mb-6 flex items-center justify-between gap-3'>
+				<h1 className='text-2xl font-bold'>Matches</h1>
+				<Button onClick={() => setIsCreateDialogOpen(true)}>Create match</Button>
 			</div>
-			<div className='w-full border p-2 mb-4 rounded-sm flex items-center'>
-				<FaExclamation className='text-red-500 mr-2' />
-				<p className='text-md border-b border-red-500'>Click on a row (or press Enter) to edit a match&apos;s score, winner, or date.</p>
-			</div>
-			<Input placeholder='Search by tournament or team name...' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+			<Label htmlFor='admin-match-search' className='sr-only'>
+				Search matches
+			</Label>
+			<Input id='admin-match-search' type='search' placeholder='Search by tournament or team name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
 			<MatchTable
 				isLoading={isLoading && !hasLoadedOnce}
 				matches={matches}
+				emptyMessage={search ? `No matches match “${search}”.` : 'No matches yet. Matches are created when a tournament starts.'}
 				onEdit={(match) => {
 					setEditingMatch(match);
 					setIsEditDialogOpen(true);

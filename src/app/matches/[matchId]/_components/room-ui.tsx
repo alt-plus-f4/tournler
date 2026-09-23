@@ -36,7 +36,7 @@ export function RoomPanel({ label, action, children, className, bodyClassName }:
 
 /** Status dot. Pulses only for states the server actually reported (live, ready, on the clock). */
 export function SignalDot({ tone, pulse = false, className }: { tone: 'live' | 'ready' | 'hold'; pulse?: boolean; className?: string }) {
-	const color = tone === 'live' ? 'bg-red-500' : tone === 'ready' ? 'bg-green-500' : 'bg-yellow-400';
+	const color = tone === 'live' ? 'bg-signal-live' : tone === 'ready' ? 'bg-signal-ready' : 'bg-signal-hold';
 	return (
 		<span className={cn('relative inline-flex h-2 w-2 shrink-0', className)} aria-hidden>
 			{pulse && <span className={cn('absolute inset-0 rounded-full opacity-75 motion-safe:animate-ping', color)} />}
@@ -45,7 +45,11 @@ export function SignalDot({ tone, pulse = false, className }: { tone: 'live' | '
 	);
 }
 
-/** Dot · state word · mono timer — the Booth's signature readout, one per match state. */
+/**
+ * Dot · state word · mono timer — the Booth's signature readout, one per match state. It owns the
+ * 1s ticker, so only this readout re-renders every second, not the room. Not a live region: the
+ * per-second timer would spam screen readers (RoomHeader announces status/score changes instead).
+ */
 export function StatusReadout({ match }: { match: Match }) {
 	useTicker(match.status === 'LIVE' || match.status === 'SCHEDULED');
 
@@ -63,7 +67,7 @@ export function StatusReadout({ match }: { match: Match }) {
 	if (match.status === 'PAUSED') {
 		const elapsed = match.startedAt && match.pausedAt ? new Date(match.pausedAt).getTime() - new Date(match.startedAt).getTime() : 0;
 		return (
-			<span className='inline-flex items-center gap-2 text-sm font-bold text-yellow-400'>
+			<span className='inline-flex items-center gap-2 text-sm font-bold text-signal-hold'>
 				<SignalDot tone='hold' />
 				PAUSED
 				<span className='font-mono font-normal tabular-nums'>{formatDuration(elapsed)}</span>
@@ -75,7 +79,7 @@ export function StatusReadout({ match }: { match: Match }) {
 		const duration = match.startedAt && match.completedAt ? new Date(match.completedAt).getTime() - new Date(match.startedAt).getTime() : null;
 		return (
 			<span className='inline-flex items-center gap-2.5 text-sm text-muted-foreground'>
-				<span className='rounded-sm border border-neutral-600 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white'>Final</span>
+				<span className='rounded-sm border border-neutral-600 px-1.5 py-0.5 text-xs font-bold uppercase tracking-[0.12em] text-white'>Final</span>
 				{duration !== null && (
 					<span>
 						Played in <span className='font-mono tabular-nums text-neutral-300'>{formatDuration(duration)}</span>

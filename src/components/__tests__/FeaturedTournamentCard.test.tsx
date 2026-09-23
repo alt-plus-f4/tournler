@@ -23,11 +23,11 @@ describe('FeaturedTournamentCard', () => {
 		// Check if date is rendered (formatted)
 		expect(screen.getByText(/December\s+31,\s+2023/)).toBeInTheDocument();
 
-		// Check if prize pool is rendered
-		expect(screen.getByText('$50000')).toBeInTheDocument();
+		// Check if prize pool is rendered (formatted)
+		expect(screen.getByText('$50,000')).toBeInTheDocument();
 
-		// Check if "Read more" text is rendered
-		expect(screen.getByText('Read more')).toBeInTheDocument();
+		// The whole card is the single link — no fake nested "Read more" link
+		expect(screen.queryByText('Read more')).not.toBeInTheDocument();
 	});
 
 	it('links to the correct tournament page', () => {
@@ -42,8 +42,7 @@ describe('FeaturedTournamentCard', () => {
 		render(<FeaturedTournamentCard {...mockProps} />);
 
 		// Check if the card has hover effect classes
-		const card = screen.getByRole('link').firstChild;
-		expect(card).toHaveClass('hover:shadow-lg');
-		expect(card).toHaveClass('hover:scale-[1.02]');
+		const card = screen.getByRole('link');
+		expect(card).toHaveClass('motion-safe:hover:scale-[1.02]');
 	});
 });

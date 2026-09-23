@@ -1,9 +1,16 @@
+import { Skeleton } from '@/components/ui/skeleton';
+
 export default function Loading() {
 	return (
-		<div className='fixed inset-0 z-50 flex items-center justify-center bg-black/80'>
-			<div className='flex flex-col items-center gap-3 rounded-2xl bg-black/80 px-6 py-5 text-white shadow-2xl backdrop-blur'>
-				<div className='h-10 w-10 animate-spin rounded-full border-4 border-t-transparent border-white/70' />
-				<span className='text-sm text-white/70'>Loading team...</span>
+		<div role='status' aria-busy='true' aria-live='polite' className='mx-auto my-8 w-full px-4 sm:w-5/6 sm:px-0'>
+			<span className='sr-only'>Loading team…</span>
+			<Skeleton className='h-[240px] w-full rounded-md bg-neutral-900 sm:h-[420px]' />
+			<Skeleton className='mt-6 h-9 w-64 max-w-full bg-neutral-900' />
+			<Skeleton className='mt-10 h-4 w-24 bg-neutral-900' />
+			<div className='mt-3 space-y-2'>
+				{Array.from({ length: 3 }).map((_, i) => (
+					<Skeleton key={i} className='h-14 w-full bg-neutral-900' />
+				))}
 			</div>
 		</div>
 	);

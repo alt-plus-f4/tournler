@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, Flag, Loader2, Pause, Play, RefreshCw, RotateCcw, ShieldCheck, Terminal, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -52,7 +53,39 @@ export function useMatchAdmin(matchId: string, onChanged: () => void) {
 
 export type MatchAdmin = ReturnType<typeof useMatchAdmin>;
 
-const confirmRestart = () => window.confirm('Restart this match? Its score, timer, and any map results will be cleared back to zero. Team assignments and the map veto stay as they are.');
+/**
+ * Confirmation for the irreversible levers (restart, force end, delete). The trigger opens it; the
+ * destructive button runs `onConfirm` and closes. Replaces window.confirm so the consequence copy is
+ * readable and the confirm button carries the destructive style.
+ */
+function ConfirmAction({ trigger, title, description, confirmLabel, onConfirm }: { trigger: ReactNode; title: string; description: ReactNode; confirmLabel: string; onConfirm: () => void }) {
+	const [open, setOpen] = useState(false);
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogTrigger asChild>{trigger}</DialogTrigger>
+			<DialogContent className='max-w-md rounded-md'>
+				<DialogHeader>
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription className='leading-relaxed'>{description}</DialogDescription>
+				</DialogHeader>
+				<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
+					<Button variant='outline' onClick={() => setOpen(false)}>
+						Cancel
+					</Button>
+					<Button
+						variant='destructive'
+						onClick={() => {
+							setOpen(false);
+							onConfirm();
+						}}
+					>
+						{confirmLabel}
+					</Button>
+				</DialogFooter>
+			</DialogContent>
+		</Dialog>
+	);
+}
 
 function canStart(match: Match, vetoComplete: boolean) {
 	return vetoComplete && (match.isPickup || (match.teamA !== null && match.teamB !== null));
@@ -73,24 +106,24 @@ export function AdminQuickBar({ match, admin, vetoComplete }: { match: Match; ad
 
 	return (
 		<div role='group' aria-label='Admin match controls' className='flex items-center gap-1 rounded-md border border-border bg-black/70 p-1 backdrop-blur-sm'>
-			<span className='flex items-center gap-1 px-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground'>
+			<span className='flex items-center gap-1 px-1.5 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>
 				<ShieldCheck className='h-3.5 w-3.5' aria-hidden /> Admin
 			</span>
 			{match.status === 'SCHEDULED' &&
 				(vetoComplete ? (
-					<Button size='sm' onClick={() => run('start', { action: 'START' })} disabled={busy || !canStart(match, vetoComplete)} className='h-8 gap-1.5'>
+					<Button size='sm' onClick={() => run('start', { action: 'START' })} disabled={busy || !canStart(match, vetoComplete)} className='h-10 gap-1.5'>
 						<ActionSpinner show={pendingAction === 'start'} icon={Play} /> Start
 					</Button>
 				) : (
 					<span className='px-2 text-xs text-muted-foreground'>Start opens after the veto</span>
 				))}
 			{match.status === 'LIVE' && (
-				<Button size='sm' variant='outline' onClick={() => run('pause', { action: 'PAUSE' })} disabled={busy} className='h-8 gap-1.5'>
+				<Button size='sm' variant='outline' onClick={() => run('pause', { action: 'PAUSE' })} disabled={busy} className='h-10 gap-1.5'>
 					<ActionSpinner show={pendingAction === 'pause'} icon={Pause} /> Pause
 				</Button>
 			)}
 			{match.status === 'PAUSED' && (
-				<Button size='sm' onClick={() => run('resume', { action: 'RESUME' })} disabled={busy} className='h-8 gap-1.5'>
+				<Button size='sm' onClick={() => run('resume', { action: 'RESUME' })} disabled={busy} className='h-10 gap-1.5'>
 					<ActionSpinner show={pendingAction === 'resume'} icon={Play} /> Resume
 				</Button>
 			)}
@@ -118,19 +151,14 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 	const [scoreA, setScoreA] = useState(() => String(match.scoreTeamA ?? 0));
 	const [scoreB, setScoreB] = useState(() => String(match.scoreTeamB ?? 0));
 	const [winnerId, setWinnerId] = useState('');
-	const { toast } = useToast();
 
 	const inPlay = match.status === 'LIVE' || match.status === 'PAUSED';
 	const scoreUnit = (match.bestOf ?? 1) > 1 ? 'maps won' : 'rounds';
 	const canEnd = inPlay && (match.isPickup || (match.teamA !== null && match.teamB !== null));
 
+	const winnerName = !winnerId ? null : winnerId === 'TEAM_A' || winnerId === String(match.teamA?.id) ? teamALabel : teamBLabel;
 	const endMatch = () => {
-		if (!winnerId) {
-			toast({ variant: 'destructive', title: 'Pick a winner to end the match' });
-			return;
-		}
-		const winnerName = winnerId === 'TEAM_A' || winnerId === String(match.teamA?.id) ? teamALabel : teamBLabel;
-		if (!window.confirm(`End the match with ${winnerName} as the winner (${scoreA}–${scoreB})? This overrides whatever the game server reports and advances the bracket.`)) return;
+		if (!winnerId) return;
 		const winnerField = match.isPickup ? { winnerSide: winnerId } : { winnerId: Number(winnerId) };
 		run('end', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB), ...winnerField });
 	};
@@ -169,9 +197,17 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 							)}
 							{inPlay && (
 								<ControlRow title='Restart match' hint='Clears score, timer and map results. Teams and veto stay.'>
-									<Button variant='outline' onClick={() => confirmRestart() && run('restart', { action: 'RESTART' })} disabled={busy} className='gap-2'>
-										<ActionSpinner show={pendingAction === 'restart'} icon={RotateCcw} /> Restart
-									</Button>
+									<ConfirmAction
+										title='Restart this match?'
+										description='Score, timer and every map result are cleared back to zero and the server restarts the match. Team assignments and the map veto stay as they are.'
+										confirmLabel='Restart match'
+										onConfirm={() => run('restart', { action: 'RESTART' })}
+										trigger={
+											<Button variant='outline' disabled={busy} className='gap-2'>
+												<ActionSpinner show={pendingAction === 'restart'} icon={RotateCcw} /> Restart
+											</Button>
+										}
+									/>
 								</ControlRow>
 							)}
 						</div>
@@ -196,12 +232,12 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 							</div>
 						</div>
 						<Button variant='outline' onClick={() => run('update score', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB) })} disabled={busy} className='mt-3 w-full'>
-							{pendingAction === 'update score' ? 'Saving…' : 'Save score'}
+							{pendingAction === 'update score' ? 'Saving…' : 'Save score override'}
 						</Button>
 
 						{canEnd && (
 							<div className='mt-5 border-t border-border pt-5'>
-								<SectionLabel className='mb-3'>End match</SectionLabel>
+								<SectionLabel className='mb-3'>Force end</SectionLabel>
 								<div className='flex flex-col gap-3 sm:flex-row sm:items-end'>
 									<div className='flex-1 space-y-1.5'>
 										<Label htmlFor='admin-winner' className='text-muted-foreground'>
@@ -226,25 +262,49 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 											</SelectContent>
 										</Select>
 									</div>
-									<Button onClick={endMatch} disabled={busy || !winnerId} variant='destructive' className='gap-2'>
-										<ActionSpinner show={pendingAction === 'end'} icon={Flag} /> End match
-									</Button>
+									<ConfirmAction
+										title={`Force end with ${winnerName ?? 'this winner'}?`}
+										description={
+											<>
+												This records <span className='font-bold text-white'>{winnerName}</span> as the winner at{' '}
+												<span className='font-mono tabular-nums text-white'>
+													{scoreA}–{scoreB}
+												</span>
+												{match.isPickup ? ' and closes the match.' : ' and advances the bracket.'} The game server&apos;s score will be overridden.
+											</>
+										}
+										confirmLabel='Force end match'
+										onConfirm={endMatch}
+										trigger={
+											<Button disabled={busy || !winnerId} variant='destructive' className='gap-2'>
+												<ActionSpinner show={pendingAction === 'end'} icon={Flag} /> Force end (override server)
+											</Button>
+										}
+									/>
 								</div>
-								<p className='mt-2 text-xs text-muted-foreground'>Uses the scores above and advances the bracket.</p>
+								<p className='mt-2 text-xs text-muted-foreground'>Records the scores above as the result instead of what the server reports{match.isPickup ? '.' : ', and advances the bracket.'}</p>
 							</div>
 						)}
 					</RoomPanel>
 				)}
 
-				<section className='rounded-md border border-red-500/20 bg-red-500/[0.04] p-4'>
+				<section className='rounded-md border border-signal-live/20 bg-signal-live/[0.04] p-4'>
 					<div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 						<div>
 							<p className='text-sm font-medium text-white'>Delete match</p>
 							<p className='mt-0.5 text-sm text-muted-foreground'>Removes scores, roster, veto history and the server record. Can’t be undone.</p>
 						</div>
-						<Button variant='outline' disabled={isDeleting} onClick={onDelete} className='shrink-0 gap-2 border-red-500/30 text-red-300 hover:border-red-400 hover:bg-red-500/10 hover:text-red-200'>
-							{isDeleting ? <Loader2 className='h-4 w-4 animate-spin' aria-hidden /> : <Trash2 className='h-4 w-4' aria-hidden />} Delete
-						</Button>
+						<ConfirmAction
+							title='Permanently delete this match?'
+							description='This removes its scores, roster, map and veto history, and the game server record. It cannot be undone.'
+							confirmLabel='Delete match'
+							onConfirm={onDelete}
+							trigger={
+								<Button variant='outline' disabled={isDeleting} className='shrink-0 gap-2 border-signal-live/30 text-white hover:border-signal-live hover:bg-signal-live/10'>
+									{isDeleting ? <Loader2 className='h-4 w-4 animate-spin' aria-hidden /> : <Trash2 className='h-4 w-4 text-signal-live' aria-hidden />} Delete
+								</Button>
+							}
+						/>
 					</div>
 				</section>
 			</div>
@@ -336,7 +396,7 @@ function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: Gam
 				</>
 			}
 			action={
-				<Button size='sm' variant='outline' onClick={resync} disabled={isSyncing} className='h-8 gap-1.5'>
+				<Button size='sm' variant='outline' onClick={resync} disabled={isSyncing} className='-my-1 h-10 gap-1.5'>
 					<RefreshCw className={cn('h-3.5 w-3.5', isSyncing && 'animate-spin')} aria-hidden /> Re-sync config
 				</Button>
 			}
@@ -345,7 +405,7 @@ function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: Gam
 				{gameServer.connectIp}:{gameServer.port} · {gameServer.status.toLowerCase()}
 			</p>
 			{!gameServer.matchConfigLoadedAt && (
-				<div className='mb-3 flex items-start gap-2 rounded-md border border-yellow-500/30 bg-yellow-500/10 p-3 text-xs text-yellow-300'>
+				<div className='mb-3 flex items-start gap-2 rounded-md border border-border bg-neutral-900 p-3 text-xs text-neutral-200' role='status'>
 					<AlertTriangle className='mt-0.5 h-4 w-4 shrink-0' aria-hidden />
 					<span>
 						The server hasn&apos;t confirmed loading this match&apos;s config yet (maps, teams, password). If players can&apos;t connect, re-sync the config or run <code className='font-mono'>status</code>.
@@ -361,7 +421,7 @@ function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: Gam
 							<p className='text-muted-foreground'>
 								$ <span className='text-white'>{entry.command}</span>
 							</p>
-							<p className={cn('whitespace-pre-wrap break-all', entry.isError ? 'text-red-400' : 'text-neutral-300')}>{entry.output || '(no output)'}</p>
+							<p className={cn('whitespace-pre-wrap break-all', entry.isError ? 'text-signal-live' : 'text-neutral-300')}>{entry.output || '(no output)'}</p>
 						</div>
 					))
 				)}

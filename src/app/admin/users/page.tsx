@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { AccessDenied } from '@/components/AccessDenied';
 import UsersClient from './UsersClient';
+
+export const metadata: Metadata = { title: 'Users' };
 
 export default async function UsersPage() {
 	const session = await getAuthSession();

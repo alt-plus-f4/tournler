@@ -5,7 +5,8 @@ export function Search() {
     <div>
       <Input
         type="search"
-        placeholder="Search..."
+        aria-label="Search"
+        placeholder="Search…"
         className="md:w-[100px] lg:w-[300px]"
       />
     </div>

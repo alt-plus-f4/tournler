@@ -39,7 +39,7 @@ function SideTurnHeader({ labelA, labelB, markA, markB, activeSide, done, active
 				<div className='min-w-0'>
 					<p className='line-clamp-2 break-words text-sm font-black uppercase leading-tight tracking-wide text-white'>{label}</p>
 					{active && (
-						<span className={cn('inline-flex items-center gap-1.5 text-xs font-bold text-green-400', key === 'TEAM_A' && 'flex-row-reverse')}>
+						<span className={cn('inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-signal-ready-text', key === 'TEAM_A' && 'flex-row-reverse')}>
 							<SignalDot tone='ready' pulse /> {activeText}
 						</span>
 					)}
@@ -138,9 +138,9 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 				activeText='On the clock'
 			/>
 
-			<div className='flex items-center justify-center gap-1.5' aria-label={`Step ${banPickActions.length + 1} of ${veto.sequenceLength}`}>
+			<div className='flex items-center justify-center gap-1.5' role='img' aria-label={`Step ${Math.min(banPickActions.length + 1, veto.sequenceLength)} of ${veto.sequenceLength}`}>
 				{sequenceSteps.map((step, i) => (
-					<span key={i} className={cn('h-1.5 w-6 rounded-full transition-colors duration-200', step.done ? (step.done.action === 'BAN' ? 'bg-red-500/70' : 'bg-green-500/70') : step.isCurrent ? 'bg-white' : 'bg-neutral-800')} />
+					<span key={i} className={cn('h-1.5 w-6 rounded-full transition-colors duration-200', step.done ? (step.done.action === 'BAN' ? 'bg-signal-live/70' : 'bg-signal-ready/70') : step.isCurrent ? 'bg-white' : 'bg-neutral-800')} />
 				))}
 			</div>
 
@@ -161,12 +161,12 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 					let overlay: ReactNode = null;
 					if (acted?.action === 'BAN') {
 						label = `Banned · ${actorNameFor(acted)}`;
-						tone = 'border-red-500/30 opacity-60';
-						overlay = <X className='h-5 w-5 text-red-500' strokeWidth={3} aria-hidden />;
+						tone = 'border-signal-live/30 opacity-60';
+						overlay = <X className='h-5 w-5 text-signal-live' strokeWidth={3} aria-hidden />;
 					} else if (acted?.action === 'PICK') {
 						label = `Picked · ${actorNameFor(acted)}`;
-						tone = 'border-green-500/50';
-						overlay = <Check className='h-5 w-5 text-green-500' strokeWidth={3} aria-hidden />;
+						tone = 'border-signal-ready/50';
+						overlay = <Check className='h-5 w-5 text-signal-ready-text' strokeWidth={3} aria-hidden />;
 					} else if (acted?.action === 'DECIDER') {
 						label = 'Decider';
 						tone = 'border-white';
@@ -213,7 +213,7 @@ function VetoLog({ actions, actorNameFor, className }: { actions: VetoActionRow[
 				const Icon = a.action === 'BAN' ? X : a.action === 'PICK' ? Check : Star;
 				return (
 					<li key={a.order} className='flex items-center gap-1.5'>
-						<Icon className={cn('h-3 w-3 shrink-0', a.action === 'BAN' ? 'text-red-500' : a.action === 'PICK' ? 'text-green-500' : 'text-white')} aria-hidden />
+						<Icon className={cn('h-3 w-3 shrink-0', a.action === 'BAN' ? 'text-signal-live' : a.action === 'PICK' ? 'text-signal-ready-text' : 'text-white')} aria-hidden />
 						<span>
 							<span className='text-neutral-300'>{actorNameFor(a)}</span> {verb} {getMapDisplayName(a.mapName)}
 						</span>
@@ -284,7 +284,7 @@ export function DraftPanel({
 	};
 
 	const joinButton = canJoinPool && !isComplete && (
-		<Button size='sm' onClick={onJoinPool} disabled={isJoiningPool} className='h-8'>
+		<Button size='sm' onClick={onJoinPool} disabled={isJoiningPool} className='-my-1 h-10'>
 			{isJoiningPool ? 'Joining…' : draft.captainAUserId && draft.captainBUserId ? 'Join pool' : 'Join lobby'}
 		</Button>
 	);
