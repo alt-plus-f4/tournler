@@ -5,4 +5,6 @@ export const NAV_LINKS = [
 	{ href: '/tournaments', label: 'Tournaments' },
 	{ href: '/matches', label: 'Matches' },
 	{ href: '/teams', label: 'Teams' },
+	{ href: '/news', label: 'News' },
+	{ href: '/forum', label: 'Forum' },
 ] as const;
