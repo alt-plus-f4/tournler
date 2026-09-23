@@ -550,7 +550,17 @@ model HomepageSettings {
   id             Int            @id @default(1)
   featuredSource FeaturedSource @default(TOURNAMENTS) @map("featured_source")
   featuredLayout FeaturedLayout @default(GRID) @map("featured_layout")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Homepage rewatch/VOD player, shown as the hero when no match is live. All nullable: null
+  // falls back to the built-in default VOD (see src/components/home/rewatch-defaults.ts).
+  rewatchVideoId   String? @map("rewatch_video_id")
+  rewatchTitle     String? @map("rewatch_title")
+  rewatchTeamA     String? @map("rewatch_team_a")
+  rewatchTeamB     String? @map("rewatch_team_b")
+  rewatchTeamALogo String? @map("rewatch_team_a_logo")
+  rewatchTeamBLogo String? @map("rewatch_team_b_logo")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_settings")
 }

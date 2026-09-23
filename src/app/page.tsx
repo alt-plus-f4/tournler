@@ -1,23 +1,27 @@
 import { FeaturedTournamentCard } from '@/components/FeaturedTournamentCard';
 import { FeaturedNewsPostCard } from '@/components/FeaturedNewsPostCard';
-import { OnAirPanel } from '@/components/OnAirPanel';
+import { OnAirPanel, getLiveMatches } from '@/components/OnAirPanel';
+import { RewatchPlayer } from '@/components/home/RewatchPlayer';
+import { UpNext, getUpNext } from '@/components/home/UpNext';
+import { resolveRewatch } from '@/components/home/rewatch-config';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
 import { db } from '@/lib/db';
 import Link from 'next/link';
 import { TournamentStatus } from '@prisma/client';
 
 const FALLBACK_BANNER = '/info-image.png';
+const UPCOMING_COUNT = 3;
 
 async function getHomeContent() {
 	const now = new Date();
-	// An UPCOMING tournament whose start date has already passed is stale data (never started or
-	// never closed out), not something to advertise as upcoming.
-	const activeTournament = { OR: [{ status: TournamentStatus.ONGOING }, { status: TournamentStatus.UPCOMING, startDate: { gte: now } }] };
+	// UPCOMING tournaments whose start date has passed are still shown (the cards label them
+	// "Start pending"), since the organizer hasn't started or cancelled them yet.
+	const activeTournament = { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } };
 	const homepageSettings = await db.homepageSettings.findUnique({ where: { id: 1 } });
 	const featuredSource = homepageSettings?.featuredSource ?? 'TOURNAMENTS';
 	const featuredLayout = homepageSettings?.featuredLayout ?? 'GRID';
 
-	const [curatedFeatured, upcoming, featuredNews] = await Promise.all([
+	const [curatedFeatured, upcomingFuture, featuredNews] = await Promise.all([
 		featuredSource !== 'NEWS'
 			? db.cs2Tournament.findMany({
 					where: { isSystem: false, isFeatured: true, ...activeTournament },
@@ -29,7 +33,7 @@ async function getHomeContent() {
 		db.cs2Tournament.findMany({
 			where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { gte: now } },
 			orderBy: { startDate: 'asc' },
-			take: 3,
+			take: UPCOMING_COUNT,
 			include: { teams: true },
 		}),
 		featuredSource !== 'TOURNAMENTS'
@@ -55,11 +59,26 @@ async function getHomeContent() {
 					})
 				: [];
 
-	return { featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout };
+	// Genuinely upcoming first (soonest first); top up with overdue ones (most recently due first).
+	const upcoming =
+		upcomingFuture.length >= UPCOMING_COUNT
+			? upcomingFuture
+			: [
+					...upcomingFuture,
+					...(await db.cs2Tournament.findMany({
+						where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { lt: now } },
+						orderBy: { startDate: 'desc' },
+						take: UPCOMING_COUNT - upcomingFuture.length,
+						include: { teams: true },
+					})),
+				];
+
+	return { featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, rewatch: resolveRewatch(homepageSettings) };
 }
 
 export default async function Page() {
-	const { featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout } = await getHomeContent();
+	const [{ featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, rewatch }, liveMatches, upNext] = await Promise.all([getHomeContent(), getLiveMatches(), getUpNext()]);
+	const isLive = liveMatches.length > 0;
 	const layoutClass = featuredLayout === 'CAROUSEL' ? 'flex gap-5 overflow-x-auto snap-x snap-mandatory pb-2' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5';
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
 
@@ -68,7 +87,10 @@ export default async function Page() {
 			<h1 className='sr-only'>Tournler: hosted CS2 tournaments</h1>
 			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 py-8'>
 				<div className='space-y-8'>
-					<OnAirPanel />
+					{/* Live scoreboard leads when a server reports a match in progress; otherwise the VOD is the hero. */}
+					{isLive ? <OnAirPanel matches={liveMatches} /> : <RewatchPlayer rewatch={rewatch} />}
+					<UpNext rows={upNext} />
+					{isLive && <RewatchPlayer rewatch={rewatch} />}
 
 					{featuredSource !== 'NEWS' && (
 						<section>
@@ -82,7 +104,7 @@ export default async function Page() {
 								<div className={layoutClass}>
 									{featuredTournaments.map((tournament) => (
 										<div key={tournament.id} className={itemClass}>
-											<FeaturedTournamentCard id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} />
+											<FeaturedTournamentCard id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} />
 										</div>
 									))}
 								</div>
@@ -121,7 +143,7 @@ export default async function Page() {
 					</div>
 					<div className='space-y-4'>
 						{upcoming.length > 0 ? (
-							upcoming.map((tournament) => <UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} isHomePage />)
+							upcoming.map((tournament) => <UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} isHomePage />)
 						) : (
 							<p className='text-sm text-muted-foreground'>Nothing scheduled yet.</p>
 						)}
