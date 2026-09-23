@@ -4,42 +4,274 @@
   "title": "Design System: Tournler",
   "extensions": {
     "colorMeta": {
-      "stage-black":  { "role": "neutral", "displayName": "Stage Black", "canonical": "#000000", "tonalRamp": ["#000000", "#09090b", "#171717", "#262626", "#404040", "#737373", "#d4d4d4", "#fafafa"] },
-      "canvas":       { "role": "neutral", "displayName": "Canvas", "canonical": "hsl(240 10% 3.9%)", "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#e4e4e7"] },
-      "panel":        { "role": "neutral", "displayName": "Panel", "canonical": "#171717", "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#e5e5e5"] },
-      "panel-raised": { "role": "neutral", "displayName": "Panel Raised", "canonical": "#262626", "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#e5e5e5"] },
-      "hairline":     { "role": "neutral", "displayName": "Hairline", "canonical": "hsl(240 3.7% 15.9%)", "tonalRamp": ["#09090b", "#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#e4e4e7"] },
-      "ink":          { "role": "primary", "displayName": "Broadcast Ink", "canonical": "hsl(0 0% 98%)", "tonalRamp": ["#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#d4d4d4", "#e5e5e5", "#fafafa"] },
-      "ink-soft":     { "role": "neutral", "displayName": "Soft Ink", "canonical": "#d4d4d4", "tonalRamp": ["#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#d4d4d4", "#e5e5e5", "#fafafa"] },
-      "ink-muted":    { "role": "neutral", "displayName": "Muted Ink", "canonical": "hsl(240 5% 64.9%)", "tonalRamp": ["#18181b", "#27272a", "#3f3f46", "#52525b", "#71717a", "#a1a1aa", "#d4d4d8", "#f4f4f5"] },
-      "label-grey":   { "role": "neutral", "displayName": "Label Grey", "canonical": "#737373", "tonalRamp": ["#171717", "#262626", "#404040", "#525252", "#737373", "#a3a3a3", "#d4d4d4", "#f5f5f5"] },
-      "on-air-red":   { "role": "secondary", "displayName": "On-Air Red", "canonical": "#ef4444", "tonalRamp": ["#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fecaca"] },
-      "ready-green":  { "role": "tertiary", "displayName": "Ready Green", "canonical": "#22c55e", "tonalRamp": ["#052e16", "#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#bbf7d0"] },
-      "hold-amber":   { "role": "tertiary", "displayName": "Hold Amber", "canonical": "#facc15", "tonalRamp": ["#422006", "#713f12", "#854d0e", "#a16207", "#ca8a04", "#eab308", "#facc15", "#fef08a"] },
-      "danger-deep":  { "role": "secondary", "displayName": "Danger Deep", "canonical": "hsl(0 62.8% 30.6%)", "tonalRamp": ["#2a0808", "#450a0a", "#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#f87171", "#fecaca"] }
+      "stage-black": {
+        "role": "neutral",
+        "displayName": "Stage Black",
+        "canonical": "#000000",
+        "tonalRamp": [
+          "#000000",
+          "#09090b",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#737373",
+          "#d4d4d4",
+          "#fafafa"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "canonical": "hsl(240 10% 3.9%)",
+        "tonalRamp": [
+          "#09090b",
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#e4e4e7"
+        ]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#171717",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#e5e5e5"
+        ]
+      },
+      "panel-raised": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#262626",
+        "tonalRamp": [
+          "#0a0a0a",
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#e5e5e5"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "hsl(240 3.7% 15.9%)",
+        "tonalRamp": [
+          "#09090b",
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#e4e4e7"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Broadcast Ink",
+        "canonical": "hsl(0 0% 98%)",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#e5e5e5",
+          "#fafafa"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#d4d4d4",
+        "tonalRamp": [
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#e5e5e5",
+          "#fafafa"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "hsl(240 5% 64.9%)",
+        "tonalRamp": [
+          "#18181b",
+          "#27272a",
+          "#3f3f46",
+          "#52525b",
+          "#71717a",
+          "#a1a1aa",
+          "#d4d4d8",
+          "#f4f4f5"
+        ]
+      },
+      "label-grey": {
+        "role": "neutral",
+        "displayName": "Label Grey",
+        "canonical": "#737373",
+        "tonalRamp": [
+          "#171717",
+          "#262626",
+          "#404040",
+          "#525252",
+          "#737373",
+          "#a3a3a3",
+          "#d4d4d4",
+          "#f5f5f5"
+        ]
+      },
+      "on-air-red": {
+        "role": "secondary",
+        "displayName": "On-Air Red",
+        "canonical": "#ef4444",
+        "tonalRamp": [
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#ef4444",
+          "#f87171",
+          "#fecaca"
+        ]
+      },
+      "ready-green": {
+        "role": "tertiary",
+        "displayName": "Ready Green",
+        "canonical": "#22c55e",
+        "tonalRamp": [
+          "#052e16",
+          "#14532d",
+          "#166534",
+          "#15803d",
+          "#16a34a",
+          "#22c55e",
+          "#4ade80",
+          "#bbf7d0"
+        ]
+      },
+      "hold-amber": {
+        "role": "tertiary",
+        "displayName": "Hold Amber",
+        "canonical": "#facc15",
+        "tonalRamp": [
+          "#422006",
+          "#713f12",
+          "#854d0e",
+          "#a16207",
+          "#ca8a04",
+          "#eab308",
+          "#facc15",
+          "#fef08a"
+        ]
+      },
+      "danger-deep": {
+        "role": "secondary",
+        "displayName": "Danger Deep",
+        "canonical": "hsl(0 62.8% 30.6%)",
+        "tonalRamp": [
+          "#2a0808",
+          "#450a0a",
+          "#7f1d1d",
+          "#991b1b",
+          "#b91c1c",
+          "#dc2626",
+          "#f87171",
+          "#fecaca"
+        ]
+      }
     },
     "typographyMeta": {
-      "display":  { "displayName": "Display", "purpose": "Page titles and team names on scoreboard/veto; 900 uppercase. Currently faux-bold (Roboto 400 only loaded)." },
-      "headline": { "displayName": "Headline", "purpose": "Section and card headers." },
-      "title":    { "displayName": "Title", "purpose": "List card titles, single line." },
-      "body":     { "displayName": "Body", "purpose": "Default working text at 14px." },
-      "label":    { "displayName": "Section Label", "purpose": "Tracked uppercase panel headers and table column heads in Label Grey." },
-      "numeric":  { "displayName": "Readout", "purpose": "Scores, timers, stats, console lines; tabular monospace." }
+      "display": {
+        "displayName": "Display",
+        "purpose": "Page titles and team names on scoreboard/veto; 900 uppercase. Currently faux-bold (Roboto 400 only loaded)."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section and card headers."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "List card titles, single line."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default working text at 14px."
+      },
+      "label": {
+        "displayName": "Section Label",
+        "purpose": "Tracked uppercase panel headers and table column heads in Label Grey."
+      },
+      "numeric": {
+        "displayName": "Readout",
+        "purpose": "Scores, timers, stats, console lines; tabular monospace."
+      }
     },
     "shadows": [
-      { "name": "card-hairline", "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "purpose": "shadcn Card default; effectively invisible on black." },
-      { "name": "hover-lift-legacy", "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)", "purpose": "Featured/upcoming tournament card hover with scale(1.02-1.05). Incumbent exception; don't spread." }
+      {
+        "name": "card-hairline",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "shadcn Card default; effectively invisible on black."
+      },
+      {
+        "name": "hover-lift-legacy",
+        "value": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+        "purpose": "Featured/upcoming tournament card hover with scale(1.02-1.05). Incumbent exception; don't spread."
+      }
     ],
     "motion": [
-      { "name": "pulse-live", "value": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite", "purpose": "Status dots only, and only for server-reported live/ready/on-the-clock states." },
-      { "name": "colors-standard", "value": "color, background-color, border-color 150ms cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default button/link state transition." },
-      { "name": "spotlight-follow", "value": "background-position 150ms ease-out", "purpose": "Pointer spotlight on the canvas; disabled under prefers-reduced-motion." }
+      {
+        "name": "pulse-live",
+        "value": "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "purpose": "Status dots only, and only for server-reported live/ready/on-the-clock states."
+      },
+      {
+        "name": "colors-standard",
+        "value": "color, background-color, border-color 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default button/link state transition."
+      },
+      {
+        "name": "spotlight-follow",
+        "value": "background-position 150ms ease-out",
+        "purpose": "Pointer spotlight on the canvas; disabled under prefers-reduced-motion."
+      }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "md", "value": "768px" },
-      { "name": "lg", "value": "1024px" },
-      { "name": "xl", "value": "1280px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
     ]
   },
   "components": [
@@ -108,7 +340,7 @@
   ],
   "narrative": {
     "northStar": "The Broadcast Booth",
-    "overview": "Tournler looks like the control room behind an esports broadcast. The stage is black, the chrome recedes, and whatever is on air takes over the screen. Team names are set heavy and uppercase like overlay graphics, scores and timers run in monospaced numerals, and a pulsing red dot means one thing: this is live, right now. The rest of the interface is equipment for the operator (organizers, admins and players checking in), and it stays out of the way until something needs attention.\n\nThe product is dark-only. `.dark` is forced on `<body>` and there is no theme switch. Depth comes from light, not lift. A faint 42px grid texture covers the whole canvas, and a soft white spotlight (500px radial glow) follows the pointer. The navbar is dotted glass: a 4px halftone dot screen over a saturated blur. Nearly everything is monochrome. Color is a signal and never decoration.\n\nDensity is moderate to high on operate surfaces (match page, admin) and looser on public surfaces (home, lists). Components are meant to feel like hard-edged hardware: switches and readouts on a control desk, not soft consumer cards.",
+    "overview": "Tournler looks like the control room behind an esports broadcast. The stage is black, the chrome recedes, and whatever is on air takes over the screen. Team names are set heavy and uppercase like overlay graphics, scores and timers run in monospaced numerals, and a pulsing red dot means one thing: this is live, right now. The rest of the interface is equipment for the operator (organizers, admins and players checking in), and it stays out of the way until something needs attention.\n\nThe product is dark-only. `.dark` is forced on `<body>` and there is no theme switch. Depth comes from light, not lift. A faint 42px grid texture covers the whole canvas, and a soft white spotlight (500px radial glow) follows the pointer. The navbar is dotted glass: a 4px halftone dot screen over a saturated blur. Nearly everything is monochrome. Color is a signal and never decoration.\n\nDensity is moderate to high on operate surfaces (match page, admin) and looser on public surfaces (home, lists). Components are meant to feel like hard-edged hardware: switches and readouts on a control desk, not soft consumer cards.\n\nThe Booth has two rooms. **On air** covers public and match surfaces (home, tournaments, brackets, match pages): broadcast energy, heavy names, the live signal front and center. **The control room** is `/admin` and the operator panels inside match pages. Keep them dense, monochrome and keyboard-first: tables over cards, labels over decoration, no hover lifts, and signal color only for state.",
     "keyCharacteristics": [
       "Black stage, white ink, neutral-grey support. No hue unless it carries meaning.",
       "Red means on-air or danger, green means ready or your turn, amber means on hold. Nothing else is colored.",
@@ -117,12 +349,36 @@
       "Flat at rest. Light and glow are the only depth cues, reserved for the pointer spotlight and the live or active element."
     ],
     "rules": [
-      { "name": "The On-Air Rule", "body": "Color is a signal, never decoration. Red means live or danger, green means ready or your turn, amber means paused. If an element isn't reporting state, it's monochrome.", "section": "colors" },
-      { "name": "The Pulse Means Now Rule", "body": "A pulsing dot is only allowed when the game server has actually reported that state (live, ready, on the clock). Never pulse something decorative, scheduled or finished.", "section": "colors" },
-      { "name": "The Readout Rule", "body": "Any number that can change while someone is watching (score, round, timer, K/D, pool count) is set in monospace with tabular figures so it never jitters.", "section": "typography" },
-      { "name": "The Label Voice Rule", "body": "Section labels are always tiny, bold, uppercase and widely tracked in Label Grey. They name the panel; they never compete with its content.", "section": "typography" },
-      { "name": "The Spotlight Rule", "body": "Depth is light, not lift. Surfaces stay flat. What's live, focused or hovered brightens or glows. Nothing floats.", "section": "elevation" },
-      { "name": "The Tight Corner Rule", "body": "New chrome uses the small end of the scale (4–6px). Full rounding is reserved for things that are circles by nature: status dots, avatars and count badges. Don't add new pill-shaped containers.", "section": "shapes" }
+      {
+        "name": "The On-Air Rule",
+        "body": "Color is a signal, never decoration. Red means live or danger, green means ready or your turn, amber means paused. If an element isn't reporting state, it's monochrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pulse Means Now Rule",
+        "body": "A pulsing dot is only allowed when the game server has actually reported that state (live, ready, on the clock). Never pulse something decorative, scheduled or finished.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readout Rule",
+        "body": "Any number that can change while someone is watching (score, round, timer, K/D, pool count) is set in monospace with tabular figures so it never jitters.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Voice Rule",
+        "body": "Section labels are always tiny, bold, uppercase and widely tracked in Label Grey. They name the panel; they never compete with its content.",
+        "section": "typography"
+      },
+      {
+        "name": "The Spotlight Rule",
+        "body": "Depth is light, not lift. Surfaces stay flat. What's live, focused or hovered brightens or glows. Nothing floats.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Tight Corner Rule",
+        "body": "New chrome uses the small end of the scale (4–6px). Full rounding is reserved for things that are circles by nature: status dots, avatars and count badges. Don't add new pill-shaped containers.",
+        "section": "shapes"
+      }
     ],
     "dos": [
       "Do keep every surface monochrome (Stage Black, Canvas, Panel, Hairline, Ink) and use color only to report state (the On-Air Rule).",

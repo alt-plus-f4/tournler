@@ -133,6 +133,8 @@ The product is dark-only. `.dark` is forced on `<body>` and there is no theme sw
 
 Density is moderate to high on operate surfaces (match page, admin) and looser on public surfaces (home, lists). Components are meant to feel like hard-edged hardware: switches and readouts on a control desk, not soft consumer cards.
 
+The Booth has two rooms. **On air** covers public and match surfaces (home, tournaments, brackets, match pages): broadcast energy, heavy names, the live signal front and center. **The control room** is `/admin` and the operator panels inside match pages. Keep them dense, monochrome and keyboard-first: tables over cards, labels over decoration, no hover lifts, and signal color only for state.
+
 **Key Characteristics:**
 - Black stage, white ink, neutral-grey support. No hue unless it carries meaning.
 - Red means on-air or danger, green means ready or your turn, amber means on hold. Nothing else is colored.
