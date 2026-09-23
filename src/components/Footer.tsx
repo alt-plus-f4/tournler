@@ -19,6 +19,14 @@ const Footer = () => {
 					<FaSteam className='w-7 h-7 hover:text-steamLogoColor transition-colors' />
 				</Link>
 			</div>
+			<nav aria-label='Legal' className='mb-3 flex gap-4 text-muted-foreground'>
+				<Link href='/terms' className='hover:text-foreground hover:underline underline-offset-4'>
+					Terms of Service
+				</Link>
+				<Link href='/privacy' className='hover:text-foreground hover:underline underline-offset-4'>
+					Privacy Policy
+				</Link>
+			</nav>
 			<p>&copy; 2025 Tournler. No rights reserved.</p>
 		</footer>
 	);
