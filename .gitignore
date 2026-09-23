@@ -66,3 +66,6 @@ next-env.d.ts
 
 # Claude Code session-local runtime state (session id/pid/lock), not project config.
 /.claude/scheduled_tasks.lock
+
+# Playwright MCP browser logs
+.playwright-mcp/
