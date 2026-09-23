@@ -140,6 +140,9 @@ export interface PlayerRecentMatch {
 	scoreFor: number | null;
 	scoreAgainst: number | null;
 	matchDate: string;
+	kills: number;
+	deaths: number;
+	assists: number;
 }
 
 /** A player's most recent completed matches, newest first — powers the "recent form" strip and match history list. */
@@ -153,6 +156,9 @@ export async function getPlayerRecentMatches(userId: string, limit = 10): Promis
 		select: {
 			teamId: true,
 			side: true,
+			kills: true,
+			deaths: true,
+			assists: true,
 			match: {
 				select: {
 					id: true,
@@ -185,6 +191,9 @@ export async function getPlayerRecentMatches(userId: string, limit = 10): Promis
 			scoreFor: isTeamA ? m.scoreTeamA : m.scoreTeamB,
 			scoreAgainst: isTeamA ? m.scoreTeamB : m.scoreTeamA,
 			matchDate: m.matchDate.toISOString(),
+			kills: row.kills,
+			deaths: row.deaths,
+			assists: row.assists,
 		};
 	});
 }
