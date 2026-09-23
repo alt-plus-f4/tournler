@@ -177,7 +177,7 @@ const sections: LegalSection[] = [
 					<strong>Session cookie</strong>: up to 30 days, or until you sign out.
 				</li>
 				<li>
-					<strong>Competition records</strong> (results, brackets, stats, demos): kept after a match so tournament history stays accurate. When you delete your account, we remove your account, profile and your personal stats, and on request remove or anonymise your name elsewhere where we reasonably can. Demos already published may still contain your in-game name and Steam ID.
+					<strong>Competition records</strong> (results, brackets, stats, demos): kept after a match so tournament history stays accurate. When you delete your account, we remove your account, profile, linked accounts, avatar, notifications and personal stats. Captaincy of your team passes to a teammate. On request we also remove or anonymise your name elsewhere where we reasonably can. Demos already published may still contain your in-game name and Steam ID. Organisers and news authors need to remove or hand over their tournaments and posts first, so other players&apos; results aren&apos;t lost.
 				</li>
 			</ul>
 		),
@@ -211,8 +211,9 @@ const sections: LegalSection[] = [
 					<li>receive your data in a portable, machine-readable format.</li>
 				</ul>
 				<p>
-					To use any of these rights, email {mail} from the address on your account, or tell us your profile link. We answer within one month. You can unlink Steam from your profile at any time.
+					You can do the most common ones yourself on your profile page, under <strong>Your data</strong>: <strong>Download my data</strong> gives you a JSON file of everything we store about you, and <strong>Delete account</strong> erases it. You can also unlink Steam there at any time.
 				</p>
+				<p>For anything else, email {mail} from the address on your account, or tell us your profile link. We answer within one month.</p>
 				<p>
 					You can also complain to the Bulgarian supervisory authority, the Commission for Personal Data Protection (<a href='https://www.cpdp.bg/en/'>cpdp.bg</a>), or to the authority where you live.
 				</p>

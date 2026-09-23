@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
+import { AccountDataSection } from '@/components/profile/AccountDataSection';
 import { BadgeIcon } from '@/lib/badge-icons';
 import { LevelBadge } from '@/components/LevelBadge';
 import { faceitLevelProgress } from '@/lib/faceit';
@@ -767,6 +768,8 @@ export default function PublicProfilePage() {
 						)}
 					</TabsPrimitive.Content>
 				</TabsPrimitive.Root>
+
+				{isOwner && <AccountDataSection />}
 
 				{isOwner && isEditing && (
 					<Dialog open={isAvatarEditing} onOpenChange={setIsAvatarEditing}>

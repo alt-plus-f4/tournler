@@ -138,7 +138,7 @@ const sections: LegalSection[] = [
 		body: (
 			<>
 				<p>
-					You can stop using Tournler at any time and ask us to delete your account by emailing {mail}.
+					You can stop using Tournler at any time and delete your account from your profile page, or by emailing {mail}.
 				</p>
 				<p>
 					We may suspend or close an account, or remove it from a tournament, if it breaks these terms, puts other users or the service at risk, or if the law requires it. Where it is reasonable to do so, we will tell you why.
