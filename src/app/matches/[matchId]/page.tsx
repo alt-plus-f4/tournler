@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3, RotateCcw, Download, Film, Trash2, X, Check, Star, ShieldCheck, Zap, Settings, ChevronDown } from 'lucide-react';
+import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3, RotateCcw, Download, Film, Trash2, X, Check, Star, ShieldCheck, Zap, Settings } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import { LevelBadge } from '@/components/LevelBadge';
 
@@ -1571,7 +1571,7 @@ export default function MatchPage() {
 								<Users className='w-5 h-5' />
 								<h3 className='text-lg font-black uppercase tracking-wider'>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</h3>
 							</div>
-							<p className='text-neutral-500 text-sm mb-1'>Roster (5 players)</p>
+							{!match.isPickup && <p className='text-neutral-400 text-sm mb-1'>Roster ({match.teamA?.members.length ?? 0}/5)</p>}
 							{match.isPickup && <LobbyNameEditor matchId={matchId} side='TEAM_A' name={match.teamAName || ''} canEdit={canRenameSideA} onRenamed={() => mutate()} />}
 						</div>
 						{match.isPickup ? (
@@ -1616,7 +1616,7 @@ export default function MatchPage() {
 								<Users className='w-5 h-5' />
 								<h3 className='text-lg font-black uppercase tracking-wider'>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</h3>
 							</div>
-							<p className='text-neutral-500 text-sm mb-1'>Roster (5 players)</p>
+							{!match.isPickup && <p className='text-neutral-400 text-sm mb-1'>Roster ({match.teamB?.members.length ?? 0}/5)</p>}
 							{match.isPickup && <LobbyNameEditor matchId={matchId} side='TEAM_B' name={match.teamBName || ''} canEdit={canRenameSideB} onRenamed={() => mutate()} />}
 						</div>
 						{match.isPickup ? (
@@ -1663,14 +1663,20 @@ export default function MatchPage() {
 								<Trophy className='w-8 h-8 text-black' />
 							</div>
 							<h2 className='text-4xl font-black uppercase tracking-wider mb-4'>{winnerName} Wins!</h2>
-							<div className='flex items-center justify-center gap-6'>
-								<div className='text-center'>
-									<p className='text-neutral-400 text-xs uppercase tracking-widest mb-1'>Final Score</p>
-									<p className='text-3xl font-black'>
-										{match.scoreTeamA} - {match.scoreTeamB}
-									</p>
+							{(match.scoreTeamA ?? 0) !== (match.scoreTeamB ?? 0) ? (
+								<div className='flex items-center justify-center gap-6'>
+									<div className='text-center'>
+										<p className='text-neutral-400 text-xs uppercase tracking-widest mb-1'>Final Score</p>
+										<p className='text-3xl font-black font-mono tabular-nums'>
+											{match.scoreTeamA} - {match.scoreTeamB}
+										</p>
+									</div>
 								</div>
-							</div>
+							) : (
+								// A tied/empty score can't have produced this winner — the result was set by hand
+								// (End Match / forced result), so say that instead of printing "0 - 0" under a win.
+								<p className='text-neutral-400 text-sm max-w-md mx-auto'>No deciding score was reported by the game server. This result was recorded by an organizer.</p>
+							)}
 						</div>
 					</div>
 				)}
