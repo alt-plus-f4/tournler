@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { TeamLogo } from '@/components/TeamLogo';
 import { Hourglass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDuration, type Match } from './types';
@@ -115,22 +116,9 @@ export function StatusReadout({ match }: { match: Match }) {
 	);
 }
 
-export function TeamMark({ logo, name, background, size = 'lg', dim = false }: { logo: string | null | undefined; name: string; background?: string | null; size?: 'sm' | 'lg'; dim?: boolean }) {
-	const [failed, setFailed] = useState(false);
-	const box = size === 'lg' ? 'h-14 w-14 sm:h-20 sm:w-20 text-lg sm:text-2xl' : 'h-9 w-9 text-xs';
-	return (
-		<div
-			className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-black font-black text-white', box, dim && 'opacity-60 grayscale')}
-			style={background ? { backgroundColor: background } : undefined}
-		>
-			{logo && !failed ? (
-				// eslint-disable-next-line @next/next/no-img-element
-				<img src={logo} alt='' className='h-full w-full object-contain p-1.5' onError={() => setFailed(true)} />
-			) : (
-				<span aria-hidden>{name.substring(0, 2).toUpperCase()}</span>
-			)}
-		</div>
-	);
+/** A side's team logo in the match room — the shared sponsor-plate TeamLogo, dimmed for the losing side. */
+export function TeamMark({ logo, name, size = 'lg', dim = false }: { logo: string | null | undefined; name: string; size?: 'sm' | 'lg'; dim?: boolean }) {
+	return <TeamLogo src={logo} name={name} decorative size={size === 'lg' ? 'lg' : 'sm'} className={cn(size === 'lg' && 'sm:h-20 sm:w-20 sm:p-2 sm:text-2xl', size === 'sm' && 'h-9 w-9', dim && 'opacity-60 grayscale')} />;
 }
 
 export function PlayerAvatar({ src, name, size = 32 }: { src: string | null; name: string; size?: number }) {

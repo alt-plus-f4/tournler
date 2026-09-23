@@ -131,8 +131,8 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 			<SideTurnHeader
 				labelA={teamALabel}
 				labelB={teamBLabel}
-				markA={match.isPickup ? <PlayerAvatar src={captainA?.user.image ?? null} name={teamALabel} size={36} /> : <TeamMark logo={match.teamA?.logo} name={teamALabel} background={match.teamA?.background} size='sm' />}
-				markB={match.isPickup ? <PlayerAvatar src={captainB?.user.image ?? null} name={teamBLabel} size={36} /> : <TeamMark logo={match.teamB?.logo} name={teamBLabel} background={match.teamB?.background} size='sm' />}
+				markA={match.isPickup ? <PlayerAvatar src={captainA?.user.image ?? null} name={teamALabel} size={36} /> : <TeamMark logo={match.teamA?.logo} name={teamALabel} size='sm' />}
+				markB={match.isPickup ? <PlayerAvatar src={captainB?.user.image ?? null} name={teamBLabel} size={36} /> : <TeamMark logo={match.teamB?.logo} name={teamBLabel} size='sm' />}
 				activeSide={activeSide}
 				done={isComplete}
 				activeText='On the clock'

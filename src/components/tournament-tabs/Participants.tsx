@@ -1,4 +1,5 @@
 import { TeamCard } from '@/components/TeamCard';
+import { TeamRosterList } from '@/components/TeamRosterList';
 import type { ExtendedCs2Team } from '@/lib/models/team-model';
 import type { TournamentDetail } from './types';
 
@@ -20,7 +21,7 @@ export default function Participants({ tournament }: { tournament: TournamentDet
 					{teams.map((team) => (
 						<li key={team.id}>
 							{/* TeamCard is typed against the full Prisma team; the page selects the fields it renders. */}
-							<TeamCard team={team as unknown as ExtendedCs2Team} />
+							<TeamCard team={team as unknown as ExtendedCs2Team} roster={<TeamRosterList members={team.members} captainId={team.capitanId} label={`${team.name} roster`} />} />
 						</li>
 					))}
 				</ul>

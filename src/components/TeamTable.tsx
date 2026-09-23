@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { TeamLogo } from '@/components/TeamLogo';
 import Link from 'next/link';
 import type { Cs2Team } from '@/types/types';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
@@ -47,9 +47,7 @@ export function TeamTable({ isLoading, teams, onEdit, emptyMessage = 'No teams f
 								<tr key={team.id} className={t.tr}>
 									<td className={t.td}>
 										<div className='flex items-center gap-3'>
-											<span aria-hidden className='h-8 w-8 shrink-0 overflow-hidden rounded-sm border border-border' style={{ backgroundColor: team.background || '#000000' }}>
-												{team.logo ? <Image src={team.logo} alt='' width={32} height={32} className='h-full w-full object-contain' /> : null}
-											</span>
+											<TeamLogo src={team.logo} name={team.name} decorative size='sm' />
 											<button type='button' onClick={() => onEdit(team)} className={t.rowAction} aria-label={`Edit ${team.name}`}>
 												{team.name}
 											</button>

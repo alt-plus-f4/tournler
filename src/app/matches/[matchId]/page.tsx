@@ -169,10 +169,10 @@ export default function MatchPage() {
 			// Participants arrive ordered by joinedAt, so an open pickup side's first entry is its captain.
 			return match.participants
 				.filter((p) => p.side === side)
-				.map((p, i) => ({ id: p.user.id, name: p.user.name || 'Unknown player', image: p.user.image, faceitLevel: p.user.faceitLevel, isCaptain: p.isCaptain || (!isDraftMode && i === 0), isMe: p.user.id === currentUserId }));
+				.map((p, i) => ({ id: p.user.id, name: p.user.name || 'Unknown player', image: p.user.image, faceitLevel: p.user.faceitLevel, verified: p.user.verified ?? null, isCaptain: p.isCaptain || (!isDraftMode && i === 0), isMe: p.user.id === currentUserId }));
 		}
 		const team = side === 'TEAM_A' ? match.teamA : match.teamB;
-		return (team?.members ?? []).map((m) => ({ id: m.id, name: m.name || 'Unknown player', image: m.image, faceitLevel: m.faceitLevel, isCaptain: team?.capitanId === m.id, isMe: m.id === currentUserId }));
+		return (team?.members ?? []).map((m) => ({ id: m.id, name: m.name || 'Unknown player', image: m.image, faceitLevel: m.faceitLevel, verified: m.verified ?? null, isCaptain: team?.capitanId === m.id, isMe: m.id === currentUserId }));
 	};
 
 	const column = (side: Side) => {
@@ -188,7 +188,6 @@ export default function MatchPage() {
 				side={side}
 				label={label}
 				logo={match.isPickup ? null : team?.logo}
-				background={match.isPickup ? null : team?.background}
 				players={players}
 				stats={statsBySide[side]}
 				result={winningSide ? (winningSide === side ? 'win' : 'loss') : null}

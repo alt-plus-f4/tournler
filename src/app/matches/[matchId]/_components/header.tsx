@@ -65,7 +65,7 @@ export function RoomHeader({ match, quickBar, tabs }: { match: Match; quickBar?:
 		const joined = isA ? sideAParticipants : sideBParticipants;
 		return (
 			<div className={cn('flex min-w-0 flex-col items-center gap-3 sm:gap-5', isA ? 'sm:flex-row-reverse sm:justify-start' : 'sm:flex-row sm:justify-start', result === 'loss' && 'opacity-60')}>
-				<TeamMark logo={match.isPickup ? null : team?.logo} name={label} background={match.isPickup ? null : team?.background} dim={result === 'loss'} />
+				<TeamMark logo={match.isPickup ? null : team?.logo} name={label} dim={result === 'loss'} />
 				<div className={cn('flex min-w-0 max-w-full flex-col items-center', isA ? 'sm:items-end' : 'sm:items-start')}>
 					<p
 						className={cn(

@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { TeamLogo } from '@/components/TeamLogo';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
@@ -43,13 +43,7 @@ function formatMapName(mapName: string) {
 function TeamMark({ side, align }: { side: Side; align: 'start' | 'end' }) {
 	return (
 		<div className={cn('flex min-w-0 items-center gap-3', align === 'end' ? 'flex-row-reverse text-right' : 'text-left')}>
-			{side.logo ? (
-				<Image src={side.logo} alt='' width={48} height={48} className='h-8 w-8 shrink-0 object-contain sm:h-12 sm:w-12' />
-			) : (
-				<span aria-hidden className='flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-border bg-neutral-900 font-mono text-xs text-muted-foreground sm:h-12 sm:w-12'>
-					{side.name.slice(0, 2).toUpperCase()}
-				</span>
-			)}
+			<TeamLogo src={side.logo} name={side.name} decorative size='sm' className='sm:h-12 sm:w-12 sm:p-1.5 sm:text-sm' />
 			<span className='truncate text-lg font-black uppercase tracking-wide text-white sm:text-3xl'>{side.name}</span>
 		</div>
 	);

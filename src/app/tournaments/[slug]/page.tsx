@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -56,7 +57,7 @@ const getTournament = cache(async (slug: string) => {
 					logo: true,
 					background: true,
 					capitanId: true,
-					members: { select: { id: true, name: true, role: true, image: true } },
+					members: { select: { id: true, name: true, image: true, ...playerFlairSelect } },
 				},
 			},
 		},
@@ -111,10 +112,12 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 
 	const session = await getAuthSession();
 	const user = session?.user;
-	const [canManageTournaments, userTeamResponse, champion] = await Promise.all([
+	const [canManageTournaments, userTeamResponse, champion, withFlair] = await Promise.all([
 		user ? userHasPermission(user.id, 'tournaments:manage') : Promise.resolve(false),
 		user ? fetchUserTeam(user.id) : Promise.resolve(null),
 		tournament.status === 'COMPLETED' ? getChampion(tournament.id, tournament.format) : Promise.resolve(null),
+		// Verified badge + real FACEIT level per rostered player; Steam IDs/badge rows are stripped here.
+		flairMapper(tournament.teams.flatMap((t) => t.members)),
 	]);
 	const userTeam: { id: number; name: string } | null = userTeamResponse?.team ?? null;
 
@@ -125,6 +128,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 		...tournament,
 		startDate: tournament.startDate.toISOString(),
 		endDate: tournament.endDate.toISOString(),
+		teams: tournament.teams.map((t) => ({ ...t, members: t.members.map(withFlair) })),
 	};
 
 	return (

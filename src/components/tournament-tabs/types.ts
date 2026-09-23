@@ -1,10 +1,10 @@
 import type { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/client';
+import type { PlayerFlair } from '@/lib/models/player-flair';
 
-export interface TournamentTeamMember {
+export interface TournamentTeamMember extends PlayerFlair {
 	id: string;
 	name: string | null;
 	image: string | null;
-	role: string;
 }
 
 export interface TournamentTeam {

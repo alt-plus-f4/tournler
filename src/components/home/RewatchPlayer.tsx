@@ -3,20 +3,13 @@
 import { useState } from 'react';
 import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TeamLogo } from '@/components/TeamLogo';
 import type { RewatchConfig } from './rewatch-config';
 
 function TeamMark({ name, logo, align }: { name: string; logo: string | null; align: 'start' | 'end' }) {
 	return (
 		<div className={cn('flex min-w-0 items-center gap-2 sm:gap-3', align === 'end' && 'flex-row-reverse text-right')}>
-			{logo ? (
-				// Admin-supplied logos can live on any host, so this skips next/image's remotePatterns allowlist.
-				// eslint-disable-next-line @next/next/no-img-element
-				<img src={logo} alt='' width={32} height={32} className='h-6 w-6 shrink-0 object-contain sm:h-8 sm:w-8' draggable={false} />
-			) : (
-				<span aria-hidden className='flex h-6 w-6 shrink-0 items-center justify-center rounded-sm border border-border bg-neutral-900 font-mono text-[10px] text-muted-foreground sm:h-8 sm:w-8'>
-					{name.slice(0, 2).toUpperCase()}
-				</span>
-			)}
+			<TeamLogo src={logo} name={name} decorative size='xs' className='sm:h-8 sm:w-8 sm:p-1 sm:text-xs' />
 			<span className='truncate text-base font-black uppercase tracking-wide text-white sm:text-2xl'>{name}</span>
 		</div>
 	);

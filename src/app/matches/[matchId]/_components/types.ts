@@ -1,3 +1,5 @@
+import type { VerifiedMark } from '@/lib/models/player-flair';
+
 export interface TeamMember {
 	id: string;
 	name: string | null;
@@ -6,6 +8,7 @@ export interface TeamMember {
 	// Real FACEIT CS2 level (src/lib/faceit.ts), looked up server-side by linked Steam account —
 	// null if Steam isn't linked, no FACEIT account exists for CS2, or FACEIT_API_KEY is unset.
 	faceitLevel: number | null;
+	verified: VerifiedMark | null;
 }
 
 export interface Team {
@@ -67,7 +70,7 @@ export interface Participant {
 	userId: string;
 	side: Side | 'POOL';
 	isCaptain: boolean;
-	user: { id: string; name: string | null; image: string | null; faceitLevel: number | null };
+	user: { id: string; name: string | null; image: string | null; faceitLevel: number | null; verified: VerifiedMark | null };
 }
 
 export interface DraftState {
