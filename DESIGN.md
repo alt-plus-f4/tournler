@@ -10,7 +10,7 @@ colors:
   ink: "#fafafa"
   ink-soft: "#d4d4d4"
   ink-muted: "#a1a1aa"
-  label-grey: "#737373"
+  label-grey: "#a3a3a3"
   on-air-red: "#ef4444"
   ready-green: "#22c55e"
   hold-amber: "#facc15"
@@ -156,7 +156,7 @@ A monochrome broadcast palette (black stage, zinc-cool neutrals, white ink) with
 - **Hairline** (`hairline`): every border, divider, input stroke and ghost-hover fill (`--border`, `--input`, `--accent`, `--muted`).
 - **Soft Ink** (`ink-soft`): secondary data such as stat values and supporting copy on black.
 - **Muted Ink** (`ink-muted`): `--muted-foreground`, used for meta text (dates, locations, prize pool).
-- **Label Grey** (`label-grey`): section labels and table headers only. It's the quietest text in the system.
+- **Label Grey** (`label-grey`, neutral-400): section labels and table headers only. It's the quietest text in the system, and it sits at the contrast floor (about 7.9:1 on black). Nothing that carries information goes dimmer than this or Muted Ink. neutral-500/600 are reserved for decorative, `aria-hidden` marks.
 
 ### Signal (the only chromatic colors)
 - **On-Air Red** (`on-air-red`): LIVE indicators (pulsing 8px dot), the admin entry chip, and error text. Tinted panels at 10% fill with a 20% border (`bg-red-500/10 border-red-500/20`) mark error and danger zones.
@@ -167,6 +167,9 @@ A monochrome broadcast palette (black stage, zinc-cool neutrals, white ink) with
 ### Third-party marks (not system colors)
 FACEIT orange (`#FF5500`) and FACEIT's level bands appear only inside `LevelBadge`. Discord blurple (`#5865F2`) and Steam navy (`#171a21`, with `#66c0f4`) appear only on their own sign-in buttons and footer icons. Never reuse them as Tournler accents.
 
+### Tokens in code
+The signal colors are Tailwind tokens backed by CSS variables in `globals.css`: `signal-live` (On-Air Red), `signal-ready` (Ready Green fills), `signal-ready-text` (Ready Green text on black), and `signal-hold` (Hold Amber). Use `bg-signal-live`, `text-signal-ready-text`, and so on. Never use raw `red-*`, `green-*` or `yellow-*` utilities for state.
+
 ### Named Rules
 **The On-Air Rule.** Color is a signal, never decoration. Red means live or danger, green means ready or your turn, amber means paused. If an element isn't reporting state, it's monochrome.
 
@@ -174,9 +177,8 @@ FACEIT orange (`#FF5500`) and FACEIT's level bands appear only inside `LevelBadg
 
 ## Typography
 
-**Body and Display Font:** Roboto (with system-ui, sans-serif fallback), loaded through `next/font/google`.
+**Body and Display Font:** Roboto (with system-ui, sans-serif fallback), loaded through `next/font/google` at 400/500/700/900.
 **Numeric Font:** the platform monospace stack (`font-mono`), used for scores, stats, timers, K/D, and console output.
-**Declared display face:** `.font-style-1` asks for **RadionA** (uppercase, 700, 17px/18px), but the font is never loaded, so it currently renders in the fallback sans.
 
 **Character:** one plain grotesque pushed to both extremes: black-weight uppercase for broadcast headers, regular weight for everything the operator reads. The monospace numerals give the "readout" feel.
 
@@ -193,7 +195,7 @@ FACEIT orange (`#FF5500`) and FACEIT's level bands appear only inside `LevelBadg
 
 **The Label Voice Rule.** Section labels are always tiny, bold, uppercase and widely tracked in Label Grey. They name the panel; they never compete with its content.
 
-*Known gap:* Roboto is loaded at weight 400 only, so every 600/700/900 heading is browser-synthesized faux bold. Load the real weights before relying on the Display role.
+Roboto is loaded at 400, 500, 700 and 900 (`src/app/layout.tsx`). There is no 600 face, so `font-semibold` resolves to 700; prefer `font-medium` or `font-bold` explicitly.
 
 ## Layout
 
@@ -274,7 +276,7 @@ Team names in Display (900, uppercase, truncated), scores in mono, with the winn
 ### Do:
 - **Do** keep every surface monochrome (Stage Black, Canvas, Panel, Hairline, Ink) and use color only to report state (the On-Air Rule).
 - **Do** set scores, timers, stats and console output in monospace with tabular numerals (the Readout Rule).
-- **Do** head operate panels with a Section Label (12px, 700, uppercase, 0.1em tracking, Label Grey).
+- **Do** head operate panels with a Section Label (12px, 700, uppercase, 0.1em tracking, Label Grey (neutral-400)).
 - **Do** convey depth with tonal steps and hairline borders, and put emphasis on the live or active element with light or brightness (the Spotlight Rule).
 - **Do** use the Status Readout pattern (dot, state word, mono timer) for any server-reported state.
 - **Do** use the shared `ui/` primitives (Button, Card, Input, Badge) and the semantic tokens (`bg-background`, `border-border`, `text-muted-foreground`) rather than raw `neutral-*` or `gray-*` utilities.
