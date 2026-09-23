@@ -19,6 +19,7 @@ type RewatchDraft = Record<RewatchKey, string>;
 interface HomepageSettings extends Partial<Record<RewatchKey, string | null>> {
 	featuredSource: 'TOURNAMENTS' | 'NEWS' | 'MIXED';
 	featuredLayout: 'GRID' | 'CAROUSEL';
+	showForumPosts?: boolean;
 }
 
 const REWATCH_FIELDS: { key: RewatchKey; label: string; placeholder: string; mono?: boolean }[] = [
@@ -35,6 +36,7 @@ const toDraft = (settings: HomepageSettings): RewatchDraft => Object.fromEntries
 export default function FeaturedClient() {
 	const [settings, setSettings] = useState<HomepageSettings | null>(null);
 	const [isSavingSettings, setIsSavingSettings] = useState(false);
+	const [isSavingForum, setIsSavingForum] = useState(false);
 	const [rewatchDraft, setRewatchDraft] = useState<RewatchDraft | null>(null);
 	const [isSavingRewatch, setIsSavingRewatch] = useState(false);
 	const [rewatchError, setRewatchError] = useState<string | null>(null);
@@ -90,6 +92,27 @@ export default function FeaturedClient() {
 			toast({ variant: 'destructive', title: 'Could not save homepage layout' });
 		} finally {
 			setIsSavingSettings(false);
+		}
+	};
+
+	const saveShowForumPosts = async (showForumPosts: boolean) => {
+		const previous = settings?.showForumPosts ?? true;
+		setSettings((prev) => (prev ? { ...prev, showForumPosts } : prev));
+		setIsSavingForum(true);
+		try {
+			const response = await fetch('/api/admin/homepage-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ showForumPosts }),
+			});
+			if (!response.ok) throw new Error('Failed to save');
+			toast({ title: showForumPosts ? 'Forum posts shown on the homepage' : 'Forum posts hidden from the homepage' });
+		} catch (error) {
+			console.error('Failed to save forum toggle', error);
+			setSettings((prev) => (prev ? { ...prev, showForumPosts: previous } : prev));
+			toast({ variant: 'destructive', title: 'Could not update the forum block' });
+		} finally {
+			setIsSavingForum(false);
 		}
 	};
 
@@ -200,6 +223,26 @@ export default function FeaturedClient() {
 							</SelectContent>
 						</Select>
 					</div>
+				</div>
+				<div className='flex items-start justify-between gap-4 border-t border-border pt-4 max-w-lg'>
+					<div className='space-y-0.5'>
+						<Label htmlFor='show-forum-posts'>Show recent forum posts on the homepage</Label>
+						<p id='show-forum-posts-hint' className='text-xs text-muted-foreground'>
+							The &ldquo;Forum&rdquo; block under Upcoming lists the 8 most recently active threads.
+						</p>
+					</div>
+					<button
+						id='show-forum-posts'
+						type='button'
+						role='switch'
+						aria-checked={settings.showForumPosts ?? true}
+						aria-describedby='show-forum-posts-hint'
+						disabled={isSavingForum}
+						onClick={() => saveShowForumPosts(!(settings.showForumPosts ?? true))}
+						className='relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-checked:bg-foreground'
+					>
+						<span aria-hidden className='pointer-events-none block h-4 w-4 translate-x-1 rounded-full bg-muted-foreground transition-transform [[aria-checked=true]>&]:translate-x-6 [[aria-checked=true]>&]:bg-background' />
+					</button>
 				</div>
 			</section>
 

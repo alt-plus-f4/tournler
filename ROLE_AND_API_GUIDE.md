@@ -25,6 +25,7 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - matches:manage: TOURNAMENT_ADMIN, ADMIN
 - servers:manage: TOURNAMENT_ADMIN, ADMIN
 - content:manage: CONTENT_ADMIN, ADMIN
+- forum:moderate: MODERATOR, CONTENT_ADMIN, ADMIN
 
 ## Updated API Authorization
 
@@ -66,6 +67,18 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - GET `/api/users`: `users:manage`
 - PATCH `/api/users/[slug]`: `users:manage`
 - DELETE `/api/users/[slug]`: `users:manage`
+
+### Forum
+
+- GET `/api/forum/threads?category=&page=`: Public. Returns 30 threads per page, pinned first, then by last activity. Authors expose only `id`, `name`, `image`.
+- POST `/api/forum/threads`: Any authenticated user. Title 3–120 chars, body 1–5000 chars, plain text. Rate limit: one new thread per user per 30s (429 otherwise).
+- GET `/api/forum/threads/[threadId]`: Public. Thread plus replies, oldest first.
+- PATCH `/api/forum/threads/[threadId]`: `forum:moderate`. Body `{ isPinned?, isLocked? }`.
+- DELETE `/api/forum/threads/[threadId]`: Thread author OR `forum:moderate`.
+- POST `/api/forum/threads/[threadId]/replies`: Any authenticated user; rejected with 423 when the thread is locked (moderators may still reply). Rate limit: one reply per user per 10s. Bumps the thread's `lastActivityAt`.
+- DELETE `/api/forum/replies/[replyId]`: Reply author OR `forum:moderate`.
+- `/admin/forum` moderation page: `forum:moderate`.
+- The homepage "Forum" block is toggled by `showForumPosts` on PATCH `/api/admin/homepage-settings` (`content:manage`).
 
 ## Smoother Tournament Status Switching
 

@@ -5,6 +5,8 @@ import { RewatchPlayer } from '@/components/home/RewatchPlayer';
 import { UpNext, getUpNext } from '@/components/home/UpNext';
 import { resolveRewatch } from '@/components/home/rewatch-config';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
+import { ForumHomeBlock } from '@/components/forum/ForumHomeBlock';
+import { recentForumThreads } from '@/components/forum/forum-queries';
 import { db } from '@/lib/db';
 import Link from 'next/link';
 import { TournamentStatus } from '@prisma/client';
@@ -20,8 +22,9 @@ async function getHomeContent() {
 	const homepageSettings = await db.homepageSettings.findUnique({ where: { id: 1 } });
 	const featuredSource = homepageSettings?.featuredSource ?? 'TOURNAMENTS';
 	const featuredLayout = homepageSettings?.featuredLayout ?? 'GRID';
+	const showForumPosts = homepageSettings?.showForumPosts ?? true;
 
-	const [curatedFeatured, upcomingFuture, featuredNews] = await Promise.all([
+	const [curatedFeatured, upcomingFuture, featuredNews, forumThreads] = await Promise.all([
 		featuredSource !== 'NEWS'
 			? db.cs2Tournament.findMany({
 					where: { isSystem: false, isFeatured: true, ...activeTournament },
@@ -43,6 +46,7 @@ async function getHomeContent() {
 					take: 6,
 				})
 			: Promise.resolve([]),
+		showForumPosts ? recentForumThreads(8) : Promise.resolve(null),
 	]);
 
 	// Nothing curated yet — fall back to the original prize-pool heuristic so the
@@ -73,11 +77,11 @@ async function getHomeContent() {
 					})),
 				];
 
-	return { featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, rewatch: resolveRewatch(homepageSettings) };
+	return { featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, forumThreads, rewatch: resolveRewatch(homepageSettings) };
 }
 
 export default async function Page() {
-	const [{ featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, rewatch }, liveMatches, upNext] = await Promise.all([getHomeContent(), getLiveMatches(), getUpNext()]);
+	const [{ featuredTournaments, featuredNews, upcoming, featuredSource, featuredLayout, forumThreads, rewatch }, liveMatches, upNext] = await Promise.all([getHomeContent(), getLiveMatches(), getUpNext()]);
 	const isLive = liveMatches.length > 0;
 	const layoutClass = featuredLayout === 'CAROUSEL' ? 'flex gap-5 overflow-x-auto snap-x snap-mandatory pb-2' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5';
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
@@ -123,7 +127,7 @@ export default async function Page() {
 								<div className={layoutClass}>
 									{featuredNews.map((post) => (
 										<div key={post.id} className={itemClass}>
-											<FeaturedNewsPostCard title={post.title} blurb={post.blurb} imageUrl={post.imageUrl} link={post.link} publishedAt={post.publishedAt.toISOString()} />
+											<FeaturedNewsPostCard id={post.id} hasContent={post.content != null} title={post.title} blurb={post.blurb} imageUrl={post.imageUrl} link={post.link} publishedAt={post.publishedAt.toISOString()} />
 										</div>
 									))}
 								</div>
@@ -148,6 +152,8 @@ export default async function Page() {
 							<p className='text-sm text-muted-foreground'>Nothing scheduled yet.</p>
 						)}
 					</div>
+					{/* Hidden entirely (null) when an admin turns off "Show recent forum posts" in /admin/featured. */}
+					{forumThreads && <ForumHomeBlock threads={forumThreads} />}
 				</div>
 			</div>
 		</div>
