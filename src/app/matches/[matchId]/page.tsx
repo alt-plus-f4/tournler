@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { ShieldCheck } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Image from 'next/image';
 import { useToast } from '@/lib/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
+import { RoomHeader } from './_components/header';
+import { MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
+import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
+import { SignalDot } from './_components/room-ui';
+import { getSideLabels, getStatsBySide, getWinningSide, type DraftState, type Match, type Side, type VetoState } from './_components/types';
+import { DraftPanel, getVetoTurn, VetoPanel } from './_components/veto-draft';
 import { Gamepad2, Trophy, Users, Clock, Target, Copy, ExternalLink, Hourglass, Play, Pause, Flag, Terminal, RefreshCw, AlertTriangle, BarChart3, RotateCcw, Download, Film, Trash2, X, Check, Star, ShieldCheck, Zap, Settings } from 'lucide-react';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -1129,43 +1134,64 @@ const fetcher = async (url: string) => {
 	return data.match as Match;
 };
 
-const vetoFetcher = async (url: string) => {
+const jsonFetcher = async <T,>(url: string) => {
 	const response = await fetch(url);
-	if (!response.ok) throw new Error('Failed to fetch veto state');
-	return response.json() as Promise<VetoState>;
+	if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+	return response.json() as Promise<T>;
 };
 
-const draftFetcher = async (url: string) => {
-	const response = await fetch(url);
-	if (!response.ok) throw new Error('Failed to fetch draft state');
-	return response.json() as Promise<DraftState>;
-};
+const TABS = ['overview', 'scoreboard', 'maps', 'admin'] as const;
+type RoomTab = (typeof TABS)[number];
+
+/** Tab lives in the URL hash (#scoreboard) so a refresh or a shared link lands on the same view. */
+function useRoomTab() {
+	const [tab, setTab] = useState<RoomTab>('overview');
+	useEffect(() => {
+		const sync = () => {
+			const fromHash = window.location.hash.slice(1) as RoomTab;
+			setTab(TABS.includes(fromHash) ? fromHash : 'overview');
+		};
+		sync();
+		window.addEventListener('hashchange', sync);
+		return () => window.removeEventListener('hashchange', sync);
+	}, []);
+	const select = useCallback((next: string) => {
+		if (!TABS.includes(next as RoomTab)) return;
+		setTab(next as RoomTab);
+		window.history.replaceState(null, '', next === 'overview' ? window.location.pathname + window.location.search : `#${next}`);
+	}, []);
+	return [tab, select] as const;
+}
+
+const tabTriggerClass =
+	'relative h-12 shrink-0 gap-2 rounded-none bg-transparent px-3 text-xs font-bold uppercase tracking-[0.08em] sm:px-4 sm:tracking-[0.12em] text-muted-foreground transition-colors duration-150 hover:text-white data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:shadow-none after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:origin-center after:scale-x-0 after:bg-white after:transition-transform after:duration-200 after:ease-out data-[state=active]:after:scale-x-100 focus-visible:ring-offset-0';
 
 export default function MatchPage() {
 	const params = useParams();
 	const router = useRouter();
 	const matchId = params.matchId as string;
-	const [copied, setCopied] = useState(false);
 	const [canManage, setCanManage] = useState(false);
+	const [userLoaded, setUserLoaded] = useState(false);
 	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 	const [pendingSide, setPendingSide] = useState<string | null>(null);
 	const [isDeleting, setIsDeleting] = useState(false);
-	const [showAdminPanel, setShowAdminPanel] = useState(true);
+	const [tab, setTab] = useRoomTab();
 	const { toast } = useToast();
 
 	const { data: match, error, isLoading, mutate } = useSWR(matchId ? `/api/matches/${matchId}` : null, fetcher, { refreshInterval: 4000 });
+	const refresh = useCallback(() => {
+		mutate();
+	}, [mutate]);
+	const admin = useMatchAdmin(matchId, refresh);
 
 	const showDraft = !!match && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
-	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, draftFetcher, { refreshInterval: 3000 });
-	// Veto can't start meaningfully until the draft's actually put people on sides — showing it
-	// alongside an in-progress draft would let admins ban/pick maps before anyone's even rostered.
+	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: 3000 });
+	// Veto can't start until the draft has put people on sides — otherwise maps get banned before anyone's rostered.
 	const showVeto = !!match && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
-	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, vetoFetcher, { refreshInterval: 3000 });
+	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: 3000 });
 
 	useEffect(() => {
-		if (error) {
-			toast({ variant: 'destructive', title: 'Error loading match' });
-		}
+		if (error) toast({ variant: 'destructive', title: 'Error loading match' });
 	}, [error, toast]);
 
 	useEffect(() => {
@@ -1178,65 +1204,37 @@ export default function MatchPage() {
 			.catch(() => {
 				setCanManage(false);
 				setCurrentUserId(null);
-			});
+			})
+			.finally(() => setUserLoaded(true));
 	}, []);
 
-	const joinSide = async (side: 'TEAM_A' | 'TEAM_B') => {
-		if (!matchId) return;
-		setPendingSide(side);
+	// Non-staff who land on #admin fall back to the room.
+	useEffect(() => {
+		if (userLoaded && tab === 'admin' && !canManage) setTab('overview');
+	}, [userLoaded, tab, canManage, setTab]);
+
+	const withPending = async (key: string, request: () => Promise<Response>, failTitle: string, after?: () => void) => {
+		setPendingSide(key);
 		try {
-			const response = await fetch(`/api/matches/${matchId}/join`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ side }),
-			});
+			const response = await request();
 			const payload = await response.json().catch(() => null);
-			if (!response.ok) throw new Error(payload?.error || 'Failed to join');
+			if (!response.ok) throw new Error(payload?.error || failTitle);
 			mutate();
+			after?.();
 		} catch (e) {
-			console.error('Failed to join match', e);
-			toast({ variant: 'destructive', title: 'Could not join', description: e instanceof Error ? e.message : undefined });
+			console.error(failTitle, e);
+			toast({ variant: 'destructive', title: failTitle, description: e instanceof Error ? e.message : undefined });
 		} finally {
 			setPendingSide(null);
 		}
 	};
 
-	// CAPTAIN_DRAFT pickups have no side to choose at join time — the first 2 joiners become
-	// captains automatically and everyone else lands in the pool (see the join route).
-	const joinDraftPool = async () => {
-		if (!matchId) return;
-		setPendingSide('POOL');
-		try {
-			const response = await fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
-			const payload = await response.json().catch(() => null);
-			if (!response.ok) throw new Error(payload?.error || 'Failed to join');
-			mutate();
-			mutateDraft();
-		} catch (e) {
-			console.error('Failed to join draft pool', e);
-			toast({ variant: 'destructive', title: 'Could not join', description: e instanceof Error ? e.message : undefined });
-		} finally {
-			setPendingSide(null);
-		}
-	};
-
-	const leaveMatch = async () => {
-		if (!matchId) return;
-		setPendingSide('LEAVE');
-		try {
-			const response = await fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' });
-			if (!response.ok) throw new Error('Failed to leave');
-			mutate();
-		} catch (e) {
-			console.error('Failed to leave match', e);
-			toast({ variant: 'destructive', title: 'Could not leave match' });
-		} finally {
-			setPendingSide(null);
-		}
-	};
+	const joinSide = (side: Side) => withPending(side, () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side }) }), 'Could not join');
+	// CAPTAIN_DRAFT pickups have no side at join time — the first 2 joiners become captains, everyone else lands in the pool.
+	const joinDraftPool = () => withPending('POOL', () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }), 'Could not join', () => mutateDraft());
+	const leaveMatch = () => withPending('LEAVE', () => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }), 'Could not leave match');
 
 	const deleteMatch = async () => {
-		if (!matchId) return;
 		if (!window.confirm('Permanently delete this match? This removes its scores, roster, map/veto history, and game server record. This cannot be undone.')) return;
 		setIsDeleting(true);
 		try {
@@ -1252,316 +1250,163 @@ export default function MatchPage() {
 		}
 	};
 
-	if (isLoading) {
-		return (
-			<div className='min-h-screen bg-black py-12'>
-				<div className='max-w-7xl mx-auto px-4'>
-					<Skeleton className='h-96 w-full bg-neutral-900 rounded-lg mb-6' />
-					<Skeleton className='h-40 w-full bg-neutral-900 rounded-lg' />
-				</div>
-			</div>
-		);
-	}
+	if (isLoading) return <RoomSkeleton />;
 
 	if (!match) {
 		return (
-			<div className='min-h-screen bg-black py-12 flex items-center justify-center'>
-				<div className='text-center max-w-md'>
-					<div className='w-16 h-16 rounded-full border-2 border-white mx-auto mb-6 flex items-center justify-center'>
-						<Target className='w-8 h-8 text-white' />
-					</div>
-					<h2 className='text-3xl font-bold text-white mb-2'>Match Not Found</h2>
-					<p className='text-neutral-400'>The match you're looking for doesn't exist.</p>
-				</div>
+			<div className='mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-4 text-center'>
+				<h1 className='text-2xl font-black uppercase tracking-wide text-white'>Match not found</h1>
+				<p className='mt-2 text-sm text-muted-foreground'>This match doesn&apos;t exist, or it was deleted.</p>
+				<Button asChild variant='outline' className='mt-6'>
+					<Link href='/matches'>Browse matches</Link>
+				</Button>
 			</div>
 		);
 	}
 
-	const visibleTeamAMembers = match.teamA ? fillTeamToFive(match.teamA.members) : [];
-	const visibleTeamBMembers = match.teamB ? fillTeamToFive(match.teamB.members) : [];
-	const sideAParticipants = match.participants.filter((p) => p.side === 'TEAM_A');
-	const sideBParticipants = match.participants.filter((p) => p.side === 'TEAM_B');
+	const { teamALabel, teamBLabel } = getSideLabels(match);
+	const winningSide = getWinningSide(match);
+	const statsBySide = getStatsBySide(match);
+	const vetoComplete = !showVeto || veto?.phase === 'COMPLETE';
 	const canJoinPickup = match.isPickup && match.status === 'SCHEDULED';
-	// Participants are already ordered by joinedAt ascending (see the match GET route), so the
-	// first entry for a side is that side's "captain" — the only one allowed to rename it.
-	const canRenameSideA = canJoinPickup && sideAParticipants[0]?.userId === currentUserId;
-	const canRenameSideB = canJoinPickup && sideBParticipants[0]?.userId === currentUserId;
-	const teamALabel = match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'Team A');
-	const teamBLabel = match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'Team B');
-	const winnerName = match.isPickup ? (match.winnerSide === 'TEAM_A' ? teamALabel : match.winnerSide === 'TEAM_B' ? teamBLabel : null) : (match.winner?.name ?? null);
-	// The map currently in progress (maps are pre-sorted by order) — its score is kept live by
-	// MatchZy's round_end webhook (see updateLiveScore). Pickups get real MatchMap rows too now
-	// (finalizeVeto creates one per confirmed map for every match, not just series ones).
-	const currentMap = match.maps.find((m) => m.status !== 'COMPLETED');
-	// Once every map's done there's no "current" one — fall back to the last map played (the
-	// decider, for a finished series) so a completed match still has something to point its map
-	// background/name at instead of going blank.
-	const lastPlayedMap = match.maps.length > 0 ? match.maps[match.maps.length - 1] : undefined;
-	const displayMap = currentMap ?? lastPlayedMap;
-	const displayMapId = displayMap?.mapName ?? null;
-	const heroMapImage = displayMapId ? getMapImage(displayMapId) : null;
-	const isSeries = (match.bestOf ?? 1) > 1;
-	// A finished bo3's headline number should be the series result (2-1 maps), not just whatever
-	// round score the last map happened to end on — that's still shown as a small subtitle below
-	// while the series is actually in progress (see the hero's "Score" section), but the map-win
-	// count is what actually matters once it's over. Bo1 has no separate "series" score at all —
-	// Matches.scoreTeamA/B and the map's own round score are the same 13-9 by the time it's decided.
-	const showSeriesScoreAsHeadline = isSeries && match.status === 'COMPLETED';
-	const roundScoreA = showSeriesScoreAsHeadline ? (match.scoreTeamA ?? 0) : displayMap ? (displayMap.scoreTeamA ?? 0) : (match.scoreTeamA ?? 0);
-	const roundScoreB = showSeriesScoreAsHeadline ? (match.scoreTeamB ?? 0) : displayMap ? (displayMap.scoreTeamB ?? 0) : (match.scoreTeamB ?? 0);
-	// Starting a match restarts its assigned server's container onto the right map (see
-	// src/lib/cs2/provisioning.ts's restartServerOntoMap) — that can take a minute or two, during
-	// which `gameServer` already exists (created early) but the real server hasn't actually loaded
-	// this match yet. Gate the connect info on `matchConfigLoadedAt`, not just `gameServer`
-	// existing, so players don't try to connect before there's anything to connect to.
-	const serverReady = !!match.gameServer?.matchConfigLoadedAt;
-	const connectAddress = match.gameServer && serverReady ? `${match.gameServer.connectIp}:${match.gameServer.port}` : null;
-	// The `password` cvar must be set BEFORE `connect` runs — it's read as part of the connection
-	// handshake, so `connect ip:port; password x` (setting it after) is a well-known cause of
-	// "Bad Password" on Source-engine servers even with the right password.
-	const connectCommand = connectAddress ? `${match.gameServer?.password ? `password ${match.gameServer.password}; ` : ''}connect ${connectAddress}` : null;
-	// `rungameid` launches Steam/CS2 (starting it if it isn't running) and passes `+connect` as a
-	// startup command, unlike the plain `steam://run/730//+...` launch-options form this used to
-	// build (launch options only apply the *next* time the game is manually started, so it never
-	// actually auto-joined).
-	const steamConnectUrl = connectAddress ? `steam://rungameid/730/+connect ${connectAddress}${match.gameServer?.password ? `; password ${match.gameServer.password}` : ''}` : null;
+	const isDraftMode = match.pickupMode === 'CAPTAIN_DRAFT';
+	const draftActive = showDraft && !!draft && draft.phase !== 'COMPLETE';
 
-	const copyToClipboard = (text: string) => {
-		navigator.clipboard.writeText(text);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+	// "Your turn" beacon on the Overview tab while the viewer is elsewhere in the room.
+	const vetoNeedsMe = !!veto && veto.phase !== 'COMPLETE' && getVetoTurn(match, veto, currentUserId).isSideTurn;
+	const draftNeedsMe = draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
+	const needsMe = vetoNeedsMe || draftNeedsMe;
+
+	const rosterFor = (side: Side): RosterPlayer[] => {
+		if (match.isPickup) {
+			// Participants arrive ordered by joinedAt, so an open pickup side's first entry is its captain.
+			return match.participants
+				.filter((p) => p.side === side)
+				.map((p, i) => ({ id: p.user.id, name: p.user.name || 'Unknown player', image: p.user.image, faceitLevel: p.user.faceitLevel, isCaptain: p.isCaptain || (!isDraftMode && i === 0), isMe: p.user.id === currentUserId }));
+		}
+		const team = side === 'TEAM_A' ? match.teamA : match.teamB;
+		return (team?.members ?? []).map((m) => ({ id: m.id, name: m.name || 'Unknown player', image: m.image, faceitLevel: m.faceitLevel, isCaptain: team?.capitanId === m.id, isMe: m.id === currentUserId }));
 	};
 
-	const launchCS2 = () => {
-		if (steamConnectUrl) window.location.href = steamConnectUrl;
+	const column = (side: Side) => {
+		const isA = side === 'TEAM_A';
+		const team = isA ? match.teamA : match.teamB;
+		const label = isA ? teamALabel : teamBLabel;
+		const players = rosterFor(side);
+		const firstJoiner = match.participants.find((p) => p.side === side);
+		const canRename = canJoinPickup && firstJoiner?.userId === currentUserId;
+		const alreadyIn = match.participants.some((p) => p.userId === currentUserId);
+		return (
+			<TeamColumn
+				side={side}
+				label={label}
+				logo={match.isPickup ? null : team?.logo}
+				background={match.isPickup ? null : team?.background}
+				players={players}
+				stats={statsBySide[side]}
+				result={winningSide ? (winningSide === side ? 'win' : 'loss') : null}
+				meta={
+					<span className='font-mono tabular-nums'>
+						{players.length}/5 <span className='font-sans'>{match.isPickup ? 'players' : 'rostered'}</span>
+					</span>
+				}
+				headerExtra={canRename ? <LobbyNameEditor matchId={matchId} side={side} name={(isA ? match.teamAName : match.teamBName) || ''} onRenamed={refresh} /> : undefined}
+				emptySlot={() =>
+					canJoinPickup && isDraftMode ? (
+						<span className='text-muted-foreground'>Awaiting draft pick</span>
+					) : canJoinPickup && currentUserId && !alreadyIn ? (
+						<button type='button' onClick={() => joinSide(side)} disabled={pendingSide !== null} className='max-w-full truncate font-medium text-white underline-offset-4 hover:underline disabled:opacity-50'>
+							{pendingSide === side ? 'Joining…' : `Join ${label}`}
+						</button>
+					) : (
+						<span className='text-muted-foreground'>Open slot</span>
+					)
+				}
+				playerAction={(player) =>
+					player.isMe && canJoinPickup ? (
+						<Button variant='ghost' size='sm' onClick={leaveMatch} disabled={pendingSide !== null} className='h-7 px-2 text-xs text-muted-foreground hover:text-red-300'>
+							{pendingSide === 'LEAVE' ? 'Leaving…' : 'Leave'}
+						</Button>
+					) : null
+				}
+			/>
+		);
 	};
 
-	const statusConfig = {
-		COMPLETED: { badge: 'COMPLETED', borderClass: 'border-white' },
-		LIVE: { badge: 'LIVE', borderClass: 'border-white animate-pulse' },
-		PAUSED: { badge: 'PAUSED', borderClass: 'border-yellow-500' },
-		SCHEDULED: { badge: 'UPCOMING', borderClass: 'border-border' },
-	};
-	const status = statusConfig[match.status];
+	const tabs = (
+		<TabsList aria-label='Match room' className='-mb-px flex h-auto w-full justify-start gap-0 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none]'>
+			<TabsTrigger value='overview' className={tabTriggerClass}>
+				Overview
+				{needsMe && tab !== 'overview' && (
+					<>
+						<SignalDot tone='ready' pulse />
+						<span className='sr-only'>(your turn)</span>
+					</>
+				)}
+			</TabsTrigger>
+			<TabsTrigger value='scoreboard' className={tabTriggerClass}>
+				Scoreboard
+			</TabsTrigger>
+			<TabsTrigger value='maps' className={tabTriggerClass}>
+				Maps
+				{match.maps.length > 0 && <span className='font-mono text-[11px] font-normal text-muted-foreground'>{match.maps.length}</span>}
+			</TabsTrigger>
+			{canManage && (
+				<TabsTrigger value='admin' className={cn(tabTriggerClass, 'ml-auto')}>
+					<ShieldCheck className='h-3.5 w-3.5' aria-hidden /> Admin
+				</TabsTrigger>
+			)}
+		</TabsList>
+	);
 
 	return (
-		<div className='min-h-screen bg-black text-white py-12'>
-			<div className='max-w-7xl mx-auto px-4'>
-				{/* Header — compact single row; admin tools live behind the gear icon, not inline here */}
-				<div className='flex items-center justify-between gap-4 mb-6 flex-wrap'>
-					<div className='flex items-center gap-3'>
-						<div className='w-1 h-10 bg-white shrink-0' />
-						<div>
-							<p className='text-neutral-400 text-xs tracking-widest uppercase'>{match.tournament.name}</p>
-							<div className='flex items-center gap-2'>
-								<h1 className='text-2xl font-black tracking-tight'>MATCH {match.id}</h1>
-								<Badge className={`${status.borderClass} bg-black border-2 text-white px-2.5 py-0.5 font-bold tracking-wider uppercase text-[10px]`}>{status.badge}</Badge>
-							</div>
-						</div>
-					</div>
-					<div className='flex items-center gap-3'>
-						<div className='hidden sm:flex items-center gap-1.5 text-neutral-500 text-xs'>
-							<Clock className='w-3.5 h-3.5' />
-							{new Date(match.matchDate).toLocaleString()}
-						</div>
-						<MatchTimer match={match} />
-						{canManage && (
-							<Button
-								variant='outline'
-								size='icon'
-								onClick={() => setShowAdminPanel((v) => !v)}
-								className={showAdminPanel ? 'border-white text-white bg-neutral-900' : 'border-border text-neutral-400 hover:text-white hover:border-white'}
-								title='Admin tools'
-							>
-								<Settings className='h-4 w-4' />
-							</Button>
-						)}
-					</div>
-				</div>
+		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-16 text-white'>
+			<RoomHeader match={match} quickBar={canManage ? <AdminQuickBar match={match} admin={admin} vetoComplete={vetoComplete} /> : undefined} tabs={tabs} />
 
-				{canManage && showAdminPanel && (
-					<div className='mb-8 space-y-4 rounded-lg border border-border bg-neutral-950/60 p-4'>
-						<AdminControls match={match} vetoComplete={!showVeto || veto?.phase === 'COMPLETE'} onChanged={() => mutate()} />
-						{match.gameServer && match.status !== 'COMPLETED' && <RconConsole matchId={matchId} gameServer={match.gameServer} />}
-						<div className='flex justify-end'>
-							<Button variant='outline' size='sm' disabled={isDeleting} onClick={deleteMatch} className='border-border text-neutral-400 hover:text-red-400 hover:border-red-400'>
-								<Trash2 className='h-3.5 w-3.5 mr-2' /> Delete Match
-							</Button>
-						</div>
-					</div>
-				)}
-
-				{showDraft && draft && (
-					<DraftPanel
-						matchId={matchId}
-						match={match}
-						draft={draft}
-						currentUserId={currentUserId}
-						canManage={canManage}
-						canJoinPool={!match.participants.some((p) => p.userId === currentUserId)}
-						isJoiningPool={pendingSide === 'POOL'}
-						onJoinPool={joinDraftPool}
-						onDraftUpdated={(next) => {
-							mutateDraft(next, false);
-							if (next.phase === 'COMPLETE') mutate();
-						}}
-					/>
-				)}
-
-				{showVeto && veto && (
-					<VetoPanel
-						matchId={matchId}
-						match={match}
-						veto={veto}
-						currentUserId={currentUserId}
-						canManage={canManage}
-						onVetoUpdated={(next) => {
-							mutateVeto(next, false);
-							if (next.phase === 'COMPLETE') mutate();
-						}}
-					/>
-				)}
-
-				{/* Hero — FACEIT-style: team vs team with the score front and center, decided/current map as a
-				    dimmed background rather than its own boxed-off column. */}
-				<div className='relative bg-neutral-950 border border-border rounded-lg overflow-hidden mb-6'>
-					{heroMapImage && (
-						<div className='absolute inset-0'>
-							<Image src={heroMapImage} alt='' fill priority sizes='100vw' className='object-cover opacity-25' />
-							<div className='absolute inset-0 bg-gradient-to-t from-black via-black/75 to-black/50' />
-						</div>
-					)}
-					<div className='relative grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] items-center gap-5 sm:gap-8 px-6 sm:px-10 py-10'>
-						{/* Team A */}
-						<div className='flex items-center gap-4 justify-center sm:justify-end order-1 min-w-0'>
-							<div className='text-center sm:text-right min-w-0'>
-								<h2 className='text-lg sm:text-2xl font-black uppercase tracking-wide leading-tight truncate'>{teamALabel}</h2>
-								{match.isPickup && match.status === 'SCHEDULED' && <p className='text-neutral-500 text-xs mt-1'>{sideAParticipants.length}/5 joined</p>}
-							</div>
-							<div
-								className='w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center overflow-hidden border-2 border-border bg-black shrink-0'
-								style={!match.isPickup && match.teamA ? { backgroundColor: match.teamA.background || '#000000' } : undefined}
-							>
-								{match.isPickup ? (
-									<span className='text-white font-black text-2xl'>{teamALabel.substring(0, 2).toUpperCase()}</span>
-								) : match.teamA ? (
-									<TeamLogo logo={match.teamA.logo} name={match.teamA.name} />
-								) : (
-									<span className='text-neutral-600 font-black text-lg'>TBD</span>
-								)}
-							</div>
-						</div>
-
-						{/* Score — while a map's actually being played, the big number is that map's live
-						    round score (13-9), not the series map-win count, which would otherwise sit at
-						    "0-0" for an entire bo3 map. For a bo3, the map-win count still shows as a small
-						    line above it so the series state isn't lost. */}
-						<div className='text-center order-3 sm:order-2'>
-							{match.status === 'SCHEDULED' && !(showVeto && veto?.phase === 'COMPLETE') ? (
-								<div className='text-3xl font-black text-neutral-600'>VS</div>
-							) : (
-								<>
-									{isSeries && !showSeriesScoreAsHeadline && (
-										<p className='text-xs text-neutral-500 uppercase tracking-widest mb-1'>
-											Maps {match.scoreTeamA ?? 0} - {match.scoreTeamB ?? 0}
-										</p>
-									)}
-									<div className='text-5xl sm:text-6xl font-black tabular-nums'>
-										{roundScoreA} <span className='text-neutral-600'>:</span> {roundScoreB}
-									</div>
-								</>
+			<div className='mx-auto max-w-7xl px-4 pt-6'>
+				<TabsContent value='overview' className='mt-0'>
+					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]'>
+						<div className='order-2 lg:order-1'>{column('TEAM_A')}</div>
+						<div className='order-1 space-y-4 md:col-span-2 lg:order-2 lg:col-span-1'>
+							{showDraft && draft && (
+								<DraftPanel
+									matchId={matchId}
+									match={match}
+									draft={draft}
+									currentUserId={currentUserId}
+									canManage={canManage}
+									canJoinPool={currentUserId !== null && !match.participants.some((p) => p.userId === currentUserId)}
+									isJoiningPool={pendingSide === 'POOL'}
+									onJoinPool={joinDraftPool}
+									onDraftUpdated={(next) => {
+										mutateDraft(next, false);
+										if (next.phase === 'COMPLETE') mutate();
+									}}
+								/>
 							)}
-							{displayMapId && <p className='text-neutral-400 text-xs uppercase tracking-widest mt-2'>{getMapDisplayName(displayMapId)}</p>}
-						</div>
-
-						{/* Team B */}
-						<div className='flex items-center gap-4 justify-center sm:justify-start order-2 sm:order-3 min-w-0'>
-							<div
-								className='w-16 h-16 sm:w-20 sm:h-20 rounded-xl flex items-center justify-center overflow-hidden border-2 border-border bg-black shrink-0'
-								style={!match.isPickup && match.teamB ? { backgroundColor: match.teamB.background || '#000000' } : undefined}
-							>
-								{match.isPickup ? (
-									<span className='text-white font-black text-2xl'>{teamBLabel.substring(0, 2).toUpperCase()}</span>
-								) : match.teamB ? (
-									<TeamLogo logo={match.teamB.logo} name={match.teamB.name} />
-								) : (
-									<span className='text-neutral-600 font-black text-lg'>TBD</span>
-								)}
-							</div>
-							<div className='text-center sm:text-left min-w-0'>
-								<h2 className='text-lg sm:text-2xl font-black uppercase tracking-wide leading-tight truncate'>{teamBLabel}</h2>
-								{match.isPickup && match.status === 'SCHEDULED' && <p className='text-neutral-500 text-xs mt-1'>{sideBParticipants.length}/5 joined</p>}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				{/* Server / connect strip — one compact row instead of a boxed-off column */}
-				{match.status === 'COMPLETED' ? (
-					<MatchDemoPanel match={match} />
-				) : (
-					<div className='flex flex-col sm:flex-row items-stretch gap-3 bg-neutral-950 border border-border rounded-lg p-4 mb-6'>
-						<div className='flex-1 min-w-0 flex flex-col justify-center gap-1'>
-							{match.status === 'SCHEDULED' && match.gameServer && (
-								<div className='flex items-center gap-2 text-xs'>
-									{match.gameServer.matchConfigLoadedAt ? (
-										<>
-											<span className='w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0' />
-											<span className='text-white'>Warming up with bots — join early to practice</span>
-										</>
-									) : (
-										<>
-											<span className='w-1.5 h-1.5 rounded-full bg-yellow-500 shrink-0' />
-											<span className='text-neutral-400'>Provisioning server…</span>
-										</>
-									)}
-								</div>
+							{showVeto && veto && (
+								<VetoPanel
+									matchId={matchId}
+									match={match}
+									veto={veto}
+									currentUserId={currentUserId}
+									canManage={canManage}
+									onVetoUpdated={(next) => {
+										mutateVeto(next, false);
+										if (next.phase === 'COMPLETE') mutate();
+									}}
+								/>
 							)}
-							{connectAddress ? (
-								<div className='flex flex-wrap items-center gap-x-6 gap-y-1 text-sm'>
-									<div>
-										<span className='text-neutral-500 uppercase text-[10px] tracking-wide mr-2'>IP</span>
-										<span className='font-mono text-white'>{connectAddress}</span>
-									</div>
-									{match.gameServer?.password && (
-										<div>
-											<span className='text-neutral-500 uppercase text-[10px] tracking-wide mr-2'>Password</span>
-											<span className='font-mono text-white'>{match.gameServer.password}</span>
-										</div>
-									)}
-								</div>
-							) : match.gameServer && !serverReady ? (
-								<div className='flex items-center gap-2 text-sm text-neutral-500'>
-									<RefreshCw className='h-4 w-4 animate-spin shrink-0' />
-									Server is starting up — this can take a minute or two
-								</div>
-							) : (
-								<p className='text-sm text-neutral-500'>
-									{match.status === 'SCHEDULED'
-										? match.isPickup
-											? 'Server opens once the match is started'
-											: 'Server opens ~5 min before match start'
-										: 'Waiting for a free server — all pool servers are currently in use'}
-								</p>
-							)}
+							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							<MatchInfoPanel match={match} />
 						</div>
-						<div className='flex gap-2 shrink-0 flex-wrap sm:flex-nowrap'>
-							<Button size='sm' disabled={!connectAddress} onClick={() => connectAddress && copyToClipboard(connectAddress)} className='bg-white text-black font-bold hover:bg-neutral-200 disabled:opacity-40'>
-								<Copy className='h-3.5 w-3.5 mr-1.5' />
-								{copied ? 'Copied!' : 'Copy IP'}
-							</Button>
-							<Button size='sm' variant='outline' disabled={!connectCommand} onClick={() => connectCommand && copyToClipboard(connectCommand)} className='border-border text-white hover:bg-neutral-800 disabled:opacity-40'>
-								<Gamepad2 className='h-3.5 w-3.5 mr-1.5' />
-								Command
-							</Button>
-							<Button size='sm' variant='outline' disabled={!steamConnectUrl} onClick={launchCS2} className='border-border text-white hover:bg-neutral-800 disabled:opacity-40'>
-								<ExternalLink className='h-3.5 w-3.5 mr-1.5' />
-								Launch
-							</Button>
-						</div>
+						<div className='order-3'>{column('TEAM_B')}</div>
 					</div>
-				)}
+				</TabsContent>
 
+				<TabsContent value='scoreboard' className='mt-0'>
+					<ScoreboardTab match={match} />
+				</TabsContent>
 				{/* Teams Rosters */}
 				<div className='grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12'>
 					{/* Team A Roster */}
@@ -1581,34 +1426,35 @@ export default function MatchPage() {
 								{visibleTeamAMembers.map((member, index) => {
 									const isPlaceholder = member.id.startsWith('placeholder-');
 
-									if (isPlaceholder) {
-										return (
-											<div key={member.id} className='px-8 py-5 flex items-center gap-4 opacity-70'>
-												<span className='text-neutral-600 font-bold text-sm w-6'>{String(index + 1).padStart(2, '0')}</span>
-												<div className='w-10 h-10 rounded-full border border-dashed border-border' />
-												<span className='text-neutral-500 font-medium flex-1'>Open Slot</span>
-												<Badge className='bg-transparent border border-border text-neutral-500 text-xs'>LVL -</Badge>
-											</div>
-										);
-									}
+				<TabsContent value='maps' className='mt-0'>
+					<MapsTab match={match} onGoToVeto={showVeto ? () => setTab('overview') : undefined} />
+				</TabsContent>
 
-									return (
-										<Link key={member.id} href={`/profile/${member.id}`} className='px-8 py-5 hover:bg-neutral-900 transition-colors flex items-center gap-4 group'>
-											<span className='text-neutral-600 font-bold text-sm w-6'>{String(index + 1).padStart(2, '0')}</span>
-											{member.image ? (
-												<Image src={member.image} alt={member.name || 'Player'} width={40} height={40} className='rounded-full border border-border group-hover:border-white transition-colors' />
-											) : (
-												<div className='w-10 h-10 rounded-full border border-border flex items-center justify-center text-xs text-neutral-400'>{(member.name || 'P').charAt(0).toUpperCase()}</div>
-											)}
-											<span className='text-white font-medium flex-1'>{member.name || 'Unknown Player'}</span>
-											{member.faceitLevel !== null && <LevelBadge level={member.faceitLevel} size='sm' />}
-										</Link>
-									);
-								})}
-							</div>
-						)}
-					</div>
+				{canManage && (
+					<TabsContent value='admin' className='mt-0'>
+						<AdminPanel key={match.status} match={match} admin={admin} vetoComplete={vetoComplete} isDeleting={isDeleting} onDelete={deleteMatch} />
+					</TabsContent>
+				)}
+			</div>
+		</Tabs>
+	);
+}
 
+function RoomSkeleton() {
+	return (
+		<div className='min-h-screen bg-black' aria-busy='true' aria-label='Loading match'>
+			<div className='border-b border-border'>
+				<div className='mx-auto max-w-7xl px-4'>
+					<Skeleton className='mt-5 h-5 w-64 bg-neutral-900' />
+					<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-10 py-12'>
+						<div className='flex items-center justify-end gap-5'>
+							<Skeleton className='hidden h-8 w-40 bg-neutral-900 sm:block' />
+							<Skeleton className='h-20 w-20 bg-neutral-900' />
+						</div>
+						<Skeleton className='h-16 w-32 bg-neutral-900 sm:w-40' />
+						<div className='flex items-center gap-5'>
+							<Skeleton className='h-20 w-20 bg-neutral-900' />
+							<Skeleton className='hidden h-8 w-40 bg-neutral-900 sm:block' />
 					{/* Team B Roster */}
 					<div className='bg-neutral-950 border border-border rounded-lg overflow-hidden'>
 						<div className='bg-black px-8 py-6 border-b border-border'>
@@ -1679,9 +1525,17 @@ export default function MatchPage() {
 							)}
 						</div>
 					</div>
-				)}
-
-				<Scoreboard match={match} teamALabel={teamALabel} teamBLabel={teamBLabel} />
+					<div className='flex gap-6 pb-4'>
+						{[80, 96, 56].map((w) => (
+							<Skeleton key={w} className='h-4 bg-neutral-900' style={{ width: w }} />
+						))}
+					</div>
+				</div>
+			</div>
+			<div className='mx-auto grid max-w-7xl gap-4 px-4 pt-6 lg:grid-cols-[1fr_1.2fr_1fr]'>
+				<Skeleton className='h-[340px] bg-neutral-900' />
+				<Skeleton className='h-[340px] bg-neutral-900' />
+				<Skeleton className='h-[340px] bg-neutral-900' />
 			</div>
 		</div>
 	);
