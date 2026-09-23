@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev              # start dev server (Next.js App Router)
 npm run build            # prisma generate + next build
 npm run start            # start production server
-npm run lint             # next lint (eslint:recommended + @typescript-eslint + @next/next)
+npm run lint             # eslint src (eslint:recommended + @typescript-eslint + @next/next)
 npm test                 # run all jest tests
 npm run test:watch       # jest watch mode
 npx jest path/to/file.test.tsx          # run a single test file
