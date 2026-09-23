@@ -2,6 +2,7 @@ import { getAuthSession } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
+import { deleteBlobsQuietly } from '@/lib/blob';
 
 export async function GET() {
   const session = await getAuthSession();
@@ -49,25 +50,31 @@ export async function PATCH(request: Request) {
   try {
     const buffer = Buffer.from(avatar, 'utf-8');
 
-    const blob = await put(`avatars/${user.email}.svg`, buffer, {
+    // Keyed by user id, never email: Blob URLs are public. The random suffix gives every upload a
+    // fresh URL, so browsers and the CDN don't keep serving the previous avatar.
+    const blob = await put(`avatars/${user.id}.svg`, buffer, {
       access: 'public',
+      addRandomSuffix: true,
+      contentType: 'image/svg+xml',
     });
 
     const imageUrl = blob.url;
     session.user.image = imageUrl; // Update session user image
 
     await db.user.update({
-      where: { email: session.user.email || '' },
+      where: { id: user.id },
       data: { image: imageUrl },
     });
+    await deleteBlobsQuietly([user.image]);
 
     return NextResponse.json(
       { message: 'Avatar updated successfully', imageUrl },
       { status: 200 }
     );
   } catch (error) {
+    console.error('Failed to process avatar', error);
     return NextResponse.json(
-      { error: 'Failed to process avatar: ' + error },
+      { error: 'Failed to process avatar' },
       { status: 500 }
     );
   }

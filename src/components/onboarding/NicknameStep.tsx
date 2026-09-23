@@ -52,11 +52,11 @@ export function NicknameStep({ previousStep, nextStep, loading }: NicknameStepPr
         <Form {...form}>
             <form className='px-12 py-4' onSubmit={form.handleSubmit(onSubmit)}>
                 <div className='mb-8'>
-                    <h5 className='text-xl md:text-3xl font-bold text-gray-900 dark:text-white'>
+                    <h2 className='text-xl md:text-3xl font-bold text-foreground'>
                         Nickname
-                    </h5>
-                    <p>
-                        Please provide your nickname and select the games you are playing.
+                    </h2>
+                    <p className='text-muted-foreground'>
+                        This is the name other players see in brackets and on the scoreboard.
                     </p>
                 </div>
                 <FormField
@@ -64,10 +64,10 @@ export function NicknameStep({ previousStep, nextStep, loading }: NicknameStepPr
                     name='nickname'
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel htmlFor='nickname'>Nickname</FormLabel>
+                            <FormLabel>Nickname</FormLabel>
                             <FormControl>
                                 <Input
-                                    id='nickname'
+                                    autoComplete='nickname'
                                     placeholder='Enter your nickname'
                                     {...field}
                                 />
@@ -81,7 +81,7 @@ export function NicknameStep({ previousStep, nextStep, loading }: NicknameStepPr
                         Previous
                     </Button>
                     <Button type='submit' disabled={loading}>
-                        {loading ? 'Loading...' : 'Continue'}
+                        {loading ? 'Saving…' : 'Continue'}
                     </Button>
                 </DialogFooter>
             </form>

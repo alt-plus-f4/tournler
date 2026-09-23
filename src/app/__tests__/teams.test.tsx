@@ -55,7 +55,7 @@ describe('Teams Page', () => {
 		render(page);
 
 		// Check if the page title is rendered
-		expect(screen.getByText('Counter-strike 2 Teams')).toBeInTheDocument();
+		expect(screen.getByRole('heading', { level: 1, name: 'Teams' })).toBeInTheDocument();
 	});
 
 	it('shows login alert when user is not logged in', async () => {
@@ -73,10 +73,7 @@ describe('Teams Page', () => {
 		render(page);
 
 		// Check if the login alert is shown
-		expect(screen.getByText('Heads up!')).toBeInTheDocument();
-		expect(
-			screen.getByText('You need an account to create or join a team.')
-		).toBeInTheDocument();
+		expect(screen.getByText('Sign in to create a team or accept an invite to one.')).toBeInTheDocument();
 		expect(screen.getByTestId('login-buttons')).toBeInTheDocument();
 	});
 

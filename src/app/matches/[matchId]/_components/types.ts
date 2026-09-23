@@ -144,6 +144,15 @@ export function getSideLabels(match: Match) {
 	};
 }
 
+/**
+ * The series length, if we actually know it. `Matches.bestOf` is null when the match inherits the
+ * tournament default (not in this payload); once the veto has locked maps, their count is the
+ * series length. Otherwise null — callers omit the format rather than guess BO1/BO3.
+ */
+export function getBestOf(match: Match): number | null {
+	return match.bestOf ?? (match.maps.length > 0 ? match.maps.length : null);
+}
+
 /** Which side won a COMPLETED match — pickups record `winnerSide`, team matches record `winner`. */
 export function getWinningSide(match: Match): Side | null {
 	if (match.status !== 'COMPLETED') return null;

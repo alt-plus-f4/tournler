@@ -17,7 +17,6 @@ import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/hooks/use-toast';
 import { SiCounterstrike } from 'react-icons/si';
-import { Card, CardHeader, CardContent } from './ui/card';
 
 const formSchema = z.object({
 	teamName: z
@@ -79,23 +78,14 @@ export function TeamCreationDrawer() {
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
-				<Card className='h-[200px] w-full transition transform hover:scale-105 hover:shadow-2xl cursor-pointer bg-gradient-to-r from-black-500 to-indigo-600 text-white'>
-					<CardHeader className='relative p-0 w-full h-[60%] space-y-0 overflow-hidden rounded-t-xl flex items-center justify-center bg-opacity-75'>
-						<div className='flex items-center justify-center'>
-							<SiCounterstrike className='w-12 h-12 opacity-80' />
-						</div>
-					</CardHeader>
-					<CardContent className='px-4 text-center'>
-						<div className='flex flex-col items-center justify-center'>
-							<h3 className='text-xl font-extrabold text-white'>
-								Create Team
-							</h3>
-							<p className='text-sm font-medium text-slate-400'>
-								Click to start your journey
-							</p>
-						</div>
-					</CardContent>
-				</Card>
+				<button
+					type='button'
+					className='flex min-h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-dashed border-neutral-600 bg-transparent px-4 text-center transition-colors hover:border-neutral-400 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+				>
+					<SiCounterstrike aria-hidden className='h-10 w-10 text-neutral-300' />
+					<span className='text-lg font-black uppercase tracking-wide text-white'>Create a team</span>
+					<span className='text-sm text-muted-foreground'>You become captain and can invite up to 4 players.</span>
+				</button>
 			</DrawerTrigger>
 			<DrawerContent>
 				<div className='mx-auto w-full max-w-sm'>
@@ -125,7 +115,7 @@ export function TeamCreationDrawer() {
 								disabled={isSubmitting}
 							/>
 							{errors.teamName && (
-								<p className='text-red-600 text-sm'>
+								<p role='alert' className='mt-1 text-sm text-signal-live'>
 									{String(errors.teamName.message)}
 								</p>
 							)}

@@ -1,82 +1,31 @@
-'use client';
-
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FeaturedTournament } from '@/components/FeaturedTournament';
-import { TournamentRow } from '@/components/TournamentRow';
-import { UpcomingTournament } from '@/components/UpcomingTournament';
-import { useEffect, useRef, useState } from 'react';
-import { ReducedTournament } from '@/types/types';
-import Loading from './loading';
+import { TournamentsBrowser } from '@/components/public/TournamentsBrowser';
+import { getAuthSession } from '@/lib/auth';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
-type TournamentView = 'active' | 'completed';
+export const metadata: Metadata = { title: 'Tournaments' };
 
-export default function Page() {
-	const [tournaments, setTournaments] = useState<ReducedTournament[]>([]);
-	const [view, setView] = useState<TournamentView>('active');
-	const [isLoading, setIsLoading] = useState(true);
-	const [isSwitching, setIsSwitching] = useState(false);
-	const cacheRef = useRef<Record<TournamentView, ReducedTournament[]>>({
-		active: [],
-		completed: [],
-	});
-	const hasLoadedOnceRef = useRef(false);
-
-	useEffect(() => {
-		async function fetchTournaments(status: TournamentView) {
-			const cached = cacheRef.current[status];
-			if (cached.length > 0) {
-				setTournaments(cached);
-				setIsLoading(false);
-				return;
-			}
-
-			if (!hasLoadedOnceRef.current) {
-				setIsLoading(true);
-			} else {
-				setIsSwitching(true);
-			}
-
-			try {
-				const response = await fetch(`/api/tournaments?status=${status}`);
-				const data: ReducedTournament[] = await response.json();
-
-				setTournaments(data);
-				cacheRef.current = { ...cacheRef.current, [status]: data };
-			} catch (error) {
-				console.error(error);
-			} finally {
-				hasLoadedOnceRef.current = true;
-				setIsLoading(false);
-				setIsSwitching(false);
-			}
-		}
-		fetchTournaments(view);
-	}, [view]);
-
-	if (isLoading) return <Loading />;
+export default async function Page() {
+	const session = await getAuthSession();
+	const canCreate = session?.user ? await userHasPermission(session.user.id, 'tournaments:manage') : false;
 
 	return (
-		<div className='w-[78%] mx-auto my-8'>
-			<div className={`transition-opacity duration-300 ${isSwitching ? 'opacity-70' : 'opacity-100'}`}>
-				{tournaments[0] && <FeaturedTournament {...tournaments[0]} />}
-
-				<div className='mt-8 flex flex-col sm:flex-row gap-4 sm:justify-around items-center'>{tournaments[1] && tournaments.slice(1, 4).map((tournament, index) => <UpcomingTournament key={tournament.id || index} {...tournament} />)}</div>
+		<div className='container mx-auto max-w-[1400px] px-4 py-8 lg:px-8'>
+			<div className='mb-6 flex flex-wrap items-center justify-between gap-4'>
+				<h1 className='text-3xl font-black uppercase tracking-wide text-white sm:text-4xl'>Tournaments</h1>
+				{canCreate && (
+					<Button asChild>
+						<Link href='/admin/tournaments?create=1'>
+							<Plus className='h-4 w-4' aria-hidden />
+							Create tournament
+						</Link>
+					</Button>
+				)}
 			</div>
-
-			<div className='flex flex-col sm:flex-row justify-center gap-4 mt-8'>
-				<Button variant={view === 'active' ? 'default' : 'outline'} className='px-1 py-0 text-xs md:text-sm md:px-4 md:py-2' onClick={() => setView('active')} disabled={isSwitching}>
-					Upcoming & Live
-				</Button>
-				<Button variant={view === 'completed' ? 'default' : 'outline'} className='px-1 py-0 text-xs md:text-sm md:px-4 md:py-2' onClick={() => setView('completed')} disabled={isSwitching}>
-					Completed
-				</Button>
-			</div>
-
-			<div className={`mt-12 space-y-2 transition-all duration-300 ${isSwitching ? 'translate-y-1' : 'translate-y-0'}`}>
-				{tournaments.slice(4).map((tournament) => (
-					<TournamentRow key={tournament.id} {...tournament} />
-				))}
-			</div>
+			<TournamentsBrowser />
 		</div>
 	);
 }

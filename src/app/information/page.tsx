@@ -1,252 +1,151 @@
-import type React from 'react';
-import {
-	ChevronDown,
-	Code,
-	Users,
-	Calendar,
-	Layout,
-	Shield,
-	Zap,
-} from 'lucide-react';
-import Image from 'next/image';
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { CalendarClock, ClipboardList, Flag, Gamepad2, LogIn, MonitorPlay, Play, Server, ShieldCheck, Swords, Trophy, Users } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
+export const metadata: Metadata = {
+	title: 'How it works',
+	description: 'How a Tournler CS2 tournament runs, for organizers and for players.',
+};
 
-interface AccordionItemProps {
-	title: string;
-	content: React.ReactNode;
-	icon: React.ReactNode;
+function Step({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+	return (
+		<li className='grid grid-cols-[1.5rem_1fr] gap-x-4'>
+			<span className='mt-1 text-muted-foreground' aria-hidden>
+				{icon}
+			</span>
+			<div>
+				<h3 className='text-lg font-bold text-white'>{title}</h3>
+				<div className='mt-1 space-y-2 text-neutral-300'>{children}</div>
+			</div>
+		</li>
+	);
 }
 
-const AccordionItem: React.FC<AccordionItemProps> = ({
-	title,
-	content,
-	icon,
-}) => (
-	<details className='group border-b border-gray-200 dark:border-gray-700'>
-		<summary className='flex items-center justify-between w-full p-5 text-left cursor-pointer'>
-			<div className='flex items-center'>
-				{icon}
-				<span className='ml-3 text-lg font-medium text-gray-900 dark:text-white'>
-					{title}
-				</span>
-			</div>
-			<ChevronDown className='w-5 h-5 text-gray-500 transition-transform duration-200 group-open:rotate-180' />
-		</summary>
-		<div className='p-5'>{content}</div>
-	</details>
-);
+const ICON = 'h-5 w-5';
+const LINK = 'font-medium text-white underline underline-offset-4 hover:text-neutral-300';
 
-export default function EnhancedTournamentManagementSystemInfo() {
+export default function InformationPage() {
 	return (
-		<div className='min-h-screen text-gray-900 dark:text-gray-100'>
-			<div className='container mx-auto px-4 py-12'>
-				<div className='max-w-3xl mx-auto'>
-					<div className='text-center mb-8'>
-						<h1 className='text-4xl font-bold mb-4'>
-							Tournament Management System
-						</h1>
-						<p className='text-xl text-gray-600 dark:text-gray-400'>
-							A comprehensive platform for organizing and managing
-							esports tournaments
-						</p>
-					</div>
+		<div className='container mx-auto max-w-[1400px] px-4 py-12 lg:px-8'>
+			<div className='mx-auto max-w-prose'>
+				<h1 className='text-4xl font-black uppercase tracking-wide text-white'>How Tournler works</h1>
+				<p className='mt-4 text-lg text-neutral-300'>
+					Tournler runs a CS2 tournament end to end: registration, bracket, server, match and result. The organizer sets up the event. Tournler generates the bracket, loads a CS2 server for every match, and records the score the game server reports.
+				</p>
 
-					<Image
-						src='/info-image.png'
-						alt='Tournament Management System Dashboard'
-						width={600}
-						height={200}
-						loading='eager'
-						className='mx-auto rounded-lg shadow-lg mb-12'
-					/>
+				<nav aria-label='On this page' className='mt-8 flex flex-wrap gap-x-6 gap-y-2 border-y border-border py-3 text-sm'>
+					<a href='#organizers' className={LINK}>
+						For organizers
+					</a>
+					<a href='#players' className={LINK}>
+						For players
+					</a>
+				</nav>
 
-					<div className='space-y-4'>
-						<AccordionItem
-							title='Key Features'
-							icon={<Zap className='w-6 h-6 text-blue-500' />}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>Tournament Management:</strong>{' '}
-										Create, edit, and manage tournaments,
-										including bracket management and score
-										updates.
-									</li>
-									<li>
-										<strong>Team Features:</strong> Team
-										registration, player roster management,
-										and match history tracking.
-									</li>
-									<li>
-										<strong>Match System:</strong> Live
-										scoring, match scheduling, and results
-										tracking.
-									</li>
-									<li>
-										<strong>User Interface:</strong>{' '}
-										Responsive design with a dark theme and
-										interactive tournament brackets.
-									</li>
-									<li>
-										<strong>Admin Panel</strong> Create,
-										edit and manage tournaments, teams, and
-										users.
-									</li>
-								</ul>
-							}
-						/>
+				<section id='organizers' aria-labelledby='organizers-heading' className='mt-12 scroll-mt-24'>
+					<h2 id='organizers-heading' className='text-2xl font-bold text-white'>
+						For organizers
+					</h2>
+					<p className='mt-2 text-muted-foreground'>Creating and starting tournaments currently needs a staff role (tournament admin or admin).</p>
 
-						<AccordionItem
-							title='Tech Stack'
-							icon={<Code className='w-6 h-6 text-green-500' />}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>Next.js:</strong> React
-										framework for building the web
-										application, providing server-side
-										rendering and routing.
-									</li>
-									<li>
-										<strong>TypeScript:</strong> Adds static
-										typing to JavaScript, enhancing code
-										quality and developer experience.
-									</li>
-									<li>
-										<strong>Tailwind CSS:</strong>{' '}
-										Utility-first CSS framework for rapid UI
-										development.
-									</li>
-									<li>
-										<strong>Prisma:</strong> Next-generation
-										ORM for Node.js and TypeScript.
-									</li>
-									<li>
-										<strong>Convex:</strong> Full-stack data
-										platform for building reactive
-										applications.
-									</li>
-								</ul>
-							}
-						/>
+					<ol className='mt-8 space-y-8'>
+						<Step icon={<Swords className={ICON} />} title='Pick a format'>
+							<ul className='list-disc space-y-1 pl-5'>
+								<li>
+									<strong className='text-white'>Single elimination.</strong> Losers are out. The two semifinal losers play a 3rd-place match.
+								</li>
+								<li>
+									<strong className='text-white'>Double elimination.</strong> A winners and a losers bracket that meet in a grand final. Needs at least 4 teams.
+								</li>
+								<li>
+									<strong className='text-white'>Round robin.</strong> Every team plays every other team once, ranked in a standings table.
+								</li>
+							</ul>
+						</Step>
 
-						<AccordionItem
-							title='User and Team Management'
-							icon={<Users className='w-6 h-6 text-purple-500' />}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>User Profiles:</strong>{' '}
-										Customizable user profiles with avatars
-										and nicknames.
-									</li>
-									<li>
-										<strong>
-											Team Creation and Management:
-										</strong>{' '}
-										Users can create and manage teams,
-										including inviting other players.
-									</li>
-									<li>
-										<strong>Onboarding Process:</strong>{' '}
-										Guided onboarding for new users to set
-										up their profiles and preferences.
-									</li>
-									<li>
-										<strong>Admin Controls:</strong>{' '}
-										Comprehensive admin panel for managing
-										users, teams, and tournaments.
-									</li>
-								</ul>
-							}
-						/>
+						<Step icon={<ClipboardList className={ICON} />} title='Open registration'>
+							<p>Teams register themselves from the tournament page until the start time or until every slot is taken. A tournament needs at least 2 registered teams to start.</p>
+						</Step>
 
-						<AccordionItem
-							title='Tournament Features'
-							icon={<Calendar className='w-6 h-6 text-red-500' />}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>Bracket Management:</strong>{' '}
-										Create and manage tournament brackets
-										with ease.
-									</li>
-									<li>
-										<strong>Live Scoring:</strong> Real-time
-										updates for ongoing matches.
-									</li>
-									<li>
-										<strong>Match Scheduling:</strong>{' '}
-										Efficient tools for organizing and
-										displaying match schedules.
-									</li>
-									<li>
-										<strong>Results Tracking:</strong>{' '}
-										Comprehensive system for recording and
-										displaying tournament results.
-									</li>
-								</ul>
-							}
-						/>
+						<Step icon={<Play className={ICON} />} title='Start it, or let it start itself'>
+							<p>
+								Start a tournament from its page with <strong className='text-white'>Start tournament</strong>. The confirmation shows the registered teams against capacity before anything happens. If you don&apos;t, a scheduled check starts it once its start time has passed, so it can begin a few minutes late.
+							</p>
+							<p>Starting locks the teams, generates the bracket and creates every match.</p>
+						</Step>
 
-						<AccordionItem
-							title='User Interface'
-							icon={
-								<Layout className='w-6 h-6 text-yellow-500' />
-							}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>Responsive Design:</strong>{' '}
-										Ensures the platform is accessible on
-										various devices and screen sizes.
-									</li>
-									<li>
-										<strong>Interactive Brackets:</strong>{' '}
-										Provides an engaging way to view and
-										interact with tournament progress.
-									</li>
-								</ul>
-							}
-						/>
+						<Step icon={<Server className={ICON} />} title='Servers are handled for you'>
+							<p>
+								Each match gets a CS2 dedicated server from Tournler&apos;s pool, configured through MatchZy. About 5 minutes before a match&apos;s scheduled start, the server is loaded with that match so players can connect and warm up. You never hand out IPs or passwords.
+							</p>
+							<p>Only as many matches can run at once as there are servers in the pool.</p>
+						</Step>
 
-						<AccordionItem
-							title='Security and Integration'
-							icon={
-								<Shield className='w-6 h-6 text-indigo-500' />
-							}
-							content={
-								<ul className='list-disc pl-5 space-y-2'>
-									<li>
-										<strong>Authentication:</strong> Secure
-										user authentication with support for
-										multiple providers (e.g., Steam,
-										Discord).
-									</li>
-									<li>
-										<strong>API Endpoints:</strong>{' '}
-										Comprehensive API for integrating with
-										other services or building additional
-										features.
-									</li>
-									<li>
-										<strong>Data Protection:</strong> Robust
-										measures to ensure user data privacy and
-										security.
-									</li>
-									<li>
-										<strong>
-											Third-party Integrations:
-										</strong>{' '}
-										Seamless integration with popular gaming
-										platforms and services.
-									</li>
-								</ul>
-							}
-						/>
-					</div>
-				</div>
+						<Step icon={<Trophy className={ICON} />} title='Scores come from the server'>
+							<p>
+								A match goes live when the game server reports that the series has started. The server reports the score as it happens. When a series ends, the winner advances in the bracket automatically and player stats are recorded.
+							</p>
+						</Step>
+
+						<Step icon={<ShieldCheck className={ICON} />} title='Step in from the match room'>
+							<p>Admins can pause, resume, restart or end a match from its match page. Those controls send real commands to the server. If the server fails to report a score, an admin can enter it by hand there.</p>
+						</Step>
+					</ol>
+				</section>
+
+				<section id='players' aria-labelledby='players-heading' className='mt-16 scroll-mt-24'>
+					<h2 id='players-heading' className='text-2xl font-bold text-white'>
+						For players
+					</h2>
+
+					<ol className='mt-8 space-y-8'>
+						<Step icon={<LogIn className={ICON} />} title='Sign in'>
+							<p>
+								<Link href='/sign-in' className={LINK}>
+									Sign in
+								</Link>{' '}
+								with Steam, Discord or an email link.
+							</p>
+						</Step>
+
+						<Step icon={<Gamepad2 className={ICON} />} title='Link your Steam account'>
+							<p>You need a linked Steam account to connect to match servers. The server knows you by it. Link it from your profile if you signed in another way. It also lets your profile show your FACEIT level, if you have one.</p>
+						</Step>
+
+						<Step icon={<Users className={ICON} />} title='Put a team together'>
+							<p>
+								Go to{' '}
+								<Link href='/teams' className={LINK}>
+									Teams
+								</Link>{' '}
+								to create a team and invite your teammates.
+							</p>
+						</Step>
+
+						<Step icon={<CalendarClock className={ICON} />} title='Register for a tournament'>
+							<p>
+								Open a tournament from{' '}
+								<Link href='/tournaments' className={LINK}>
+									Tournaments
+								</Link>{' '}
+								and register your team while registration is open. The bracket and your matches appear once the tournament starts.
+							</p>
+						</Step>
+
+						<Step icon={<Flag className={ICON} />} title='Ban and pick maps'>
+							<p>Before the match, both teams take turns banning and picking maps from the tournament&apos;s map pool on the match page. The match can&apos;t start until the veto is done.</p>
+						</Step>
+
+						<Step icon={<MonitorPlay className={ICON} />} title='Connect when your server is ready'>
+							<p>The match page tells you when your server is ready, about 5 minutes before the start. It then shows the server address, a button that launches CS2 and connects you, and a button that copies the console command. Join early to warm up.</p>
+						</Step>
+					</ol>
+
+					<p className='mt-10 border-t border-border pt-6 text-muted-foreground'>
+						<strong className='text-white'>Pickup matches</strong> work without teams: join a side from the match page, up to 5 players each, with no map veto.
+					</p>
+				</section>
 			</div>
 		</div>
 	);

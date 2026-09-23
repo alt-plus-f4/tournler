@@ -1,5 +1,5 @@
 import { formatDate } from '@/lib/helpers/format-date';
-import { formatPrize } from '@/lib/helpers/format-prize';
+import { formatMoney } from '@/lib/helpers/format-money';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -9,77 +9,57 @@ interface UpcomingTournamentProps {
 	bannerUrl: string | null;
 	startDate: string;
 	prizePool: number | null;
-	teams: any[];
+	teams: unknown[];
 	location: string;
 	teamCapacity: number;
 	isHomePage?: boolean;
 }
 
-export function UpcomingTournament({
-	id,
-	name,
-	startDate,
-	bannerUrl,
-	prizePool,
-	teams,
-	location,
-	teamCapacity,
-	isHomePage,
-}: UpcomingTournamentProps) {
+export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity, isHomePage }: UpcomingTournamentProps) {
+	const hasPrize = prizePool !== null && prizePool !== undefined;
+
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className={`relative flex flex-col items-center justify-center rounded-md shadow-lg overflow-hidden transform transition-transform duration-200 hover:scale-105 mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-[80%]'}`}
+			className={`group relative flex flex-col overflow-hidden rounded-md border border-border bg-black transition-[transform,border-color] duration-200 hover:border-neutral-500 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mt-4 sm:mt-2 ${isHomePage ? 'w-full h-[200px]' : 'h-[156px] sm:w-[30%] w-full'}`}
 		>
-			<div className='relative w-full h-20 bg-neutral-900'>
+			<div className='relative h-20 w-full shrink-0 bg-neutral-900'>
 				{bannerUrl && (
 					<Image
 						src={bannerUrl}
-						alt={name}
+						alt=''
 						fill
-						sizes='25vw'
-						className='object-cover w-full h-20'
-						placeholder='blur' // or "empty"
+						sizes='(max-width: 1024px) 100vw, 340px'
+						className='object-cover'
+						placeholder='blur'
 						blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 					/>
 				)}
-				<div className='absolute bottom-0 left-0 w-full h-[20px] bg-gradient-to-t from-black to-transparent'></div>
+				<div aria-hidden className='absolute bottom-0 left-0 h-5 w-full bg-gradient-to-t from-black to-transparent' />
 			</div>
-			<div className='w-full bg-black hover:brightness-75 transition-all border-t-0 border text-center'>
-				<h1 className='text-white text-md ml-2 mt-2 font-extrabold'>
-					{name}
-				</h1>
-				<div className='text-slate-300 text-xs ml-2 mb-2'>
-					{location}
-				</div>
-				<div className='grid grid-cols-3 gap-1 items-center text-center border-t-2 py-1'>
-					<div className='flex flex-col'>
-						<span className='font-bold text-xs lg:text-sm'>
-							{formatDate(startDate)}
-						</span>
-						<span className='text-slate-300 font-thin text-xs lg:text-sm'>
-							Date
-						</span>
+			<div className='flex flex-1 flex-col text-center'>
+				<h3 className='mx-2 mt-2 truncate text-base font-black uppercase tracking-wide text-white'>{name}</h3>
+				<p className='mx-2 mb-2 truncate text-xs text-muted-foreground'>{location}</p>
+				<dl className='mt-auto grid auto-cols-fr grid-flow-col items-center gap-1 border-t border-border py-1'>
+					<div className='flex flex-col-reverse'>
+						<dt className='text-xs text-muted-foreground'>Date</dt>
+						<dd className='text-xs font-bold lg:text-sm'>{formatDate(startDate)}</dd>
 					</div>
-					<div className='flex flex-col'>
-						<span className='font-bold text-xs lg:text-sm'>
-							{formatPrize(prizePool)}
-						</span>
-						<span className='text-slate-300 text-xs lg:text-sm'>
-							Prize Pool
-						</span>
-					</div>
-					{teams && (
-						<div className='flex flex-col'>
-							<span className='font-bold text-xs lg:text-sm'>
-								{teams.length}/{teamCapacity}
-							</span>
-							<span className='text-slate-300 text-xs lg:text-sm'>
-								Teams
-							</span>
+					{hasPrize && (
+						<div className='flex flex-col-reverse'>
+							<dt className='text-xs text-muted-foreground'>Prize pool</dt>
+							<dd className='font-mono text-xs font-bold tabular-nums lg:text-sm'>{formatMoney(prizePool)}</dd>
 						</div>
 					)}
-				</div>
+					{teams && (
+						<div className='flex flex-col-reverse'>
+							<dt className='text-xs text-muted-foreground'>Teams</dt>
+							<dd className='font-mono text-xs font-bold tabular-nums lg:text-sm'>
+								{teams.length}/{teamCapacity}
+							</dd>
+						</div>
+					)}
+				</dl>
 			</div>
 		</Link>
 	);

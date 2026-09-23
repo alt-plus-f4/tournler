@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { ProfileSkeleton } from '@/components/profile/ProfileSkeleton';
+import { AccountDataSection } from '@/components/profile/AccountDataSection';
 import { BadgeIcon } from '@/lib/badge-icons';
 import { LevelBadge } from '@/components/LevelBadge';
 import { faceitLevelProgress } from '@/lib/faceit';
@@ -93,14 +94,14 @@ function initials(name: string): string {
 function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
 	return (
 		<div className='mb-3 flex items-center justify-between gap-3'>
-			<h2 className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-500'>{children}</h2>
+			<h2 className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>{children}</h2>
 			{action}
 		</div>
 	);
 }
 
 function ResultChip({ result, href }: { result: 'W' | 'L'; href?: string }) {
-	const className = `inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-xs font-bold text-white ${result === 'W' ? 'bg-green-600' : 'bg-red-600'}`;
+	const className = `inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-xs font-bold ${result === 'W' ? 'bg-white text-black' : 'border border-neutral-600 text-neutral-300'}`;
 	if (!href) return <span className={className}>{result}</span>;
 	return (
 		<Link href={href} className={`${className} transition-opacity hover:opacity-80`} aria-label={result === 'W' ? 'Win' : 'Loss'}>
@@ -115,7 +116,7 @@ function MatchTable({ matches }: { matches: PlayerRecentMatch[] }) {
 		<div className='overflow-x-auto rounded-md border border-border bg-neutral-950'>
 			<table className='w-full text-sm'>
 				<thead>
-					<tr className='border-b border-border text-left text-xs uppercase tracking-[0.1em] text-neutral-500'>
+					<tr className='border-b border-border text-left text-xs uppercase tracking-[0.1em] text-neutral-400'>
 						<th className='px-4 py-3 font-bold'>Result</th>
 						<th className='px-4 py-3 font-bold'>Opponent</th>
 						<th className='hidden px-4 py-3 font-bold md:table-cell'>Tournament</th>
@@ -134,7 +135,7 @@ function MatchTable({ matches }: { matches: PlayerRecentMatch[] }) {
 										<ResultChip result={m.result} />
 										<span className='font-mono tabular-nums text-neutral-300'>
 											<span className={m.result === 'W' ? 'font-bold text-white' : ''}>{m.scoreFor ?? '-'}</span>
-											<span className='text-neutral-600'> : </span>
+											<span className='text-neutral-600' aria-hidden> : </span>
 											<span className={m.result === 'L' ? 'font-bold text-white' : ''}>{m.scoreAgainst ?? '-'}</span>
 										</span>
 									</div>
@@ -147,9 +148,9 @@ function MatchTable({ matches }: { matches: PlayerRecentMatch[] }) {
 								<td className='hidden max-w-[240px] truncate px-4 py-3 text-neutral-400 md:table-cell'>{m.tournamentName}</td>
 								<td className='hidden whitespace-nowrap px-4 py-3 text-center font-mono tabular-nums text-neutral-300 sm:table-cell'>
 									{m.kills}
-									<span className='text-neutral-600'> - </span>
+									<span className='text-neutral-600' aria-hidden> - </span>
 									{m.deaths}
-									<span className='text-neutral-600'> - </span>
+									<span className='text-neutral-600' aria-hidden> - </span>
 									{m.assists}
 								</td>
 								<td className={`px-4 py-3 text-center font-mono tabular-nums ${kd >= 1 ? 'font-bold text-white' : 'text-neutral-400'}`}>{kd.toFixed(2)}</td>
@@ -348,7 +349,7 @@ export default function PublicProfilePage() {
 		<span className='flex h-full w-full items-center justify-center bg-neutral-800 text-3xl font-black text-neutral-400'>{initials(profile.name)}</span>
 	);
 
-	const tabTrigger = 'relative flex h-12 shrink-0 items-center gap-2 px-4 text-xs font-bold uppercase tracking-[0.1em] text-neutral-500 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[state=active]:text-white after:absolute after:inset-x-4 after:bottom-0 after:h-0.5 after:bg-white after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100 sm:px-5 sm:after:inset-x-5';
+	const tabTrigger = 'relative flex h-12 shrink-0 items-center gap-2 px-4 text-xs font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[state=active]:text-white after:absolute after:inset-x-4 after:bottom-0 after:h-0.5 after:bg-white after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100 sm:px-5 sm:after:inset-x-5';
 
 	return (
 		<div className='min-h-screen bg-black pb-16 pt-6 selection:bg-white selection:text-black sm:pt-8'>
@@ -434,19 +435,19 @@ export default function PublicProfilePage() {
 											{profile.cs2Team.logo ? (
 												<Image src={profile.cs2Team.logo} alt='' width={18} height={18} className='h-[18px] w-[18px] object-contain' />
 											) : (
-												<Users className='h-4 w-4 text-neutral-500' />
+												<Users className='h-4 w-4 text-neutral-400' />
 											)}
 											{profile.cs2Team.name}
 										</Link>
 									)}
 									<span>Joined {formatMonthYear(profile.createdAt)}</span>
 									{profile.steam && (
-										<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='text-neutral-500 transition-colors hover:text-white' aria-label='Steam profile'>
+										<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='text-neutral-400 transition-colors hover:text-white' aria-label='Steam profile'>
 											<FaSteam className='h-4 w-4' />
 										</a>
 									)}
 									{profile.discord && (
-										<a href={`https://discord.com/users/${profile.discord.discordId}`} target='_blank' rel='noreferrer' className='text-neutral-500 transition-colors hover:text-white' aria-label='Discord profile'>
+										<a href={`https://discord.com/users/${profile.discord.discordId}`} target='_blank' rel='noreferrer' className='text-neutral-400 transition-colors hover:text-white' aria-label='Discord profile'>
 											<FaDiscord className='h-4 w-4' />
 										</a>
 									)}
@@ -464,9 +465,9 @@ export default function PublicProfilePage() {
 						{faceit ? (
 							<div className='w-full shrink-0 rounded-md border border-white/10 bg-black/60 p-4 backdrop-blur-sm md:w-72'>
 								<div className='flex items-center justify-between'>
-									<span className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-500'>FACEIT skill</span>
+									<span className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>FACEIT skill</span>
 									{faceit.faceitUrl && (
-										<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='flex items-center gap-1 text-xs text-neutral-500 transition-colors hover:text-white'>
+										<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='flex items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-white'>
 											View <ExternalLink className='h-3 w-3' />
 										</a>
 									)}
@@ -486,7 +487,7 @@ export default function PublicProfilePage() {
 												style={{ width: `${progress.percent}%`, transform: `scaleX(${eloShown ? 1 : 0})`, transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
 											/>
 										</div>
-										<div className='mt-1.5 flex justify-between font-mono text-xs tabular-nums text-neutral-500'>
+										<div className='mt-1.5 flex justify-between font-mono text-xs tabular-nums text-neutral-400'>
 											<span>{progress.floor.toLocaleString()}</span>
 											{progress.ceiling !== null ? (
 												<span>
@@ -522,16 +523,16 @@ export default function PublicProfilePage() {
 							</TabsPrimitive.Trigger>
 							<TabsPrimitive.Trigger value='matches' className={tabTrigger}>
 								Matches
-								<span className='font-mono text-xs tabular-nums text-neutral-500'>{recentMatches.length}</span>
+								<span className='font-mono text-xs tabular-nums text-neutral-400'>{recentMatches.length}</span>
 							</TabsPrimitive.Trigger>
 							<TabsPrimitive.Trigger value='trophies' className={tabTrigger}>
 								Trophies
-								<span className='font-mono text-xs tabular-nums text-neutral-500'>{trophies.length}</span>
+								<span className='font-mono text-xs tabular-nums text-neutral-400'>{trophies.length}</span>
 							</TabsPrimitive.Trigger>
 						</TabsPrimitive.List>
 						{form.length > 0 && (
 							<div className='hidden shrink-0 items-center gap-2 sm:flex'>
-								<span className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-500'>Form</span>
+								<span className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>Form</span>
 								<div className='flex gap-1'>
 									{form.map((m) => (
 										<ResultChip key={m.matchId} result={m.result} href={`/matches/${m.matchId}`} />
@@ -574,15 +575,15 @@ export default function PublicProfilePage() {
 											{decided > 0 && (
 												<div className='border-t border-border px-4 py-4 sm:px-6'>
 													<div className='flex h-1.5 overflow-hidden rounded-full bg-neutral-800'>
-														<div className='h-full bg-green-600' style={{ width: `${(stats.wins / decided) * 100}%` }} />
-														<div className='h-full flex-1 bg-red-600/70' />
+														<div className='h-full bg-white' style={{ width: `${(stats.wins / decided) * 100}%` }} />
+														<div className='h-full flex-1 bg-neutral-700' />
 													</div>
 													<div className='mt-2 flex justify-between font-mono text-xs tabular-nums'>
 														<span className='text-neutral-300'>
-															{stats.wins} <span className='font-sans text-neutral-500'>wins</span>
+															{stats.wins} <span className='font-sans text-neutral-400'>wins</span>
 														</span>
 														<span className='text-neutral-300'>
-															{stats.losses} <span className='font-sans text-neutral-500'>losses</span>
+															{stats.losses} <span className='font-sans text-neutral-400'>losses</span>
 														</span>
 													</div>
 												</div>
@@ -656,7 +657,7 @@ export default function PublicProfilePage() {
 									<div className='divide-y divide-border rounded-md border border-border bg-neutral-950'>
 										<div className='flex items-center gap-3 p-4'>
 											<span className={`flex h-9 w-9 items-center justify-center rounded-sm ${profile.steam ? 'bg-[#171a21]' : 'bg-neutral-800'}`}>
-												<FaSteam className={`h-5 w-5 ${profile.steam ? 'text-[#66c0f4]' : 'text-neutral-500'}`} />
+												<FaSteam className={`h-5 w-5 ${profile.steam ? 'text-[#66c0f4]' : 'text-neutral-400'}`} />
 											</span>
 											<div className='min-w-0 flex-1'>
 												<p className='text-sm font-medium text-white'>Steam</p>
@@ -665,12 +666,12 @@ export default function PublicProfilePage() {
 														View profile <ExternalLink className='h-3 w-3' />
 													</a>
 												) : (
-													<p className='text-xs text-neutral-500'>Not linked</p>
+													<p className='text-xs text-neutral-400'>Not linked</p>
 												)}
 											</div>
 											{isOwner &&
 												(profile.steam ? (
-													<Button variant='ghost' size='sm' onClick={unlinkSteam} className='text-red-400 hover:text-red-300'>
+													<Button variant='ghost' size='sm' onClick={unlinkSteam} className='text-signal-live hover:text-red-300'>
 														Unlink
 													</Button>
 												) : (
@@ -681,7 +682,7 @@ export default function PublicProfilePage() {
 										</div>
 										<div className='flex items-center gap-3 p-4'>
 											<span className={`flex h-9 w-9 items-center justify-center rounded-sm ${profile.discord ? 'bg-[#5865F2]' : 'bg-neutral-800'}`}>
-												<FaDiscord className={`h-5 w-5 ${profile.discord ? 'text-white' : 'text-neutral-500'}`} />
+												<FaDiscord className={`h-5 w-5 ${profile.discord ? 'text-white' : 'text-neutral-400'}`} />
 											</span>
 											<div className='min-w-0 flex-1'>
 												<p className='text-sm font-medium text-white'>Discord</p>
@@ -690,7 +691,7 @@ export default function PublicProfilePage() {
 														{profile.discord.discordId}
 													</a>
 												) : (
-													<p className='text-xs text-neutral-500'>{isOwner ? 'Not connected' : 'Not shown'}</p>
+													<p className='text-xs text-neutral-400'>{isOwner ? 'Not connected' : 'Not shown'}</p>
 												)}
 											</div>
 											{isOwner && !profile.discord && (
@@ -755,7 +756,7 @@ export default function PublicProfilePage() {
 										<div className='min-w-0'>
 											<p className='truncate text-sm font-bold text-white'>{badge.name}</p>
 											{badge.description && <p className='mt-0.5 line-clamp-2 text-xs text-neutral-400'>{badge.description}</p>}
-											<p className='mt-1.5 font-mono text-xs tabular-nums text-neutral-500'>{formatDate(awardedAt)}</p>
+											<p className='mt-1.5 font-mono text-xs tabular-nums text-neutral-400'>{formatDate(awardedAt)}</p>
 										</div>
 									</div>
 								))}
@@ -767,6 +768,8 @@ export default function PublicProfilePage() {
 						)}
 					</TabsPrimitive.Content>
 				</TabsPrimitive.Root>
+
+				{isOwner && <AccountDataSection />}
 
 				{isOwner && isEditing && (
 					<Dialog open={isAvatarEditing} onOpenChange={setIsAvatarEditing}>

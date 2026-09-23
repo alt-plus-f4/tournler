@@ -15,10 +15,22 @@ const FORMAT_OPTIONS = [
 	{ value: 'DOUBLE_ELIMINATION', label: 'Double Elimination' },
 ];
 
-export function SimulateTournamentButton() {
+interface DevToolDialogProps {
+	/** When provided the dialog is controlled and no trigger button is rendered (used from the admin "Dev tools" menu). */
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+}
+
+export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogProps = {}) {
 	const router = useRouter();
 	const { toast } = useToast();
-	const [isOpen, setIsOpen] = useState(false);
+	const [internalOpen, setInternalOpen] = useState(false);
+	const isControlled = open !== undefined;
+	const isOpen = isControlled ? open : internalOpen;
+	const setIsOpen = (next: boolean) => {
+		if (!isControlled) setInternalOpen(next);
+		onOpenChange?.(next);
+	};
 	const [isSimulating, setIsSimulating] = useState(false);
 	const [teamCount, setTeamCount] = useState(8);
 	const [format, setFormat] = useState('SINGLE_ELIMINATION');
@@ -59,21 +71,23 @@ export function SimulateTournamentButton() {
 
 	return (
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button variant='outline' className='border-white/20 bg-black text-white hover:bg-white hover:text-black'>
-					Simulate Tournament
-				</Button>
-			</DialogTrigger>
+			{!isControlled && (
+				<DialogTrigger asChild>
+					<Button variant='outline'>
+						Simulate tournament
+					</Button>
+				</DialogTrigger>
+			)}
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Simulate Tournament</DialogTitle>
+					<DialogTitle>Simulate tournament</DialogTitle>
 					<DialogDescription>Generates fake teams, starts a tournament in the chosen format, and auto-plays every match with random results.</DialogDescription>
 				</DialogHeader>
 				<div className='space-y-2'>
-					<Label htmlFor='sim-team-count'>Number of Teams</Label>
-					<Input id='sim-team-count' type='number' min={2} max={64} value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))} />
+					<Label htmlFor='sim-team-count'>Number of teams</Label>
+					<Input id='sim-team-count' type='number' min={2} max={64} className='font-mono tabular-nums' value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))} />
 
-					<Label htmlFor='sim-format'>Bracket Format</Label>
+					<Label htmlFor='sim-format'>Bracket format</Label>
 					<Select value={format} onValueChange={setFormat}>
 						<SelectTrigger id='sim-format'>
 							<SelectValue placeholder='Select a format' />
@@ -87,13 +101,15 @@ export function SimulateTournamentButton() {
 						</SelectContent>
 					</Select>
 
-					<Button className='w-full mt-3' onClick={handleSimulate} disabled={isSimulating}>
-						{isSimulating ? 'Simulating...' : 'Simulate'}
+				</div>
+				<div className='flex justify-end gap-2 pt-2'>
+					<DialogClose asChild>
+						<Button variant='outline'>Cancel</Button>
+					</DialogClose>
+					<Button onClick={handleSimulate} isLoading={isSimulating}>
+						{isSimulating ? 'Simulating…' : 'Simulate'}
 					</Button>
 				</div>
-				<DialogClose asChild>
-					<Button variant='outline'>Close</Button>
-				</DialogClose>
 			</DialogContent>
 		</Dialog>
 	);

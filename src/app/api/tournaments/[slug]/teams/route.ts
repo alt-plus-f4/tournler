@@ -118,11 +118,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			select: {
 				teams: true,
 				teamCapacity: true,
+				status: true,
+				startDate: true,
 			},
 		});
 
 		if (!tournament) {
 			return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+		}
+
+		// Registration is only open before the tournament starts. The UI already hides the
+		// button, but the API must enforce it too: a late join would land outside the
+		// already-generated bracket.
+		if (tournament.status !== 'UPCOMING' || tournament.startDate.getTime() <= Date.now()) {
+			return NextResponse.json({ error: 'Registration is closed for this tournament' }, { status: 409 });
 		}
 
 		if (tournament.teams.length >= tournament.teamCapacity) {

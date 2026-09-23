@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-	font-family: var(--font-main-font);
-	color: var(--foreground);
-}
 html {
 	scroll-behavior: smooth;
 }
@@ -17,44 +13,8 @@ html {
 }
 
 @layer base {
+	/* Dark-only: <body> always carries .dark, so these are the only values that ever apply. */
 	:root {
-		--background: 0 0% 100%;
-		--foreground: 240 10% 3.9%;
-		--card: 0 0% 100%;
-		--card-foreground: 240 10% 3.9%;
-		--popover: 0 0% 100%;
-		--popover-foreground: 240 10% 3.9%;
-		--primary: 240 5.9% 10%;
-		--primary-foreground: 0 0% 98%;
-		--secondary: 240 4.8% 95.9%;
-		--secondary-foreground: 240 5.9% 10%;
-		--muted: 240 4.8% 95.9%;
-		--muted-foreground: 240 3.8% 46.1%;
-		--accent: 240 4.8% 95.9%;
-		--accent-foreground: 240 5.9% 10%;
-		--destructive: 0 84.2% 60.2%;
-		--destructive-foreground: 0 0% 98%;
-		--border: 240 5.9% 90%;
-		--input: 240 5.9% 90%;
-		--ring: 240 5.9% 10%;
-		--radius: 0.5rem;
-		--chart-1: 12 76% 61%;
-		--chart-2: 173 58% 39%;
-		--chart-3: 197 37% 24%;
-		--chart-4: 43 74% 66%;
-		--chart-5: 27 87% 67%;
-		--popupcolor: #0000009e;
-		--sidebar-background: 0 0% 98%;
-		--sidebar-foreground: 240 5.3% 26.1%;
-		--sidebar-primary: 240 5.9% 10%;
-		--sidebar-primary-foreground: 0 0% 98%;
-		--sidebar-accent: 240 4.8% 95.9%;
-		--sidebar-accent-foreground: 240 5.9% 10%;
-		--sidebar-border: 220 13% 91%;
-		--sidebar-ring: 217.2 91.2% 59.8%;
-	}
-
-	.dark {
 		--background: 240 10% 3.9%;
 		--foreground: 0 0% 98%;
 		--card: 240 10% 3.9%;
@@ -87,6 +47,13 @@ html {
 		--sidebar-accent-foreground: 240 4.8% 95.9%;
 		--sidebar-border: 240 3.7% 15.9%;
 		--sidebar-ring: 217.2 91.2% 59.8%;
+		--radius: 0.5rem;
+		--popupcolor: #0000009e;
+		/* Signal colors: the only hues in the system, and only for server-reported state (DESIGN.md, On-Air Rule). */
+		--signal-live: 0 84% 60%;
+		--signal-ready: 142 71% 45%;
+		--signal-ready-text: 142 69% 58%;
+		--signal-hold: 48 96% 53%;
 	}
 }
 
@@ -104,12 +71,12 @@ html {
 		radial-gradient(500px circle at var(--x, 50%) var(--y, 20%), rgba(255, 255, 255, 0.07), transparent 60%),
 		repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px),
 		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px);
-	transition: background-position 0.15s ease-out;
 }
 
+/* Reduced motion keeps the state (a solid dot) and drops only the pulse. */
 @media (prefers-reduced-motion: reduce) {
-	.interactive-bg {
-		transition: none;
+	.animate-pulse {
+		animation: none;
 	}
 }
 
@@ -117,18 +84,18 @@ html {
 	transition: 0.3s linear;
 }
 
-.font-style-1 {
-	font-family: RadionA, sans-serif;
-	text-transform: uppercase;
-	font-weight: 700;
-	margin: 0;
-	letter-spacing: 0;
-	font-size: 17px;
-	line-height: 18px;
-}
-
 .navbar-color {
 	background-image: radial-gradient(transparent 1px, black 1px);
 	background-size: 4px 4px;
 	backdrop-filter: saturate(50%) blur(12px);
+}
+
+::selection {
+	background: hsl(0 0% 98%);
+	color: hsl(240 10% 3.9%);
+}
+
+html {
+	color-scheme: dark;
+	scrollbar-color: hsl(240 3.7% 25%) transparent;
 }

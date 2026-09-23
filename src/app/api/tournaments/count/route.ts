@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { parseStatusFilter } from '@/lib/helpers/tournament-status-filter';
 
 export async function GET(req: NextRequest) {
 	try {
@@ -7,7 +8,13 @@ export async function GET(req: NextRequest) {
 		const limit = Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10);
 		const search = searchParams.get('search')?.trim();
 
-		const where = { isSystem: false, ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}) };
+		const statusFilter = parseStatusFilter(searchParams.get('status'));
+
+		const where = {
+			isSystem: false,
+			...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+			...(statusFilter ? { status: { in: statusFilter } } : {}),
+		};
 
 		const total = await db.cs2Tournament.count({ where });
 		const count = Math.ceil(total / limit);

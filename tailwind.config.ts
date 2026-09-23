@@ -11,14 +11,12 @@ const config: Config = {
 		extend: {
 			colors: {
 				popupcolor: '#0000009e',
-				faceitOrange: '#FF5500',
 				discordColor: '#5865F2',
 				steamColor: '#171a21',
 				steamLogoColor: '#66c0f4',
 				hoverColor: '#1d1e21',
 				grey: '#2f3136',
 				foregroundgray: 'rgb(167, 167, 167)',
-				ctColor: '#1d91d74d',
 				tColor: '#7a030386',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
@@ -70,14 +68,11 @@ const config: Config = {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				instagramGradient: {
-					start: '#f09433',
-					middle: '#e6683c',
-					end: '#dc2743'
-				},
-				steamGradient: {
-					start: '#66c0f4',
-					end: '#171a21'
+				signal: {
+					live: 'hsl(var(--signal-live))',
+					ready: 'hsl(var(--signal-ready))',
+					'ready-text': 'hsl(var(--signal-ready-text))',
+					hold: 'hsl(var(--signal-hold))'
 				}
 			},
 			borderRadius: {

@@ -4,6 +4,7 @@ import { userHasPermission } from '@/lib/helpers/permissions';
 import { computePlayerCareerStats, getPlayerRecentMatches } from '@/lib/tournaments/player-stats';
 import { getFaceitInfo } from '@/lib/faceit';
 import { NextResponse } from 'next/server';
+import { AccountDeletionBlockedError, deleteUserAccount } from '@/lib/account';
 
 const PUBLIC_USER_SELECT = {
 	id: true,
@@ -148,12 +149,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ s
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		await db.user.delete({
-			where: { id: userId },
-		});
+		await deleteUserAccount(userId);
 
 		return NextResponse.json({ message: 'User deleted successfully' });
 	} catch (error) {
+		if (error instanceof AccountDeletionBlockedError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
 		console.error('Error deleting user:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
 	}

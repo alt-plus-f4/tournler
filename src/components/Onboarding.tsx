@@ -6,8 +6,7 @@ import { NicknameStep } from './onboarding/NicknameStep';
 import { AvatarStep } from './onboarding/AvatarStep';
 import { SteamStep } from './onboarding/SteamStep';
 import { CompletedStep } from './onboarding/CompletedStep';
-import { Dialog, DialogContent, DialogHeader } from './ui/dialog';
-import { DialogDescription, DialogTitle } from '@radix-ui/react-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
@@ -209,7 +208,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		if (completedSteps.includes(currentStep) && currentStep !== OnboardingDialogSteps.Completed) {
 			return (
 				<Button variant='outline' onClick={handleSkip} className='mt-4 w-[30%] sm:w-[80%] mx-auto' disabled={isStepLoading}>
-					{isStepLoading ? 'Skipping...' : 'Skip'}
+					{isStepLoading ? 'Skipping…' : 'Skip'}
 				</Button>
 			);
 		}
@@ -219,18 +218,17 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	return (
 		<>
 			<Dialog open={open}>
-				<DialogHeader>
-					<DialogTitle className='hidden'>Onboarding</DialogTitle>
-				</DialogHeader>
-
 				<DialogContent className='max-w-max'>
-					<DialogDescription></DialogDescription>
+					<DialogTitle className='sr-only'>Set up your account</DialogTitle>
+					<DialogDescription className='sr-only'>
+						Step {Math.min(currentStep, steps.length - 1) + 1} of {steps.length}: {steps[currentStep]?.title}
+					</DialogDescription>
 					<div className='flex flex-row py-5'>
-						<div className='flex flex-col space-between py-8 bg-white bg-opacity-[0.01] rounded-lg'>
+						<ol aria-label='Onboarding steps' className='hidden flex-col justify-between border-r border-border py-8 sm:flex'>
 							{steps.map((step) => (
 								<Step key={step.number} step={step} completed={completedSteps.includes(step.number)} />
 							))}
-						</div>
+						</ol>
 
 						<div className='flex flex-col m-auto'>
 							{renderStep()}

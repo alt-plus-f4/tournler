@@ -110,12 +110,12 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 							This revokes it from every player who currently holds it ({badge._count?.awards ?? 0}). This can&apos;t be undone.
 						</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='gap-2'>
+					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
 						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-							{isDeleting ? 'Deleting...' : 'Delete'}
+							{isDeleting ? 'Deleting…' : 'Delete'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -133,7 +133,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 
 				<form onSubmit={handleSubmit} className='space-y-5'>
 					<div className='flex items-center gap-4'>
-						<div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-white/10' style={{ backgroundColor: `${color}20` }}>
+						<div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-border' style={{ backgroundColor: `${color}20` }}>
 							<BadgeIcon name={icon} className='h-8 w-8' style={{ color }} />
 						</div>
 						<div className='flex-1 space-y-2'>
@@ -148,15 +148,15 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 					</div>
 
 					<div className='space-y-2'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Icon</p>
-						<div className='grid grid-cols-7 gap-2'>
+						<p id='badge-icon-label' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Icon</p>
+						<div role='group' aria-labelledby='badge-icon-label' className='grid grid-cols-7 gap-2'>
 							{BADGE_ICON_KEYS.map((key) => (
 								<button
 									key={key}
 									type='button'
 									onClick={() => setIcon(key)}
-									className={cn('flex h-10 w-10 items-center justify-center rounded-lg border transition-colors', icon === key ? 'border-white bg-white/10' : 'border-white/10 hover:border-white/30')}
-									aria-label={key}
+									className={cn('flex h-10 w-10 items-center justify-center rounded-md border transition-colors', icon === key ? 'border-white bg-white/10' : 'border-border hover:border-white/30')}
+									aria-label={`${key} icon`}
 									aria-pressed={icon === key}
 								>
 									<BadgeIcon name={key} className='h-5 w-5' />
@@ -173,7 +173,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						<span className='text-sm font-mono text-muted-foreground'>{color}</span>
 					</div>
 
-					<label htmlFor='badge-overlay' className='flex items-center gap-3 rounded-lg border border-white/10 p-3 cursor-pointer'>
+					<label htmlFor='badge-overlay' className='flex items-center gap-3 rounded-md border border-border p-3 cursor-pointer'>
 						<input id='badge-overlay' type='checkbox' checked={isOverlay} onChange={(e) => setIsOverlay(e.target.checked)} className='h-4 w-4 shrink-0 accent-white' />
 						<span className='text-sm'>
 							Show on avatar
@@ -181,7 +181,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						</span>
 					</label>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						{!isCreating && onDelete && (
 							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete
@@ -191,7 +191,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : isCreating ? 'Create Badge' : 'Save changes'}
+							{isSaving ? 'Saving…' : isCreating ? 'Create Badge' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

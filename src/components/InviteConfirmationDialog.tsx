@@ -69,12 +69,12 @@ export function InviteConfirmationDialog({
 					<DialogHeader className='flex items-center pt-3'>
 						<DialogTitle>Invitation confirmation</DialogTitle>
 						<DialogDescription>
-							You are inviting {user.name} to join your team.
+							{user.name} will get an invite to join your team. They can accept or decline it from their notifications.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-center gap-2 pt-2'>
 						<DialogClose asChild>
-							<Button className='w-[40%]' variant='secondary'>
+							<Button className='w-[40%]' variant='outline'>
 								Cancel
 							</Button>
 						</DialogClose>

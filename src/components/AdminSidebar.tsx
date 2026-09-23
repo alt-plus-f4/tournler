@@ -1,175 +1,78 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-	Sidebar,
-	SidebarContent,
-	SidebarFooter,
-	SidebarGroup,
-	SidebarHeader,
-	SidebarMenu,
-	SidebarMenuItem,
-	SidebarMenuButton,
-	SidebarMenuSub,
-	SidebarMenuSubItem,
-	SidebarMenuSubButton,
-	SidebarRail,
-} from '@/components/ui/sidebar';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarRail } from '@/components/ui/sidebar';
 import { FaUsers, FaUsersCog, FaTrophy, FaCog, FaGamepad, FaAward, FaStar } from 'react-icons/fa';
-import {
-	Collapsible,
-	CollapsibleTrigger,
-	CollapsibleContent,
-} from '@/components/ui/collapsible';
-import { Plus, Minus } from 'lucide-react';
 import { MdAdminPanelSettings } from 'react-icons/md';
+import { cn } from '@/lib/utils';
 
-const data = {
-	navMain: [
-		{
-			title: 'Management',
-			items: [
-				{
-					title: 'Users',
-					url: '/admin/users',
-					isActive: false,
-					icon: FaUsers,
-				},
-				{
-					title: 'Teams',
-					url: '/admin/teams',
-					isActive: false,
-					icon: FaUsersCog,
-				},
-				{
-					title: 'Tournaments',
-					url: '/admin/tournaments',
-					isActive: false,
-					icon: FaTrophy,
-				},
-				{
-					title: 'Matches',
-					url: '/admin/matches',
-					isActive: false,
-					icon: FaGamepad,
-				},
-				{
-					title: 'Badges',
-					url: '/admin/badges',
-					isActive: false,
-					icon: FaAward,
-				},
-				{
-					title: 'Featured',
-					url: '/admin/featured',
-					isActive: false,
-					icon: FaStar,
-				},
-			],
-		},
-		{
-			title: 'Settings',
-			items: [
-				{
-					title: 'Settings',
-					url: '/admin/settings',
-					isActive: false,
-					icon: FaCog,
-				},
-			],
-		},
-	],
-};
+const NAV = [
+	{
+		title: 'Management',
+		items: [
+			{ title: 'Users', url: '/admin/users', icon: FaUsers },
+			{ title: 'Teams', url: '/admin/teams', icon: FaUsersCog },
+			{ title: 'Tournaments', url: '/admin/tournaments', icon: FaTrophy },
+			{ title: 'Matches', url: '/admin/matches', icon: FaGamepad },
+			{ title: 'Badges', url: '/admin/badges', icon: FaAward },
+			{ title: 'Featured', url: '/admin/featured', icon: FaStar },
+		],
+	},
+	{
+		title: 'System',
+		items: [{ title: 'Settings', url: '/admin/settings', icon: FaCog }],
+	},
+];
 
-export function AdminSidebar({
-	...props
-}: React.ComponentProps<typeof Sidebar>) {
-	// Radix's Collapsible (asChild-composed with SidebarMenuButton) renders
-	// differently on the client than during SSR — this is the same class of
-	// mismatch already worked around for HoverCard in TeamMemberAvatar.tsx.
-	// Render a plain, always-expanded nav for the very first (server-matching)
-	// client render, then swap in the interactive Collapsible version post-mount.
-	const [isMounted, setIsMounted] = useState(false);
-	useEffect(() => setIsMounted(true), []);
+export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const pathname = usePathname() ?? '';
+	const isActive = (url: string) => pathname === url || pathname.startsWith(`${url}/`);
+	const onDashboard = pathname === '/admin';
 
 	return (
-		<Sidebar
-			{...props}
-			className='h-[85%] left-3 top-20 rounded-[16px] text-white border bg-gray-800'
-		>
-			<SidebarHeader className='flex flex-row items-center transition-colors hover:bg-zinc-900 mt-4'>
-				<Link href={'/admin'} className='w-full flex flex-row hover:bg-hoverColor'>
-					<div className='w-10 h-10 bg-red-500 flex items-center rounded-xl justify-center ml-4'>
-						<MdAdminPanelSettings size={28} className='' />
-					</div>
-					<div className='flex flex-col justify-center ml-4'>
-						<h2 className='text-lg font-bold'>Administrator</h2>
-						<p className='text-xs'>Panel</p>
-					</div>
+		<Sidebar {...props} className='left-3 top-20 h-[85%] rounded-md border border-border bg-card text-foreground'>
+			<SidebarHeader className='mt-2'>
+				<Link
+					href='/admin'
+					aria-current={onDashboard ? 'page' : undefined}
+					className={cn('flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', onDashboard && 'bg-muted')}
+				>
+					<span aria-hidden className='flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background'>
+						<MdAdminPanelSettings size={22} />
+					</span>
+					<span className='flex flex-col'>
+						<span className='text-base font-bold leading-tight'>Admin</span>
+						<span className='text-xs text-muted-foreground'>Dashboard</span>
+					</span>
 				</Link>
 			</SidebarHeader>
 			<SidebarContent>
-				<SidebarGroup>
-					<SidebarMenu>
-						{data.navMain.map((item, index) =>
-							isMounted ? (
-								<Collapsible
-									key={item.title}
-									defaultOpen={index === 0}
-									className='group/collapsible'
-								>
-									<SidebarMenuItem>
-										<CollapsibleTrigger asChild>
-											<SidebarMenuButton>
-												{item.title}
-												<Plus className='ml-auto group-data-[state=open]/collapsible:hidden' />
-												<Minus className='ml-auto group-data-[state=closed]/collapsible:hidden' />
+				<nav aria-label='Admin'>
+					{NAV.map((group) => (
+						<SidebarGroup key={group.title}>
+							<SidebarGroupLabel className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>{group.title}</SidebarGroupLabel>
+							<SidebarMenu>
+								{group.items.map((item) => {
+									const active = isActive(item.url);
+									return (
+										<SidebarMenuItem key={item.url}>
+											<SidebarMenuButton asChild isActive={active} className='h-9 text-neutral-300 hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:font-semibold data-[active=true]:text-foreground'>
+												<Link href={item.url} aria-current={active ? 'page' : undefined}>
+													<item.icon aria-hidden />
+													<span>{item.title}</span>
+												</Link>
 											</SidebarMenuButton>
-										</CollapsibleTrigger>
-										{item.items?.length ? (
-											<CollapsibleContent>
-												<SidebarMenuSub>
-													{item.items.map((subItem) => (
-														<SidebarMenuSubItem key={subItem.title}>
-															<SidebarMenuSubButton asChild isActive={subItem.isActive}>
-																<Link href={subItem.url} className='p-2 flex items-center gap-2 hover:bg-gray-700 inset-x-4'>
-																	<subItem.icon />
-																	{subItem.title}
-																</Link>
-															</SidebarMenuSubButton>
-														</SidebarMenuSubItem>
-													))}
-												</SidebarMenuSub>
-											</CollapsibleContent>
-										) : null}
-									</SidebarMenuItem>
-								</Collapsible>
-							) : (
-								<SidebarMenuItem key={item.title}>
-									<div className='flex items-center gap-2 p-2 font-medium'>{item.title}</div>
-									{item.items?.length ? (
-										<SidebarMenuSub>
-											{item.items.map((subItem) => (
-												<SidebarMenuSubItem key={subItem.title}>
-													<SidebarMenuSubButton asChild isActive={subItem.isActive}>
-														<Link href={subItem.url} className='p-2 flex items-center gap-2 hover:bg-gray-700 inset-x-4'>
-															<subItem.icon />
-															{subItem.title}
-														</Link>
-													</SidebarMenuSubButton>
-												</SidebarMenuSubItem>
-											))}
-										</SidebarMenuSub>
-									) : null}
-								</SidebarMenuItem>
-							)
-						)}
-					</SidebarMenu>
-				</SidebarGroup>
+										</SidebarMenuItem>
+									);
+								})}
+							</SidebarMenu>
+						</SidebarGroup>
+					))}
+				</nav>
 			</SidebarContent>
 			<SidebarFooter>
-				<p className='text-sm text-center p-4'>no© 2025 Tournler</p>
+				<p className='p-4 text-center text-xs text-muted-foreground'>© Tournler</p>
 			</SidebarFooter>
 			<SidebarRail />
 		</Sidebar>

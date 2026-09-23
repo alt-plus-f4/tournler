@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { AccessDenied } from '@/components/AccessDenied';
 import TeamsClient from './TeamsClient';
+
+export const metadata: Metadata = { title: 'Teams' };
 
 export default async function AdminTeamsPage() {
 	const session = await getAuthSession();

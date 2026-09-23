@@ -1,29 +1,30 @@
-import { FC } from "react"
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
-import Link from "next/link";
-import SignUp from "@/components/SignUp";
-import { ChevronLeft } from "lucide-react";
-import { getAuthSession } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import type { Metadata } from 'next';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import Link from 'next/link';
+import SignUp from '@/components/SignUp';
+import { ChevronLeft } from 'lucide-react';
+import { getAuthSession } from '@/lib/auth';
+import { redirect } from 'next/navigation';
 
-const page: FC = async () => {
-    const session = await getAuthSession();
-    if (session) redirect('/');
+export const metadata: Metadata = {
+	title: 'Sign up',
+};
 
-    return (
-        <div className="flex items-center justify-center h-[80vh]">
-            <div className="h-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-20">
-                <Link href="/" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start -mt-20')}>
-                    <ChevronLeft className="mr-2 h-4 w-4"/>
-                    HOME
-                </Link>
+export default async function Page() {
+	const session = await getAuthSession();
+	if (session) redirect('/');
 
-                <SignUp/>
-            </div>
+	return (
+		<div className='flex min-h-[80vh] items-center justify-center px-4 py-12'>
+			<div className='flex w-full max-w-md flex-col gap-10'>
+				<Link href='/' className={cn(buttonVariants({ variant: 'ghost' }), 'self-start')}>
+					<ChevronLeft aria-hidden className='mr-2 h-4 w-4' />
+					Home
+				</Link>
 
-        </div>
-    );
+				<SignUp />
+			</div>
+		</div>
+	);
 }
-
-export default page;

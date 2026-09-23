@@ -1,7 +1,10 @@
+import type { Metadata } from 'next';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { AccessDenied } from '@/components/AccessDenied';
 import BadgesClient from './BadgesClient';
+
+export const metadata: Metadata = { title: 'Badges' };
 
 export default async function AdminBadgesPage() {
 	const session = await getAuthSession();

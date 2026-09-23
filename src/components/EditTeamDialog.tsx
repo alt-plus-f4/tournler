@@ -135,12 +135,12 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 						<DialogTitle>Delete this team?</DialogTitle>
 						<DialogDescription>{editingTeam?.name} will be permanently deleted, along with its match history. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='gap-2'>
+					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
 						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-							{isDeleting ? 'Deleting...' : 'Delete'}
+							{isDeleting ? 'Deleting…' : 'Delete team'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -154,12 +154,12 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 		<Dialog open={isOpen} onOpenChange={onClose}>
 			<DialogContent className='sm:max-w-[460px]'>
 				<DialogHeader>
-					<DialogTitle>Edit Team</DialogTitle>
+					<DialogTitle>Edit team</DialogTitle>
 					<DialogDescription>Update the team&apos;s details below.</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleEdit} className='space-y-5'>
 					<div className='flex items-center gap-4'>
-						<div className='h-16 w-16 shrink-0 rounded-lg overflow-hidden border border-white/10 flex items-center justify-center' style={{ backgroundColor: (editingTeam?.background as string) || '#000000' }}>
+						<div className='h-16 w-16 shrink-0 rounded-md overflow-hidden border border-border flex items-center justify-center' style={{ backgroundColor: (editingTeam?.background as string) || '#000000' }}>
 							{previewSrc ? (
 								// eslint-disable-next-line @next/next/no-img-element
 								<img src={previewSrc} alt={editingTeam?.name ?? ''} className='h-full w-full object-contain' />
@@ -174,11 +174,11 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs uppercase tracking-wide text-muted-foreground'>Branding</p>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Branding</p>
 						<div className='space-y-2'>
 							<Label htmlFor='edit-logo-file'>Team Logo</Label>
 							<Input id='edit-logo-file' type='file' accept='image/*' onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
-							{logoFile && <p className='text-xs text-neutral-500'>Selected: {logoFile.name}</p>}
+							{logoFile && <p className='text-xs text-muted-foreground'>Selected: {logoFile.name}</p>}
 						</div>
 						<div className='flex items-center gap-3'>
 							<Label htmlFor='edit-background' className='shrink-0'>
@@ -189,17 +189,17 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 						</div>
 					</div>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						{onDelete && (
 							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
-								Delete
+								Delete team…
 							</Button>
 						)}
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : 'Save changes'}
+							{isSaving ? 'Saving…' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

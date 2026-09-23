@@ -1,15 +1,12 @@
-import { Card, CardHeader } from "./ui/card";
-import { Skeleton } from "./ui/skeleton";
+import { Card, CardHeader } from './ui/card';
+import { Skeleton } from './ui/skeleton';
 
 export function FallbackCards() {
 	return Array(4)
 		.fill(0)
 		.map((_, index) => (
-			<Card
-				key={index}
-				className='w-full transition hover:-translate-y-1 hover:shadow-lg '
-			>
-				<CardHeader className='relative p-0 w-full aspect-[21/9] space-y-0 overflow-hidden rounded-t-xl'>
+			<Card key={index} data-fallback-card aria-hidden className='w-full rounded-md'>
+				<CardHeader className='relative p-0 w-full aspect-[21/9] space-y-0 overflow-hidden rounded-t-md'>
 					<Skeleton className='w-full h-full' />
 				</CardHeader>
 				<div className='p-3'>

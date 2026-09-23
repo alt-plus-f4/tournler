@@ -3,7 +3,7 @@ import SignIn from '@/components/SignIn';
 
 const Page = () => (
 	<AuthModal title='Sign in to Tournler'>
-		<SignIn />
+		<SignIn headingAs='h2' />
 	</AuthModal>
 );
 

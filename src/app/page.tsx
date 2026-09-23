@@ -64,8 +64,9 @@ export default async function Page() {
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
 
 	return (
-		<div className='container mx-auto px-4 max-w-[1400px]'>
-			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 p-8'>
+		<div className='container mx-auto max-w-[1400px] px-4 lg:px-8'>
+			<h1 className='sr-only'>Tournler: hosted CS2 tournaments</h1>
+			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 py-8'>
 				<div className='space-y-8'>
 					<OnAirPanel />
 
@@ -81,7 +82,7 @@ export default async function Page() {
 								<div className={layoutClass}>
 									{featuredTournaments.map((tournament) => (
 										<div key={tournament.id} className={itemClass}>
-											<FeaturedTournamentCard id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool ?? 0} location={tournament.location} />
+											<FeaturedTournamentCard id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} />
 										</div>
 									))}
 								</div>
@@ -118,9 +119,9 @@ export default async function Page() {
 							All
 						</Link>
 					</div>
-					<div className='space-y-4 overflow-hidden'>
+					<div className='space-y-4'>
 						{upcoming.length > 0 ? (
-							upcoming.map((tournament) => <UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool ?? 0} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} isHomePage />)
+							upcoming.map((tournament) => <UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} isHomePage />)
 						) : (
 							<p className='text-sm text-muted-foreground'>Nothing scheduled yet.</p>
 						)}

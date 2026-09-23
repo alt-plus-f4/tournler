@@ -61,13 +61,13 @@ export function TeamColumn({
 					<h2 className={cn('truncate text-sm font-black uppercase tracking-wide', result === 'loss' ? 'text-neutral-400' : 'text-white')}>{label}</h2>
 					<div className='text-xs text-muted-foreground'>{meta ?? (side === 'TEAM_A' ? 'Side A' : 'Side B')}</div>
 				</div>
-				{result === 'win' && <span className='rounded-sm bg-white px-1.5 py-0.5 text-[11px] font-black uppercase tracking-[0.12em] text-black'>Win</span>}
-				{result === 'loss' && <span className='rounded-sm border border-border px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>Loss</span>}
+				{result === 'win' && <span className='rounded-sm bg-white px-1.5 py-0.5 text-xs font-black uppercase tracking-[0.12em] text-black'>Win</span>}
+				{result === 'loss' && <span className='rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground'>Loss</span>}
 			</header>
 			{headerExtra && <div className='border-b border-border px-4 py-2'>{headerExtra}</div>}
 
 			{hasStats && (
-				<div className='flex items-center gap-3 px-4 pt-2 text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground'>
+				<div className='flex items-center gap-3 px-4 pt-2 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>
 					<span className='flex-1'>Player</span>
 					<span className='w-14 text-right' title='Kills – Deaths'>
 						K–D
@@ -108,11 +108,16 @@ export function TeamColumn({
 									{stat ? (
 										<>
 											{stat.kills}
-											<span className='text-neutral-600'>–</span>
+											<span className='text-neutral-600' aria-hidden>–</span>
+											<span className='sr-only'> kills, </span>
 											{stat.deaths}
+											<span className='sr-only'> deaths</span>
 										</>
 									) : (
-										<span className='text-neutral-600'>—</span>
+										<>
+											<span className='text-muted-foreground' aria-hidden>—</span>
+											<span className='sr-only'>No stats</span>
+										</>
 									)}
 								</span>
 							)}
@@ -140,7 +145,7 @@ export function LobbyNameEditor({ matchId, side, name, onRenamed }: { matchId: s
 					setValue(name);
 					setIsEditing(true);
 				}}
-				className='text-xs text-muted-foreground underline-offset-4 hover:text-white hover:underline'
+				className='-my-2 min-h-10 text-xs text-muted-foreground underline-offset-4 hover:text-white hover:underline'
 			>
 				Rename side
 			</button>
@@ -177,11 +182,11 @@ export function LobbyNameEditor({ matchId, side, name, onRenamed }: { matchId: s
 				save();
 			}}
 		>
-			<Input value={value} onChange={(e) => setValue(e.target.value)} maxLength={30} aria-label='Side name' className='h-8 min-w-0 flex-1 text-sm' autoFocus />
-			<Button type='submit' size='sm' disabled={isSaving || !value.trim()} className='h-8'>
+			<Input value={value} onChange={(e) => setValue(e.target.value)} maxLength={30} aria-label='Side name' className='h-10 min-w-0 flex-1 text-sm' autoFocus />
+			<Button type='submit' size='sm' disabled={isSaving || !value.trim()} className='h-10'>
 				Save
 			</Button>
-			<Button type='button' size='sm' variant='ghost' onClick={() => setIsEditing(false)} className='h-8'>
+			<Button type='button' size='sm' variant='ghost' onClick={() => setIsEditing(false)} className='h-10'>
 				Cancel
 			</Button>
 		</form>

@@ -1,152 +1,118 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Cs2Tournament } from '@/types/types';
-import { Trophy, Zap, BarChart3, Bell, Pin } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { MatchStatusLabel } from './MatchStatusLabel';
+import { TeamLogo } from './TeamLogo';
+import { SLOT_LABEL, type BracketSlot, type MatchStatus, type TournamentDetail } from './types';
+
+interface MatchTeam {
+	id: number;
+	name: string;
+	logo?: string | null;
+}
 
 interface Match {
 	id: number;
-	teamA: { id: number; name: string; logo?: string | null } | null;
-	teamB: { id: number; name: string; logo?: string | null } | null;
+	teamA: MatchTeam | null;
+	teamB: MatchTeam | null;
 	scoreTeamA: number | null;
 	scoreTeamB: number | null;
 	winner: { id: number; name: string } | null;
 	matchDate: string;
-	status: 'SCHEDULED' | 'LIVE' | 'COMPLETED';
-	bestOf?: number;
+	status: MatchStatus;
+	bestOf: number | null;
+	round: number;
+	bracketSlot: BracketSlot;
 }
 
-interface MatchesProps {
-	tournament: Cs2Tournament;
+const fetcher = async (url: string) => {
+	const res = await fetch(url);
+	if (!res.ok) throw new Error('Failed to fetch matches');
+	return res.json();
+};
+
+function TeamSide({ team, score, isWinner, isLoser, side }: { team: MatchTeam | null; score: number | null; isWinner: boolean; isLoser: boolean; side: 'a' | 'b' }) {
+	const tone = isWinner ? 'text-white font-black' : isLoser ? 'text-muted-foreground font-bold' : 'text-white font-bold';
+	// Mobile: logo · name · score on one row per team. From sm: the two sides face off around "vs",
+	// scores nearest the centre.
+	const a = side === 'a';
+	return (
+		<div className={cn('flex min-w-0 flex-1 items-center gap-3', a ? 'sm:justify-end' : 'sm:justify-start')}>
+			{team?.logo && <TeamLogo src={team.logo} name={team.name} className='sm:order-2' />}
+			<span className={cn('min-w-0 flex-1 truncate text-sm uppercase tracking-wide sm:flex-none', a ? 'sm:order-1 sm:text-right' : 'sm:order-3', team ? tone : 'text-muted-foreground font-bold')}>{team?.name ?? 'TBD'}</span>
+			<span className={cn('w-8 shrink-0 text-center font-mono text-2xl tabular-nums', a ? 'sm:order-3' : 'sm:order-1', tone)}>{score ?? '–'}</span>
+		</div>
+	);
 }
 
-const Matches: React.FC<MatchesProps> = ({ tournament }) => {
-	const [matches, setMatches] = useState<Match[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [followedMatches, setFollowedMatches] = useState<number[]>([]);
-	const [pinnedMatches, setPinnedMatches] = useState<number[]>([]);
-
-	useEffect(() => {
-		const fetchMatches = async () => {
-			try {
-				const response = await fetch(`/api/tournaments/${tournament.id}/matches`);
-				if (!response.ok) throw new Error('Failed to fetch matches');
-
-				const data = await response.json();
-				setMatches(data.matches || []);
-			} catch (error) {
-				console.error('Error fetching matches:', error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		fetchMatches();
-	}, [tournament.id]);
+export default function Matches({ tournament }: { tournament: TournamentDetail }) {
+	const { data, error, isLoading } = useSWR<{ matches: Match[] }>(`/api/tournaments/${tournament.id}/matches`, fetcher, { refreshInterval: 5000 });
+	const matches = data?.matches ?? [];
 
 	if (isLoading) {
 		return (
-			<div className='space-y-4 p-4'>
-				{[...Array(3)].map((_, i) => (
-					<Skeleton key={i} className='h-24 w-full bg-neutral-900' />
+			<div role='status' aria-label='Loading matches' className='space-y-2 p-4'>
+				{[0, 1, 2].map((i) => (
+					<Skeleton key={i} className='h-20 w-full bg-neutral-900' />
 				))}
 			</div>
 		);
 	}
 
+	if (error) {
+		return <p className='p-8 text-center text-muted-foreground'>Matches failed to load. They refresh automatically; try reloading if this persists.</p>;
+	}
+
 	if (matches.length === 0) {
-		return (
-			<div className='p-8 text-center'>
-				<p className='text-neutral-500'>No matches scheduled yet</p>
-			</div>
-		);
+		return <p className='p-8 text-center text-muted-foreground'>{tournament.status === 'UPCOMING' ? 'Matches are created when the tournament starts.' : 'No matches yet.'}</p>;
 	}
 
 	return (
-		<div className='p-3 space-y-2'>
-			{matches.map((match) => (
-				<Link key={match.id} href={`/matches/${match.id}`}>
-					<div className='bg-neutral-950 border border-neutral-800 hover:border-neutral-600 transition-all cursor-pointer rounded-lg overflow-hidden group'>
-						<div className='p-6'>
-							<div className='flex items-center justify-between gap-4'>
-								{/* Left: Time and BO Format */}
-								<div className='flex flex-col items-center justify-center min-w-[60px]'>
-									<p className='text-lg font-black text-white'>{new Date(match.matchDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-									<p className='text-xs text-neutral-500 font-bold mt-1'>BO{match.bestOf || 3}</p>
-								</div>
+		<ol className='space-y-2 p-4'>
+			{matches.map((match) => {
+				const bestOf = match.bestOf ?? tournament.bestOf;
+				const hasBothTeams = !!(match.teamA && match.teamB);
+				const winnerId = match.status === 'COMPLETED' ? match.winner?.id : undefined;
+				const aWon = winnerId !== undefined && winnerId === match.teamA?.id;
+				const bWon = winnerId !== undefined && winnerId === match.teamB?.id;
+				const date = new Date(match.matchDate);
+				const stage = tournament.format === 'ROUND_ROBIN' ? `Round ${match.round}` : `${SLOT_LABEL[match.bracketSlot]} · Round ${match.round}`;
 
-								{/* Team A */}
-								<div className='flex-1 flex items-center gap-3 justify-end'>
-									<div className='text-right'>
-										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamA?.name ?? 'TBD'}</p>
-										{match.scoreTeamA !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamA}</p>}
-									</div>
-									{match.teamA?.logo && <img src={match.teamA.logo} alt={match.teamA.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
-								</div>
-
-								{/* Score/Status */}
-								<div className='text-center px-6'>
-									{match.status === 'COMPLETED' && match.winner ? (
-										<Badge className='bg-white text-black gap-2 font-bold mb-3 px-3 py-1'>
-											<Trophy className='h-4 w-4' />
-											{match.winner.name}
-										</Badge>
-									) : match.status === 'LIVE' ? (
-										<Badge className='bg-black border-2 border-white text-white gap-2 font-bold mb-3 px-3 py-1 animate-pulse'>
-											<Zap className='h-4 w-4' />
-											LIVE
-										</Badge>
-									) : (
-										<Badge className='bg-neutral-900 border border-neutral-700 text-neutral-400 font-bold mb-3 px-3 py-1'>{match.teamA && match.teamB ? 'UPCOMING' : 'TBD'}</Badge>
-									)}
-
-									<p className='text-xs text-neutral-500 font-mono'>{new Date(match.matchDate).toLocaleDateString()}</p>
-								</div>
-
-								{/* Team B */}
-								<div className='flex-1 flex items-center gap-3'>
-									{match.teamB?.logo && <img src={match.teamB.logo} alt={match.teamB.name} loading='lazy' className='h-12 w-12 object-contain rounded-md border border-neutral-700 group-hover:border-neutral-500 transition-colors' />}
-									<div className='text-left'>
-										<p className='font-bold text-white uppercase tracking-wide text-sm mb-2'>{match.teamB?.name ?? 'TBD'}</p>
-										{match.scoreTeamB !== null && <p className='text-3xl font-black text-white'>{match.scoreTeamB}</p>}
-									</div>
-								</div>
-
-								{/* Right: Action Icons */}
-								<div className='flex items-center gap-3' onClick={(e) => e.preventDefault()}>
-									<button className='p-2 rounded hover:bg-neutral-800 transition-colors text-neutral-400 hover:text-white'>
-										<BarChart3 className='w-5 h-5' />
-									</button>
-									<button
-										className='p-2 rounded hover:bg-neutral-800 transition-colors'
-										onClick={(e) => {
-											e.preventDefault();
-											setFollowedMatches((prev) => (prev.includes(match.id) ? prev.filter((id) => id !== match.id) : [...prev, match.id]));
-										}}
-									>
-										<Bell className={`w-5 h-5 ${followedMatches.includes(match.id) ? 'fill-white text-white' : 'text-neutral-400'}`} />
-									</button>
-									<button
-										className='p-2 rounded hover:bg-neutral-800 transition-colors'
-										onClick={(e) => {
-											e.preventDefault();
-											setPinnedMatches((prev) => (prev.includes(match.id) ? prev.filter((id) => id !== match.id) : [...prev, match.id]));
-										}}
-									>
-										<Pin className={`w-5 h-5 ${pinnedMatches.includes(match.id) ? 'fill-white text-white' : 'text-neutral-400'}`} />
-									</button>
-								</div>
+				return (
+					<li key={match.id}>
+						<Link
+							href={`/matches/${match.id}`}
+							className={cn(
+								'block rounded-md border bg-neutral-950 p-4 transition-colors hover:border-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+								match.status === 'LIVE' ? 'border-signal-live/60' : 'border-border',
+							)}
+						>
+							<div className='mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1'>
+								<MatchStatusLabel status={match.status} hasBothTeams={hasBothTeams} />
+								<span className='text-xs text-muted-foreground'>
+									{stage}
+									{bestOf ? <span> · BO{bestOf}</span> : null}
+									{' · '}
+									<time dateTime={match.matchDate} className='font-mono tabular-nums'>
+										{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} {date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+									</time>
+								</span>
 							</div>
-						</div>
-					</div>
-				</Link>
-			))}
-		</div>
+							<div className='flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-6'>
+								<TeamSide team={match.teamA} score={match.scoreTeamA} isWinner={aWon} isLoser={bWon} side='a' />
+								<span aria-hidden className='hidden text-xs text-muted-foreground sm:block'>
+									vs
+								</span>
+								<TeamSide team={match.teamB} score={match.scoreTeamB} isWinner={bWon} isLoser={aWon} side='b' />
+							</div>
+							{match.status === 'COMPLETED' && match.winner && <span className='sr-only'>Winner: {match.winner.name}</span>}
+						</Link>
+					</li>
+				);
+			})}
+		</ol>
 	);
-};
-
-export default Matches;
+}

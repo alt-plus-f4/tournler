@@ -17,7 +17,11 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-	title: 'Tournler - Simplifying Competitive Events',
+	title: {
+		default: 'Tournler - Simplifying Competitive Events',
+		// Pages export `metadata.title` (or generateMetadata) and get "<title> · Tournler".
+		template: '%s · Tournler',
+	},
 	description: 'Effortlessly organize and manage tournaments with Tournler – your all-in-one platform for seamless competition management.',
 };
 
@@ -37,7 +41,7 @@ export default async function RootLayout({
 					Skip to content
 				</a>
 				<InteractiveBackground />
-				<ConvexClientProvider>
+				<ConvexClientProvider signedIn={!!session?.user}>
 					<Navbar session={session} />
 
 					{authModal}

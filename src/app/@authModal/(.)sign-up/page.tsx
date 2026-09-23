@@ -3,7 +3,7 @@ import SignUp from '@/components/SignUp';
 
 const Page = () => (
 	<AuthModal title='Create a Tournler account'>
-		<SignUp />
+		<SignUp headingAs='h2' />
 	</AuthModal>
 );
 

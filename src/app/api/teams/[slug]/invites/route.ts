@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { notifyTeamInvite } from '@/lib/convex-server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
@@ -62,6 +63,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			where: { id: numericId },
 			select: {
 				id: true,
+				name: true,
 				capitan: { select: { id: true } },
 				members: { select: { id: true } },
 				teamInvitations: { select: { userId: true } },
@@ -104,6 +106,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 				userId: user.id,
 			},
 		});
+
+		// Best effort: the invitation exists either way, and also shows on the invitee's profile.
+		await notifyTeamInvite(user.id, team.id, team.name).catch((error) => console.error('Failed to send invite notification:', error));
 
 		return NextResponse.json({ teamInvitation }, { status: 200 });
 	} catch (error) {

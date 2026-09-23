@@ -3,8 +3,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Settings, Users, UserPlus } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Users, UserPlus } from 'lucide-react';
 import SignOut from './SignOut';
 import useSWR from 'swr';
 import { useEffect, useState } from 'react';
@@ -35,8 +35,8 @@ export function UserNav() {
 
 	if (isLoadingUser) {
 		return (
-			<div className='relative h-8 w-8 overflow-hidden rounded-full border border-white/10 bg-white/5'>
-				<Skeleton className='h-full w-full rounded-full bg-white/15' />
+			<div className='relative h-8 w-8 overflow-hidden rounded-full border border-border bg-muted' aria-hidden>
+				<Skeleton className='h-full w-full rounded-full bg-neutral-800' />
 			</div>
 		);
 	}
@@ -46,21 +46,21 @@ export function UserNav() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant='ghost' className='relative h-8 w-8 rounded-full p-0 overflow-hidden'>
+				<Button variant='ghost' className='relative h-8 w-8 rounded-full p-0 overflow-hidden' aria-label={`Account menu${user.name ? ` for ${user.name}` : ''}`}>
 					<div className='relative h-8 w-8'>
 						<Avatar className='h-8 w-8'>
 							{user.image && !imageErrored ? (
 								<AvatarImage
 									src={user.image}
-									alt={user.name || 'Profile image'}
+									alt=''
 									onLoadingStatusChange={(status) => setImageLoaded(status === 'loaded')}
 									onError={() => setImageErrored(true)}
 									className={imageLoaded ? 'opacity-100 transition-opacity' : 'opacity-0'}
 								/>
 							) : null}
-							<AvatarFallback className='bg-white/10 text-xs font-semibold text-white'>{fallbackLabel}</AvatarFallback>
+							<AvatarFallback aria-hidden className='bg-muted text-xs font-semibold text-foreground'>{fallbackLabel}</AvatarFallback>
 						</Avatar>
-						{user.image && !imageLoaded && !imageErrored && <Skeleton className='absolute inset-0 rounded-full bg-white/20 ring-1 ring-white/10' />}
+						{user.image && !imageLoaded && !imageErrored && <Skeleton className='absolute inset-0 rounded-full bg-neutral-800 ring-1 ring-border' />}
 					</div>
 				</Button>
 			</DropdownMenuTrigger>
@@ -75,19 +75,14 @@ export function UserNav() {
 				<DropdownMenuGroup>
 					<DropdownMenuItem asChild>
 						<Link href={profileHref}>
-							<Users />
+							<Users aria-hidden />
 							<span>Profile</span>
 						</Link>
 					</DropdownMenuItem>
-					<DropdownMenuItem>
-						<Settings />
-						<span>Settings</span>
-						<DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-					</DropdownMenuItem>
 					<DropdownMenuItem asChild>
 						<Link href='/teams'>
-							<UserPlus />
-							<span>New Team</span>
+							<UserPlus aria-hidden />
+							<span>New team</span>
 						</Link>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>

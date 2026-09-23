@@ -43,16 +43,17 @@ export function RemoveMemberButton({
 
 	return (
 		<>
-			<div className='absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity opacity-0 group-hover:opacity-100'>
+			<div className='absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100'>
 				<div className='flex space-x-2'>
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
 								<Button
 									variant='secondary'
+									aria-label={`Remove ${memberName || 'member'} from the team`}
 									onClick={() => lremoveMember()}
 								>
-									<LuUserX />
+									<LuUserX aria-hidden />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>

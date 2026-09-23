@@ -113,28 +113,28 @@ export default function FeaturedClient() {
 
 	if (!settings) {
 		return (
-			<div className='mx-12 mt-12 w-[80%] space-y-4'>
-				<Skeleton className='h-24 w-full bg-neutral-900' />
-				<Skeleton className='h-48 w-full bg-neutral-900' />
+			<div className='mx-4 mt-12 max-w-6xl md:mx-12 space-y-4'>
+				<Skeleton className='h-24 w-full bg-muted' />
+				<Skeleton className='h-48 w-full bg-muted' />
 			</div>
 		);
 	}
 
 	return (
-		<div className='mx-12 mt-12 mb-12 w-[80%] space-y-10'>
+		<div className='mx-4 mt-12 mb-12 max-w-6xl md:mx-12 space-y-10'>
 			<div>
-				<h1 className='text-2xl font-bold mb-1'>Featured Content</h1>
+				<h1 className='text-2xl font-bold mb-1'>Featured</h1>
 				<p className='text-muted-foreground text-sm'>Control what shows in the homepage&apos;s Featured section, and how it&apos;s displayed.</p>
 			</div>
 
 			{/* Homepage layout */}
-			<section className='space-y-4 rounded-lg border border-white/10 p-5'>
-				<h2 className='text-lg font-semibold'>Homepage Layout</h2>
+			<section className='space-y-4 rounded-md border border-border p-5'>
+				<h2 className='text-lg font-semibold'>Homepage layout</h2>
 				<div className='grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg'>
 					<div className='space-y-2'>
-						<Label>Content source</Label>
+						<Label htmlFor='featured-source'>Content source</Label>
 						<Select value={settings.featuredSource} onValueChange={(value) => saveSettings({ ...settings, featuredSource: value as HomepageSettings['featuredSource'] })} disabled={isSavingSettings}>
-							<SelectTrigger>
+							<SelectTrigger id='featured-source'>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -145,9 +145,9 @@ export default function FeaturedClient() {
 						</Select>
 					</div>
 					<div className='space-y-2'>
-						<Label>Display style</Label>
+						<Label htmlFor='featured-layout'>Display style</Label>
 						<Select value={settings.featuredLayout} onValueChange={(value) => saveSettings({ ...settings, featuredLayout: value as HomepageSettings['featuredLayout'] })} disabled={isSavingSettings}>
-							<SelectTrigger>
+							<SelectTrigger id='featured-layout'>
 								<SelectValue />
 							</SelectTrigger>
 							<SelectContent>
@@ -161,22 +161,23 @@ export default function FeaturedClient() {
 
 			{/* Featured tournaments */}
 			<section className='space-y-4'>
-				<h2 className='text-lg font-semibold'>Featured Tournaments</h2>
+				<h2 className='text-lg font-semibold'>Featured tournaments</h2>
 				<p className='text-sm text-muted-foreground -mt-2'>Only upcoming/ongoing tournaments can be featured. Leave unchecked to fall back to automatic selection by prize pool.</p>
 				{isLoadingTournaments ? (
 					<div className='space-y-2'>
 						{Array.from({ length: 4 }).map((_, i) => (
-							<Skeleton key={i} className='h-14 w-full bg-neutral-900' />
+							<Skeleton key={i} className='h-14 w-full bg-muted' />
 						))}
 					</div>
 				) : tournaments.length === 0 ? (
-					<div className='text-center py-12 text-muted-foreground border border-white/10 rounded-lg'>No upcoming or ongoing tournaments.</div>
+					<div className='text-center py-12 text-muted-foreground border border-border rounded-md'>No upcoming or ongoing tournaments.</div>
 				) : (
-					<div className='divide-y divide-white/10 border border-white/10 rounded-lg'>
+					<div className='divide-y divide-border border border-border rounded-md'>
 						{tournaments.map((tournament) => (
 							<div key={tournament.id} className='flex items-center gap-4 p-3'>
 								<label className='flex items-center gap-2 cursor-pointer shrink-0'>
 									<Checkbox
+										aria-label={`Feature ${tournament.name}`}
 										checked={tournament.isFeatured}
 										onCheckedChange={(checked) => updateTournament(tournament, { isFeatured: checked === true })}
 										disabled={savingTournamentId === tournament.id}
@@ -185,12 +186,15 @@ export default function FeaturedClient() {
 								</label>
 								<span className='flex-1 min-w-0 truncate font-medium'>{tournament.name}</span>
 								<div className='flex items-center gap-2 shrink-0'>
-									<Label className='text-xs text-muted-foreground'>Order</Label>
+									<Label htmlFor={`featured-order-${tournament.id}`} className='text-xs text-muted-foreground'>
+										Order<span className='sr-only'> for {tournament.name}</span>
+									</Label>
 									<Input
+										id={`featured-order-${tournament.id}`}
 										type='number'
 										defaultValue={tournament.featuredOrder ?? ''}
 										onBlur={(e) => updateTournament(tournament, { featuredOrder: e.target.value === '' ? null : Number(e.target.value) })}
-										className='h-8 w-16'
+										className='h-8 w-16 font-mono tabular-nums'
 										placeholder='—'
 									/>
 								</div>
@@ -203,29 +207,36 @@ export default function FeaturedClient() {
 			{/* News posts */}
 			<section className='space-y-4'>
 				<div className='flex items-center justify-between'>
-					<h2 className='text-lg font-semibold'>News Posts</h2>
-					<Button onClick={openCreatePost}>Create Post</Button>
+					<h2 className='text-lg font-semibold'>News posts</h2>
+					<Button variant='outline' onClick={openCreatePost}>Create post</Button>
 				</div>
 				{isLoadingPosts ? (
-					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+					<div className='space-y-2'>
 						{Array.from({ length: 3 }).map((_, i) => (
-							<Skeleton key={i} className='h-24 w-full bg-neutral-900' />
+							<Skeleton key={i} className='h-14 w-full bg-muted' />
 						))}
 					</div>
 				) : posts.length === 0 ? (
-					<div className='text-center py-12 text-muted-foreground border border-white/10 rounded-lg'>No news posts yet. Create your first one.</div>
+					<div className='text-center py-12 text-muted-foreground border border-border rounded-md'>No news posts yet. Create your first one.</div>
 				) : (
-					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
+					<ul className='divide-y divide-border rounded-md border border-border'>
 						{posts.map((post) => (
-							<button key={post.id} onClick={() => openEditPost(post)} className='flex flex-col gap-2 rounded-lg border border-white/10 p-4 text-left hover:border-white/30 transition-colors'>
-								<div className='flex items-center gap-2'>
-									<p className='font-semibold truncate flex-1'>{post.title}</p>
-									{post.isFeatured && <span className='shrink-0 rounded-full border border-white/20 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>Featured</span>}
-								</div>
-								<div className='prose prose-sm prose-invert max-w-none line-clamp-2 text-sm text-muted-foreground [&_*]:text-inherit' dangerouslySetInnerHTML={{ __html: post.blurb }} />
-							</button>
+							<li key={post.id}>
+								<button
+									type='button'
+									onClick={() => openEditPost(post)}
+									aria-label={`Edit post ${post.title}`}
+									className='flex w-full flex-col gap-1 p-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+								>
+									<span className='flex items-center gap-2'>
+										<span className='flex-1 truncate font-medium'>{post.title}</span>
+										{post.isFeatured && <span className='shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-widest text-muted-foreground'>Featured</span>}
+									</span>
+									<span className='prose prose-sm prose-invert line-clamp-1 max-w-none text-sm text-muted-foreground [&_*]:text-inherit' dangerouslySetInnerHTML={{ __html: post.blurb }} />
+								</button>
+							</li>
 						))}
-					</div>
+					</ul>
 				)}
 			</section>
 

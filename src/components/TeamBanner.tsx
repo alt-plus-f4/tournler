@@ -1,4 +1,3 @@
-import { Icons } from './Icons';
 import { TeamMemberAvatar } from './TeamMemberAvatar';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 
@@ -7,23 +6,31 @@ interface TeamBannerProps {
 	enableTeamCapitanControls?: boolean;
 	capitanId: string;
 	userId?: string;
+	/** false renders plain avatars with no profile links or hover cards (for use inside a link). */
+	interactive?: boolean;
 }
 
-export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId }: TeamBannerProps) {
+/**
+ * Team banner on the black stage. The team's chosen colour is only a faint tint under a black
+ * scrim, so a light team colour (e.g. white) never turns the banner into the brightest thing on
+ * the page.
+ */
+export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId, interactive = true }: TeamBannerProps) {
 	const members = team.members || [];
-	const teamName = team.name || 'TEAM NAME';
+	const teamName = team.name || 'Team';
 
 	return (
-		<div style={{ backgroundColor: team.background || '#000000' }} className='absolute inset-0'>
-			<div className='absolute inset-0 flex flex-col items-center justify-center'>
+		<div className='absolute inset-0 bg-black'>
+			{team.background && <div aria-hidden className='absolute inset-0 opacity-20' style={{ backgroundColor: team.background }} />}
+			<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20' />
+			<div className='absolute inset-0 flex flex-col items-center justify-center px-4'>
 				{team.logo ? (
 					// eslint-disable-next-line @next/next/no-img-element
-					<img src={team.logo} alt={team.name} className='max-h-[80px] max-w-[120px] object-contain' />
+					<img src={team.logo} alt={`${teamName} logo`} className='max-h-[80px] max-w-[120px] object-contain' />
 				) : (
-					<>
-						<span className='w-fit p-2 text-3xl font-bold bg-white text-black'>{teamName.toUpperCase()}</span>
-						<Icons.logo className='px-4 py-2 scale-50 -mt-3 bg-white text-black' />
-					</>
+					<span aria-hidden className='max-w-full truncate text-4xl font-black uppercase tracking-wide text-white/15'>
+						{teamName}
+					</span>
 				)}
 			</div>
 			<div
@@ -34,7 +41,15 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId 
 				}}
 			>
 				{members.map((member) => (
-					<TeamMemberAvatar key={member.id} team={team} member={member} userId={userId} capitanId={capitanId} enableTeamCapitanControls={enableTeamCapitanControls} />
+					<TeamMemberAvatar
+						key={member.id}
+						team={team}
+						member={member}
+						userId={userId}
+						capitanId={capitanId}
+						enableTeamCapitanControls={enableTeamCapitanControls}
+						interactive={interactive}
+					/>
 				))}
 			</div>
 		</div>

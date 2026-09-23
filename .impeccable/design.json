@@ -127,7 +127,7 @@
       "label-grey": {
         "role": "neutral",
         "displayName": "Label Grey",
-        "canonical": "#737373",
+        "canonical": "#a3a3a3",
         "tonalRamp": [
           "#171717",
           "#262626",
@@ -203,7 +203,7 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Page titles and team names on scoreboard/veto; 900 uppercase. Currently faux-bold (Roboto 400 only loaded)."
+        "purpose": "Page titles and team names on scoreboard/veto; 900 uppercase (Roboto 900 is loaded)."
       },
       "headline": {
         "displayName": "Headline",
@@ -319,7 +319,7 @@
       "refersTo": "section-label",
       "description": "Signature: tracked uppercase panel header.",
       "html": "<p class=\"ds-section-label\">Map Veto · Best of 3</p>",
-      "css": ".ds-section-label { margin:0; color:#737373; font:700 12px/1 Roboto, system-ui, sans-serif; text-transform:uppercase; letter-spacing:0.1em; }"
+      "css": ".ds-section-label { margin:0; color:#a3a3a3; font:700 12px/1 Roboto, system-ui, sans-serif; text-transform:uppercase; letter-spacing:0.1em; }"
     },
     {
       "name": "Console Panel",
@@ -383,7 +383,7 @@
     "dos": [
       "Do keep every surface monochrome (Stage Black, Canvas, Panel, Hairline, Ink) and use color only to report state (the On-Air Rule).",
       "Do set scores, timers, stats and console output in monospace with tabular numerals (the Readout Rule).",
-      "Do head operate panels with a Section Label (12px, 700, uppercase, 0.1em tracking, Label Grey).",
+      "Do head operate panels with a Section Label (12px, 700, uppercase, 0.1em tracking, Label Grey (neutral-400)).",
       "Do convey depth with tonal steps and hairline borders, and put emphasis on the live or active element with light or brightness (the Spotlight Rule).",
       "Do use the Status Readout pattern (dot, state word, mono timer) for any server-reported state.",
       "Do use the shared `ui/` primitives (Button, Card, Input, Badge) and the semantic tokens (`bg-background`, `border-border`, `text-muted-foreground`) rather than raw `neutral-*` or `gray-*` utilities."

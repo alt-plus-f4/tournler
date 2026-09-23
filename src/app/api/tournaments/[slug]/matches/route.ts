@@ -23,13 +23,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			where: { tournamentId: tournament.id },
 			include: {
 				teamA: {
-					select: { id: true, name: true },
+					select: { id: true, name: true, logo: true },
 				},
 				teamB: {
-					select: { id: true, name: true },
+					select: { id: true, name: true, logo: true },
 				},
 				winner: {
-					select: { id: true, name: true },
+					select: { id: true, name: true, logo: true },
 				},
 			},
 			orderBy: [{ bracketSlot: 'asc' }, { round: 'asc' }, { position: 'asc' }],

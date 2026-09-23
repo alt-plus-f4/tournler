@@ -6,7 +6,7 @@ describe("FallbackCards", () => {
     const { container } = render(<FallbackCards />)
 
     // Check if 4 cards are rendered
-    const cards = container.querySelectorAll(".w-full.transition.hover\\:-translate-y-1.hover\\:shadow-lg")
+    const cards = container.querySelectorAll("[data-fallback-card]")
     expect(cards.length).toBe(4)
 
     // Check if each card has a skeleton

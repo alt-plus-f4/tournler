@@ -125,12 +125,12 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 						<DialogTitle>Delete &quot;{post.title}&quot;?</DialogTitle>
 						<DialogDescription>This removes the post and its homepage placement. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='gap-2'>
+					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
 						<Button variant='destructive' onClick={handleDelete} disabled={isDeleting}>
-							{isDeleting ? 'Deleting...' : 'Delete'}
+							{isDeleting ? 'Deleting…' : 'Delete'}
 						</Button>
 					</DialogFooter>
 				</DialogContent>
@@ -153,20 +153,20 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='news-blurb'>Blurb</Label>
-						<RichTextEditor value={blurb} onChange={setBlurb} placeholder='Short summary shown on the card' />
+						<Label id='news-blurb-label'>Blurb</Label>
+						<RichTextEditor labelId='news-blurb-label' value={blurb} onChange={setBlurb} placeholder='Short summary shown on the card' />
 					</div>
 
 					<div className='space-y-2'>
 						<Label htmlFor='news-image-file'>Image</Label>
 						{(imagePreview ?? imageUrl) && (
-							<div className='h-32 w-full max-w-xs overflow-hidden rounded-md border border-white/10'>
+							<div className='h-32 w-full max-w-xs overflow-hidden rounded-md border border-border'>
 								{/* eslint-disable-next-line @next/next/no-img-element */}
 								<img src={imagePreview ?? imageUrl} alt='' className='h-full w-full object-cover' />
 							</div>
 						)}
 						<Input id='news-image-file' type='file' accept='image/*' onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-						{imageFile && <p className='text-xs text-neutral-500'>Selected: {imageFile.name}</p>}
+						{imageFile && <p className='text-xs text-muted-foreground'>Selected: {imageFile.name}</p>}
 						{!imageFile && imageUrl && (
 							<button
 								type='button'
@@ -199,7 +199,7 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 						</div>
 					</div>
 
-					<DialogFooter className='gap-2 pt-2'>
+					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
 						{!isCreating && onDelete && (
 							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete
@@ -209,7 +209,7 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 							Cancel
 						</Button>
 						<Button type='submit' disabled={isSaving}>
-							{isSaving ? 'Saving...' : isCreating ? 'Create Post' : 'Save changes'}
+							{isSaving ? 'Saving…' : isCreating ? 'Create Post' : 'Save changes'}
 						</Button>
 					</DialogFooter>
 				</form>

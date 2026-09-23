@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaExclamation } from 'react-icons/fa';
 import EditUserDialog from '@/components/EditUserDialog';
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { User } from '@/types/types';
 import UserTable from '@/components/UserTable';
 
@@ -107,13 +107,12 @@ export default function UsersClient() {
 	};
 
 	return (
-		<div className='mt-12 mx-12 w-[80%] overflow-hidden'>
-			<h1 className='text-2xl font-bold mb-4'>User Management</h1>
-			<div className='w-full border p-2 mb-4 rounded-sm flex items-center'>
-				<FaExclamation className='text-red-500 mr-2' />
-				<p className='text-md border-b border-red-500'>Click on a row (or press Enter) to edit a user.</p>
-			</div>
-			<Input placeholder='Search by name or email...' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
+			<h1 className='mb-6 text-2xl font-bold'>Users</h1>
+			<Label htmlFor='admin-user-search' className='sr-only'>
+				Search users
+			</Label>
+			<Input id='admin-user-search' type='search' placeholder='Search by name or email…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
 			<UserTable
 				isLoading={isLoading && !hasLoadedOnce}
 				users={users}
@@ -123,6 +122,7 @@ export default function UsersClient() {
 				onEdit={handleEdit}
 				onToggleVerify={handleToggleVerify}
 				verifyingUserIds={verifyingUserIds}
+				emptyMessage={search ? `No users match “${search}”.` : 'No users yet.'}
 			/>
 			<Pagination totalPages={totalPages} currentPage={currentPage} onPageChange={handlePageChange} />
 			{isDialogOpen && selectedUser && <EditUserDialog isOpen={isDialogOpen} user={selectedUser} onSave={handleSave} onClose={handleDialogClose} onDelete={handleDelete} />}

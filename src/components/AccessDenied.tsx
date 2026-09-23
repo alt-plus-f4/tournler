@@ -9,12 +9,12 @@ interface AccessDeniedProps {
 
 export function AccessDenied({ resource }: AccessDeniedProps) {
 	return (
-		<div className='mx-12 mt-12 w-[80%] flex flex-col items-center text-center py-24'>
-			<FaLock className='text-4xl text-red-500 mb-4' />
-			<h1 className='text-2xl font-bold mb-2'>Access Denied</h1>
+		<div className='mx-4 mt-12 flex max-w-6xl flex-col items-center py-24 text-center md:mx-12'>
+			<FaLock aria-hidden className='mb-4 text-4xl text-muted-foreground' />
+			<h1 className='mb-2 text-2xl font-bold'>Access denied</h1>
 			<p className='text-muted-foreground mb-6'>Your role doesn&apos;t have permission to manage {resource}.</p>
 			<Link href='/admin' className={cn(buttonVariants({ variant: 'outline' }))}>
-				Back to Dashboard
+				Back to dashboard
 			</Link>
 		</div>
 	);

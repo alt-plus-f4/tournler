@@ -15,13 +15,13 @@ function MemberAvatarImage({ image, name }: { image: string | null; name: string
 
 	if (!image || failed) {
 		return (
-			<div className='w-full h-[200px] flex items-center justify-center bg-neutral-800 text-white font-bold text-2xl transition group-hover:z-10 group-hover:scale-[125%] cursor-default mb-[-10px]'>
+			<div className='w-full h-[200px] flex items-center justify-center bg-neutral-800 text-white font-bold text-2xl transition motion-safe:group-hover:z-10 motion-safe:group-hover:scale-[125%] cursor-default mb-[-10px]'>
 				{(name || 'P').substring(0, 2).toUpperCase()}
 			</div>
 		);
 	}
 
-	return <Image className='transition group-hover:z-10 group-hover:scale-[125%] cursor-default mb-[-10px]' src={image} alt={`${name} avatar`} width={300} height={200} onError={() => setFailed(true)} />;
+	return <Image className='transition motion-safe:group-hover:z-10 motion-safe:group-hover:scale-[125%] cursor-default mb-[-10px]' src={image} alt={`${name} avatar`} width={300} height={200} onError={() => setFailed(true)} />;
 }
 
 interface TeamMemberAvatarProps {
@@ -30,16 +30,30 @@ interface TeamMemberAvatarProps {
 	enableTeamCapitanControls?: boolean;
 	capitanId: string;
 	userId?: string;
+	/** false renders a plain, non-linked avatar (e.g. inside a TeamCard, which is itself a link). */
+	interactive?: boolean;
 }
 
-export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capitanId, userId }: TeamMemberAvatarProps) {
+export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capitanId, userId, interactive = true }: TeamMemberAvatarProps) {
 	const [isMounted, setIsMounted] = useState(false);
 	useEffect(() => setIsMounted(true), []);
 
+	const isCaptain = member.id == capitanId;
+	const crown = isCaptain && <FaCrown aria-hidden className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white z-20' />;
+
+	if (!interactive) {
+		return (
+			<div className='relative'>
+				{crown}
+				<MemberAvatarImage image={member.image} name={member.name} />
+			</div>
+		);
+	}
+
 	const avatar = (
 		<div className='group relative'>
-			{member.id == capitanId && <FaCrown className='absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-yellow-500 z-10' />}
-			<Link href={`/profile/${member.id}`} onClick={(e) => e.stopPropagation()} className='block'>
+			{crown}
+			<Link href={`/profile/${member.id}`} aria-label={`${member.name ?? 'Player'}${isCaptain ? ' (captain)' : ''}, view profile`} className='block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
 				<MemberAvatarImage image={member.image} name={member.name} />
 			</Link>
 
