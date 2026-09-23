@@ -21,6 +21,12 @@ npx prisma migrate deploy               # apply migrations in production
 
 There is no separate typecheck script; `next build` / editor TS server surfaces type errors (`tsc --noEmit` also works directly).
 
+## Git workflow
+
+- **Only push to `development`.** Commit and push day-to-day work directly to `development` — never push to `main`, and don't push to other branches unless explicitly asked.
+- **`main` only changes through pull requests.** To ship, open a PR from `development` into `main` (`gh pr create --base main --head development`); `main` is what Vercel deploys to production.
+- Use Conventional Commits messages (`feat:`, `fix:`, `docs:`, `chore:`, ...). Don't add Claude as a co-author or contributor.
+
 ## Architecture
 
 Tournler is a CS2 esports tournament management platform built on Next.js 15 (App Router) with a **split persistence layer**:

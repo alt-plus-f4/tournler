@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "nodejs-best-practices": {
+      "source": "gabrielmoreira/agent-skills-mirror",
+      "sourceType": "github",
+      "skillPath": "mirrors/repos/agent-skills-hub@agent-skills-hub/skills/nodejs-best-practices/SKILL.md",
+      "computedHash": "52d0a8813848bb7df01ba851e9ca0c8d853db46daa07f575a6b5efa7ff1d8a0d"
+    }
+  }
+}
