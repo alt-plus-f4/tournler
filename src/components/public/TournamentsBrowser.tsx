@@ -105,7 +105,7 @@ export function TournamentsBrowser() {
 					<FeaturedTournament {...tournaments[0]} />
 
 					{tournaments.length > 1 && (
-						<div className='mt-8 flex flex-col items-stretch gap-4 sm:flex-row sm:justify-between'>
+						<div className='mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3'>
 							{tournaments.slice(1, 4).map((tournament) => (
 								<UpcomingTournament key={tournament.id} {...tournament} />
 							))}

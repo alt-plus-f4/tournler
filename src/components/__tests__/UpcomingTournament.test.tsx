@@ -45,13 +45,32 @@ describe("UpcomingTournament", () => {
 
     // Check default styling
     let container = screen.getByRole("link")
-    expect(container).not.toHaveClass("w-full h-[200px]")
+    expect(container).toHaveClass("min-h-[156px]")
+    expect(container).not.toHaveClass("min-h-[200px]")
 
     // Rerender with isHomePage=true
     rerender(<UpcomingTournament {...mockProps} isHomePage={true} />)
 
     // Check homepage styling
     container = screen.getByRole("link")
-    expect(container).toHaveClass("w-full h-[200px]")
+    expect(container).toHaveClass("min-h-[200px]")
+  })
+
+  it("labels an upcoming tournament whose start has passed as start pending", () => {
+    render(<UpcomingTournament {...mockProps} status="UPCOMING" />)
+    expect(screen.getByText("Start pending")).toBeInTheDocument()
+    expect(screen.getByText("Set for Dec 31, 2023")).toBeInTheDocument()
+  })
+
+  it("shows the start date for a future tournament", () => {
+    render(<UpcomingTournament {...mockProps} startDate="2999-06-01T12:00:00Z" status="UPCOMING" />)
+    expect(screen.getByText("Jun 1, 2999")).toBeInTheDocument()
+    expect(screen.getByText("Starts")).toBeInTheDocument()
+  })
+
+  it("says in progress for an ongoing tournament", () => {
+    render(<UpcomingTournament {...mockProps} status="ONGOING" />)
+    expect(screen.getByText("In progress")).toBeInTheDocument()
+    expect(screen.queryByText("Start pending")).not.toBeInTheDocument()
   })
 })

@@ -1,11 +1,12 @@
-import { formatDate } from '@/lib/helpers/format-date';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { ReducedTournament } from '@/types/types';
+import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, location, teamCapacity }: ReducedTournament) {
+export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, location, teamCapacity, status }: ReducedTournament & { status?: string }) {
 	const hasPrize = prizePool !== null && prizePool !== undefined;
+	const start = getStartLabel(startDate, status);
 
 	return (
 		<Link
@@ -29,8 +30,8 @@ export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, 
 			</div>
 			<dl className='grid shrink-0 grid-flow-col auto-cols-fr gap-6 text-center sm:mr-4 sm:gap-12'>
 				<div className='flex flex-col-reverse'>
-					<dt className='text-xs text-muted-foreground'>Date</dt>
-					<dd className='whitespace-nowrap text-sm font-bold'>{formatDate(startDate)}</dd>
+					<dt className='whitespace-nowrap text-xs text-muted-foreground'>{start.label}</dt>
+					<dd className='whitespace-nowrap text-sm font-bold'>{start.value}</dd>
 				</div>
 				{hasPrize && (
 					<div className='flex flex-col-reverse'>

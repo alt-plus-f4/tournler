@@ -12,6 +12,7 @@ import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
 import type { Champion, TournamentDetail } from '@/components/tournament-tabs/types';
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
@@ -91,7 +92,8 @@ function getRegistration(t: { status: string; startDate: Date; teamCapacity: num
 
 	if (t.status === 'COMPLETED') return { label: 'Finished', detail: teams, open: false, full };
 	if (t.status === 'ONGOING') return { label: 'In progress', detail: `Registration closed · ${teams}`, open: false, full };
-	if (t.startDate.getTime() <= Date.now()) return { label: 'Registration closed', detail: `Start time has passed; waiting to start · ${teams}`, open: false, full };
+	// Scheduled start has passed but nobody has started it yet (the start is manual or cron-driven).
+	if (t.startDate.getTime() <= Date.now()) return { label: 'Start pending', detail: `Waiting for the organizer to start · ${teams}`, open: false, full };
 	if (full) return { label: 'Full', detail: `All ${t.teamCapacity} slots are taken`, open: true, full };
 	return { label: 'Registration open', detail: `${teams} registered`, open: true, full };
 }
@@ -126,38 +128,41 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 	};
 
 	return (
-		<div className='container mx-auto max-w-[1400px] px-4 py-6 lg:px-8'>
-			<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'mb-4 -ml-3 text-muted-foreground hover:text-white')}>
-				<ArrowLeft className='h-4 w-4' aria-hidden />
-				Tournaments
-			</Link>
+		<Card className='mx-auto mt-8 mb-12 w-[calc(100%-2rem)] overflow-hidden border-none bg-transparent sm:w-5/6'>
+			<CardHeader className='relative min-h-[300px] w-full justify-end space-y-0 overflow-hidden rounded-t-xl bg-neutral-900 p-0'>
+				{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt='' fill priority sizes='(max-width: 640px) 100vw, 84vw' className='object-cover' />}
+				<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent' />
 
-			<header className='overflow-hidden rounded-md border border-border'>
-				<div className='relative h-36 w-full bg-neutral-900 sm:h-56 lg:h-64'>
-					{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt='' fill priority sizes='(max-width: 1400px) 100vw, 1400px' className='object-cover' />}
-					<div aria-hidden className='absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black to-transparent' />
-				</div>
+				<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'absolute left-2 top-2 z-10 bg-black/60')}>
+					<ArrowLeft className='h-4 w-4' aria-hidden />
+				</Link>
 
-				<div className='flex flex-col gap-6 bg-black p-4 sm:p-6 lg:flex-row lg:items-end lg:justify-between'>
+				{/* In flow (not absolutely stacked) so a long name and the register block never overlap. */}
+				<div className='relative z-10 flex flex-col gap-4 p-4 pt-16 sm:flex-row sm:items-end sm:justify-between sm:p-10 sm:pt-20'>
 					<div className='min-w-0'>
-						<h1 className='text-balance text-3xl font-black uppercase tracking-wide text-white sm:text-5xl'>{tournament.name}</h1>
+						<h1 className='text-balance text-xl font-extrabold text-white sm:text-4xl'>{tournament.name}</h1>
 						{tournament.organizer.name && (
-							<p className='mt-2 text-sm text-muted-foreground'>
+							<p className='text-xs text-muted-foreground sm:mt-1 sm:text-sm'>
 								Organized by <span className='text-white'>{tournament.organizer.name}</span>
 							</p>
 						)}
 					</div>
 
-					<div className='flex flex-col gap-3 lg:items-end lg:text-right'>
+					<div className='flex shrink-0 flex-col items-start gap-2 sm:items-end sm:text-right'>
+						{canManageTournaments && tournament.status === 'UPCOMING' && (
+							<div className='mb-1'>
+								<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} />
+							</div>
+						)}
 						<div>
-							<p className='text-base font-bold text-white'>{registration.label}</p>
-							<p className='font-mono text-sm tabular-nums text-muted-foreground'>{registration.detail}</p>
-							{registration.open && timeLeftToJoin > 0 && (
-								<div className='font-mono text-sm tabular-nums text-muted-foreground [&>span]:block'>
-									<Timer timeLeft={timeLeftToJoin} />
-								</div>
-							)}
+							<p className='text-sm font-bold text-white'>{registration.label}</p>
+							<p className='font-mono text-xs tabular-nums text-muted-foreground'>{registration.detail}</p>
 						</div>
+						{registration.open && timeLeftToJoin > 0 && (
+							<div className='text-muted-foreground'>
+								<Timer timeLeft={timeLeftToJoin} />
+							</div>
+						)}
 
 						{registration.open && userTeam && <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={detail} team={userTeam} isFull={registration.full} />}
 						{registration.open && !registration.full && !user && (
@@ -176,17 +181,13 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 								</Link>
 							</p>
 						)}
-
-						{canManageTournaments && tournament.status === 'UPCOMING' && (
-							<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} />
-						)}
 					</div>
 				</div>
-			</header>
+			</CardHeader>
 
-			<div className='mt-6'>
+			<CardContent className='p-0'>
 				<TabMenu tournament={detail} champion={champion} />
-			</div>
-		</div>
+			</CardContent>
+		</Card>
 	);
 }
