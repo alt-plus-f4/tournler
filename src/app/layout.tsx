@@ -11,7 +11,7 @@ import { getAuthSession } from '@/lib/auth';
 import { InteractiveBackground } from '@/components/InteractiveBackground';
 
 const roboto = Roboto({
-	weight: '400',
+	weight: ['400', '500', '700', '900'],
 	subsets: ['latin'],
 	display: 'swap',
 });

@@ -13,6 +13,7 @@ const SIZES = {
 	sm: 20,
 	md: 24,
 	lg: 32,
+	xl: 48,
 } as const;
 
 // Ring geometry: a 24x24 viewBox with a stroke-width-2.5 circle of radius 10 — leaves enough
