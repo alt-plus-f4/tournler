@@ -1,0 +1,269 @@
+/*
+ * EditorJS ships light chrome and injects its stylesheet at runtime (after ours), so every rule here is
+ * scoped under .news-editor to win on specificity. Colors come from the Booth tokens in globals.css.
+ */
+
+.news-editor {
+	--selectionColor: hsl(var(--accent));
+	--inlineSelectionColor: hsl(0 0% 100% / 0.18);
+	--bg-light: hsl(var(--muted));
+	--grayText: hsl(var(--muted-foreground));
+	--color-dark: hsl(var(--foreground));
+	--color-active-icon: hsl(var(--foreground));
+	--color-gray-border: hsl(var(--border));
+	--color-line-gray: hsl(var(--border));
+	--content-width: 100%;
+	caret-color: hsl(var(--foreground));
+}
+
+.news-editor ::selection {
+	background: hsl(0 0% 100% / 0.22);
+	color: hsl(var(--foreground));
+}
+
+.news-editor .ce-block__content,
+.news-editor .ce-toolbar__content {
+	max-width: none;
+}
+
+/* Popovers: block toolbox, block tunes, inline toolbar, conversion menu */
+.news-editor .ce-popover,
+.news-editor .ce-popover__container {
+	--color-border: hsl(var(--border));
+	--color-shadow: rgb(0 0 0 / 0.6);
+	--color-background: #171717;
+	--color-text-primary: hsl(var(--popover-foreground));
+	--color-text-secondary: hsl(var(--muted-foreground));
+	--color-border-icon: hsl(var(--border));
+	--color-border-icon-disabled: hsl(var(--border));
+	--color-text-icon-active: hsl(var(--foreground));
+	--color-background-icon-active: hsl(0 0% 100% / 0.1);
+	--color-background-item-focus: hsl(var(--accent));
+	--color-shadow-item-focus: transparent;
+	--color-background-item-hover: hsl(var(--accent));
+	--color-background-item-confirm: hsl(var(--destructive));
+	--color-background-item-confirm-hover: hsl(var(--destructive) / 0.85);
+	--border-radius: 6px;
+}
+
+.news-editor .ce-popover__container {
+	border: 1px solid hsl(var(--border));
+}
+
+.news-editor .ce-popover-item__icon {
+	background: hsl(var(--background));
+	box-shadow: 0 0 0 1px hsl(var(--border));
+	color: hsl(var(--foreground));
+}
+
+.news-editor .ce-popover-item__title,
+.news-editor .ce-popover-item-html {
+	color: hsl(var(--popover-foreground));
+}
+
+.news-editor .ce-popover-item--active,
+.news-editor .ce-popover-item--active .ce-popover-item__icon {
+	color: hsl(var(--foreground));
+	background: hsl(0 0% 100% / 0.1);
+}
+
+.news-editor .ce-popover-item--confirmation,
+.news-editor .ce-popover-item--confirmation .ce-popover-item__icon,
+.news-editor .ce-popover-item--confirmation .ce-popover-item__title {
+	background: hsl(var(--destructive));
+	color: hsl(var(--destructive-foreground));
+}
+
+.news-editor .cdx-search-field {
+	border-color: hsl(var(--border));
+	background: hsl(var(--background));
+	color: hsl(var(--foreground));
+	border-radius: 4px;
+}
+
+.news-editor .cdx-search-field__input {
+	color: hsl(var(--foreground));
+}
+
+.news-editor .cdx-search-field__input::placeholder,
+.news-editor .ce-popover__nothing-found-message {
+	color: hsl(var(--muted-foreground));
+}
+
+.news-editor .ce-popover-item-separator__line {
+	background: hsl(var(--border));
+}
+
+/* Toolbar: the + and drag handle beside each block */
+.news-editor .ce-toolbar__plus,
+.news-editor .ce-toolbar__settings-btn {
+	color: hsl(var(--muted-foreground));
+	background: transparent;
+	border-radius: 4px;
+}
+
+.news-editor .ce-toolbar__plus:hover,
+.news-editor .ce-toolbar__settings-btn:hover,
+.news-editor .ce-toolbar__settings-btn--active {
+	color: hsl(var(--foreground));
+	background: hsl(var(--accent));
+}
+
+.news-editor .ce-inline-toolbar,
+.news-editor .ce-conversion-toolbar,
+.news-editor .ce-settings {
+	background: #171717;
+	border-color: hsl(var(--border));
+	color: hsl(var(--popover-foreground));
+}
+
+.news-editor .ce-inline-tool,
+.news-editor .ce-inline-toolbar__dropdown {
+	color: hsl(var(--popover-foreground));
+}
+
+.news-editor .ce-inline-tool:hover,
+.news-editor .ce-inline-toolbar__dropdown:hover {
+	background: hsl(var(--accent));
+}
+
+.news-editor .ce-inline-tool--active {
+	color: hsl(var(--foreground));
+	background: hsl(0 0% 100% / 0.1);
+}
+
+.news-editor .ce-inline-tool-input {
+	background: hsl(var(--background));
+	border-color: hsl(var(--border));
+	color: hsl(var(--foreground));
+}
+
+.news-editor .ce-block--selected .ce-block__content {
+	background: hsl(0 0% 100% / 0.06);
+}
+
+.news-editor .ce-paragraph[data-placeholder]:empty::before,
+.news-editor .ce-header[data-placeholder]:empty::before,
+.news-editor .codex-editor--empty .ce-block:first-child .ce-paragraph[data-placeholder]:empty::before {
+	color: hsl(var(--muted-foreground));
+}
+
+/* Block tools: inputs, buttons, code, image, link, table */
+.news-editor .cdx-input,
+.news-editor .ce-code__textarea,
+.news-editor .link-tool__input {
+	background: hsl(var(--background));
+	border: 1px solid hsl(var(--border));
+	border-radius: 4px;
+	box-shadow: none;
+	color: hsl(var(--foreground));
+}
+
+.news-editor .ce-code__textarea {
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	background: #000;
+	min-height: 140px;
+}
+
+.news-editor .cdx-input[data-placeholder]::before {
+	color: hsl(var(--muted-foreground));
+}
+
+.news-editor .cdx-button {
+	background: hsl(var(--background));
+	border: 1px solid hsl(var(--border));
+	border-radius: 4px;
+	box-shadow: none;
+	color: hsl(var(--foreground));
+}
+
+.news-editor .cdx-button:hover {
+	background: hsl(var(--accent));
+}
+
+.news-editor .cdx-button svg {
+	color: hsl(var(--foreground));
+}
+
+.news-editor .image-tool__image {
+	background: hsl(var(--muted));
+	border-radius: 4px;
+}
+
+.news-editor .image-tool--withBackground .image-tool__image {
+	background: hsl(var(--muted));
+}
+
+.news-editor .image-tool--withBorder .image-tool__image {
+	border-color: hsl(var(--border));
+}
+
+.news-editor .link-tool__content--rendered {
+	background: hsl(var(--background));
+	border-color: hsl(var(--border));
+	box-shadow: none;
+}
+
+.news-editor .link-tool__title {
+	color: hsl(var(--foreground));
+}
+
+.news-editor .link-tool__description,
+.news-editor .link-tool__anchor {
+	color: hsl(var(--muted-foreground));
+}
+
+.news-editor .link-tool__input-holder--error .link-tool__input {
+	background: hsl(var(--destructive) / 0.2);
+	border-color: hsl(var(--destructive));
+}
+
+.news-editor .tc-wrap {
+	--color-background: hsl(var(--muted));
+	--color-text-secondary: hsl(var(--muted-foreground));
+	--color-border: hsl(var(--border));
+}
+
+.news-editor .tc-popover {
+	--color-border: hsl(var(--border));
+	--color-background: #171717;
+	--color-background-hover: hsl(var(--accent));
+	--color-background-confirm: hsl(var(--destructive));
+	--color-background-confirm-hover: hsl(var(--destructive) / 0.85);
+	--color-text-confirm: hsl(var(--destructive-foreground));
+	color: hsl(var(--popover-foreground));
+}
+
+.news-editor .tc-toolbox__toggler,
+.news-editor .tc-add-row,
+.news-editor .tc-add-column {
+	color: hsl(var(--muted-foreground));
+}
+
+.news-editor .embed-tool__caption,
+.news-editor .image-tool__caption {
+	color: hsl(var(--muted-foreground));
+}
+
+/* Error / info toasts EditorJS raises itself (e.g. a failed link preview) */
+.cdx-notifies .cdx-notify {
+	background: #171717;
+	border: 1px solid hsl(var(--border));
+	color: hsl(var(--popover-foreground));
+	box-shadow: none;
+	border-radius: 6px;
+}
+
+.cdx-notifies .cdx-notify--error {
+	background: hsl(var(--destructive)) !important;
+	border-color: hsl(var(--destructive));
+}
+
+.cdx-notify__cross::after,
+.cdx-notify__cross::before {
+	background: currentColor;
+}
+
+.news-editor .codex-editor__redactor {
+	padding-bottom: 0 !important;
+}

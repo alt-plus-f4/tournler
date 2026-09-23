@@ -5,6 +5,10 @@ import { formatDate } from '@/lib/helpers/format-date';
 const FALLBACK_IMAGE = '/info-image.png';
 
 interface FeaturedNewsPostCardProps {
+	/** With `hasContent`, the card opens the post on /news/<id> instead of `link`. */
+	id?: number;
+	/** True when the post has an EditorJS body (`post.content != null`). */
+	hasContent?: boolean;
 	title: string;
 	blurb: string;
 	imageUrl: string | null;
@@ -14,7 +18,8 @@ interface FeaturedNewsPostCardProps {
 
 const LINK_CLASS = 'group block rounded-md transition-transform duration-200 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
-export function FeaturedNewsPostCard({ title, blurb, imageUrl, link, publishedAt }: FeaturedNewsPostCardProps) {
+export function FeaturedNewsPostCard({ id, hasContent, title, blurb, imageUrl, link: externalLink, publishedAt }: FeaturedNewsPostCardProps) {
+	const link = hasContent && id != null ? `/news/${id}` : externalLink;
 	const isExternal = !!link && /^https?:\/\//.test(link);
 	const content = (
 		<div className={`overflow-hidden rounded-md border border-border bg-card transition-colors ${link ? 'group-hover:border-neutral-500' : ''}`}>
