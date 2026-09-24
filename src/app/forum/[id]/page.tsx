@@ -17,6 +17,9 @@ import { BanUserDialog } from '@/components/admin/BanUserDialog';
 import { db } from '@/lib/db';
 import { activeBanWhere, toActiveBan } from '@/lib/bans';
 
+// Replies, locks and pins change constantly; always render per request.
+export const dynamic = 'force-dynamic';
+
 interface ThreadPageProps {
 	params: Promise<{ id: string }>;
 }
@@ -48,9 +51,9 @@ export default async function ForumThreadPage({ params }: ThreadPageProps) {
 
 	const session = await getAuthSession();
 	const viewerId = session?.user.id;
-	const canModerate = viewerId ? await userHasPermission(viewerId, 'forum:moderate') : false;
+	// Both checks read the same (React-cached) role row, so this is one query.
+	const [canModerate, canBan] = viewerId ? await Promise.all([userHasPermission(viewerId, 'forum:moderate'), userHasPermission(viewerId, 'users:ban')]) : [false, false];
 	const canDeleteThread = canModerate || viewerId === thread.author.id;
-	const canBan = viewerId ? await userHasPermission(viewerId, 'users:ban') : false;
 
 	// Moderators only: each author's role and active ban, for the "Ban" control next to their posts.
 	// Looked up here rather than in the public thread payload so roles/bans never leave the server otherwise.

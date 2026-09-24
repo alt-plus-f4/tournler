@@ -1,217 +1,116 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { TeamLogo } from '@/components/TeamLogo';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Suspense } from 'react';
+import { MatchStatus, type Prisma } from '@prisma/client';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Pagination } from '@/components/Pagination';
-import CreateMatchDialog from '@/components/CreateMatchDialog';
-import { Match } from '@/types/types';
+import { getAuthSession } from '@/lib/auth';
+import { db } from '@/lib/db';
+import { userHasPermission } from '@/lib/helpers/permissions';
+import { CreateMatchButton } from './_components/CreateMatchButton';
+import { MatchesBrowser } from './_components/MatchesBrowser';
+import type { MatchListItem } from './_components/MatchList';
+import { parseStatusFilter, type StatusFilter } from './_components/status';
 
-type StatusFilter = 'ALL' | 'LIVE' | 'SCHEDULED' | 'COMPLETED';
-
-const STATUS_TABS: { value: StatusFilter; label: string }[] = [
-	{ value: 'ALL', label: 'All' },
-	{ value: 'LIVE', label: 'Live' },
-	{ value: 'SCHEDULED', label: 'Upcoming' },
-	{ value: 'COMPLETED', label: 'Completed' },
-];
+// Live scores and new lobbies change by the minute; always render per request.
+export const dynamic = 'force-dynamic';
 
 const MATCHES_PER_PAGE = 20;
 
-function formatMatchTime(iso: string): string {
-	return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+type SearchParams = Promise<{ status?: string | string[]; tournament?: string | string[]; page?: string | string[] }>;
+
+const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
+
+/** Same listing GET /api/matches/public serves, read directly instead of fetched client-side after hydration. */
+async function listMatches(status: StatusFilter, tournamentId: number | undefined, page: number) {
+	const statusWhere: Prisma.MatchesWhereInput['status'] =
+		status === 'ALL' ? undefined : status === 'LIVE' ? { in: [MatchStatus.LIVE, MatchStatus.PAUSED] } : MatchStatus[status];
+	const where: Prisma.MatchesWhereInput = {
+		...(statusWhere ? { status: statusWhere } : {}),
+		...(tournamentId ? { tournamentId } : {}),
+	};
+	const side = { select: { id: true, name: true, logo: true } } as const;
+
+	const [rows, total] = await Promise.all([
+		db.matches.findMany({
+			where,
+			orderBy: { matchDate: status === 'SCHEDULED' ? 'asc' : 'desc' },
+			select: {
+				id: true,
+				status: true,
+				matchDate: true,
+				isPickup: true,
+				scoreTeamA: true,
+				scoreTeamB: true,
+				winnerSide: true,
+				teamAName: true,
+				teamBName: true,
+				tournament: { select: { id: true, name: true } },
+				teamA: side,
+				teamB: side,
+				winner: side,
+				_count: { select: { participants: true } },
+			},
+			skip: (page - 1) * MATCHES_PER_PAGE,
+			take: MATCHES_PER_PAGE,
+		}),
+		db.matches.count({ where }),
+	]);
+
+	const matches: MatchListItem[] = rows.map(({ _count, matchDate, ...m }) => ({ ...m, matchDate: matchDate.toISOString(), participantCount: _count.participants }));
+	return { matches, totalPages: Math.max(1, Math.ceil(total / MATCHES_PER_PAGE)) };
 }
 
-function dayLabel(iso: string): string {
-	const date = new Date(iso);
-	const now = new Date();
-	const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-	const diffDays = Math.round((startOfDay(date) - startOfDay(now)) / 86400000);
-	if (diffDays === 0) return 'Today';
-	if (diffDays === 1) return 'Tomorrow';
-	if (diffDays === -1) return 'Yesterday';
-	const sameYear = date.getFullYear() === now.getFullYear();
-	return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
+async function MatchesSection({ status, tournamentId, page }: { status: StatusFilter; tournamentId: string; page: number }) {
+	const [tournaments, { matches, totalPages }] = await Promise.all([
+		// Same set the old client fetch used (GET /api/tournaments?limit=100), names only.
+		db.cs2Tournament.findMany({ where: { isSystem: false }, orderBy: { prizePool: 'desc' }, take: 100, select: { id: true, name: true } }),
+		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page),
+	]);
+
+	return <MatchesBrowser status={status} tournamentId={tournamentId} page={page} totalPages={totalPages} tournaments={tournaments} matches={matches} />;
 }
 
-function groupByDay(matches: Match[]) {
-	const groups: { label: string; matches: Match[] }[] = [];
-	for (const match of matches) {
-		const label = dayLabel(match.matchDate);
-		const last = groups[groups.length - 1];
-		if (last && last.label === label) {
-			last.matches.push(match);
-		} else {
-			groups.push({ label, matches: [match] });
-		}
-	}
-	return groups;
-}
-
-function MatchRow({ match }: { match: Match }) {
-	const isLive = match.status === 'LIVE';
-	const isPaused = match.status === 'PAUSED';
-	const isCompleted = match.status === 'COMPLETED';
-	const isOpen = match.isPickup && match.status === 'SCHEDULED';
-	// Completed with a tied/empty score = result set by hand; don't print "0 : 0" next to a winner.
-	const tiedFinal = isCompleted && (match.scoreTeamA ?? 0) === (match.scoreTeamB ?? 0);
-	const inProgress = isLive || isPaused || (isCompleted && !tiedFinal);
-	// Pickups record the winning side (winnerSide); team matches record the winning team.
-	const winnerSide = (match as Match & { winnerSide?: 'TEAM_A' | 'TEAM_B' | null }).winnerSide;
-	const aWon = isCompleted && (match.isPickup ? winnerSide === 'TEAM_A' : !!match.winner && match.winner.id === match.teamA?.id);
-	const bWon = isCompleted && (match.isPickup ? winnerSide === 'TEAM_B' : !!match.winner && match.winner.id === match.teamB?.id);
-	// Shared result rule: winner white + bold, loser muted — identical for either side.
-	const nameClass = (won: boolean, lost: boolean) => (lost ? 'text-muted-foreground' : won ? 'font-bold text-white' : 'font-medium text-white');
-	const joinedCount = match.participants?.length ?? 0;
-
+function MatchesSkeleton() {
 	return (
-		<Link href={`/matches/${match.id}`} className='flex items-center gap-2 rounded-md border border-border px-3 py-3 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:px-4'>
-			<span className='hidden w-28 shrink-0 truncate text-xs text-muted-foreground sm:block'>{match.isPickup ? 'Pickup' : match.tournament.name}</span>
-
-			<div className='flex min-w-0 flex-1 items-center justify-center gap-2 sm:gap-3'>
-				<div className='flex min-w-0 flex-1 items-center justify-end gap-2'>
-					<span className={`truncate text-sm ${nameClass(aWon, bWon)}`}>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</span>
-					{!match.isPickup && <TeamLogo src={match.teamA?.logo} name={match.teamA?.name} size='sm' decorative />}
+		<div role='status' aria-busy='true'>
+			<span className='sr-only'>Loading matches…</span>
+			<div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' aria-hidden>
+				<div className='flex flex-wrap gap-2'>
+					{[44, 48, 76, 88].map((w) => (
+						<Skeleton key={w} className='h-9 rounded-md bg-neutral-900' style={{ width: w }} />
+					))}
 				</div>
-				<div className='w-14 shrink-0 whitespace-nowrap text-center font-mono text-sm font-bold tabular-nums text-white'>{isOpen ? `${joinedCount}/10` : inProgress ? `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}` : tiedFinal ? '–' : 'vs'}</div>
-				<div className='flex min-w-0 flex-1 items-center gap-2'>
-					{!match.isPickup && <TeamLogo src={match.teamB?.logo} name={match.teamB?.name} size='sm' decorative />}
-					<span className={`truncate text-sm ${nameClass(bWon, aWon)}`}>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</span>
-				</div>
+				<Skeleton className='h-10 w-full rounded-md bg-neutral-900 sm:w-56' />
 			</div>
-
-			<div className='w-20 shrink-0 whitespace-nowrap text-right text-xs'>
-				{isOpen ? (
-					<span className='font-semibold text-signal-ready-text'>OPEN</span>
-				) : isLive ? (
-					<span className='inline-flex items-center gap-1.5 font-bold text-white'>
-						<span aria-hidden className='h-2 w-2 animate-pulse rounded-full bg-signal-live' />
-						LIVE
-					</span>
-				) : isPaused ? (
-					<span className='inline-flex items-center gap-1.5 font-bold text-signal-hold'>
-						<span aria-hidden className='h-2 w-2 rounded-full bg-signal-hold' />
-						PAUSED
-					</span>
-				) : isCompleted ? (
-					<span className='text-muted-foreground'>Final</span>
-				) : (
-					<span className='font-mono tabular-nums text-muted-foreground'>{formatMatchTime(match.matchDate)}</span>
-				)}
+			<div className='space-y-2' aria-hidden>
+				{Array.from({ length: 6 }).map((_, i) => (
+					<Skeleton key={i} className='h-14 w-full bg-neutral-900' />
+				))}
 			</div>
-		</Link>
+			{/* Pagination row */}
+			<div className='mt-4 h-10' aria-hidden />
+		</div>
 	);
 }
 
-export default function MatchesPage() {
-	const [status, setStatus] = useState<StatusFilter>('ALL');
-	const [tournamentId, setTournamentId] = useState('');
-	const [tournaments, setTournaments] = useState<{ id: number; name: string }[]>([]);
-	const [matches, setMatches] = useState<Match[]>([]);
-	const [page, setPage] = useState(1);
-	const [totalPages, setTotalPages] = useState(1);
-	const [isLoading, setIsLoading] = useState(true);
-	const [canCreateMatch, setCanCreateMatch] = useState(false);
-	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-	const [refreshKey, setRefreshKey] = useState(0);
+export default async function MatchesPage({ searchParams }: { searchParams: SearchParams }) {
+	const query = await searchParams;
+	const status = parseStatusFilter(first(query.status));
+	const rawTournament = first(query.tournament);
+	const tournamentId = rawTournament && /^\d{1,9}$/.test(rawTournament) ? rawTournament : '';
+	const page = Math.max(1, Number.parseInt(first(query.page) ?? '1', 10) || 1);
 
-	useEffect(() => {
-		fetch('/api/tournaments?limit=100')
-			.then((r) => r.json())
-			.then((data) => setTournaments(Array.isArray(data) ? data.map((t: { id: number; name: string }) => ({ id: t.id, name: t.name })) : []))
-			.catch((e) => console.error('Failed to load tournaments', e));
-
-		fetch('/api/user')
-			.then((r) => (r.ok ? r.json() : null))
-			.then((data) => setCanCreateMatch(data?.user?.role === 'ADMIN' || data?.user?.role === 'TOURNAMENT_ADMIN'))
-			.catch(() => setCanCreateMatch(false));
-	}, []);
-
-	useEffect(() => {
-		setPage(1);
-	}, [status, tournamentId]);
-
-	useEffect(() => {
-		setIsLoading(true);
-		const params = new URLSearchParams({ page: String(page), limit: String(MATCHES_PER_PAGE) });
-		if (status !== 'ALL') params.set('status', status);
-		if (tournamentId) params.set('tournamentId', tournamentId);
-
-		fetch(`/api/matches/public?${params.toString()}`)
-			.then((r) => r.json())
-			.then((data) => {
-				setMatches(Array.isArray(data.matches) ? data.matches : []);
-				setTotalPages(data.totalPages ?? 1);
-			})
-			.catch((e) => console.error('Failed to load matches', e))
-			.finally(() => setIsLoading(false));
-	}, [status, tournamentId, page, refreshKey]);
-
-	const groups = groupByDay(matches);
+	const session = await getAuthSession();
+	const canCreateMatch = session ? await userHasPermission(session.user.id, 'matches:manage') : false;
 
 	return (
 		<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
 			<div className='mb-6 flex items-center justify-between gap-3'>
 				<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
-				{canCreateMatch && <Button onClick={() => setIsCreateDialogOpen(true)}>Create Match</Button>}
+				{canCreateMatch && <CreateMatchButton />}
 			</div>
 
-			<div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-				<div className='flex flex-wrap gap-2'>
-					{STATUS_TABS.map((tab) => (
-						<Button key={tab.value} variant={status === tab.value ? 'default' : 'outline'} size='sm' aria-pressed={status === tab.value} onClick={() => setStatus(tab.value)}>
-							{tab.label}
-						</Button>
-					))}
-				</div>
-				<Select value={tournamentId || 'ALL'} onValueChange={(value) => setTournamentId(value === 'ALL' ? '' : value)}>
-					<SelectTrigger className='w-full sm:w-56'>
-						<SelectValue placeholder='All tournaments' />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value='ALL'>All tournaments</SelectItem>
-						{tournaments.map((t) => (
-							<SelectItem key={t.id} value={String(t.id)}>
-								{t.name}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-			</div>
-
-			{isLoading ? (
-				<div role='status' aria-busy='true' className='space-y-2'>
-					<span className='sr-only'>Loading matches…</span>
-					{Array.from({ length: 6 }).map((_, i) => (
-						<Skeleton key={i} className='h-14 w-full bg-neutral-900' />
-					))}
-				</div>
-			) : matches.length === 0 ? (
-				<div className='rounded-md border border-border px-4 py-24 text-center'>
-					<p className='font-semibold'>No matches found</p>
-					<p className='mt-1 text-sm text-muted-foreground'>{status !== 'ALL' || tournamentId ? 'Nothing matches these filters. Try All, or pick another tournament.' : 'Matches appear here once a tournament starts or a pickup is created.'}</p>
-				</div>
-			) : (
-				<div className='space-y-6'>
-					{groups.map((group) => (
-						<div key={group.label}>
-							<h2 className='mb-2 whitespace-nowrap text-xs font-bold uppercase tracking-widest text-muted-foreground'>{group.label}</h2>
-							<div className='space-y-2'>
-								{group.matches.map((match) => (
-									<MatchRow key={match.id} match={match} />
-								))}
-							</div>
-						</div>
-					))}
-				</div>
-			)}
-
-			<Pagination totalPages={totalPages} currentPage={page} onPageChange={setPage} />
-
-			{canCreateMatch && <CreateMatchDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={() => setRefreshKey((k) => k + 1)} />}
+			<Suspense fallback={<MatchesSkeleton />}>
+				<MatchesSection status={status} tournamentId={tournamentId} page={page} />
+			</Suspense>
 		</div>
 	);
 }

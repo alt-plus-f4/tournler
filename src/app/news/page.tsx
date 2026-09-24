@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, MessageSquare, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
+import { isOptimizable } from '@/lib/image-hosts';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { buttonVariants } from '@/components/ui/button';
@@ -17,16 +18,11 @@ export const metadata: Metadata = {
 	description: 'Announcements, patch notes and tournament news from Tournler.',
 };
 
+// New posts and comment counts; always render per request (it also reads the session).
+export const dynamic = 'force-dynamic';
+
 interface NewsPageProps {
 	searchParams: Promise<{ page?: string }>;
-}
-
-function isOptimizable(url: string) {
-	try {
-		return new URL(url).hostname.endsWith('.public.blob.vercel-storage.com');
-	} catch {
-		return url.startsWith('/');
-	}
 }
 
 export default async function NewsPage({ searchParams }: NewsPageProps) {

@@ -1,20 +1,24 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import TeamDrawer from '@/components/TeamDrawer';
 import { getAuthSession } from '@/lib/auth';
 import LoginButtons from '@/components/LoginButtons';
-import { TeamCard } from '@/components/TeamCard';
-import { ExtendedCs2Team } from '@/lib/models/team-model';
+import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
+import { TeamsCards, TeamsCardsSkeleton } from './_components/TeamsCards';
 
 export const metadata: Metadata = {
 	title: 'Teams',
 };
 
+// Team list and the viewer's own team change constantly; never serve a build-time snapshot.
+export const dynamic = 'force-dynamic';
+
 export default async function Page() {
 	const session = await getAuthSession();
-	const userTeam: { id: number; name: string } | null = session?.user.email ? await getUserTeam(session.user.email) : null;
+	const userTeam: { id: number; name: string } | null = session?.user.id ? ((await fetchUserTeam(session.user.id))?.team ?? null) : null;
 
 	return (
 		<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
@@ -45,62 +49,11 @@ export default async function Page() {
 
 			<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
 				{!userTeam && session?.user && <TeamDrawer />}
-				{await TeamsCards()}
+				{/* The shell (heading + your-team banner) paints first; the card grid streams in. */}
+				<Suspense fallback={<TeamsCardsSkeleton />}>
+					<TeamsCards />
+				</Suspense>
 			</div>
 		</div>
 	);
-}
-
-async function getUserTeam(userEmail: string) {
-	try {
-		const response = await fetch(`${process.env.NEXTAUTH_URL}/api/user/team?email=${encodeURIComponent(userEmail)}`);
-		const data = await response.json();
-
-		if (!response.ok) {
-			console.error('Error response:', data.error);
-			throw new Error(data.error || 'Failed to fetch user team');
-		}
-
-		return data.team ?? null;
-	} catch (error) {
-		console.error('Error fetching user team:', error);
-		return null;
-	}
-}
-
-async function TeamsCards() {
-	try {
-		const response = await fetch(`${process.env.NEXTAUTH_URL}/api/teams?limit=100`);
-		const data = await response.json();
-
-		if (!response.ok) {
-			console.error('Error response:', data.error);
-			throw new Error(data.error || 'Failed to fetch teams');
-		}
-
-		if (!data.teams?.length) {
-			return (
-				<div className='col-span-full rounded-md border border-border px-4 py-12 text-center'>
-					<p className='font-semibold'>No teams yet</p>
-					<p className='mt-1 text-sm text-muted-foreground'>The first team created will show up here.</p>
-				</div>
-			);
-		}
-
-		return (
-			<>
-				{data.teams.map((team: ExtendedCs2Team) => (
-					<TeamCard key={team.id} team={team} />
-				))}
-			</>
-		);
-	} catch (error) {
-		console.error('Error fetching teams:', error);
-		return (
-			<div role='alert' className='col-span-full rounded-md border border-signal-live/20 bg-signal-live/10 px-4 py-12 text-center'>
-				<p className='font-semibold'>Teams couldn&apos;t be loaded</p>
-				<p className='mt-1 text-sm text-muted-foreground'>Reload the page to try again.</p>
-			</div>
-		);
-	}
 }

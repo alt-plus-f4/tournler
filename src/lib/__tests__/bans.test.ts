@@ -5,6 +5,8 @@
  * These tests pin that, plus who is allowed to ban whom.
  */
 const getServerSession = jest.fn();
+// Next's App Router bundles a React with `cache`; the standalone React 18 Jest uses doesn't export it.
+jest.mock('react', () => ({ ...jest.requireActual('react'), cache: <T,>(fn: T) => fn }));
 jest.mock('next-auth', () => ({ getServerSession: (...args: unknown[]) => getServerSession(...args) }));
 jest.mock('next-auth/providers/email', () => ({ __esModule: true, default: () => ({}) }));
 jest.mock('next-auth/providers/discord', () => ({ __esModule: true, default: () => ({}) }));

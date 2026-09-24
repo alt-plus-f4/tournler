@@ -92,7 +92,7 @@ export function RoomHeader({ match, quickBar, tabs }: { match: Match; quickBar?:
 	return (
 		<section className='relative isolate overflow-hidden border-b border-border bg-black'>
 			{mapImage && (
-				<Image src={mapImage} alt='' fill priority sizes='100vw' className={cn('-z-20 object-cover transition-[filter,opacity] duration-500', isFinal ? 'opacity-20 grayscale' : match.status === 'SCHEDULED' ? 'opacity-25' : 'opacity-40')} />
+				<Image src={mapImage} alt='' fill preload sizes='100vw' className={cn('-z-20 object-cover transition-[filter,opacity] duration-500', isFinal ? 'opacity-20 grayscale' : match.status === 'SCHEDULED' ? 'opacity-25' : 'opacity-40')} />
 			)}
 			<div className='absolute inset-0 -z-10 bg-gradient-to-b from-black/80 via-black/70 to-black' />
 			{(match.status === 'LIVE' || match.status === 'PAUSED') && <div className={cn('absolute inset-x-0 top-0 h-[3px]', match.status === 'LIVE' ? 'bg-signal-live' : 'bg-signal-hold')} aria-hidden />}

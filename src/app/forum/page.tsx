@@ -13,6 +13,9 @@ export const metadata: Metadata = {
 	description: 'Talk Counter-Strike, tournaments and everything else with the Tournler community.',
 };
 
+// Thread list changes with every post; always render per request.
+export const dynamic = 'force-dynamic';
+
 interface ForumPageProps {
 	searchParams: Promise<{ category?: string | string[]; page?: string | string[] }>;
 }

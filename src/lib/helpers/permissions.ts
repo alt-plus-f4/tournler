@@ -1,40 +1,19 @@
-import { UserRole } from '@prisma/client';
+import { cache } from 'react';
+import type { UserRole } from '@prisma/client';
 import { db } from '@/lib/db';
 
-export type Permission = 'admin:access' | 'users:manage' | 'teams:manage' | 'tournaments:manage' | 'matches:manage' | 'servers:manage' | 'content:manage' | 'forum:moderate' | 'users:ban';
+export { hasPermission, isAdminRole, type Permission } from './permission-map';
+import { hasPermission, type Permission } from './permission-map';
 
-const permissionMap: Record<Permission, UserRole[]> = {
-	'admin:access': ['MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'ADMIN'],
-	'users:manage': ['ADMIN'],
-	'teams:manage': ['MODERATOR', 'ADMIN'],
-	'tournaments:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
-	'matches:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
-	'servers:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
-	'content:manage': ['CONTENT_ADMIN', 'ADMIN'],
-	'forum:moderate': ['MODERATOR', 'CONTENT_ADMIN', 'ADMIN'],
-	'users:ban': ['MODERATOR', 'CONTENT_ADMIN', 'ADMIN'],
-};
-
-export function hasPermission(role: UserRole | null | undefined, permission: Permission): boolean {
-	if (!role) {
-		return false;
-	}
-
-	return permissionMap[permission].includes(role);
-}
-
-export function isAdminRole(role: UserRole | null | undefined): boolean {
-	return hasPermission(role, 'admin:access');
-}
-
-export async function getUserRole(userId: string): Promise<UserRole | null> {
+/** Cached per request (React `cache`): pages often check several permissions for the same user. */
+export const getUserRole = cache(async function getUserRole(userId: string): Promise<UserRole | null> {
 	const user = await db.user.findUnique({
 		where: { id: userId },
 		select: { role: true },
 	});
 
 	return user?.role ?? null;
-}
+});
 
 export async function userHasPermission(userId: string, permission: Permission): Promise<boolean> {
 	const role = await getUserRole(userId);

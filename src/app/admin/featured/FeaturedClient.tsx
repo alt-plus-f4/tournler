@@ -8,7 +8,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/hooks/use-toast';
-import EditNewsDialog, { NewsPostDefinition } from '@/components/EditNewsDialog';
+import dynamic from 'next/dynamic';
+import type { NewsPostDefinition } from '@/components/EditNewsDialog';
+import { useLatched } from '@/lib/hooks/use-latched';
+
+// The news editor dialog is only fetched once an admin first opens it.
+const EditNewsDialog = dynamic(() => import('@/components/EditNewsDialog'));
 import { Tournament } from '@/types/types';
 import { DEFAULT_REWATCH, parseYouTubeId } from '@/components/home/rewatch-config';
 
@@ -50,6 +55,7 @@ export default function FeaturedClient() {
 	const [editingPost, setEditingPost] = useState<NewsPostDefinition | null>(null);
 	const [isCreatingPost, setIsCreatingPost] = useState(false);
 	const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+	const postDialogMounted = useLatched(isPostDialogOpen);
 
 	const { toast } = useToast();
 
@@ -392,7 +398,7 @@ export default function FeaturedClient() {
 				)}
 			</section>
 
-			<EditNewsDialog post={isCreatingPost ? null : editingPost} isOpen={isPostDialogOpen} onClose={() => setIsPostDialogOpen(false)} onSave={handleSavePost} onDelete={handleDeletePost} />
+			{postDialogMounted && <EditNewsDialog post={isCreatingPost ? null : editingPost} isOpen={isPostDialogOpen} onClose={() => setIsPostDialogOpen(false)} onSave={handleSavePost} onDelete={handleDeletePost} />}
 		</div>
 	);
 }

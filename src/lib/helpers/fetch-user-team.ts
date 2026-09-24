@@ -1,16 +1,15 @@
-export async function fetchUserTeam(userId: string) {
+import { cache } from 'react';
+import { db } from '@/lib/db';
+
+/**
+ * The team a user plays for (`{ team: { id, name } | null }`), read directly from the DB rather
+ * than via GET /api/user/team over HTTP. Cached per request.
+ */
+export const fetchUserTeam = cache(async function fetchUserTeam(userId: string) {
 	try {
-		const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-		const response = await fetch(`${baseUrl}/api/user/team?id=${encodeURIComponent(userId)}`);
-
-		if (!response.ok) {
-			return null;
-		}
-
-		const userTeam = await response.json();
-
-		return userTeam;
+		const user = await db.user.findUnique({ where: { id: userId }, select: { cs2Team: { select: { id: true, name: true } } } });
+		return { team: user?.cs2Team ?? null };
 	} catch {
 		return null;
 	}
-}
+});

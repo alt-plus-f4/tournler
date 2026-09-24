@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Pagination } from '@/components/Pagination';
 import { BanStatus, BanUserDialog } from '@/components/admin/BanUserDialog';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
+import { isOptimizable } from '@/lib/image-hosts';
 import { cn } from '@/lib/utils';
 
 type Person = { id: string; name: string | null; image: string | null; role: string };
@@ -216,8 +218,8 @@ function PersonCell({ person }: { person: Person }) {
 	return (
 		<Link href={`/profile/${person.id}`} className='group flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
 			{person.image ? (
-				// eslint-disable-next-line @next/next/no-img-element -- avatars come from several providers' hosts
-				<img src={person.image} alt='' width={28} height={28} loading='lazy' className='h-7 w-7 shrink-0 rounded-full border border-border object-cover' />
+				// Avatars come from several providers' hosts; only allowlisted ones go through the optimizer.
+				<Image src={person.image} alt='' width={28} height={28} unoptimized={!isOptimizable(person.image)} className='h-7 w-7 shrink-0 rounded-full border border-border object-cover' />
 			) : (
 				<span aria-hidden className='flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border text-xs text-muted-foreground'>
 					{(person.name || '?').charAt(0).toUpperCase()}

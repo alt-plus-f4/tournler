@@ -6,7 +6,11 @@ import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Cs2Team } from '@/types/types';
-import EditTeamDialog from '@/components/EditTeamDialog';
+import dynamic from 'next/dynamic';
+import { useLatched } from '@/lib/hooks/use-latched';
+
+// Only fetched once an admin first opens a team.
+const EditTeamDialog = dynamic(() => import('@/components/EditTeamDialog'));
 
 const TEAMS_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -17,6 +21,7 @@ export default function TeamsClient() {
 	const [totalPages, setTotalPages] = useState(1);
 	const [editingTeam, setEditingTeam] = useState<Cs2Team | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const editMounted = useLatched(isEditDialogOpen);
 	const [isLoading, setIsLoading] = useState(true);
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 	const [searchInput, setSearchInput] = useState('');
@@ -87,7 +92,7 @@ export default function TeamsClient() {
 				}}
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
-			<EditTeamDialog team={editingTeam} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
+			{editMounted && <EditTeamDialog team={editingTeam} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
 		</div>
 	);
 }

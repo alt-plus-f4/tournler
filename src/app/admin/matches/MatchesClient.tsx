@@ -7,8 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Match } from '@/types/types';
-import EditMatchDialog from '@/components/EditMatchDialog';
-import CreateMatchDialog from '@/components/CreateMatchDialog';
+import dynamic from 'next/dynamic';
+import { useLatched } from '@/lib/hooks/use-latched';
+
+// Both dialogs are only fetched once first opened.
+const EditMatchDialog = dynamic(() => import('@/components/EditMatchDialog'));
+const CreateMatchDialog = dynamic(() => import('@/components/CreateMatchDialog'));
 
 const MATCHES_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -24,6 +28,8 @@ export default function MatchesClient() {
 	const [searchInput, setSearchInput] = useState('');
 	const [search, setSearch] = useState('');
 	const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+	const editMounted = useLatched(isEditDialogOpen);
+	const createMounted = useLatched(isCreateDialogOpen);
 
 	useEffect(() => {
 		const timeout = setTimeout(() => {
@@ -85,8 +91,8 @@ export default function MatchesClient() {
 				}}
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
-			<EditMatchDialog match={editingMatch} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} />
-			<CreateMatchDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={handleCreate} />
+			{editMounted && <EditMatchDialog match={editingMatch} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} />}
+			{createMounted && <CreateMatchDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={handleCreate} />}
 		</div>
 	);
 }

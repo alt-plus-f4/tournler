@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { cache } from 'react';
+import { cache, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
@@ -19,6 +19,10 @@ import type { Champion, TournamentDetail } from '@/components/tournament-tabs/ty
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
 import { StartTournamentButton } from '@/components/StartTournamentButton';
 import Timer from '@/components/Timer';
+
+// Registration, brackets and results change constantly (and JoinLeaveButton revalidates this path);
+// always render per request.
+export const dynamic = 'force-dynamic';
 
 interface TournamentPageProps {
 	params: Promise<{
@@ -105,36 +109,76 @@ export async function generateMetadata({ params }: TournamentPageProps): Promise
 	return { title: tournament?.name ?? 'Tournament not found' };
 }
 
-export default async function TournamentPage({ params }: TournamentPageProps) {
-	const { slug } = await params;
-	const tournament = await getTournament(slug);
-	if (!tournament) notFound();
+type LoadedTournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;
 
-	const session = await getAuthSession();
-	const user = session?.user;
-	const [canManageTournaments, userTeamResponse, champion, withFlair] = await Promise.all([
-		user ? userHasPermission(user.id, 'tournaments:manage') : Promise.resolve(false),
-		user ? fetchUserTeam(user.id) : Promise.resolve(null),
+/**
+ * Everything the tabs need that the hero doesn't: per-player flair (FACEIT levels are an external
+ * API call) and the champion lookup. Started before the hero's auth queries and awaited inside a
+ * Suspense boundary, so the hero paints without waiting on FACEIT.
+ */
+async function loadTabs(tournament: LoadedTournament): Promise<{ detail: TournamentDetail; champion: Champion | null }> {
+	const [champion, withFlair] = await Promise.all([
 		tournament.status === 'COMPLETED' ? getChampion(tournament.id, tournament.format) : Promise.resolve(null),
 		// Verified badge + real FACEIT level per rostered player; Steam IDs/badge rows are stripped here.
 		flairMapper(tournament.teams.flatMap((t) => t.members)),
 	]);
-	const userTeam: { id: number; name: string } | null = userTeamResponse?.team ?? null;
-
-	const registration = getRegistration(tournament);
-	const timeLeftToJoin = Math.max(tournament.startDate.getTime() - Date.now(), 0);
-
 	const detail: TournamentDetail = {
 		...tournament,
 		startDate: tournament.startDate.toISOString(),
 		endDate: tournament.endDate.toISOString(),
 		teams: tournament.teams.map((t) => ({ ...t, members: t.members.map(withFlair) })),
 	};
+	return { detail, champion };
+}
+
+async function TournamentTabs({ data }: { data: ReturnType<typeof loadTabs> }) {
+	const { detail, champion } = await data;
+	return <TabMenu tournament={detail} champion={champion} />;
+}
+
+/** Matches TabMenu's tab bar + first panel footprint so the page doesn't jump when it streams in. */
+function TabsSkeleton() {
+	return (
+		<div role='status' aria-busy='true'>
+			<span className='sr-only'>Loading tournament details…</span>
+			<div className='border-b border-border py-2 md:mx-4'>
+				<div className='flex justify-between gap-2 md:justify-start md:gap-16 lg:gap-24'>
+					{Array.from({ length: 6 }).map((_, i) => (
+						<div key={i} className='h-9 w-16 rounded-md bg-neutral-900 sm:w-20' />
+					))}
+				</div>
+			</div>
+			<div className='mt-6 space-y-3 md:mx-4'>
+				<div className='h-5 w-40 rounded-md bg-neutral-900' />
+				<div className='h-64 rounded-md border border-border bg-neutral-950' />
+			</div>
+		</div>
+	);
+}
+
+export default async function TournamentPage({ params }: TournamentPageProps) {
+	const { slug } = await params;
+	const tournament = await getTournament(slug);
+	if (!tournament) notFound();
+
+	const tabs = loadTabs(tournament);
+
+	const session = await getAuthSession();
+	const user = session?.user;
+	const [canManageTournaments, userTeamResponse] = await Promise.all([
+		user ? userHasPermission(user.id, 'tournaments:manage') : Promise.resolve(false),
+		user ? fetchUserTeam(user.id) : Promise.resolve(null),
+	]);
+	const userTeam: { id: number; name: string } | null = userTeamResponse?.team ?? null;
+
+	const registration = getRegistration(tournament);
+	const timeLeftToJoin = Math.max(tournament.startDate.getTime() - Date.now(), 0);
+	const joinTarget = { id: tournament.id, name: tournament.name, startDate: tournament.startDate.toISOString() };
 
 	return (
 		<Card className='mx-auto mt-8 mb-12 w-[calc(100%-2rem)] overflow-hidden border-none bg-transparent sm:w-5/6'>
 			<CardHeader className='relative min-h-[300px] w-full justify-end space-y-0 overflow-hidden rounded-t-xl bg-neutral-900 p-0'>
-				{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt='' fill priority sizes='(max-width: 640px) 100vw, 84vw' className='object-cover' />}
+				{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt='' fill preload sizes='(max-width: 640px) 100vw, 84vw' className='object-cover' />}
 				<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent' />
 
 				<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'absolute left-2 top-2 z-10 bg-black/60')}>
@@ -168,7 +212,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 							</div>
 						)}
 
-						{registration.open && userTeam && <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={detail} team={userTeam} isFull={registration.full} />}
+						{registration.open && userTeam && <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={joinTarget} team={userTeam} isFull={registration.full} />}
 						{registration.open && !registration.full && !user && (
 							<p className='text-sm text-muted-foreground'>
 								<Link href='/sign-in' className='font-medium text-white underline underline-offset-4'>
@@ -190,7 +234,9 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 			</CardHeader>
 
 			<CardContent className='p-0'>
-				<TabMenu tournament={detail} champion={champion} />
+				<Suspense fallback={<TabsSkeleton />}>
+					<TournamentTabs data={tabs} />
+				</Suspense>
 			</CardContent>
 		</Card>
 	);

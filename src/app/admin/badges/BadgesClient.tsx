@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TrophyIcon } from '@/components/trophies/TrophyIcon';
-import EditBadgeDialog, { BadgeDefinition } from '@/components/EditBadgeDialog';
+import dynamic from 'next/dynamic';
+import type { BadgeDefinition } from '@/components/EditBadgeDialog';
+import { useLatched } from '@/lib/hooks/use-latched';
+
+// The badge editor dialog is only fetched once an admin first opens it.
+const EditBadgeDialog = dynamic(() => import('@/components/EditBadgeDialog'));
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { adminTable as t } from '@/components/admin/table-styles';
@@ -16,6 +21,7 @@ export default function BadgesClient() {
 	const [editingBadge, setEditingBadge] = useState<BadgeDefinition | null>(null);
 	const [isCreatingNew, setIsCreatingNew] = useState(false);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const dialogMounted = useLatched(isDialogOpen);
 	const [search, setSearch] = useState('');
 
 	const fetchBadges = async () => {
@@ -134,7 +140,7 @@ export default function BadgesClient() {
 				</table>
 			</div>
 
-			<EditBadgeDialog badge={isCreatingNew ? null : editingBadge} isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
+			{dialogMounted && <EditBadgeDialog badge={isCreatingNew ? null : editingBadge} isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
 		</div>
 	);
 }

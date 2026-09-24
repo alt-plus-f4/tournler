@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import Page from '../teams/page';
 import { getAuthSession } from '@/lib/auth';
+import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 // Removed the import of jest as it is available globally in the test environment
 
@@ -32,8 +33,13 @@ jest.mock('@/components/FallbackCards', () => ({
 	FallbackCards: () => <div data-testid='fallback-cards'>Fallback Cards</div>,
 }));
 
-// Mock fetch
-global.fetch = jest.fn();
+// The page reads the DB directly now (no self-HTTP); stub the viewer's-team lookup and the
+// streamed card grid (an async server component, which the jsdom renderer can't render).
+jest.mock('@/lib/helpers/fetch-user-team', () => ({ fetchUserTeam: jest.fn() }));
+jest.mock('../teams/_components/TeamsCards', () => ({
+	TeamsCards: () => <div data-testid='teams-cards'>Teams Cards</div>,
+	TeamsCardsSkeleton: () => null,
+}));
 
 describe('Teams Page', () => {
 	beforeEach(() => {
@@ -44,11 +50,6 @@ describe('Teams Page', () => {
 		// Mock session as null (not logged in)
 		(getAuthSession as jest.Mock).mockResolvedValue(null);
 
-		// Mock fetch to return empty teams array
-		(global.fetch as jest.Mock).mockResolvedValue({
-			ok: true,
-			json: async () => ({ teams: [] }),
-		});
 
 		// Render the page component
 		const page = await Page();
@@ -62,11 +63,6 @@ describe('Teams Page', () => {
 		// Mock session as null (not logged in)
 		(getAuthSession as jest.Mock).mockResolvedValue(null);
 
-		// Mock fetch to return empty teams array
-		(global.fetch as jest.Mock).mockResolvedValue({
-			ok: true,
-			json: async () => ({ teams: [] }),
-		});
 
 		// Render the page component
 		const page = await Page();
@@ -83,19 +79,8 @@ describe('Teams Page', () => {
 			user: { email: 'test@example.com', id: '123' },
 		});
 
-		// Mock getUserTeam to return null (no team)
-		(global.fetch as jest.Mock).mockImplementation((url: string) => {
-			if (url.includes('/api/user/team')) {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ team: null }),
-				});
-			}
-			return Promise.resolve({
-				ok: true,
-				json: async () => ({ teams: [] }),
-			});
-		});
+		// Viewer has no team
+		(fetchUserTeam as jest.Mock).mockResolvedValue({ team: null });
 
 		// Render the page component
 		const page = await Page();

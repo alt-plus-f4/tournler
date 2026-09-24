@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
@@ -256,16 +257,18 @@ export const authOptions: NextAuthOptions = {
 };
 
 /**
- * The session for authorization. Banned users get `null`, so every route and page that checks
+ * The session for authorization. Wrapped in React `cache` so every server component, layout and
+ * generateMetadata in one request shares a single lookup instead of hitting the DB each time.
+ * Banned users get `null`, so every route and page that checks
  * for a signed-in user refuses them without needing its own ban check.
  */
-export const getAuthSession = async () => {
+export const getAuthSession = cache(async () => {
 	const session = await getServerSession(authOptions);
 	return session?.user?.ban ? null : session;
-};
+});
 
 /**
  * The raw session, including banned users. Only for UI that must still recognize them (the
  * navbar's account menu so they can sign out, and the suspension notice). Never for authorization.
  */
-export const getSessionIncludingBanned = () => getServerSession(authOptions);
+export const getSessionIncludingBanned = cache(() => getServerSession(authOptions));

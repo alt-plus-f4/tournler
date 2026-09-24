@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import { TeamLogo } from '@/components/TeamLogo';
 import { Hourglass } from 'lucide-react';
+import { isOptimizable } from '@/lib/image-hosts';
 import { cn } from '@/lib/utils';
 import { formatDuration, type Match } from './types';
 
@@ -124,8 +126,7 @@ export function TeamMark({ logo, name, size = 'lg', dim = false }: { logo: strin
 export function PlayerAvatar({ src, name, size = 32 }: { src: string | null; name: string; size?: number }) {
 	const [failed, setFailed] = useState(false);
 	if (src && !failed) {
-		// eslint-disable-next-line @next/next/no-img-element
-		return <img src={src} alt='' width={size} height={size} style={{ width: size, height: size }} className='shrink-0 rounded-full border border-border object-cover' onError={() => setFailed(true)} />;
+		return <Image src={src} alt='' width={size} height={size} unoptimized={!isOptimizable(src)} style={{ width: size, height: size }} className='shrink-0 rounded-full border border-border object-cover' onError={() => setFailed(true)} />;
 	}
 	return (
 		<span style={{ width: size, height: size }} className='flex shrink-0 items-center justify-center rounded-full border border-border bg-neutral-900 text-xs font-bold text-neutral-400' aria-hidden>

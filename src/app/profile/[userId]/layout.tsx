@@ -1,15 +1,14 @@
 import type { Metadata } from 'next';
-import { db } from '@/lib/db';
+import { getProfileUser } from './_lib/load-profile';
 
-// The profile page is a client component, so its <title> comes from this segment layout.
+// Profiles change with every match, badge and edit; always render per request.
+export const dynamic = 'force-dynamic';
+
 // Same lookup order as GET /api/users/[slug]: user id first, then a case-insensitive name.
+// getProfileUser is React-cached, so this shares the page's query.
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
 	const { userId } = await params;
-	const slug = decodeURIComponent(userId);
-	const user =
-		(await db.user.findUnique({ where: { id: slug }, select: { name: true } })) ??
-		(await db.user.findFirst({ where: { name: { equals: slug, mode: 'insensitive' } }, select: { name: true } }));
-
+	const user = await getProfileUser(decodeURIComponent(userId));
 	return { title: user?.name ?? 'Player' };
 }
 
