@@ -1,10 +1,13 @@
 'use client';
 
 import { SetStateAction, useEffect, useState } from 'react';
+import type { Game } from '@prisma/client';
 import { WelcomeStep } from './onboarding/WelcomeStep';
 import { NicknameStep } from './onboarding/NicknameStep';
 import { AvatarStep } from './onboarding/AvatarStep';
+import { GamesStep } from './onboarding/GamesStep';
 import { SteamStep } from './onboarding/SteamStep';
+import { RiotStep } from './onboarding/RiotStep';
 import { CompletedStep } from './onboarding/CompletedStep';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
@@ -22,17 +25,42 @@ enum OnboardingDialogSteps {
 	Welcome,
 	Nickname,
 	Avatar,
+	Games,
 	Steam,
+	Riot,
 	Completed,
 }
 
-const steps = [
-	{ number: 0, title: 'Welcome', completed: false },
-	{ number: 1, title: 'Nickname', completed: false },
-	{ number: 2, title: 'Avatar', completed: false },
-	{ number: 3, title: 'Steam', completed: false },
-	{ number: 4, title: 'Completed', completed: false },
-];
+const STEP_TITLES: Record<OnboardingDialogSteps, string> = {
+	[OnboardingDialogSteps.Welcome]: 'Welcome',
+	[OnboardingDialogSteps.Nickname]: 'Nickname',
+	[OnboardingDialogSteps.Avatar]: 'Avatar',
+	[OnboardingDialogSteps.Games]: 'Your games',
+	[OnboardingDialogSteps.Steam]: 'Steam',
+	[OnboardingDialogSteps.Riot]: 'Riot ID',
+	[OnboardingDialogSteps.Completed]: 'Completed',
+};
+
+/**
+ * The step sequence for a given set of games: Steam only shows once CS2 is picked, Riot ID only
+ * once League is picked. Before the Games step is answered (empty array), neither shows yet —
+ * they appear as soon as the player picks a game, without waiting for the Games step to complete.
+ */
+function visibleSteps(games: Game[]) {
+	const all = [
+		OnboardingDialogSteps.Welcome,
+		OnboardingDialogSteps.Nickname,
+		OnboardingDialogSteps.Avatar,
+		OnboardingDialogSteps.Games,
+		OnboardingDialogSteps.Steam,
+		OnboardingDialogSteps.Riot,
+		OnboardingDialogSteps.Completed,
+	];
+	return all
+		.filter((n) => n !== OnboardingDialogSteps.Steam || games.includes('CS2'))
+		.filter((n) => n !== OnboardingDialogSteps.Riot || games.includes('LOL'))
+		.map((number) => ({ number, title: STEP_TITLES[number] }));
+}
 
 export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	const [open, setOpen] = useState(false);
@@ -41,6 +69,9 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	const { toast } = useToast();
 	const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 	const [isStepLoading, setIsStepLoading] = useState(false);
+	const [games, setGames] = useState<Game[]>([]);
+
+	const steps = visibleSteps(games);
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
@@ -56,16 +87,21 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 				const data = await response.json();
 
 				if (response.ok) {
+					const userGames: Game[] = Array.isArray(data.games) ? data.games : [];
+					setGames(userGames);
+
 					const completed: SetStateAction<number[]> = [];
 					if (data.hasName) {
 						completed.push(OnboardingDialogSteps.Welcome);
 						completed.push(OnboardingDialogSteps.Nickname);
 					}
 					if (data.hasImage) completed.push(OnboardingDialogSteps.Avatar);
+					if (userGames.length > 0) completed.push(OnboardingDialogSteps.Games);
 					if (data.hasLinkedSteam) completed.push(OnboardingDialogSteps.Steam);
+					if (data.hasLinkedRiot) completed.push(OnboardingDialogSteps.Riot);
 					setCompletedSteps(completed);
 
-					const nextStep = steps.find((step) => !completed.includes(step.number))?.number;
+					const nextStep = visibleSteps(userGames).find((step) => !completed.includes(step.number))?.number;
 					dispatch(setCurrentStep(nextStep ?? OnboardingDialogSteps.Completed));
 				} else {
 					toast({
@@ -99,11 +135,11 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		}
 	}
 
-	async function handleStepCompletion(stepNumber: number) {
-		setCompletedSteps((prev) => [...prev, stepNumber]);
-		steps[stepNumber].completed = true;
-		const nextStep = steps.find((step) => ![...completedSteps, stepNumber].includes(step.number))?.number;
-		dispatch(setCurrentStep(nextStep ?? OnboardingDialogSteps.Completed));
+	async function handleStepCompletion(stepNumber: number, gamesOverride?: Game[]) {
+		const nextCompleted = [...completedSteps, stepNumber];
+		setCompletedSteps(nextCompleted);
+		const next = visibleSteps(gamesOverride ?? games).find((step) => !nextCompleted.includes(step.number))?.number;
+		dispatch(setCurrentStep(next ?? OnboardingDialogSteps.Completed));
 	}
 
 	async function handleWelcome() {
@@ -121,10 +157,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 				headers: { 'Content-Type': 'application/json' },
 			});
 			const json = await response.json();
-			if (response.ok) {
-				setCompletedSteps((prev) => [...prev, OnboardingDialogSteps.Nickname]);
-				dispatch(setCurrentStep(OnboardingDialogSteps.Avatar));
-			} else {
+			if (!response.ok) {
 				toast({
 					variant: 'destructive',
 					title: json.message || 'An error occurred.',
@@ -152,10 +185,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 				headers: { 'Content-Type': 'application/json' },
 			});
 			const json = await response.json();
-			if (response.ok) {
-				setCompletedSteps((prev) => [...prev, OnboardingDialogSteps.Avatar]);
-				dispatch(setCurrentStep(OnboardingDialogSteps.Steam));
-			} else {
+			if (!response.ok) {
 				toast({
 					variant: 'destructive',
 					title: json.message || 'An error occurred.',
@@ -174,9 +204,48 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		setIsStepLoading(false);
 	}
 
+	async function handleGames(selected: Game[]) {
+		setIsStepLoading(true);
+		try {
+			const response = await fetch('/api/user/onboarding/games', {
+				method: 'PATCH',
+				body: JSON.stringify({ games: selected }),
+				headers: { 'Content-Type': 'application/json' },
+			});
+			const json = await response.json();
+			if (!response.ok) {
+				toast({
+					variant: 'destructive',
+					title: json.error || 'An error occurred.',
+					description: 'Please try again.',
+				});
+				setIsStepLoading(false);
+				return;
+			}
+		} catch (error) {
+			toast({
+				variant: 'destructive',
+				title: 'An error occurred.',
+				description: 'Please try again.',
+			});
+			console.error(error);
+			setIsStepLoading(false);
+			return;
+		}
+		setGames(selected);
+		await handleStepCompletion(OnboardingDialogSteps.Games, selected);
+		setIsStepLoading(false);
+	}
+
 	async function handleSteam() {
 		setIsStepLoading(true);
 		await handleStepCompletion(OnboardingDialogSteps.Steam);
+		setIsStepLoading(false);
+	}
+
+	async function handleRiot() {
+		setIsStepLoading(true);
+		await handleStepCompletion(OnboardingDialogSteps.Riot);
 		setIsStepLoading(false);
 	}
 
@@ -186,6 +255,12 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		setIsStepLoading(false);
 	}
 
+	const stepBefore = (target: OnboardingDialogSteps): OnboardingDialogSteps => {
+		const list = visibleSteps(games);
+		const idx = list.findIndex((s) => s.number === target);
+		return (idx > 0 ? list[idx - 1].number : OnboardingDialogSteps.Welcome) as OnboardingDialogSteps;
+	};
+
 	const renderStep = () => {
 		switch (currentStep) {
 			case OnboardingDialogSteps.Welcome:
@@ -194,10 +269,14 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 				return <NicknameStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Welcome))} nextStep={(nickname: string) => handleNickname(nickname)} loading={isStepLoading} />;
 			case OnboardingDialogSteps.Avatar:
 				return <AvatarStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))} nextStep={(avatar: Blob) => handleAvatar(avatar)} loading={isStepLoading} />;
+			case OnboardingDialogSteps.Games:
+				return <GamesStep initialGames={games} previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))} nextStep={(selected: Game[]) => handleGames(selected)} loading={isStepLoading} />;
 			case OnboardingDialogSteps.Steam:
-				return <SteamStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))} nextStep={() => handleSteam()} />;
+				return <SteamStep previousStep={() => dispatch(setCurrentStep(stepBefore(OnboardingDialogSteps.Steam)))} nextStep={() => handleSteam()} />;
+			case OnboardingDialogSteps.Riot:
+				return <RiotStep previousStep={() => dispatch(setCurrentStep(stepBefore(OnboardingDialogSteps.Riot)))} nextStep={() => handleRiot()} />;
 			case OnboardingDialogSteps.Completed:
-				return <CompletedStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Steam))} close={() => close()} />;
+				return <CompletedStep previousStep={() => dispatch(setCurrentStep(stepBefore(OnboardingDialogSteps.Completed)))} close={() => close()} />;
 			default:
 				return null;
 		}
@@ -215,13 +294,15 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		return null;
 	};
 
+	const currentIndex = steps.findIndex((s) => s.number === currentStep);
+
 	return (
 		<>
 			<Dialog open={open}>
 				<DialogContent className='max-w-max'>
 					<DialogTitle className='sr-only'>Set up your account</DialogTitle>
 					<DialogDescription className='sr-only'>
-						Step {Math.min(currentStep, steps.length - 1) + 1} of {steps.length}: {steps[currentStep]?.title}
+						Step {Math.max(0, currentIndex) + 1} of {steps.length}: {STEP_TITLES[currentStep as OnboardingDialogSteps]}
 					</DialogDescription>
 					<div className='flex flex-row py-5'>
 						<ol aria-label='Onboarding steps' className='hidden flex-col justify-between border-r border-border py-8 sm:flex'>

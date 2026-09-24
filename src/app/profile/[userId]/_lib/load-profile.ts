@@ -14,10 +14,15 @@ const PUBLIC_USER_SELECT = {
 	image: true,
 	steam: { select: { steamId: true, createdAt: true } },
 	discord: { select: { discordId: true } },
-	cs2Team: { select: { id: true, name: true, logo: true } },
+	// One team per game (CS2 and/or LoL), shown in that game's profile section.
+	teams: { select: { id: true, name: true, logo: true, game: true, _count: { select: { members: true } } } },
+	// Public part of the Riot ID only; the ownership challenge is loaded for the owner separately.
+	riot: { select: { gameName: true, tagLine: true, region: true, verifiedAt: true } },
+	games: true,
 	// Privacy flags: the page strips steam/discord for everyone but the owner when these are false.
 	showDiscord: true,
 	showSteam: true,
+	showRiot: true,
 	badges: {
 		orderBy: { awardedAt: 'desc' },
 		select: {
@@ -78,10 +83,10 @@ export interface EventTrophy {
  * getTournamentChampion) the player played for. "Played for" is decided per final:
  * - if the final has PlayerMatchStat rows, the player must have a row on the winning team;
  * - otherwise (no stats reported) the player counts if they're *currently* a member of the
- *   champion team. That's an approximation: team membership isn't versioned, so a player who
- *   joined the team after the win gets the trophy and one who left loses it.
+ *   champion team (any of their per-game teams). That's an approximation: team membership isn't
+ *   versioned, so a player who joined the team after the win gets the trophy and one who left loses it.
  */
-async function computeEventTrophies(userId: string, currentTeamId: number | null): Promise<EventTrophy[]> {
+async function computeEventTrophies(userId: string, currentTeamIds: number[]): Promise<EventTrophy[]> {
 	const tournaments = await db.cs2Tournament.findMany({
 		where: { status: TournamentStatus.COMPLETED, isSystem: false, format: { not: 'ROUND_ROBIN' } },
 		select: { id: true, name: true, logoUrl: true, bannerUrl: true, endDate: true, format: true },
@@ -127,7 +132,7 @@ async function computeEventTrophies(userId: string, currentTeamId: number | null
 		const final = finals.get(t.id);
 		if (!final) continue;
 		const finalStats = stats.filter((s) => s.matchId === final.id);
-		const playedFor = finalStats.length > 0 ? finalStats.some((s) => s.userId === userId && s.teamId === final.winnerId) : currentTeamId !== null && currentTeamId === final.winnerId;
+		const playedFor = finalStats.length > 0 ? finalStats.some((s) => s.userId === userId && s.teamId === final.winnerId) : final.winnerId !== null && currentTeamIds.includes(final.winnerId);
 		if (!playedFor) continue;
 		const imageUrl = t.logoUrl || t.bannerUrl || null;
 		trophies.push({
@@ -142,7 +147,7 @@ async function computeEventTrophies(userId: string, currentTeamId: number | null
 	return trophies.sort((a, b) => b.wonAt.getTime() - a.wonAt.getTime());
 }
 
-// Public data (the same for every viewer); keyed by user + current team so a roster change re-keys it.
+// Public data (the same for every viewer); keyed by user + current teams so a roster change re-keys it.
 const loadEventTrophies = cachedQuery(computeEventTrophies, ['profile-event-trophies'], {
 	tags: ['tournaments', 'matches', 'teams', 'users'],
 	revalidate: REVALIDATE.standard,
@@ -155,6 +160,6 @@ export function loadProfileExtras(user: ProfileUser) {
 		loadRecentMatches(user.id),
 		// The FACEIT level is public FACEIT data, so it's looked up even when the player hides Steam.
 		user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
-		loadEventTrophies(user.id, user.cs2Team?.id ?? null),
+		loadEventTrophies(user.id, user.teams.map((t) => t.id).sort((a, b) => a - b)),
 	]);
 }

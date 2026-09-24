@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { ArrowRight, Camera, EyeOff, ExternalLink, Pencil, Trophy, User as UserIcon, Users } from 'lucide-react';
+import { ArrowRight, Camera, EyeOff, ExternalLink, Pencil, Trophy, User as UserIcon } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,15 @@ import { TeamLogo } from '@/components/TeamLogo';
 import { VisibilitySwitch } from '@/components/profile/VisibilitySwitch';
 import { LevelBadge } from '@/components/LevelBadge';
 import { DiscordIcon, SteamIcon } from '@/components/Icons';
+import type { Game } from '@prisma/client';
 import { faceitLevelProgress } from '@/lib/faceit-level';
+import { GAMES } from '@/lib/games';
+import { platformLabel } from '@/lib/riot/regions';
+import type { RiotStatusResponse } from '@/lib/riot/types';
+import { GameTag } from '@/components/games/GameMark';
+import { GameAccountsSection } from '@/components/profile/GameAccountsSection';
+import { AccountStatusLabel } from '@/components/profile/AccountStatus';
+import { GameRow, GameSection, GameTeam, type ProfileTeamRef } from '@/components/profile/GameSection';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 
 export interface SteamData {
@@ -50,9 +58,17 @@ export interface PublicProfileData {
 	name: string;
 	bio?: string;
 	image?: string;
+	/** Null when not linked, or hidden from this viewer by the owner's privacy toggle. */
 	steam?: SteamData | null;
+	/** Whether a Steam account is linked at all (true even when its ID is hidden). */
+	steamLinked: boolean;
 	discord?: { discordId: string } | null;
-	cs2Team?: { id: number; name: string; logo: string | null } | null;
+	/** Verified Riot ID only. */
+	riot: { gameName: string; tagLine: string; region: string } | null;
+	/** The player's team in each game (one per game). */
+	teams: Record<Game, ProfileTeamRef | null>;
+	/** Which game sections to show: games the player picked, or has a team/account for. */
+	plays: Record<Game, boolean>;
 	badges?: ProfileBadge[];
 	createdAt: string;
 }
@@ -87,6 +103,7 @@ type ProfileTab = 'overview' | 'matches';
 export interface ProfileVisibility {
 	showDiscord: boolean;
 	showSteam: boolean;
+	showRiot: boolean;
 }
 
 // The profile is server-rendered now, so dates and numbers are printed in a fixed locale/timezone
@@ -228,13 +245,15 @@ interface ProfileViewProps {
 	isOwner: boolean;
 	/** Present only for the owner. */
 	visibility?: ProfileVisibility;
+	/** The owner's Riot ID state, including an open verification challenge. Owner only. */
+	riotStatus?: RiotStatusResponse;
 }
 
 /**
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophies, isOwner, visibility }: ProfileViewProps) {
+export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophies, isOwner, visibility, riotStatus }: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -251,7 +270,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 	// Optimistic copy of the owner's privacy flags; re-synced whenever the server sends new props.
 	const [vis, setVis] = useState<ProfileVisibility | undefined>(visibility);
 	const [visSaving, setVisSaving] = useState<keyof ProfileVisibility | null>(null);
-	useEffect(() => setVis(visibility), [visibility?.showDiscord, visibility?.showSteam]);
+	useEffect(() => setVis(visibility), [visibility?.showDiscord, visibility?.showSteam, visibility?.showRiot]);
 
 	/** Re-reads the profile on the server; `then` state updates commit together with the new props. */
 	const refresh = (then?: () => void) =>
@@ -298,7 +317,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 	};
 
 	const setVisibility = async (key: keyof ProfileVisibility, value: boolean) => {
-		const account = key === 'showSteam' ? 'Steam' : 'Discord';
+		const account = key === 'showSteam' ? 'Steam' : key === 'showRiot' ? 'Riot ID' : 'Discord';
 		setVis((v) => (v ? { ...v, [key]: value } : v));
 		setVisSaving(key);
 		try {
@@ -312,40 +331,6 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 			toast({ variant: 'destructive', title: `Couldn’t update ${account} visibility`, description: 'Check your connection and try again.' });
 		} finally {
 			setVisSaving(null);
-		}
-	};
-
-	const linkSteam = async () => {
-		try {
-			const me = await fetch('/api/user');
-			if (!me.ok) {
-				try {
-					sessionStorage.setItem('preAuthPath', window.location.pathname + window.location.search);
-				} catch (error) {
-					void error;
-				}
-				window.location.href = '/sign-in';
-				return;
-			}
-			const response = await fetch('/api/auth/steam');
-			if (!response.ok) throw new Error('Failed to initiate Steam auth');
-			const data = await response.json();
-			if (!data.url) throw new Error('Missing Steam login URL');
-			window.location.href = data.url;
-		} catch (e) {
-			console.error('Failed to initiate Steam auth', e);
-			toast({ variant: 'destructive', title: 'Couldn’t reach Steam', description: 'Try linking your account again in a moment.' });
-		}
-	};
-
-	const unlinkSteam = async () => {
-		try {
-			const del = await fetch('/api/user/steam', { method: 'DELETE' });
-			if (!del.ok) throw new Error('Failed to unlink');
-			refresh();
-		} catch (e) {
-			console.error('Failed to unlink Steam', e);
-			toast({ variant: 'destructive', title: 'Couldn’t unlink Steam' });
 		}
 	};
 
@@ -451,12 +436,18 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 								)}
 
 								<div className='mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400'>
-									{profile.cs2Team && (
-										<Link href={`/teams/${profile.cs2Team.id}`} className='flex items-center gap-2 font-medium text-white hover:underline hover:underline-offset-4'>
-											{profile.cs2Team.logo ? <TeamLogo src={profile.cs2Team.logo} name={profile.cs2Team.name} size='xs' decorative /> : <Users className='h-4 w-4 text-neutral-400' />}
-											{profile.cs2Team.name}
-										</Link>
-									)}
+									{GAMES.filter((g) => profile.plays[g]).map((g) => {
+										const team = profile.teams[g];
+										return team ? (
+											<Link key={g} href={`/teams/${team.id}`} className='flex items-center gap-2 font-medium text-white hover:underline hover:underline-offset-4'>
+												<GameTag game={g} showLabel={false} />
+												<TeamLogo src={team.logo} name={team.name} size='xs' decorative />
+												{team.name}
+											</Link>
+										) : (
+											<GameTag key={g} game={g} />
+										);
+									})}
 									<span>Joined {formatMonthYear(profile.createdAt, fmt)}</span>
 									{profile.steam && (
 										<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='text-neutral-400 transition-colors hover:text-white' aria-label='Steam profile'>
@@ -478,62 +469,100 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 							</div>
 						</div>
 
-						{/* Skill panel: real FACEIT level and Elo (src/lib/faceit.ts), or nothing. Never a fallback number. */}
-						{faceit ? (
-							<div className='w-full shrink-0 rounded-md border border-white/10 bg-black/60 p-4 backdrop-blur-sm md:w-72'>
-								<div className='flex items-center justify-between'>
-									<span className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>FACEIT skill</span>
-									{faceit.faceitUrl && (
-										<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='flex items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-white'>
-											View <ExternalLink className='h-3 w-3' />
-										</a>
-									)}
-								</div>
-								<div className='mt-3 flex items-center gap-3'>
-									<LevelBadge level={faceit.level} size='xl' />
-									<div>
-										<div className='font-mono text-3xl font-bold leading-none tabular-nums text-white'>{num(faceit.elo)}</div>
-										<div className='mt-1 text-xs text-neutral-400'>Elo · Level {faceit.level}</div>
-									</div>
-								</div>
-								{progress && (
-									<div className='mt-4'>
-										<div className='h-1 overflow-hidden rounded-full bg-neutral-800'>
-											<div
-												className='h-full origin-left rounded-full bg-white transition-transform duration-1000 motion-reduce:transition-none'
-												style={{ width: `${progress.percent}%`, transform: `scaleX(${eloShown ? 1 : 0})`, transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
-											/>
-										</div>
-										<div className='mt-1.5 flex justify-between font-mono text-xs tabular-nums text-neutral-400'>
-											<span>{num(progress.floor)}</span>
-											{progress.ceiling !== null ? (
-												<span>
-													<span className='text-neutral-300'>+{num(progress.ceiling - faceit.elo + 1)}</span> to Lvl {faceit.level + 1}
-												</span>
-											) : (
-												<span className='text-neutral-300'>Max level</span>
-											)}
-										</div>
-									</div>
-								)}
-							</div>
-						) : (
-							isOwner &&
-							!profile.steam && (
-								<div className='w-full shrink-0 rounded-md border border-dashed border-white/15 bg-black/60 p-4 backdrop-blur-sm md:w-72'>
-									<p className='text-sm font-medium text-white'>Show your FACEIT level</p>
-									<p className='mt-1 text-xs text-neutral-400'>Link Steam and we’ll pull your real level and Elo from FACEIT.</p>
-									<Button size='sm' variant='outline' onClick={linkSteam} className='mt-3'>
-										<SteamIcon className='mr-2 h-4 w-4' /> Link Steam
-									</Button>
-								</div>
-							)
-						)}
 					</div>
 				</section>
 
 				{/* HLTV-style trophy row, attached under the hero. Hidden entirely when the player has none. */}
 				<TrophySlider trophies={trophies} events={eventTrophies} className='border-x border-b border-border bg-neutral-950 px-5 py-4 sm:px-8' />
+
+				{/* Direction C: one game section per game the player plays, side by side (stacked on mobile). */}
+				{GAMES.some((g) => profile.plays[g]) && (
+					<section className='mt-6' aria-label='Games'>
+						<div className='grid gap-4 sm:grid-cols-2'>
+							{GAMES.filter((g) => profile.plays[g]).map((g) =>
+								g === 'CS2' ? (
+									<GameSection key='CS2' game='CS2'>
+										<GameRow label='Account'>
+											{profile.steam ? (
+												<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1.5 text-sm text-neutral-200 hover:text-white hover:underline hover:underline-offset-4'>
+													<SteamIcon className='h-3.5 w-3.5' aria-hidden /> {profile.name}
+													{vis && !vis.showSteam && isOwner && <HiddenNote />}
+												</a>
+											) : (
+												<AccountStatusLabel status={profile.steamLinked ? 'linked' : 'missing'} />
+											)}
+										</GameRow>
+										<GameRow label='Team'>
+											<GameTeam game='CS2' team={profile.teams.CS2} isOwner={isOwner} />
+										</GameRow>
+										<GameRow label='Rating'>
+											{faceit ? (
+												<div>
+													<div className='flex items-center justify-between gap-3'>
+														<div className='flex items-center gap-3'>
+															<LevelBadge level={faceit.level} size='md' />
+															<div>
+																<div className='font-mono text-lg font-bold leading-none tabular-nums text-white'>{num(faceit.elo)}</div>
+																<div className='mt-0.5 text-xs text-neutral-400'>Elo · From FACEIT via Steam</div>
+															</div>
+														</div>
+														{faceit.faceitUrl && (
+															<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='flex shrink-0 items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-white'>
+																View <ExternalLink className='h-3 w-3' />
+															</a>
+														)}
+													</div>
+													{progress && (
+														<div className='mt-3'>
+															<div className='h-1 overflow-hidden rounded-full bg-neutral-800'>
+																<div
+																	className='h-full origin-left rounded-full bg-white transition-transform duration-1000 motion-reduce:transition-none'
+																	style={{ width: `${progress.percent}%`, transform: `scaleX(${eloShown ? 1 : 0})`, transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+																/>
+															</div>
+															<div className='mt-1.5 flex justify-between font-mono text-xs tabular-nums text-neutral-400'>
+																<span>{num(progress.floor)}</span>
+																{progress.ceiling !== null ? (
+																	<span>
+																		<span className='text-neutral-300'>+{num(progress.ceiling - faceit.elo + 1)}</span> to Lvl {faceit.level + 1}
+																	</span>
+																) : (
+																	<span className='text-neutral-300'>Max level</span>
+																)}
+															</div>
+														</div>
+													)}
+												</div>
+											) : (
+												<p className='text-sm text-neutral-400'>{profile.steam ? 'No FACEIT account linked' : 'Link Steam to show a FACEIT level'}</p>
+											)}
+										</GameRow>
+									</GameSection>
+								) : (
+									<GameSection key='LOL' game='LOL'>
+										<GameRow label='Account'>
+											{profile.riot ? (
+												<span className='text-sm text-neutral-200'>
+													{profile.riot.gameName}
+													<span className='text-neutral-400'>#{profile.riot.tagLine}</span> <span className='text-neutral-400'>· {platformLabel(profile.riot.region)}</span>
+													{vis && !vis.showRiot && isOwner && <HiddenNote />}
+												</span>
+											) : (
+												<AccountStatusLabel status={riotStatus?.account ? 'pending' : 'missing'} />
+											)}
+										</GameRow>
+										<GameRow label='Team'>
+											<GameTeam game='LOL' team={profile.teams.LOL} isOwner={isOwner} />
+										</GameRow>
+										<GameRow label='Rating'>
+											<p className='text-sm text-neutral-400'>Stats coming later</p>
+										</GameRow>
+									</GameSection>
+								),
+							)}
+						</div>
+					</section>
+				)}
 
 				<TabsPrimitive.Root value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
 					<div className='flex items-center justify-between gap-4 overflow-x-auto rounded-b-md border-x border-b border-border bg-neutral-950 pr-4'>
@@ -641,58 +670,8 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 
 							<aside className='space-y-8'>
 								<section>
-									<SectionLabel>Team</SectionLabel>
-									{profile.cs2Team ? (
-										<Link href={`/teams/${profile.cs2Team.id}`} className='group flex items-center gap-3 rounded-md border border-border bg-neutral-950 p-4 transition-colors hover:border-neutral-600'>
-											<TeamLogo src={profile.cs2Team.logo} name={profile.cs2Team.name} size='md' decorative />
-											<span className='min-w-0 flex-1 truncate font-bold uppercase tracking-wide text-white'>{profile.cs2Team.name}</span>
-											<ArrowRight className='h-4 w-4 text-neutral-600 transition-colors group-hover:text-white' />
-										</Link>
-									) : (
-										<div className='rounded-md border border-dashed border-border px-4 py-5 text-sm text-neutral-400'>
-											{isOwner ? (
-												<>
-													You’re not on a team yet.{' '}
-													<Link href='/teams' className='font-medium text-white underline underline-offset-4'>
-														Browse teams
-													</Link>
-												</>
-											) : (
-												'Not on a team.'
-											)}
-										</div>
-									)}
-								</section>
-
-								<section>
 									<SectionLabel>Connected accounts</SectionLabel>
 									<div className='divide-y divide-border rounded-md border border-border bg-neutral-950'>
-										<div className='flex items-center gap-3 p-4'>
-											<span className={`flex h-9 w-9 items-center justify-center rounded-sm ${profile.steam ? 'bg-[#171a21]' : 'bg-neutral-800'}`}>
-												<SteamIcon className={`h-5 w-5 ${profile.steam ? 'text-[#66c0f4]' : 'text-neutral-400'}`} />
-											</span>
-											<div className='min-w-0 flex-1'>
-												<p className='text-sm font-medium text-white'>Steam</p>
-												{profile.steam && vis && !vis.showSteam && <HiddenNote />}
-												{profile.steam ? (
-													<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='flex items-center gap-1 text-xs text-neutral-400 hover:text-white'>
-														View profile <ExternalLink className='h-3 w-3' />
-													</a>
-												) : (
-													<p className='text-xs text-neutral-400'>{isOwner ? 'Not linked' : 'Not shown'}</p>
-												)}
-											</div>
-											{isOwner &&
-												(profile.steam ? (
-													<Button variant='ghost' size='sm' onClick={unlinkSteam} className='text-signal-live hover:text-red-300'>
-														Unlink
-													</Button>
-												) : (
-													<Button variant='outline' size='sm' onClick={linkSteam}>
-														Link
-													</Button>
-												))}
-										</div>
 										<div className='flex items-center gap-3 p-4'>
 											<span className={`flex h-9 w-9 items-center justify-center rounded-sm ${profile.discord ? 'bg-[#5865F2]' : 'bg-neutral-800'}`}>
 												<DiscordIcon className={`h-5 w-5 ${profile.discord ? 'text-white' : 'text-neutral-400'}`} />
@@ -715,14 +694,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 											)}
 										</div>
 										{isOwner && vis && (
-											<div className='space-y-4 p-4'>
-												<VisibilitySwitch
-													label='Show Steam on my profile'
-													description='Hides your Steam link and ID from visitors. Your FACEIT level still shows.'
-													checked={vis.showSteam}
-													disabled={visSaving === 'showSteam'}
-													onCheckedChange={(v) => setVisibility('showSteam', v)}
-												/>
+											<div className='p-4'>
 												<VisibilitySwitch
 													label='Show Discord on my profile'
 													description='Hides your Discord link and ID from visitors.'
@@ -733,6 +705,17 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 											</div>
 										)}
 									</div>
+									<p className='mt-2 text-xs text-neutral-400'>
+										Steam and Riot ID {isOwner ? 'are managed in ' : 'appear in '}
+										{isOwner ? (
+											<a href='#accounts' className='font-medium text-neutral-300 underline underline-offset-4 hover:text-white'>
+												Game accounts
+											</a>
+										) : (
+											'the CS2 / League sections above'
+										)}
+										.
+									</p>
 								</section>
 							</aside>
 						</div>
@@ -750,6 +733,22 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 					</TabsPrimitive.Content>
 
 				</TabsPrimitive.Root>
+
+				{isOwner && riotStatus && vis && (
+					<div className='mt-10 border-t border-border pt-10'>
+						<GameAccountsSection
+							steam={profile.steam ? { steamId: profile.steam.steamId } : null}
+							riot={riotStatus}
+							showSteam={vis.showSteam}
+							showSteamSaving={visSaving === 'showSteam'}
+							onShowSteamChange={(v) => setVisibility('showSteam', v)}
+							showRiot={vis.showRiot}
+							showRiotSaving={visSaving === 'showRiot'}
+							onShowRiotChange={(v) => setVisibility('showRiot', v)}
+							onChanged={() => refresh()}
+						/>
+					</div>
+				)}
 
 				{isOwner && <AccountDataSection />}
 

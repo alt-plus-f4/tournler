@@ -69,6 +69,18 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - PATCH `/api/users/[slug]`: `users:manage`
 - DELETE `/api/users/[slug]`: `users:manage`
 
+### Riot ID linking (League of Legends)
+
+Server-only Riot Games API client at `src/lib/riot/client.ts` (`RIOT_API_KEY`; dev keys from developer.riotgames.com expire every 24h, a production key needs Riot approval). If the key isn't configured, every endpoint below returns 503 `{ error: "Riot ID linking isn't set up on this server yet." }` rather than faking success. The client never trusts a client-sent PUUID — it's always re-resolved from Riot's `account-v1` API by Riot ID.
+
+Linking proves ownership with a profile-icon challenge (Riot doesn't offer OAuth/"Sign On" to third parties yet): pick a random base icon (0–28) different from the player's current one, ask them to set it in the League client within 10 minutes, then confirm via `summoner-v4`.
+
+- GET `/api/user/riot`: Any authenticated user. Returns `{ configured, account }` for the session user; `account` is `null` when nothing is linked, else `{ gameName, tagLine, region, status: 'linked' | 'pending', challenge }` (`challenge` only while a verification is open and unexpired).
+- POST `/api/user/riot`: Any authenticated user. Body `{ gameName (3–16 chars), tagLine (3–5 alnum, with or without a leading #), region (a League platform routing value, e.g. "euw1") }`. Resolves the PUUID via Riot, 404s with a friendly message if no such Riot ID or no LoL summoner on that platform exists, 409s if the PUUID is already linked to a different Tournler account, otherwise upserts the account unverified and opens a new icon challenge. Re-submitting an already-verified account (e.g. fixing the region) keeps it verified. Rate-limited per user: 10 attempts / 10 minutes (429, `Retry-After`).
+- POST `/api/user/riot/verify`: Any authenticated user. Reads the summoner's current profile icon and compares it to the open challenge. 200 + `{ configured, account }` on a match; 409 `"Set profile icon #N in the LoL client, then try again."` on a mismatch; 410 if the challenge expired or none is open ("Start again" — POST `/api/user/riot` again for a fresh icon). Same rate limit as linking.
+- DELETE `/api/user/riot`: Any authenticated user. Unlinks (verified or pending).
+- All Riot API failures (403/401 bad key, 429 rate limit, timeout, other upstream errors) map to an honest status (502/504/429) with a message the UI can show directly — never a fabricated "linked" state.
+
 ### Forum
 
 - GET `/api/forum/threads?category=&page=`: Public. Returns 30 threads per page, pinned first, then by last activity. Each thread carries its net `score` and a `replyCount` that leaves out soft-deleted replies. Authors expose only `id`, `name`, `image`.

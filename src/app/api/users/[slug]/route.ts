@@ -32,6 +32,7 @@ const PUBLIC_USER_SELECT = {
 	// Privacy flags, read to gate steam/discord below; only echoed back to the owner.
 	showDiscord: true,
 	showSteam: true,
+	showRiot: true,
 	badges: {
 		orderBy: { awardedAt: 'desc' },
 		select: {
@@ -76,12 +77,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 
 		// Hidden linked accounts are omitted for everyone but the owner.
 		const isOwner = session?.user?.id === user.id;
-		const { showDiscord, showSteam, steam, discord, ...rest } = user;
+		const { showDiscord, showSteam, showRiot, steam, discord, ...rest } = user;
 		const publicUser = {
 			...rest,
 			steam: isOwner || showSteam ? steam : null,
 			discord: isOwner || showDiscord ? discord : null,
-			...(isOwner ? { showDiscord, showSteam } : {}),
+			...(isOwner ? { showDiscord, showSteam, showRiot } : {}),
 		};
 
 		return NextResponse.json({ user: publicUser, stats, recentMatches, faceit });

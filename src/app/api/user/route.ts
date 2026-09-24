@@ -40,10 +40,10 @@ export async function GET() {
 	}
 }
 
-const VISIBILITY_FIELDS = ['showDiscord', 'showSteam'] as const;
+const VISIBILITY_FIELDS = ['showDiscord', 'showSteam', 'showRiot'] as const;
 
 /**
- * Self-service profile privacy: `{ showDiscord?: boolean, showSteam?: boolean }`. Always acts on the
+ * Self-service profile privacy: `{ showDiscord?: boolean, showSteam?: boolean, showRiot?: boolean }`. Always acts on the
  * session user, so only the profile owner can change their own flags.
  */
 export async function PATCH(request: Request) {
@@ -64,11 +64,11 @@ export async function PATCH(request: Request) {
 		data[key] = body[key];
 	}
 	if (Object.keys(data).length === 0) {
-		return NextResponse.json({ error: 'Send showDiscord and/or showSteam' }, { status: 400 });
+		return NextResponse.json({ error: 'Send showDiscord, showSteam and/or showRiot' }, { status: 400 });
 	}
 
 	try {
-		const user = await db.user.update({ where: { id: session.user.id }, data, select: { showDiscord: true, showSteam: true } });
+		const user = await db.user.update({ where: { id: session.user.id }, data, select: { showDiscord: true, showSteam: true, showRiot: true } });
 		return NextResponse.json({ visibility: user });
 	} catch (error) {
 		console.error('Error updating profile visibility:', error);
