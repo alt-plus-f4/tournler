@@ -46,6 +46,7 @@ export const MODEL_TAGS: Record<string, readonly CacheTag[]> = {
 	NewsComment: [T.news],
 	ForumThread: [T.forum],
 	ForumReply: [T.forum],
+	ForumVote: [T.forum],
 	HomepageSettings: [T.homepage],
 };
 
