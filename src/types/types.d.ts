@@ -76,6 +76,8 @@ export interface ReducedTournament {
 	teams: [];
 	location: string;
 	teamCapacity: number;
+	/** Optional: older payloads (or narrow selects) omit it (= CS2). */
+	game?: 'CS2' | 'LOL';
 }
 
 export interface Cs2Tournament {
@@ -93,6 +95,8 @@ export interface Cs2Tournament {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	/** CS2 (hosted servers) or LOL (results recorded by staff). Optional: older payloads omit it (= CS2). */
+	game?: 'CS2' | 'LOL';
 	isFeatured: boolean;
 	featuredOrder?: number | null;
 	isSystem: boolean;

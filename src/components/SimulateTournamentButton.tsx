@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { GAME_META, GAMES } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
+import type { Game } from '@prisma/client';
 
 const FORMAT_OPTIONS = [
 	{ value: 'SINGLE_ELIMINATION', label: 'Single Elimination' },
@@ -34,6 +37,7 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 	const [isSimulating, setIsSimulating] = useState(false);
 	const [teamCount, setTeamCount] = useState(8);
 	const [format, setFormat] = useState('SINGLE_ELIMINATION');
+	const [game, setGame] = useState<Game>('CS2');
 
 	const handleSimulate = async () => {
 		setIsSimulating(true);
@@ -42,7 +46,7 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 			const response = await fetch('/api/tournaments/simulate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ teamCount, format }),
+				body: JSON.stringify({ teamCount, format, game }),
 			});
 
 			const payload = await response.json().catch(() => null);
@@ -84,6 +88,23 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 					<DialogDescription>Generates fake teams, starts a tournament in the chosen format, and auto-plays every match with random results.</DialogDescription>
 				</DialogHeader>
 				<div className='space-y-2'>
+					<Label htmlFor='sim-game'>Game</Label>
+					<Select value={game} onValueChange={(v) => setGame(v as Game)}>
+						<SelectTrigger id='sim-game'>
+							<SelectValue placeholder='Select a game' />
+						</SelectTrigger>
+						<SelectContent>
+							{GAMES.map((g) => (
+								<SelectItem key={g} value={g}>
+									<span className='inline-flex items-center gap-2'>
+										<GameGlyph game={g} className='h-3.5 w-3.5' />
+										{GAME_META[g].label}
+									</span>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+
 					<Label htmlFor='sim-team-count'>Number of teams</Label>
 					<Input id='sim-team-count' type='number' min={2} max={64} className='font-mono tabular-nums' value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))} />
 
