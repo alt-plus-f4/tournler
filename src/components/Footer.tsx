@@ -4,7 +4,13 @@ import { SteamIcon } from './Icons';
 
 const Footer = () => {
 	return (
-		<footer className='flex flex-col justify-center items-center text-foreground p-5 text-center text-sm w-full mt-auto bottom-0 border-t'>
+		<footer className='footer-parallax relative isolate mt-auto w-full overflow-hidden border-t text-center text-sm text-foreground'>
+			{/* Back layer: the broadcast end card. Moves slower than the page (see .footer-parallax in globals.css). */}
+			<div aria-hidden className='fp-back pointer-events-none absolute inset-x-0 bottom-0 -z-10 flex select-none justify-center'>
+				<span className='whitespace-nowrap font-black uppercase leading-[0.8] tracking-tight text-transparent [-webkit-text-stroke:1px_#262626] text-[clamp(3.5rem,14vw,6rem)]'>Tournler</span>
+			</div>
+			{/* Front layer: the actual footer content. */}
+			<div className='fp-front flex flex-col items-center justify-center px-5 pb-16 pt-8'>
 			<div className='mb-5 flex flex-row gap-8'>
 				<Link href={'https://github.com/alt-plus-f4/tournler/'} aria-label='Tournler on GitHub'>
 					<Github aria-hidden className='w-7 h-7 hover:text-blue-400 transition-colors' />
@@ -28,6 +34,7 @@ const Footer = () => {
 				</Link>
 			</nav>
 			<p>&copy; 2025 Tournler. No rights reserved.</p>
+			</div>
 		</footer>
 	);
 };
