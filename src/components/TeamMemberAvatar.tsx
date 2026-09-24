@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { HoverCard, HoverCardTrigger, HoverCardContent } from '@radix-ui/react-hover-card';
-import { FaCrown } from 'react-icons/fa';
+import { Crown } from 'lucide-react';
 import { Cs2Team } from '@prisma/client';
 import { UserCard } from './UserCard';
 import Image from 'next/image';
@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { RemoveMemberButton } from './RemoveMemberButton';
 import { PlayerFlair } from './PlayerFlair';
 import { cn } from '@/lib/utils';
+import { isOptimizable } from '@/lib/image-hosts';
 import type { TeamMember } from '@/lib/models/team-model';
 
 /**
@@ -27,7 +28,7 @@ function MemberAvatarImage({ image, name, subtle }: { image: string | null; name
 		return <div className={cn('flex h-[200px] w-full items-center justify-center bg-neutral-800 text-2xl font-bold text-white', motion)}>{(name || 'P').substring(0, 2).toUpperCase()}</div>;
 	}
 
-	return <Image className={motion} src={image} alt='' width={300} height={200} onError={() => setFailed(true)} />;
+	return <Image className={motion} src={image} alt='' width={300} height={200} unoptimized={!isOptimizable(image)} onError={() => setFailed(true)} />;
 }
 
 interface TeamMemberAvatarProps {
@@ -45,7 +46,7 @@ export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capi
 	useEffect(() => setIsMounted(true), []);
 
 	const isCaptain = member.id == capitanId;
-	const crown = isCaptain && <FaCrown aria-hidden className='absolute top-0 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transform text-white' />;
+	const crown = isCaptain && <Crown aria-hidden size='1em' className='absolute top-0 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transform text-white' />;
 
 	if (!interactive) {
 		return (

@@ -1,9 +1,7 @@
 'use client';
 
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa';
-import React, { useState } from 'react';
-import { avataaars } from '@dicebear/collection';
-import { createAvatar } from '@dicebear/core';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -161,7 +159,11 @@ interface CustomizationOptions {
   clothing: number;
 }
 
-// Add loading prop here
+type DiceBear = {
+  createAvatar: typeof import('@dicebear/core').createAvatar;
+  avataaars: typeof import('@dicebear/avataaars');
+};
+
 interface AvatarStepProps {
   previousStep: () => void;
   nextStep: (avatar: Blob) => void;
@@ -184,12 +186,12 @@ function CustomizationOption({
   return (
     <div className="flex items-center justify-between my-1">
       <Button variant="secondary" size="icon" onClick={() => onPrevious(category)} aria-label={`Previous ${label.toLowerCase()}`}>
-        <FaArrowLeft aria-hidden />
+        <ArrowLeft aria-hidden />
       </Button>
 
       <span className="mx-4 my-0 text-sm">{label}</span>
       <Button variant="secondary" size="icon" onClick={() => onNext(category)} aria-label={`Next ${label.toLowerCase()}`}>
-        <FaArrowRight aria-hidden />
+        <ArrowRight aria-hidden />
       </Button>
     </div>
   );
@@ -229,21 +231,37 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
     setCustomization({ ...customization, [category]: previousOptionIndex });
   };
 
-  const avatar = createAvatar(avataaars, {
-    seed: Math.random().toString(36).substring(7),
-    ...Object.fromEntries(
-      Object.entries(customization).map(([key, value]) => [
-        key,
-        [options[key as keyof CustomizationOptions][value]],
-      ])
-    ),
-    accessoriesProbability: 100,
-    facialHairProbability: 100,
-  });
+  // DiceBear (~100 KB) is only needed once this step is on screen, so it's fetched on mount rather
+  // than bundled into every page that imports AvatarStep (onboarding dialog, profile avatar editor).
+  const [dicebear, setDicebear] = useState<DiceBear | null>(null);
+  useEffect(() => {
+    let alive = true;
+    Promise.all([import('@dicebear/core'), import('@dicebear/avataaars')]).then(([core, avataaars]) => {
+      if (alive) setDicebear({ createAvatar: core.createAvatar, avataaars });
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
-  const avatarSVG = avatar.toString();
+  const avatarSVG = dicebear
+    ? dicebear
+        .createAvatar(dicebear.avataaars, {
+          seed: Math.random().toString(36).substring(7),
+          ...Object.fromEntries(
+            Object.entries(customization).map(([key, value]) => [
+              key,
+              [options[key as keyof CustomizationOptions][value]],
+            ])
+          ),
+          accessoriesProbability: 100,
+          facialHairProbability: 100,
+        })
+        .toString()
+    : '';
 
   const handleContinue = () => {
+    if (!avatarSVG) return;
     const blob = new Blob([avatarSVG], { type: 'image/svg+xml' });
     nextStep(blob);
   };
@@ -251,12 +269,16 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
   return (
     <div className="px-12 flex flex-col justify-center">
       <div className="flex justify-center items-center">
-        <Image
-          src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`}
-          alt="Avatar preview"
-          width={120}
-          height={120}
-        />
+        {avatarSVG ? (
+          <Image
+            src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`}
+            alt="Avatar preview"
+            width={120}
+            height={120}
+          />
+        ) : (
+          <div role="status" aria-label="Loading avatar preview" className="h-[120px] w-[120px] animate-pulse rounded-full bg-muted" />
+        )}
       </div>
       <div>
         <div className="flex flex-col items-center text-center w-full">
@@ -350,7 +372,7 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
         <Button onClick={previousStep} variant="secondary">
           Previous
         </Button>
-        <Button onClick={handleContinue} disabled={loading}>
+        <Button onClick={handleContinue} disabled={loading || !avatarSVG}>
           {loading ? 'Saving…' : 'Continue'}
         </Button>
       </DialogFooter>

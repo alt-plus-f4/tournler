@@ -1,6 +1,6 @@
 'use client';
 
-import { FaSteamSymbol } from 'react-icons/fa6';
+import { SteamSymbolIcon } from '@/components/Icons';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '../ui/button';
 import { DialogFooter } from '../ui/dialog';
@@ -62,7 +62,7 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 				onClick={handleSteamLogin}
 				className='m-1 mt-4 flex w-full flex-col items-center gap-3 rounded-md border border-border p-6 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-32 sm:py-16'
 			>
-				<FaSteamSymbol aria-hidden className='h-16 w-16 sm:h-32 sm:w-32' />
+				<SteamSymbolIcon aria-hidden className='h-16 w-16 sm:h-32 sm:w-32' />
 				<span className='text-base font-medium'>Sign in with Steam</span>
 			</button>
 

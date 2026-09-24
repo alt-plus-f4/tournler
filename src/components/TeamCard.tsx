@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { SiCounterstrike } from 'react-icons/si';
+import { CounterStrikeIcon } from '@/components/Icons';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 import { cn } from '@/lib/utils';
 import { TeamBanner } from './TeamBanner';
@@ -30,7 +30,7 @@ export function TeamCard({ team, roster }: { team: ExtendedCs2Team; roster?: Rea
 			</div>
 			<div className='flex flex-col gap-1 border-t border-border px-4 pt-3 pb-3'>
 				<div className='flex min-w-0 items-center gap-2'>
-					<SiCounterstrike aria-hidden className='h-5 w-5 shrink-0' />
+					<CounterStrikeIcon aria-hidden className='h-5 w-5 shrink-0' />
 					<h3 className='truncate text-lg font-black uppercase leading-tight tracking-wide underline-offset-4 group-hover:underline'>{team.name}</h3>
 				</div>
 				<p className='flex items-center justify-between text-xs text-muted-foreground'>

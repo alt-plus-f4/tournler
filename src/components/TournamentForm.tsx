@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor } from '@/components/LazyRichTextEditor';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { cn } from '@/lib/utils';
 

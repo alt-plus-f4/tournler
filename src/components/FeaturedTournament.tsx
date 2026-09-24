@@ -14,7 +14,7 @@ export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, 
 			className='group relative flex flex-col overflow-hidden rounded-md border border-border transition-colors hover:border-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 		>
 			<div className='relative h-48 w-full bg-neutral-900 sm:h-64'>
-				{bannerUrl && <Image src={bannerUrl} alt='' fill sizes='(max-width: 1400px) 100vw, 1400px' priority className='object-cover transition-[filter] duration-200 group-hover:brightness-110' />}
+				{bannerUrl && <Image src={bannerUrl} alt='' fill sizes='(max-width: 1400px) 100vw, 1400px' preload className='object-cover transition-[filter] duration-200 group-hover:brightness-110' />}
 				<div aria-hidden className='absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent' />
 				<div className='absolute inset-x-4 bottom-3 flex items-end'>
 					<h2 className='text-balance text-2xl font-black uppercase tracking-wide text-white sm:text-4xl'>{name}</h2>

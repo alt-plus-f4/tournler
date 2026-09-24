@@ -1,5 +1,3 @@
-'use client';
-
 import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
 import { PlayerFlair } from '@/components/PlayerFlair';
 import type { TeamMember } from '@/lib/models/team-model';

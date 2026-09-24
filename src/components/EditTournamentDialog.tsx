@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor } from '@/components/LazyRichTextEditor';
 
 export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
 export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;

@@ -1,5 +1,3 @@
-'use client';
-
 interface CustomCodeRendererProps {
 	data: { code?: string };
 }

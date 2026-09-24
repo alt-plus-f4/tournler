@@ -1,9 +1,8 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { isOptimizable } from '@/components/TeamLogo';
+import { isOptimizable } from '@/lib/image-hosts';
 import { cn } from '@/lib/utils';
 
 /**
@@ -25,8 +24,6 @@ export function PlayerAvatar({ src, name, size = 32, className }: { src: string 
 			</span>
 		);
 	}
-	if (isOptimizable(src)) {
-		return <Image src={src} alt='' width={size * 2} height={size * 2} style={style} className={cn('object-cover', classes)} onError={() => setFailed(true)} />;
-	}
-	return <img src={src} alt='' width={size} height={size} loading='lazy' decoding='async' style={style} className={cn('object-cover', classes)} onError={() => setFailed(true)} />;
+	// SVG avatars (DiceBear uploads) and hosts outside remotePatterns skip the optimizer but stay lazy.
+	return <Image src={src} alt='' width={size} height={size} unoptimized={!isOptimizable(src)} style={style} className={cn('object-cover', classes)} onError={() => setFailed(true)} />;
 }

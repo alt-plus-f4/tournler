@@ -1,5 +1,3 @@
-'use client';
-
 interface CustomLinkRendererProps {
 	data: { link?: string; meta?: { title?: string; description?: string; site_name?: string; image?: { url?: string } } };
 }
@@ -33,6 +31,8 @@ function CustomLinkRenderer({ data }: CustomLinkRendererProps) {
 				<p className='mt-2 font-mono text-xs text-muted-foreground'>{host}</p>
 			</div>
 			{image && /^https?:\/\//.test(image) && (
+				// Stays a plain <img>: link-preview images come from arbitrary third-party sites that can't be
+				// listed in images.remotePatterns, and no-referrer keeps readers from being tracked by them.
 				// eslint-disable-next-line @next/next/no-img-element
 				<img src={image} alt='' loading='lazy' referrerPolicy='no-referrer' className='hidden h-20 w-32 shrink-0 rounded-sm object-cover sm:block' />
 			)}

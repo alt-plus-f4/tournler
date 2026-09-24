@@ -12,6 +12,8 @@ import { Checkbox } from './ui/checkbox';
 import { BadgeIcon } from '@/lib/badge-icons';
 import { BadgeDefinition } from './EditBadgeDialog';
 import { X } from 'lucide-react';
+import Image from 'next/image';
+import { isOptimizable } from '@/lib/image-hosts';
 
 const userRoles: UserRole[] = ['USER', 'MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'ADMIN'];
 
@@ -186,8 +188,8 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					<div className='flex items-center gap-4'>
 						<div className='h-16 w-16 shrink-0 rounded-full overflow-hidden border border-border bg-neutral-900 flex items-center justify-center'>
 							{editingUser?.image ? (
-								// eslint-disable-next-line @next/next/no-img-element
-								<img src={editingUser.image} alt={editingUser.name ?? ''} className='h-full w-full object-cover' />
+								// SVG avatars (DiceBear uploads) skip the optimizer via `unoptimized`.
+								<Image src={editingUser.image} alt={editingUser.name ?? ''} width={64} height={64} unoptimized={!isOptimizable(editingUser.image)} className='h-full w-full object-cover' />
 							) : (
 								<span className='text-lg font-bold text-muted-foreground'>{(editingUser?.name || '?').charAt(0).toUpperCase()}</span>
 							)}
