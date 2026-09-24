@@ -154,6 +154,9 @@ model User {
   newsComments         NewsComment[]
   forumThreads         ForumThread[]
   forumReplies         ForumReply[]
+  bans                 UserBan[] @relation("BannedUser")
+  bansIssued           UserBan[] @relation("BanIssuer")
+  bansLifted           UserBan[] @relation("BanLifter")
   matchParticipations  MatchParticipant[]
   draftPicks           MatchDraftPick[]
 
@@ -694,4 +697,32 @@ model ForumReply {
   @@index([threadId, createdAt])
   @@index([authorId])
   @@map("forum_replies")
+}
+
+// Site-wide suspension history. A ban is active while liftedAt is null and expiresAt is null
+// (permanent) or in the future. Banned users can still browse, but getAuthSession() treats them
+// as signed out, so every authenticated action is refused (see src/lib/bans.ts).
+model UserBan {
+  id Int @id @default(autoincrement()) @map("id")
+
+  userId String @map("user_id")
+  user   User   @relation("BannedUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  reason String @map("reason")
+
+  bannedById String? @map("banned_by_id")
+  bannedBy   User?   @relation("BanIssuer", fields: [bannedById], references: [id], onDelete: SetNull)
+
+  // Null = permanent.
+  expiresAt DateTime? @map("expires_at")
+
+  liftedAt   DateTime? @map("lifted_at")
+  liftedById String?   @map("lifted_by_id")
+  liftedBy   User?     @relation("BanLifter", fields: [liftedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, liftedAt])
+  @@index([createdAt])
+  @@map("user_bans")
 }

@@ -8,12 +8,15 @@ import { HiWrenchScrewdriver } from 'react-icons/hi2';
 import Notifications from './Notifications';
 import { Session } from 'next-auth';
 import Image from 'next/image';
+import { SuspendedSignOut } from './SuspensionNotice';
 
 interface NavbarProps {
 	session: Session | null;
+	/** Signed-in but banned: no account menu (its data is refused), just a way to sign out. */
+	suspended?: boolean;
 }
 
-export default async function Navbar({ session }: NavbarProps) {
+export default async function Navbar({ session, suspended = false }: NavbarProps) {
 	let role = 'USER';
 	if (session?.user?.id) role = (await isAdmin(session.user.id)) ? 'ADMIN' : 'USER';
 
@@ -41,7 +44,9 @@ export default async function Navbar({ session }: NavbarProps) {
 							</span>
 						</Link>
 					)}
-					{session?.user ? (
+					{suspended ? (
+						<SuspendedSignOut />
+					) : session?.user ? (
 						<div className='flex flex-row space-x-4 justify-center items-center'>
 							<Notifications userId={session.user.id} />
 							<UserNav />

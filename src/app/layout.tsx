@@ -7,7 +7,8 @@ import { OnboardingStatus } from '@/components/OnboardingStatus';
 import Providers from './redux/Providers';
 import { ConvexClientProvider } from '@/convex/ConvexClientProvider';
 import Footer from '@/components/Footer';
-import { getAuthSession } from '@/lib/auth';
+import { getSessionIncludingBanned } from '@/lib/auth';
+import { SuspensionNotice } from '@/components/SuspensionNotice';
 import { InteractiveBackground } from '@/components/InteractiveBackground';
 
 const roboto = Roboto({
@@ -32,7 +33,11 @@ export default async function RootLayout({
 	children: React.ReactNode;
 	authModal: React.ReactNode;
 }>) {
-	const session = await getAuthSession();
+	// Banned users are signed out for every action (getAuthSession returns null for them), but the
+	// shell still recognizes them so it can explain the suspension and let them sign out.
+	const rawSession = await getSessionIncludingBanned();
+	const ban = rawSession?.user?.ban ?? null;
+	const session = ban ? null : rawSession;
 
 	return (
 		<html lang='en' data-scroll-behavior='smooth'>
@@ -42,7 +47,8 @@ export default async function RootLayout({
 				</a>
 				<InteractiveBackground />
 				<ConvexClientProvider signedIn={!!session?.user}>
-					<Navbar session={session} />
+					<Navbar session={session} suspended={!!ban} />
+					{ban && <SuspensionNotice ban={ban} />}
 
 					{authModal}
 

@@ -1,7 +1,7 @@
 import { UserRole } from '@prisma/client';
 import { db } from '@/lib/db';
 
-export type Permission = 'admin:access' | 'users:manage' | 'teams:manage' | 'tournaments:manage' | 'matches:manage' | 'servers:manage' | 'content:manage' | 'forum:moderate';
+export type Permission = 'admin:access' | 'users:manage' | 'teams:manage' | 'tournaments:manage' | 'matches:manage' | 'servers:manage' | 'content:manage' | 'forum:moderate' | 'users:ban';
 
 const permissionMap: Record<Permission, UserRole[]> = {
 	'admin:access': ['MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'ADMIN'],
@@ -12,6 +12,7 @@ const permissionMap: Record<Permission, UserRole[]> = {
 	'servers:manage': ['TOURNAMENT_ADMIN', 'ADMIN'],
 	'content:manage': ['CONTENT_ADMIN', 'ADMIN'],
 	'forum:moderate': ['MODERATOR', 'CONTENT_ADMIN', 'ADMIN'],
+	'users:ban': ['MODERATOR', 'CONTENT_ADMIN', 'ADMIN'],
 };
 
 export function hasPermission(role: UserRole | null | undefined, permission: Permission): boolean {

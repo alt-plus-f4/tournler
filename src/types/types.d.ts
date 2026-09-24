@@ -27,6 +27,8 @@ export interface User {
 	cs2TeamId?: number;
 	cs2Team?: Cs2Team;
 	cs2TeamCaptain?: Cs2Team;
+	/** Active suspension, if any (admin users list only). */
+	ban?: { id: number; reason: string; expiresAt: string | null; createdAt: string } | null;
 	cs2TeamInvitations: Cs2TeamInvitation[];
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];

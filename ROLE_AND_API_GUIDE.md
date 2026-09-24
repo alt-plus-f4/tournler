@@ -26,6 +26,7 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - servers:manage: TOURNAMENT_ADMIN, ADMIN
 - content:manage: CONTENT_ADMIN, ADMIN
 - forum:moderate: MODERATOR, CONTENT_ADMIN, ADMIN
+- users:ban: MODERATOR, CONTENT_ADMIN, ADMIN
 
 ## Updated API Authorization
 
@@ -78,6 +79,17 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - POST `/api/forum/threads/[threadId]/replies`: Any authenticated user; rejected with 423 when the thread is locked (moderators may still reply). Rate limit: one reply per user per 10s. Bumps the thread's `lastActivityAt`.
 - DELETE `/api/forum/replies/[replyId]`: Reply author OR `forum:moderate`.
 - `/admin/forum` moderation page: `forum:moderate`.
+
+## Bans
+A ban is a site-wide suspension (`UserBan`, with full history). While it's active, `getAuthSession()` returns `null` for that user, so every route and page that requires a signed-in user refuses them without its own check. They can still browse. The root layout reads the raw session with `getSessionIncludingBanned()` to show the suspension notice and a sign-out button. Never use that for authorization.
+
+Rules: you can't ban yourself, admins can't be banned, and staff (any non-USER role) can only be banned by an ADMIN. One active ban at a time: a new ban lifts the previous one, which stays in the history.
+
+- POST `/api/admin/users/[userId]/ban`: `users:ban`. Body `{ reason (3–500), duration: '1d' | '3d' | '7d' | '30d' | 'permanent' }`.
+- DELETE `/api/admin/users/[userId]/ban`: `users:ban`. Lifts the active ban.
+- GET `/api/admin/bans?status=active|all&page=`: `users:ban`. Ban history.
+- GET `/api/admin/bans?q=<name>`: `users:ban`. Player search (id, name, image, role, active ban; no emails).
+- `/admin/bans`: `users:ban`. Also available from the Users table (admins) and next to authors in forum threads (moderators).
 - The homepage "Forum" block is toggled by `showForumPosts` on PATCH `/api/admin/homepage-settings` (`content:manage`).
 
 ## Smoother Tournament Status Switching

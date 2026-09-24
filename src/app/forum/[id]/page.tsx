@@ -2,7 +2,7 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Lock, Pin, Trash2 } from 'lucide-react';
+import { ArrowLeft, Ban, Lock, Pin, Trash2 } from 'lucide-react';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { buttonVariants } from '@/components/ui/button';
@@ -13,6 +13,9 @@ import { ForumText } from '@/components/forum/ForumText';
 import { ConfirmActionButton } from '@/components/forum/ConfirmActionButton';
 import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModControls } from '@/components/forum/ThreadModControls';
+import { BanUserDialog } from '@/components/admin/BanUserDialog';
+import { db } from '@/lib/db';
+import { activeBanWhere, toActiveBan } from '@/lib/bans';
 
 interface ThreadPageProps {
 	params: Promise<{ id: string }>;
@@ -47,6 +50,35 @@ export default async function ForumThreadPage({ params }: ThreadPageProps) {
 	const viewerId = session?.user.id;
 	const canModerate = viewerId ? await userHasPermission(viewerId, 'forum:moderate') : false;
 	const canDeleteThread = canModerate || viewerId === thread.author.id;
+	const canBan = viewerId ? await userHasPermission(viewerId, 'users:ban') : false;
+
+	// Moderators only: each author's role and active ban, for the "Ban" control next to their posts.
+	// Looked up here rather than in the public thread payload so roles/bans never leave the server otherwise.
+	const authorIds = [...new Set([thread.author.id, ...thread.replies.map((r) => r.author.id)])];
+	const banInfo = canBan
+		? new Map(
+				(
+					await db.user.findMany({
+						where: { id: { in: authorIds } },
+						select: { id: true, role: true, bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1 } },
+					})
+				).map((u) => [u.id, { role: u.role, ban: toActiveBan(u.bans[0]) }]),
+			)
+		: null;
+	const banControl = (author: { id: string; name: string | null }) => {
+		const info = banInfo?.get(author.id);
+		if (!info || author.id === viewerId || info.role === 'ADMIN') return null;
+		return (
+			<BanUserDialog
+				user={author}
+				ban={info.ban}
+				triggerProps={{ variant: 'ghost', size: 'sm', className: 'h-8 px-2 text-muted-foreground', 'aria-label': `${info.ban ? 'Lift ban on' : 'Ban'} ${author.name || 'this user'}` }}
+			>
+				<Ban aria-hidden />
+				{info.ban ? 'Banned' : 'Ban'}
+			</BanUserDialog>
+		);
+	};
 	const replyCount = thread.replies.length;
 
 	return (
@@ -85,6 +117,7 @@ export default async function ForumThreadPage({ params }: ThreadPageProps) {
 							<AuthorLink author={thread.author} />
 							<PostDate date={thread.createdAt} />
 						</div>
+						{banControl(thread.author)}
 						{(canModerate || canDeleteThread) && (
 							<div className='ml-auto flex items-center gap-1.5'>
 								{canModerate && <ThreadModControls threadId={thread.id} title={thread.title} isPinned={thread.isPinned} isLocked={thread.isLocked} />}
@@ -126,6 +159,7 @@ export default async function ForumThreadPage({ params }: ThreadPageProps) {
 										<ForumAvatar author={reply.author} className='h-6 w-6' />
 										<AuthorLink author={reply.author} className='text-sm' />
 										<PostDate date={reply.createdAt} />
+										{banControl(reply.author)}
 										{canDeleteReply && (
 											<div className='ml-auto'>
 												<ConfirmActionButton

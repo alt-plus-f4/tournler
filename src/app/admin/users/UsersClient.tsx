@@ -121,6 +121,7 @@ export default function UsersClient() {
 				onPageChange={handlePageChange}
 				onEdit={handleEdit}
 				onToggleVerify={handleToggleVerify}
+				onBanChanged={() => fetchUsers(currentPage, search)}
 				verifyingUserIds={verifyingUserIds}
 				emptyMessage={search ? `No users match “${search}”.` : 'No users yet.'}
 			/>
