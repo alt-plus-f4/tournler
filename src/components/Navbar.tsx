@@ -19,14 +19,14 @@ export default async function Navbar({ session }: NavbarProps) {
 
 	return (
 		<>
-			<header className='grid grid-cols-3 md:grid-cols-[25%_50%_25%] w-full md:h-14 h-16 items-center px-4 border-y navbar-color sticky top-0 z-50 overflow-x-hidden overflow-y-visible'>
-				<BurgerMenu className='md:hidden z-50 col-start-1' />
+			<header className='grid grid-cols-3 xl:grid-cols-[20%_60%_20%] w-full xl:h-14 h-16 items-center px-4 border-y navbar-color sticky top-0 z-50 overflow-x-hidden overflow-y-visible'>
+				<BurgerMenu className='xl:hidden z-50 col-start-1' />
 
-				<Link href='/' className='col-start-2 md:col-start-1 flex justify-center md:justify-start'>
+				<Link href='/' className='col-start-2 xl:col-start-1 flex justify-center xl:justify-start'>
 					<Image src={'/logo.png'} alt='Tournler' width={210} height={32} className='h-auto w-[80px] transition-[filter] hover:brightness-150 sm:w-[140px]' />
 				</Link>
 
-				<MainNav className='hidden md:flex col-start-2' />
+				<MainNav className='hidden xl:flex col-start-2' />
 
 				<div className='ml-auto space-x-4 flex flex-row items-center col-start-3'>
 					{role === 'ADMIN' && (

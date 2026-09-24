@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { MatchStatusLabel } from './MatchStatusLabel';
-import { TeamLogo } from './TeamLogo';
+import { TeamLogo } from '@/components/TeamLogo';
 import { SLOT_LABEL, type BracketSlot, type MatchStatus, type TournamentDetail } from './types';
 
 interface MatchTeam {
@@ -41,7 +41,7 @@ function TeamSide({ team, score, isWinner, isLoser, side }: { team: MatchTeam | 
 	const a = side === 'a';
 	return (
 		<div className={cn('flex min-w-0 flex-1 items-center gap-3', a ? 'sm:justify-end' : 'sm:justify-start')}>
-			{team?.logo && <TeamLogo src={team.logo} name={team.name} className='sm:order-2' />}
+			{team && <TeamLogo src={team.logo} name={team.name} decorative className='sm:order-2' />}
 			<span className={cn('min-w-0 flex-1 truncate text-sm uppercase tracking-wide sm:flex-none', a ? 'sm:order-1 sm:text-right' : 'sm:order-3', team ? tone : 'text-muted-foreground font-bold')}>{team?.name ?? 'TBD'}</span>
 			<span className={cn('w-8 shrink-0 text-center font-mono text-2xl tabular-nums', a ? 'sm:order-3' : 'sm:order-1', tone)}>{score ?? '–'}</span>
 		</div>

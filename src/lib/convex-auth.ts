@@ -6,7 +6,8 @@ import { createHash, createPrivateKey, createPublicKey, createSign, type KeyObje
  * (convex/auth.config.ts). The app's own server signs with SERVER_SUBJECT to create notifications,
  * which clients can no longer do. Generate the key pair with `node scripts/generate-convex-auth-key.mjs`.
  */
-export const CONVEX_AUTH_ISSUER = 'tournler';
+// URL-shaped because Convex rejects non-URL issuers in convex/auth.config.ts (must match it).
+export const CONVEX_AUTH_ISSUER = 'https://tournler.auth';
 export const CONVEX_AUTH_AUDIENCE = 'convex';
 export const SERVER_SUBJECT = 'tournler-server';
 

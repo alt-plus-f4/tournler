@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarRail } from '@/components/ui/sidebar';
-import { FaUsers, FaUsersCog, FaTrophy, FaCog, FaGamepad, FaAward, FaStar } from 'react-icons/fa';
+import { FaUsers, FaUsersCog, FaTrophy, FaCog, FaGamepad, FaAward, FaStar, FaComments } from 'react-icons/fa';
 import { MdAdminPanelSettings } from 'react-icons/md';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +17,7 @@ const NAV = [
 			{ title: 'Matches', url: '/admin/matches', icon: FaGamepad },
 			{ title: 'Badges', url: '/admin/badges', icon: FaAward },
 			{ title: 'Featured', url: '/admin/featured', icon: FaStar },
+			{ title: 'Forum', url: '/admin/forum', icon: FaComments },
 		],
 	},
 	{

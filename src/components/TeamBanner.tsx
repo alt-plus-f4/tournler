@@ -1,4 +1,5 @@
 import { TeamMemberAvatar } from './TeamMemberAvatar';
+import { TeamLogo } from './TeamLogo';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 
 interface TeamBannerProps {
@@ -25,8 +26,7 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId,
 			<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20' />
 			<div className='absolute inset-0 flex flex-col items-center justify-center px-4'>
 				{team.logo ? (
-					// eslint-disable-next-line @next/next/no-img-element
-					<img src={team.logo} alt={`${teamName} logo`} className='max-h-[80px] max-w-[120px] object-contain' />
+					<TeamLogo src={team.logo} name={teamName} size={interactive ? 'xl' : 'lg'} />
 				) : (
 					<span aria-hidden className='max-w-full truncate text-4xl font-black uppercase tracking-wide text-white/15'>
 						{teamName}

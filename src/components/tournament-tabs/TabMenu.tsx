@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Overview from './Overview';
 import Participants from './Participants';
+import Prizes from './Prizes';
 import Matches from './Matches';
 import Bracket from './Bracket';
 import PlayerStats from './PlayerStats';
@@ -12,9 +13,10 @@ import type { Champion, TournamentDetail } from './types';
 const TABS = [
 	{ value: 'overview', label: 'Overview' },
 	{ value: 'participants', label: 'Participants' },
+	{ value: 'prizes', label: 'Prizes' },
 	{ value: 'matches', label: 'Matches' },
 	{ value: 'bracket', label: 'Bracket' },
-	{ value: 'stats', label: 'Player stats' },
+	{ value: 'stats', label: 'Stats' },
 ] as const;
 
 type TabValue = (typeof TABS)[number]['value'];
@@ -49,14 +51,15 @@ export default function TabMenu({ tournament, champion }: TabMenuProps) {
 
 	return (
 		<Tabs value={activeTab} onValueChange={setActiveTab}>
-			<div className='border-b border-border'>
-				{/* Scrolls sideways on narrow screens; rings are inset so overflow never clips them. */}
-				<TabsList aria-label='Tournament sections' className='flex h-auto w-full snap-x snap-mandatory justify-start gap-1 overflow-x-auto rounded-none bg-transparent p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+			<div className='border-b border-border md:mx-4'>
+				{/* The original spread-out tab bar: evenly spaced on phones, wide gaps from md. Scrolls sideways
+				    if it has to; focus rings are inset so the overflow never clips them. */}
+				<TabsList aria-label='Tournament sections' className='flex h-auto w-full justify-between gap-2 overflow-x-auto rounded-none bg-transparent px-0 py-2 [scrollbar-width:none] md:justify-start md:gap-16 lg:gap-24 [&::-webkit-scrollbar]:hidden'>
 					{TABS.map((tab) => (
 						<TabsTrigger
 							key={tab.value}
 							value={tab.value}
-							className='relative shrink-0 snap-start rounded-none border-b-2 border-transparent px-4 py-3 text-sm font-medium text-muted-foreground hover:text-white focus-visible:ring-inset focus-visible:ring-offset-0 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:font-bold data-[state=active]:text-white data-[state=active]:shadow-none'
+							className='shrink-0 whitespace-nowrap rounded-none border-b-2 border-transparent p-2 text-sm font-medium text-muted-foreground transition-colors hover:text-white focus-visible:ring-inset focus-visible:ring-offset-0 data-[state=active]:border-white data-[state=active]:bg-transparent data-[state=active]:font-bold data-[state=active]:text-white data-[state=active]:shadow-none sm:text-base'
 						>
 							{tab.label}
 						</TabsTrigger>
@@ -68,6 +71,9 @@ export default function TabMenu({ tournament, champion }: TabMenuProps) {
 			</TabsContent>
 			<TabsContent value='participants' className='mt-0'>
 				<Participants tournament={tournament} />
+			</TabsContent>
+			<TabsContent value='prizes' className='mt-0'>
+				<Prizes prizePool={tournament.prizePool} />
 			</TabsContent>
 			<TabsContent value='matches' className='mt-0'>
 				<Matches tournament={tournament} />

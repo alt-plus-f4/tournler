@@ -1,11 +1,11 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import useSWR from 'swr';
-import Image from 'next/image';
 import Link from 'next/link';
 import type { TournamentDetail } from './types';
-import { isOptimizable } from './TeamLogo';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { PlayerFlair } from '@/components/PlayerFlair';
+import type { VerifiedMark } from '@/lib/models/player-flair';
 
 interface PlayerStatRow {
 	userId: string;
@@ -18,6 +18,8 @@ interface PlayerStatRow {
 	assists: number;
 	matchesPlayed: number;
 	kd: number;
+	verified: VerifiedMark | null;
+	faceitLevel: number | null;
 }
 
 const fetcher = async (url: string) => {
@@ -63,18 +65,16 @@ export default function PlayerStats({ tournament }: PlayerStatsProps) {
 				</thead>
 				<tbody>
 					{stats.map((s, i) => (
-						<tr key={s.userId} className='border-b border-border'>
+						<tr key={s.userId} className='group/player border-b border-border transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5'>
 							<td className='py-2 px-3 font-mono tabular-nums text-muted-foreground'>{i + 1}</td>
-							<td className='py-2 px-3 text-white font-medium'>
-								<Link href={`/profile/${s.userId}`} className='flex items-center gap-2 hover:underline'>
-									{s.image &&
-										(isOptimizable(s.image) ? (
-											<Image src={s.image} alt='' width={24} height={24} className='rounded-full' />
-										) : (
-											<img src={s.image} alt='' width={24} height={24} loading='lazy' decoding='async' className='h-6 w-6 rounded-full' />
-										))}
-									{s.name ?? 'Unknown Player'}
-								</Link>
+							<td className='py-2 px-3 font-medium text-white'>
+								<span className='flex items-center gap-2'>
+									<Link href={`/profile/${s.userId}`} className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+										<PlayerAvatar src={s.image} name={s.name} size={24}/>
+										<span className='truncate underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline'>{s.name ?? 'Unknown Player'}</span>
+									</Link>
+									<PlayerFlair verified={s.verified} faceitLevel={s.faceitLevel} />
+								</span>
 							</td>
 							<td className='py-2 px-3 text-muted-foreground'>{s.teamName ?? '–'}</td>
 							<td className='py-2 px-3 text-right font-mono tabular-nums text-neutral-300'>{s.kills}</td>

@@ -6,7 +6,9 @@ export default {
 		{
 			type: 'customJwt',
 			applicationID: 'convex',
-			issuer: 'tournler',
+			// Convex requires a URL-shaped issuer (a bare 'tournler' is rejected at push time). It is only
+			// compared with the token's `iss`; nothing is fetched from it. Must match CONVEX_AUTH_ISSUER.
+			issuer: 'https://tournler.auth',
 			jwks: process.env.CONVEX_AUTH_JWKS!,
 			algorithm: 'RS256',
 		},

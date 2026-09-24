@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { TeamLogo } from '@/components/TeamLogo';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -51,14 +51,6 @@ function groupByDay(matches: Match[]) {
 	return groups;
 }
 
-function TeamLogo({ logo, name }: { logo?: string | null; name?: string }) {
-	const [failed, setFailed] = useState(false);
-	if (!logo || failed) {
-		return <div aria-hidden className='flex h-8 w-8 shrink-0 items-center justify-center rounded bg-neutral-800 text-xs font-bold text-neutral-300'>{(name || '?').substring(0, 2).toUpperCase()}</div>;
-	}
-	return <Image src={logo} alt={name || ''} width={32} height={32} className='h-8 w-8 shrink-0 rounded bg-neutral-900 object-contain' onError={() => setFailed(true)} />;
-}
-
 function MatchRow({ match }: { match: Match }) {
 	const isLive = match.status === 'LIVE';
 	const isPaused = match.status === 'PAUSED';
@@ -82,11 +74,11 @@ function MatchRow({ match }: { match: Match }) {
 			<div className='flex min-w-0 flex-1 items-center justify-center gap-2 sm:gap-3'>
 				<div className='flex min-w-0 flex-1 items-center justify-end gap-2'>
 					<span className={`truncate text-sm ${nameClass(aWon, bWon)}`}>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</span>
-					{!match.isPickup && <TeamLogo logo={match.teamA?.logo} name={match.teamA?.name} />}
+					{!match.isPickup && <TeamLogo src={match.teamA?.logo} name={match.teamA?.name} size='sm' decorative />}
 				</div>
 				<div className='w-14 shrink-0 whitespace-nowrap text-center font-mono text-sm font-bold tabular-nums text-white'>{isOpen ? `${joinedCount}/10` : inProgress ? `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}` : tiedFinal ? '–' : 'vs'}</div>
 				<div className='flex min-w-0 flex-1 items-center gap-2'>
-					{!match.isPickup && <TeamLogo logo={match.teamB?.logo} name={match.teamB?.name} />}
+					{!match.isPickup && <TeamLogo src={match.teamB?.logo} name={match.teamB?.name} size='sm' decorative />}
 					<span className={`truncate text-sm ${nameClass(bWon, aWon)}`}>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</span>
 				</div>
 			</div>

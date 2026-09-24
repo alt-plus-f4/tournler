@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch, restartMatch, forceStartMatch } from '@/lib/tournaments/bracket-advancement';
-import { getFaceitInfo } from '@/lib/faceit';
+import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
 import { NextResponse } from 'next/server';
 
 /**
@@ -40,7 +40,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 								name: true,
 								image: true,
 								createdAt: true,
-								steam: { select: { steamId: true } },
+								...playerFlairSelect,
 							},
 						},
 					},
@@ -58,7 +58,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 								name: true,
 								image: true,
 								createdAt: true,
-								steam: { select: { steamId: true } },
+								...playerFlairSelect,
 							},
 						},
 					},
@@ -66,7 +66,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 				winner: true,
 				gameServer: true,
 				participants: {
-					include: { user: { select: { id: true, name: true, image: true, steam: { select: { steamId: true } } } } },
+					include: { user: { select: { id: true, name: true, image: true, ...playerFlairSelect } } },
 					orderBy: { joinedAt: 'asc' },
 				},
 				mapActions: { orderBy: { order: 'asc' } },
@@ -82,15 +82,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 			return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 		}
 
-		// Real FACEIT CS2 levels for every rostered player (teams or pickup sides), looked up by
-		// their linked Steam account — same source as the profile page (src/lib/faceit.ts), not the
-		// account-age-based fallback the match page used to show. One lookup per unique steamId
-		// (getFaceitInfo itself caches each for an hour), attached back onto every roster/participant
-		// row that shares it so the frontend never needs its own extra round-trip.
+		// Verified badge + real FACEIT CS2 level for every rostered player (teams or pickup sides),
+		// one FACEIT lookup per unique linked Steam account (src/lib/helpers/player-flair.ts). The
+		// raw Steam ID and badge rows are stripped; only `verified` and `faceitLevel` are returned.
 		const rosteredMembers = [...(match.teamA?.members ?? []), ...(match.teamB?.members ?? []), ...match.participants.map((p) => p.user)];
-		const uniqueSteamIds = [...new Set(rosteredMembers.map((m) => m.steam?.steamId).filter((id): id is string => !!id))];
-		const levelBySteamId = new Map(await Promise.all(uniqueSteamIds.map(async (steamId) => [steamId, (await getFaceitInfo(steamId))?.level ?? null] as const)));
-		const withFaceitLevel = <T extends { steam: { steamId: string } | null }>(m: T) => ({ ...m, faceitLevel: m.steam ? (levelBySteamId.get(m.steam.steamId) ?? null) : null });
+		const withFaceitLevel = await flairMapper(rosteredMembers);
 		const matchWithFaceitLevels = {
 			...match,
 			// Effective series length: the per-match override, else the tournament default.

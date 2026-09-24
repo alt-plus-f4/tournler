@@ -1,5 +1,6 @@
 'use client';
 
+import { TeamLogo } from '@/components/TeamLogo';
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -159,14 +160,7 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 				</DialogHeader>
 				<form onSubmit={handleEdit} className='space-y-5'>
 					<div className='flex items-center gap-4'>
-						<div className='h-16 w-16 shrink-0 rounded-md overflow-hidden border border-border flex items-center justify-center' style={{ backgroundColor: (editingTeam?.background as string) || '#000000' }}>
-							{previewSrc ? (
-								// eslint-disable-next-line @next/next/no-img-element
-								<img src={previewSrc} alt={editingTeam?.name ?? ''} className='h-full w-full object-contain' />
-							) : (
-								<span className='text-lg font-bold text-white'>{(editingTeam?.name || '?').substring(0, 2).toUpperCase()}</span>
-							)}
-						</div>
+						<TeamLogo src={previewSrc} name={editingTeam?.name} size='lg' className='h-16 w-16' />
 						<div className='flex-1 space-y-2'>
 							<Label htmlFor='edit-name'>Team Name</Label>
 							<Input id='edit-name' value={editingTeam?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />

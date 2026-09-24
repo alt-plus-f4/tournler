@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import { useToast } from '@/lib/hooks/use-toast';
+import Link from 'next/link';
+import { PenLine } from 'lucide-react';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export interface NewsPostDefinition {
 	id: number;
@@ -18,6 +21,8 @@ export interface NewsPostDefinition {
 	isFeatured: boolean;
 	featuredOrder: number | null;
 	publishedAt: string;
+	/** EditorJS body; present on posts written in the /news editor. */
+	content?: unknown;
 }
 
 interface EditNewsDialogProps {
@@ -146,6 +151,14 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					<DialogDescription>Announcements shown on the homepage when featured.</DialogDescription>
 				</DialogHeader>
 
+				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5'>
+					<p className='text-sm text-muted-foreground'>{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}</p>
+					<Link href={isCreating ? '/news/new' : `/news/${post.id}/edit`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}>
+						<PenLine aria-hidden className='mr-2 h-4 w-4' />
+						{isCreating ? 'Open editor' : 'Edit body'}
+					</Link>
+				</div>
+
 				<form onSubmit={handleSubmit} className='space-y-5'>
 					<div className='space-y-2'>
 						<Label htmlFor='news-title'>Title</Label>
@@ -184,6 +197,7 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					<div className='space-y-2'>
 						<Label htmlFor='news-link'>Link (optional)</Label>
 						<Input id='news-link' value={link} onChange={(e) => setLink(e.target.value)} placeholder='https://...' />
+						{!isCreating && !!post.content && <p className='text-xs text-muted-foreground'>The homepage card opens the article on /news, so this link isn&apos;t used.</p>}
 					</div>
 
 					<div className='flex items-center gap-4'>

@@ -6,9 +6,12 @@ import { Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LevelBadge } from '@/components/LevelBadge';
+import { VerifiedMark } from '@/components/PlayerFlair';
+import type { VerifiedMark as VerifiedMarkData } from '@/lib/models/player-flair';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { PlayerAvatar, TeamMark } from './room-ui';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
+import { TeamMark } from './room-ui';
 import type { PlayerStatRow, Side } from './types';
 
 export interface RosterPlayer {
@@ -16,6 +19,7 @@ export interface RosterPlayer {
 	name: string;
 	image: string | null;
 	faceitLevel: number | null;
+	verified: VerifiedMarkData | null;
 	isCaptain: boolean;
 	isMe: boolean;
 }
@@ -28,7 +32,6 @@ export function TeamColumn({
 	side,
 	label,
 	logo,
-	background,
 	players,
 	stats,
 	result,
@@ -40,7 +43,6 @@ export function TeamColumn({
 	side: Side;
 	label: string;
 	logo?: string | null;
-	background?: string | null;
 	players: RosterPlayer[];
 	stats: PlayerStatRow[];
 	result: 'win' | 'loss' | null;
@@ -56,7 +58,7 @@ export function TeamColumn({
 	return (
 		<section aria-label={`${label} roster`} className={cn('rounded-md border border-border bg-neutral-950/90', result === 'loss' && 'bg-neutral-950/60')}>
 			<header className='flex items-center gap-3 border-b border-border px-4 py-3'>
-				<TeamMark logo={logo} name={label} background={background} size='sm' dim={result === 'loss'} />
+				<TeamMark logo={logo} name={label} size='sm' dim={result === 'loss'} />
 				<div className='min-w-0 flex-1'>
 					<h2 className={cn('truncate text-sm font-black uppercase tracking-wide', result === 'loss' ? 'text-neutral-400' : 'text-white')}>{label}</h2>
 					<div className='text-xs text-muted-foreground'>{meta ?? (side === 'TEAM_A' ? 'Side A' : 'Side B')}</div>
@@ -88,20 +90,27 @@ export function TeamColumn({
 					}
 					const stat = statsByUser.get(player.id);
 					return (
-						<li key={player.id} className={cn('group flex h-14 items-center gap-3 px-4 transition-colors duration-150 hover:bg-white/[0.03]', player.isMe && 'bg-white/[0.04]')}>
-							<PlayerAvatar src={player.image} name={player.name} size={32} />
-							<div className='flex min-w-0 flex-1 items-center gap-1.5'>
-								<Link href={`/profile/${player.id}`} className={cn('truncate text-sm font-medium underline-offset-4 hover:underline', result === 'loss' ? 'text-neutral-300' : 'text-white')}>
-									{player.name}
-								</Link>
-								{player.isCaptain && (
-									<span title='Captain' className='shrink-0 text-muted-foreground'>
-										<Crown className='h-3.5 w-3.5' aria-hidden />
-										<span className='sr-only'>Captain</span>
-									</span>
-								)}
-								{player.isMe && <span className='shrink-0 text-xs text-muted-foreground'>you</span>}
-							</div>
+						<li
+							key={player.id}
+							className={cn('group/player flex h-14 items-center gap-3 px-4 transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5', player.isMe && 'bg-white/[0.04]')}
+						>
+							<Link
+								href={`/profile/${player.id}`}
+								className='-mx-1 flex min-w-0 flex-1 cursor-pointer items-center gap-3 rounded-sm px-1 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+							>
+								<PlayerAvatar src={player.image} name={player.name} size={32} />
+								<span className='flex min-w-0 flex-1 items-center gap-1.5'>
+									<span className={cn('truncate text-sm font-medium underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline', result === 'loss' ? 'text-neutral-300' : 'text-white')}>{player.name}</span>
+									{player.verified && <VerifiedMark badge={player.verified} />}
+									{player.isCaptain && (
+										<span title='Captain' className='shrink-0 text-muted-foreground'>
+											<Crown className='h-3.5 w-3.5' aria-hidden />
+											<span className='sr-only'>Captain</span>
+										</span>
+									)}
+									{player.isMe && <span className='shrink-0 text-xs text-muted-foreground'>you</span>}
+								</span>
+							</Link>
 							{playerAction?.(player)}
 							{hasStats && (
 								<span className='w-14 text-right font-mono text-sm tabular-nums text-neutral-200'>

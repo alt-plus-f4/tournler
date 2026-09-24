@@ -2,11 +2,13 @@
 
 import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Check, Copy, Download, ExternalLink, Loader2, Server } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
-import { PlayerAvatar, RoomPanel, SectionLabel, SignalDot } from './room-ui';
+import { RoomPanel, SectionLabel, SignalDot } from './room-ui';
 import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
 
 function useCopy() {
@@ -399,12 +401,12 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 							{sorted.map((s) => {
 								const diff = s.kills - s.deaths;
 								return (
-									<tr key={s.userId} className='transition-colors duration-150 hover:bg-white/[0.03]'>
+									<tr key={s.userId} className='group/player transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5'>
 										<td className='px-4 py-2.5'>
-											<span className='flex items-center gap-2.5'>
-												<PlayerAvatar src={s.user.image} name={s.user.name || 'P'} size={24} />
-												<span className='truncate text-white'>{s.user.name || 'Unknown player'}</span>
-											</span>
+											<Link href={`/profile/${s.userId}`} className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+												<PlayerAvatar src={s.user.image} name={s.user.name} size={24} />
+												<span className='truncate text-white underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline'>{s.user.name || 'Unknown player'}</span>
+											</Link>
 										</td>
 										<td className={cn('px-2 py-2.5 text-right font-mono tabular-nums', s.kills === topKills && topKills > 0 ? 'font-bold text-white' : 'text-neutral-200')}>{s.kills}</td>
 										<td className='px-2 py-2.5 text-right font-mono tabular-nums text-neutral-200'>{s.deaths}</td>

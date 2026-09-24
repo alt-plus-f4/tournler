@@ -10,15 +10,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/lib/hooks/use-toast';
 import EditNewsDialog, { NewsPostDefinition } from '@/components/EditNewsDialog';
 import { Tournament } from '@/types/types';
+import { DEFAULT_REWATCH, parseYouTubeId } from '@/components/home/rewatch-config';
 
-interface HomepageSettings {
+const REWATCH_KEYS = ['rewatchVideoId', 'rewatchTitle', 'rewatchTeamA', 'rewatchTeamALogo', 'rewatchTeamB', 'rewatchTeamBLogo'] as const;
+type RewatchKey = (typeof REWATCH_KEYS)[number];
+type RewatchDraft = Record<RewatchKey, string>;
+
+interface HomepageSettings extends Partial<Record<RewatchKey, string | null>> {
 	featuredSource: 'TOURNAMENTS' | 'NEWS' | 'MIXED';
 	featuredLayout: 'GRID' | 'CAROUSEL';
+	showForumPosts?: boolean;
 }
+
+const REWATCH_FIELDS: { key: RewatchKey; label: string; placeholder: string; mono?: boolean }[] = [
+	{ key: 'rewatchVideoId', label: 'YouTube video', placeholder: `https://youtu.be/${DEFAULT_REWATCH.videoId}`, mono: true },
+	{ key: 'rewatchTitle', label: 'Title', placeholder: DEFAULT_REWATCH.title },
+	{ key: 'rewatchTeamA', label: 'Team A name', placeholder: DEFAULT_REWATCH.teamA },
+	{ key: 'rewatchTeamALogo', label: 'Team A logo URL', placeholder: 'https://…', mono: true },
+	{ key: 'rewatchTeamB', label: 'Team B name', placeholder: DEFAULT_REWATCH.teamB },
+	{ key: 'rewatchTeamBLogo', label: 'Team B logo URL', placeholder: 'https://…', mono: true },
+];
+
+const toDraft = (settings: HomepageSettings): RewatchDraft => Object.fromEntries(REWATCH_KEYS.map((key) => [key, settings[key] ?? ''])) as RewatchDraft;
 
 export default function FeaturedClient() {
 	const [settings, setSettings] = useState<HomepageSettings | null>(null);
 	const [isSavingSettings, setIsSavingSettings] = useState(false);
+	const [isSavingForum, setIsSavingForum] = useState(false);
+	const [rewatchDraft, setRewatchDraft] = useState<RewatchDraft | null>(null);
+	const [isSavingRewatch, setIsSavingRewatch] = useState(false);
+	const [rewatchError, setRewatchError] = useState<string | null>(null);
 
 	const [tournaments, setTournaments] = useState<Tournament[]>([]);
 	const [isLoadingTournaments, setIsLoadingTournaments] = useState(true);
@@ -35,7 +56,11 @@ export default function FeaturedClient() {
 	useEffect(() => {
 		fetch('/api/admin/homepage-settings')
 			.then((r) => r.json())
-			.then((data) => setSettings(data.settings ?? { featuredSource: 'TOURNAMENTS', featuredLayout: 'GRID' }))
+			.then((data) => {
+				const loaded: HomepageSettings = data.settings ?? { featuredSource: 'TOURNAMENTS', featuredLayout: 'GRID' };
+				setSettings(loaded);
+				setRewatchDraft(toDraft(loaded));
+			})
 			.catch((e) => console.error('Failed to load homepage settings', e));
 
 		fetch('/api/tournaments?status=ACTIVE&limit=100')
@@ -58,7 +83,7 @@ export default function FeaturedClient() {
 			const response = await fetch('/api/admin/homepage-settings', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(next),
+				body: JSON.stringify({ featuredSource: next.featuredSource, featuredLayout: next.featuredLayout }),
 			});
 			if (!response.ok) throw new Error('Failed to save');
 			toast({ title: 'Homepage layout updated' });
@@ -67,6 +92,48 @@ export default function FeaturedClient() {
 			toast({ variant: 'destructive', title: 'Could not save homepage layout' });
 		} finally {
 			setIsSavingSettings(false);
+		}
+	};
+
+	const saveShowForumPosts = async (showForumPosts: boolean) => {
+		const previous = settings?.showForumPosts ?? true;
+		setSettings((prev) => (prev ? { ...prev, showForumPosts } : prev));
+		setIsSavingForum(true);
+		try {
+			const response = await fetch('/api/admin/homepage-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ showForumPosts }),
+			});
+			if (!response.ok) throw new Error('Failed to save');
+			toast({ title: showForumPosts ? 'Forum posts shown on the homepage' : 'Forum posts hidden from the homepage' });
+		} catch (error) {
+			console.error('Failed to save forum toggle', error);
+			setSettings((prev) => (prev ? { ...prev, showForumPosts: previous } : prev));
+			toast({ variant: 'destructive', title: 'Could not update the forum block' });
+		} finally {
+			setIsSavingForum(false);
+		}
+	};
+
+	const saveRewatch = async (draft: RewatchDraft) => {
+		setIsSavingRewatch(true);
+		setRewatchError(null);
+		try {
+			const response = await fetch('/api/admin/homepage-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(Object.fromEntries(REWATCH_KEYS.map((key) => [key, draft[key].trim() || null]))),
+			});
+			const data = await response.json().catch(() => ({}));
+			if (!response.ok) throw new Error(data.error || 'Could not save the rewatch video');
+			setSettings(data.settings);
+			setRewatchDraft(toDraft(data.settings));
+			toast({ title: 'Homepage rewatch updated' });
+		} catch (error) {
+			setRewatchError(error instanceof Error ? error.message : 'Could not save the rewatch video');
+		} finally {
+			setIsSavingRewatch(false);
 		}
 	};
 
@@ -111,7 +178,7 @@ export default function FeaturedClient() {
 		setPosts((prev) => prev.filter((p) => p.id !== postId));
 	};
 
-	if (!settings) {
+	if (!settings || !rewatchDraft) {
 		return (
 			<div className='mx-4 mt-12 max-w-6xl md:mx-12 space-y-4'>
 				<Skeleton className='h-24 w-full bg-muted' />
@@ -157,6 +224,91 @@ export default function FeaturedClient() {
 						</Select>
 					</div>
 				</div>
+				<div className='flex items-start justify-between gap-4 border-t border-border pt-4 max-w-lg'>
+					<div className='space-y-0.5'>
+						<Label htmlFor='show-forum-posts'>Show recent forum posts on the homepage</Label>
+						<p id='show-forum-posts-hint' className='text-xs text-muted-foreground'>
+							The &ldquo;Forum&rdquo; block under Upcoming lists the 8 most recently active threads.
+						</p>
+					</div>
+					<button
+						id='show-forum-posts'
+						type='button'
+						role='switch'
+						aria-checked={settings.showForumPosts ?? true}
+						aria-describedby='show-forum-posts-hint'
+						disabled={isSavingForum}
+						onClick={() => saveShowForumPosts(!(settings.showForumPosts ?? true))}
+						className='relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-checked:bg-foreground'
+					>
+						<span aria-hidden className='pointer-events-none block h-4 w-4 translate-x-1 rounded-full bg-muted-foreground transition-transform [[aria-checked=true]>&]:translate-x-6 [[aria-checked=true]>&]:bg-background' />
+					</button>
+				</div>
+			</section>
+
+			{/* Homepage rewatch */}
+			<section className='space-y-4 rounded-md border border-border p-5'>
+				<div>
+					<h2 className='text-lg font-semibold'>Homepage rewatch</h2>
+					<p className='text-sm text-muted-foreground'>The VOD player that leads the homepage when no match is live. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).</p>
+				</div>
+				<form
+					className='space-y-4'
+					onSubmit={(e) => {
+						e.preventDefault();
+						saveRewatch(rewatchDraft);
+					}}
+				>
+					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
+						{REWATCH_FIELDS.map((field) => (
+							<div key={field.key} className='space-y-1.5'>
+								<Label htmlFor={field.key}>{field.label}</Label>
+								<Input
+									id={field.key}
+									value={rewatchDraft[field.key]}
+									onChange={(e) => setRewatchDraft({ ...rewatchDraft, [field.key]: e.target.value })}
+									placeholder={field.placeholder}
+									className={field.mono ? 'font-mono text-xs' : undefined}
+									aria-describedby={field.key === 'rewatchVideoId' ? 'rewatch-video-hint' : undefined}
+									disabled={isSavingRewatch}
+								/>
+								{field.key === 'rewatchVideoId' && (
+									<p id='rewatch-video-hint' className='text-xs text-muted-foreground'>
+										{rewatchDraft.rewatchVideoId.trim() === '' ? (
+											<>
+												Default video <span className='font-mono'>{DEFAULT_REWATCH.videoId}</span>
+											</>
+										) : parseYouTubeId(rewatchDraft.rewatchVideoId) ? (
+											<>
+												Video id <span className='font-mono text-white'>{parseYouTubeId(rewatchDraft.rewatchVideoId)}</span>
+											</>
+										) : (
+											<span className='text-signal-live'>Not a YouTube link or video id</span>
+										)}
+									</p>
+								)}
+							</div>
+						))}
+					</div>
+					{rewatchError && (
+						<p role='alert' className='text-sm text-signal-live'>
+							{rewatchError}
+						</p>
+					)}
+					<div className='flex flex-wrap gap-2'>
+						<Button type='submit' disabled={isSavingRewatch || (rewatchDraft.rewatchVideoId.trim() !== '' && !parseYouTubeId(rewatchDraft.rewatchVideoId))}>
+							{isSavingRewatch ? 'Saving…' : 'Save rewatch'}
+						</Button>
+						<Button
+							type='button'
+							variant='outline'
+							disabled={isSavingRewatch || REWATCH_KEYS.every((key) => !settings[key])}
+							onClick={() => saveRewatch(Object.fromEntries(REWATCH_KEYS.map((key) => [key, ''])) as RewatchDraft)}
+						>
+							Reset to default
+						</Button>
+					</div>
+				</form>
 			</section>
 
 			{/* Featured tournaments */}

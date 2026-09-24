@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatDate } from '@/lib/helpers/format-date';
+import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import { formatMoney } from '@/lib/helpers/format-money';
 
 interface FeaturedTournamentCardProps {
@@ -10,9 +10,12 @@ interface FeaturedTournamentCardProps {
 	bannerUrl: string;
 	prizePool: number | null;
 	location: string;
+	/** UPCOMING / ONGOING / COMPLETED; without it a past start date reads "Start pending". */
+	status?: string;
 }
 
-export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePool, location }: FeaturedTournamentCardProps) {
+export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePool, location, status }: FeaturedTournamentCardProps) {
+	const start = getStartLabel(startDate, status);
 	return (
 		<Link
 			href={`/tournaments/${id}`}
@@ -32,8 +35,11 @@ export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePo
 			<div className='space-y-2 p-4'>
 				<h3 className='line-clamp-1 text-lg font-black uppercase tracking-wide'>{name}</h3>
 				<div className='flex items-center justify-between gap-2 text-sm text-muted-foreground'>
-					<span>{formatDate(startDate)}</span>
-					{prizePool !== null && prizePool !== undefined && <span className='font-mono tabular-nums text-white'>{formatMoney(prizePool)}</span>}
+					<span className='min-w-0 truncate'>
+						<span className={start.pending ? 'text-white' : undefined}>{start.value}</span>
+						{start.pending && <span> · {start.label}</span>}
+					</span>
+					{prizePool !== null && prizePool !== undefined && <span className='shrink-0 font-mono tabular-nums text-white'>{formatMoney(prizePool)}</span>}
 				</div>
 				<p className='truncate text-sm text-muted-foreground'>{location}</p>
 			</div>

@@ -151,6 +151,9 @@ model User {
   playerMatchStats     PlayerMatchStat[]
   badges               UserBadge[]
   newsPosts            NewsPost[]
+  newsComments         NewsComment[]
+  forumThreads         ForumThread[]
+  forumReplies         ForumReply[]
   matchParticipations  MatchParticipant[]
   draftPicks           MatchDraftPick[]
 
@@ -489,6 +492,8 @@ model Badge {
   icon        String  @map("icon")
   color       String  @default("#facc15") @map("color")
   isOverlay   Boolean @default(false) @map("is_overlay")
+  // Uploaded trophy artwork (Vercel Blob). When set it is shown instead of the built-in `icon`.
+  imageUrl    String? @map("image_url")
 
   awards UserBadge[]
 
@@ -524,6 +529,10 @@ model NewsPost {
   isFeatured    Boolean  @default(false) @map("is_featured")
   featuredOrder Int?     @map("featured_order")
   publishedAt   DateTime @default(now()) @map("published_at")
+  // EditorJS output ({ time, blocks, version }). Null for legacy posts that only have blurb/link.
+  content       Json?    @map("content")
+
+  comments NewsComment[]
 
   authorId String @map("author_id")
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -550,7 +559,20 @@ model HomepageSettings {
   id             Int            @id @default(1)
   featuredSource FeaturedSource @default(TOURNAMENTS) @map("featured_source")
   featuredLayout FeaturedLayout @default(GRID) @map("featured_layout")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  // Homepage rewatch/VOD player, shown as the hero when no match is live. All nullable: null
+  // falls back to the built-in default VOD (see src/components/home/rewatch-defaults.ts).
+  rewatchVideoId   String? @map("rewatch_video_id")
+  rewatchTitle     String? @map("rewatch_title")
+  rewatchTeamA     String? @map("rewatch_team_a")
+  rewatchTeamB     String? @map("rewatch_team_b")
+  rewatchTeamALogo String? @map("rewatch_team_a_logo")
+  rewatchTeamBLogo String? @map("rewatch_team_b_logo")
+
+  // HLTV-style "recent forum posts" block on the homepage sidebar.
+  showForumPosts Boolean @default(true) @map("show_forum_posts")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_settings")
 }
@@ -600,4 +622,76 @@ model MatchDraftPick {
   @@unique([matchId, pickedUserId])
   @@index([matchId])
   @@map("match_draft_picks")
+}
+
+model NewsComment {
+  id Int @id @default(autoincrement()) @map("id")
+
+  postId Int      @map("post_id")
+  post   NewsPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  text String @map("text")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([postId])
+  @@index([authorId])
+  @@map("news_comments")
+}
+
+enum ForumCategory {
+  GENERAL
+  COUNTER_STRIKE
+  TOURNAMENTS
+  OFF_TOPIC
+
+  @@map("forum_category")
+}
+
+// HLTV-style text forum: any signed-in user can open a thread and reply. Text only, no images.
+model ForumThread {
+  id Int @id @default(autoincrement()) @map("id")
+
+  title    String        @map("title")
+  body     String        @map("body")
+  category ForumCategory @default(GENERAL) @map("category")
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  isPinned Boolean @default(false) @map("is_pinned")
+  isLocked Boolean @default(false) @map("is_locked")
+
+  replies ForumReply[]
+
+  // Bumped on every reply so "recent posts" can sort threads by latest activity.
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([lastActivityAt])
+  @@index([category, lastActivityAt])
+  @@index([authorId])
+  @@map("forum_threads")
+}
+
+model ForumReply {
+  id Int @id @default(autoincrement()) @map("id")
+
+  threadId Int         @map("thread_id")
+  thread   ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  authorId String @map("author_id")
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  body String @map("body")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+  @@map("forum_replies")
 }

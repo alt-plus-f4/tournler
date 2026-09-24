@@ -1,11 +1,12 @@
-import { formatDate } from '@/lib/helpers/format-date';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { ReducedTournament } from '@/types/types';
+import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity }: ReducedTournament) {
+export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity, status }: ReducedTournament & { status?: string }) {
 	const hasPrize = prizePool !== null && prizePool !== undefined;
+	const start = getStartLabel(startDate, status);
 
 	return (
 		<Link
@@ -21,8 +22,8 @@ export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, 
 			</div>
 			<dl className='grid w-full grid-cols-2 gap-y-2 border-t border-border bg-black p-2 text-center sm:auto-cols-fr sm:grid-flow-col sm:grid-cols-none'>
 				<div className='flex flex-col-reverse sm:border-r sm:border-border'>
-					<dt className='text-xs text-muted-foreground md:text-sm'>Date</dt>
-					<dd className='text-sm font-bold md:text-base'>{formatDate(startDate)}</dd>
+					<dt className='text-xs text-muted-foreground md:text-sm'>{start.label}</dt>
+					<dd className='text-sm font-bold md:text-base'>{start.value}</dd>
 				</div>
 				{hasPrize && (
 					<div className='flex flex-col-reverse sm:border-r sm:border-border'>

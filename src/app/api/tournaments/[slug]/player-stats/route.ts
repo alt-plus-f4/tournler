@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { computeTournamentPlayerStats } from '@/lib/tournaments/player-stats';
+import { flairByUserId } from '@/lib/helpers/player-flair';
 import { NextResponse } from 'next/server';
 
 /**
@@ -22,7 +23,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 		}
 
 		const stats = await computeTournamentPlayerStats(tournament.id);
-		return NextResponse.json({ stats });
+		// Verified badge + real FACEIT level per player (see src/lib/helpers/player-flair.ts).
+		const flair = await flairByUserId(stats.map((s) => s.userId));
+		return NextResponse.json({ stats: stats.map((s) => ({ ...s, verified: flair.get(s.userId)?.verified ?? null, faceitLevel: flair.get(s.userId)?.faceitLevel ?? null })) });
 	} catch (error) {
 		console.error('Error computing tournament player stats:', error);
 		return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });

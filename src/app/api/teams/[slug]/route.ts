@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
 
 const publicUserSelect = { id: true, name: true, image: true } as const;
 
@@ -27,7 +28,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			background: true,
 			// Public endpoint: only the fields the team page renders. `members: true` used to
 			// return whole User rows (email, role, ...) to anonymous callers.
-			members: { select: publicUserSelect },
+			// Steam ID + Verified badge are read only to compute `verified`/`faceitLevel` below and
+			// are stripped before the response.
+			members: { select: { ...publicUserSelect, ...playerFlairSelect } },
 			capitan: { select: publicUserSelect },
 		},
 	});
@@ -36,7 +39,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 		return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 	}
 
-	return NextResponse.json({ team }, { status: 200 });
+	const withFlair = await flairMapper(team.members);
+	return NextResponse.json({ team: { ...team, members: team.members.map(withFlair) } }, { status: 200 });
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ slug: string }> }) {
