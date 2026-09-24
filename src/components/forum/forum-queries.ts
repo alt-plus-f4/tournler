@@ -7,16 +7,20 @@ import { THREADS_PER_PAGE, type ForumCategoryValue } from './forum-shared';
 /** Public author shape: never expose email, role, or anything beyond id/name/image. */
 export const publicAuthorSelect = { id: true, name: true, image: true } satisfies Prisma.UserSelect;
 
+/** Reply counts leave out soft-deleted "[deleted]" placeholders. */
+const visibleRepliesCount = { where: { deletedAt: null } } satisfies Prisma.ForumThreadCountOutputTypeCountRepliesArgs;
+
 const threadListSelect = {
 	id: true,
 	title: true,
 	category: true,
 	isPinned: true,
 	isLocked: true,
+	score: true,
 	lastActivityAt: true,
 	createdAt: true,
 	author: { select: publicAuthorSelect },
-	_count: { select: { replies: true } },
+	_count: { select: { replies: visibleRepliesCount } },
 } satisfies Prisma.ForumThreadSelect;
 
 export type ForumThreadListItem = Prisma.ForumThreadGetPayload<{ select: typeof threadListSelect }>;
@@ -47,12 +51,12 @@ export function recentForumThreads(take = 8) {
 	return db.forumThread.findMany({
 		orderBy: { lastActivityAt: 'desc' },
 		take,
-		select: { id: true, title: true, _count: { select: { replies: true } } },
+		select: { id: true, title: true, _count: { select: { replies: visibleRepliesCount } } },
 	});
 }
 
-export function getForumThread(id: number) {
-	return db.forumThread.findUnique({
+export async function getForumThread(id: number) {
+	const thread = await db.forumThread.findUnique({
 		where: { id },
 		select: {
 			id: true,
@@ -61,15 +65,21 @@ export function getForumThread(id: number) {
 			category: true,
 			isPinned: true,
 			isLocked: true,
+			score: true,
 			createdAt: true,
 			lastActivityAt: true,
 			author: { select: publicAuthorSelect },
 			replies: {
-				orderBy: { createdAt: 'asc' },
-				select: { id: true, body: true, createdAt: true, author: { select: publicAuthorSelect } },
+				orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+				select: { id: true, parentId: true, body: true, score: true, createdAt: true, deletedAt: true, author: { select: publicAuthorSelect } },
 			},
 		},
 	});
+	if (!thread) return null;
+	// Soft-deleted replies stay in the chain as "[deleted]" placeholders: their body, author and
+	// score never leave the server (this payload is cached and served publicly).
+	const replies = thread.replies.map((reply) => (reply.deletedAt ? { ...reply, body: '', score: 0, author: null } : reply));
+	return { ...thread, replies };
 }
 
 /**
@@ -79,6 +89,7 @@ export function getForumThread(id: number) {
 export const getForumThreadCached = cachedQuery(getForumThread, ['forum-thread'], { tags: ['forum', 'users'], revalidate: REVALIDATE.standard });
 
 export type ForumThreadDetail = NonNullable<Awaited<ReturnType<typeof getForumThread>>>;
+export type ForumReplyItem = ForumThreadDetail['replies'][number];
 
 /** Parses a route segment into a positive integer id, or null. */
 export function parseId(value: string): number | null {

@@ -71,13 +71,14 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 
 ### Forum
 
-- GET `/api/forum/threads?category=&page=`: Public. Returns 30 threads per page, pinned first, then by last activity. Authors expose only `id`, `name`, `image`.
+- GET `/api/forum/threads?category=&page=`: Public. Returns 30 threads per page, pinned first, then by last activity. Each thread carries its net `score` and a `replyCount` that leaves out soft-deleted replies. Authors expose only `id`, `name`, `image`.
 - POST `/api/forum/threads`: Any authenticated user. Title 3–120 chars, body 1–5000 chars, plain text. Rate limit: one new thread per user per 30s (429 otherwise).
-- GET `/api/forum/threads/[threadId]`: Public. Thread plus replies, oldest first.
+- GET `/api/forum/threads/[threadId]`: Public. Thread (with `score`) plus a flat reply list, oldest first. Each reply has `parentId` (null = answers the thread) and `score`, so clients build the reply chain themselves. Soft-deleted replies show up as placeholders with `deletedAt` set, an empty `body`, `author: null` and `score: 0`.
 - PATCH `/api/forum/threads/[threadId]`: `forum:moderate`. Body `{ isPinned?, isLocked? }`.
-- DELETE `/api/forum/threads/[threadId]`: Thread author OR `forum:moderate`.
-- POST `/api/forum/threads/[threadId]/replies`: Any authenticated user; rejected with 423 when the thread is locked (moderators may still reply). Rate limit: one reply per user per 10s. Bumps the thread's `lastActivityAt`.
-- DELETE `/api/forum/replies/[replyId]`: Reply author OR `forum:moderate`.
+- DELETE `/api/forum/threads/[threadId]`: Thread author OR `forum:moderate`. Replies and votes cascade.
+- POST `/api/forum/threads/[threadId]/replies`: Any authenticated user. Body `{ body, parentId? }`. `parentId` answers another reply, which must be in the same thread (404 otherwise) and not deleted (409). Locked threads return 423 (moderators may still reply). Rate limit: one reply per user per 10s. Bumps the thread's `lastActivityAt`.
+- DELETE `/api/forum/replies/[replyId]`: Reply author OR `forum:moderate`. A reply that has answers is soft-deleted: `deletedAt` is set, the body is blanked, its votes are dropped, and the answers stay. A reply with no answers is hard-deleted, along with any soft-deleted ancestors it leaves with no answers. Returns `{ ok, mode: 'soft' | 'hard' }`.
+- POST `/api/forum/threads/[threadId]/vote` and POST `/api/forum/replies/[replyId]/vote`: Any authenticated user (signed out → 401). Body `{ value: 1 | -1 | 0 }`, where 0 removes the vote. One vote per user per post; a repeat of the same value is a no-op. The stored `score` moves by the difference in the same transaction. Voting on your own post is allowed, and nothing is auto-voted. A soft-deleted reply can't be voted on (409). Rate limit: 30 vote changes per user per rolling minute (429). Returns `{ score, myVote }`. The viewer's own votes are read per request on `/forum/[id]` and never cached.
 - `/admin/forum` moderation page: `forum:moderate`.
 
 ## Bans

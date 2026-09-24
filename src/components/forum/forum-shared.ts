@@ -49,7 +49,11 @@ export const threadSchema = z.object({
 	body: plainText(BODY_MAX, 'Post'),
 });
 
-export const replySchema = z.object({ body: plainText(BODY_MAX, 'Reply') });
+export const replySchema = z.object({
+	body: plainText(BODY_MAX, 'Reply'),
+	/** The reply being answered; omitted or null replies to the thread itself. */
+	parentId: z.number({ invalid_type_error: 'Invalid reply target' }).int().positive().max(2_147_483_647).nullish(),
+});
 
 export const moderateSchema = z
 	.object({ isPinned: z.boolean().optional(), isLocked: z.boolean().optional() })
