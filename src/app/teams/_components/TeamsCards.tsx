@@ -3,6 +3,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import type { ExtendedCs2Team } from '@/lib/models/team-model';
+import type { Game } from '@prisma/client';
+import { GAME_META } from '@/lib/games';
 
 const TEAMS_LIMIT = 100;
 
@@ -24,11 +26,14 @@ export function TeamsCardsSkeleton() {
  * HTTP. Shared by every viewer, so it lives in the data cache (rosters carry user names/avatars).
  */
 const listTeams = cachedQuery(
-	() =>
+	(game: Game | null) =>
 		db.cs2Team.findMany({
+			where: game ? { game } : undefined,
+			orderBy: { createdAt: 'desc' },
 			select: {
 				id: true,
 				name: true,
+				game: true,
 				members: { select: { id: true, name: true, image: true, bio: true } },
 				capitanId: true,
 				logo: true,
@@ -38,14 +43,15 @@ const listTeams = cachedQuery(
 			},
 			take: TEAMS_LIMIT,
 		}),
-	['teams-list', String(TEAMS_LIMIT)],
+	['teams-list', String(TEAMS_LIMIT), 'by-game'],
 	{ tags: ['teams', 'users'], revalidate: REVALIDATE.standard },
 );
 
-export async function TeamsCards() {
+/** `game` null = every game (the one feed); otherwise just that game's teams. */
+export async function TeamsCards({ game = null }: { game?: Game | null }) {
 	let teams: Awaited<ReturnType<typeof listTeams>>;
 	try {
-		teams = await listTeams();
+		teams = await listTeams(game);
 	} catch (error) {
 		console.error('Error fetching teams:', error);
 		return (
@@ -59,7 +65,7 @@ export async function TeamsCards() {
 	if (!teams.length) {
 		return (
 			<div className='col-span-full rounded-md border border-border px-4 py-12 text-center'>
-				<p className='font-semibold'>No teams yet</p>
+				<p className='font-semibold'>{game ? `No ${GAME_META[game].label} teams yet` : 'No teams yet'}</p>
 				<p className='mt-1 text-sm text-muted-foreground'>The first team created will show up here.</p>
 			</div>
 		);

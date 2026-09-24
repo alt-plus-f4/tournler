@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
@@ -24,6 +25,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 		select: {
 			id: true,
 			name: true,
+			game: true,
 			logo: true,
 			background: true,
 			// Public endpoint: only the fields the team page renders. `members: true` used to
@@ -142,7 +144,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		const session = await getAuthSession();
 		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-		const team = await db.cs2Team.findUnique({ where: { id: numericId }, include: { capitan: true } });
+		const team = await db.cs2Team.findUnique({ where: { id: numericId }, include: { capitan: true, members: { select: { id: true } } } });
 		if (!team) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
 
 		const allowedToEdit = team.capitan?.id === session.user.id || (await userHasPermission(session.user.id, 'teams:manage'));
@@ -159,6 +161,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 		if (Object.keys(dataToUpdate).length === 0) return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });
 
+		// The captain must be on the roster; that also keeps "one captaincy per game" true, since a
+		// member can't be on (let alone captain) another team of this game.
+		if (dataToUpdate.capitanId !== undefined && dataToUpdate.capitanId !== null && !team.members.some((m) => m.id === dataToUpdate.capitanId)) {
+			return NextResponse.json({ error: 'The new captain must be a member of the team' }, { status: 400 });
+		}
+
 		// coerce numeric tournament id if provided
 		if (dataToUpdate.cs2TournamentId !== undefined) {
 			const n = Number(dataToUpdate.cs2TournamentId);
@@ -170,6 +178,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 		return NextResponse.json({ message: 'Team updated', team: updated }, { status: 200 });
 	} catch (error) {
+		// (name, game) is unique: another team of this game already has the new name.
+		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return NextResponse.json({ error: 'Team name is already taken for this game' }, { status: 409 });
 		console.error('Error updating team:', error);
 		return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
 	}

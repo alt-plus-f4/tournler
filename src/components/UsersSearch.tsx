@@ -3,11 +3,14 @@
 import { ReactNode, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Slot } from '@radix-ui/react-slot';
+import type { Game } from '@prisma/client';
 
 interface UsersSearchProps {
 	children: ReactNode;
 	teamId: number;
 	teamName: string;
+	/** The team's game: only players without a team of this game can be invited. */
+	game: Game;
 	invitedPlayers: any;
 }
 
@@ -18,14 +21,14 @@ const loadPalette = () => import('./UsersSearchPalette');
 const UsersSearchPalette = dynamic(loadPalette, { ssr: false });
 
 /** Renders `children` (the trigger) right away; the player-search palette mounts on first open. */
-export function UsersSearch({ children, teamId, teamName, invitedPlayers }: UsersSearchProps) {
+export function UsersSearch({ children, teamId, teamName, game, invitedPlayers }: UsersSearchProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	// Stays true after the first open so the palette keeps its state and can animate closed.
 	const [mounted, setMounted] = useState(false);
 
 	return (
 		<>
-			{mounted && <UsersSearchPalette open={isOpen} onOpenChange={setIsOpen} teamId={teamId} teamName={teamName} invitedPlayers={invitedPlayers} />}
+			{mounted && <UsersSearchPalette open={isOpen} onOpenChange={setIsOpen} teamId={teamId} teamName={teamName} game={game} invitedPlayers={invitedPlayers} />}
 			{/* The trigger passed in (a Button) receives the click handler directly, so it stays a real, keyboard-operable button. */}
 			{children && (
 				<Slot

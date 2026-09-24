@@ -1,15 +1,24 @@
 import { cache } from 'react';
-import { db } from '@/lib/db';
+import type { Game } from '@prisma/client';
+import { getUserTeams, type UserTeamsByGame } from '@/lib/teams/membership';
 
 /**
- * The team a user plays for (`{ team: { id, name } | null }`), read directly from the DB rather
- * than via GET /api/user/team over HTTP. Cached per request.
+ * The user's teams, one per game (`{ CS2: team | null, LOL: team | null }`), read directly from the
+ * DB rather than via GET /api/user/team over HTTP. Cached per request; null on a DB error.
  */
-export const fetchUserTeam = cache(async function fetchUserTeam(userId: string) {
+export const fetchUserTeams = cache(async function fetchUserTeams(userId: string): Promise<UserTeamsByGame | null> {
 	try {
-		const user = await db.user.findUnique({ where: { id: userId }, select: { cs2Team: { select: { id: true, name: true } } } });
-		return { team: user?.cs2Team ?? null };
+		return await getUserTeams(userId);
 	} catch {
 		return null;
 	}
+});
+
+/**
+ * The team a user plays for in one game (`{ team: { id, name, game, ... } | null }`). Defaults to
+ * CS2 for callers written before teams were per game; pass the tournament's/page's game instead.
+ */
+export const fetchUserTeam = cache(async function fetchUserTeam(userId: string, game: Game = 'CS2') {
+	const teams = await fetchUserTeams(userId);
+	return teams ? { team: teams[game] } : null;
 });

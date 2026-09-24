@@ -12,12 +12,15 @@ import {
 import { useEffect, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
 import { ReducedUser } from '@/types/types';
+import type { Game } from '@prisma/client';
+import { GAME_META } from '@/lib/games';
 
 interface UsersSearchPaletteProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	teamId: number;
 	teamName: string;
+	game: Game;
 	invitedPlayers: any;
 }
 
@@ -63,6 +66,7 @@ export default function UsersSearchPalette({
 	open: isOpen,
 	onOpenChange: setIsOpen,
 	teamId,
+	game,
 	invitedPlayers,
 }: UsersSearchPaletteProps) {
 	const [dialog, setDialog] = useState<JSX.Element | undefined>();
@@ -133,13 +137,13 @@ export default function UsersSearchPalette({
 	return (
 		<>
 			<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
-				<CommandInput placeholder='Search for players…' value={query} onValueChange={setQuery} />
+				<CommandInput placeholder={`Search players without a ${GAME_META[game].short} team…`} value={query} onValueChange={setQuery} />
 				<CommandList>
 					{loading ? (
 						<CommandGroup><p className='px-2 py-3 text-sm text-muted-foreground' role='status'>Searching…</p></CommandGroup>
 					) : (
 						<>
-							<CommandEmpty>No users found.</CommandEmpty>
+							<CommandEmpty>No players found. Anyone already on a {GAME_META[game].short} team can&apos;t be invited.</CommandEmpty>
 							{allUsers.length > 0 && (
 								<CommandGroup heading='Players'>
 									{allUsers.map((user) => {

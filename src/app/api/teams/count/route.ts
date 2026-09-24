@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { parseGameParam } from '@/lib/games';
 
 export async function GET(req: NextRequest) {
 	try {
@@ -7,7 +8,8 @@ export async function GET(req: NextRequest) {
 		const limit = Math.max(1, parseInt(searchParams.get('limit') || '10', 10) || 10);
 		const search = searchParams.get('search')?.trim();
 
-		const where = search ? { name: { contains: search, mode: 'insensitive' as const } } : undefined;
+		const game = parseGameParam(searchParams.get('game'));
+		const where = { ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}), ...(game ? { game } : {}) };
 
 		const total = await db.cs2Team.count({ where });
 		const count = Math.ceil(total / limit);

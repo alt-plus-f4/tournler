@@ -3,15 +3,20 @@ import Link from 'next/link';
 import type { Cs2Team } from '@/types/types';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
+import type { Game } from '@prisma/client';
+import { GameTag } from '@/components/games/GameMark';
+
+/** The admin list reads `game` from GET /api/teams; the shared client type predates it. */
+type AdminTeam = Cs2Team & { game?: Game };
 
 interface TeamTableProps {
-	teams: Cs2Team[];
+	teams: AdminTeam[];
 	onEdit: (team: Cs2Team) => void;
 	isLoading?: boolean;
 	emptyMessage?: string;
 }
 
-const HEADERS = ['Team', 'Captain', 'Members', 'Created'];
+const HEADERS = ['Team', 'Game', 'Captain', 'Members', 'Created'];
 
 export function TeamTable({ isLoading, teams, onEdit, emptyMessage = 'No teams found.' }: TeamTableProps) {
 	return (
@@ -53,6 +58,7 @@ export function TeamTable({ isLoading, teams, onEdit, emptyMessage = 'No teams f
 											</button>
 										</div>
 									</td>
+									<td className={t.td}>{team.game ? <GameTag game={team.game} /> : <span className='text-muted-foreground'>—</span>}</td>
 									<td className={cn(t.td, 'text-neutral-300')}>{captain?.name || <span className='text-muted-foreground'>—</span>}</td>
 									<td className={cn(t.td, t.num, 'text-right')}>{team.members?.length || 0}</td>
 									<td className={cn(t.td, t.num, 'whitespace-nowrap text-neutral-300')}>{formatAdminDate(team.createdAt)}</td>

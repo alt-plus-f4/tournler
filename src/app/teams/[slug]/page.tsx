@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { TeamBanner } from '@/components/TeamBanner';
 import Link from 'next/link';
 import { ArrowLeft, DoorOpen, UserPlus } from 'lucide-react';
-import { CounterStrikeIcon } from '@/components/Icons';
+import { GameTag } from '@/components/games/GameMark';
+import { GAME_META } from '@/lib/games';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LeaveTeamDialog } from '@/components/LeaveTeamDialog';
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: CS2TeamPageProps): Promise<Me
 	const { slug } = await params;
 	const data = await fetchTeam(parseInt(slug, 10));
 	if (!data?.team) return { title: 'Team not found' };
-	return { title: data.team.name, description: `${data.team.name} on Tournler: CS2 roster, captain and match history.` };
+	return { title: data.team.name, description: `${data.team.name} on Tournler: ${GAME_META[data.team.game].label} roster, captain and match history.` };
 }
 
 /** Shared across viewers: a team's recent (non-pickup) matches with team and tournament names. */
@@ -129,14 +130,14 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 			</div>
 
 			<div className='mt-6 flex flex-wrap items-center gap-3 border-b border-border pb-4'>
-				<CounterStrikeIcon aria-hidden className='h-8 w-8 shrink-0' />
 				<div className='min-w-0'>
 					<h1 className='truncate text-2xl font-black uppercase tracking-wide md:text-4xl'>{team.name}</h1>
-					<p className='text-sm text-muted-foreground'>
+					<p className='flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground'>
+						<GameTag game={team.game} />
 						<span className='font-mono tabular-nums text-white'>
 							{memberCount}/{TEAM_SIZE}
-						</span>{' '}
-						players{team.capitan?.name ? <> · Captain {team.capitan.name}</> : null}
+						</span>
+						<span>players{team.capitan?.name ? <> · Captain {team.capitan.name}</> : null}</span>
 					</p>
 				</div>
 				<div className='ml-auto flex flex-row gap-2'>
@@ -151,7 +152,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 
 					{isUserTeamCaptain && memberCount < TEAM_SIZE && (
 						<Suspense fallback={null}>
-							<UsersSearch teamName={team.name} teamId={team.id} invitedPlayers={invitedPlayers}>
+							<UsersSearch teamName={team.name} teamId={team.id} game={team.game} invitedPlayers={invitedPlayers}>
 								<Button aria-label='Invite players'>
 									<UserPlus aria-hidden className='h-4 w-4' />
 									<span className='hidden md:inline'>Invite Players</span>

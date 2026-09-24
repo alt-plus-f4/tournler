@@ -17,6 +17,7 @@ const loadPublicTeam = cachedQuery(
 			select: {
 				id: true,
 				name: true,
+				game: true,
 				logo: true,
 				background: true,
 				// bio feeds the roster hover card (public profile text).

@@ -3,6 +3,8 @@ import { notifyTeamInvite } from '@/lib/convex-server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { getUserTeam, TEAM_SIZE } from '@/lib/teams/membership';
+import { GAME_META } from '@/lib/games';
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
 	try {
@@ -64,6 +66,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			select: {
 				id: true,
 				name: true,
+				game: true,
 				capitan: { select: { id: true } },
 				members: { select: { id: true } },
 				teamInvitations: { select: { userId: true } },
@@ -79,7 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
-		if (team.members.length >= 5) {
+		if (team.members.length >= TEAM_SIZE) {
 			return NextResponse.json({ error: 'Team is full' }, { status: 400 });
 		}
 
@@ -98,6 +101,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 		if (!user) {
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		}
+
+		// One team per game: accepting re-checks this too, but don't send an invite that can't be accepted.
+		if (await getUserTeam(user.id, team.game)) {
+			return NextResponse.json({ error: `Player is already on a ${GAME_META[team.game].label} team`, code: 'ALREADY_ON_TEAM' }, { status: 409 });
 		}
 
 		const teamInvitation = await db.cs2TeamInvitation.create({

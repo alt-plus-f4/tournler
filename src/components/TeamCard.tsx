@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { CounterStrikeIcon } from '@/components/Icons';
+import { GameTag } from '@/components/games/GameMark';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 import { cn } from '@/lib/utils';
 import { TeamBanner } from './TeamBanner';
@@ -29,9 +29,10 @@ export function TeamCard({ team, roster }: { team: ExtendedCs2Team; roster?: Rea
 				<TeamBanner capitanId={team.capitanId ?? ''} team={team} interactive={false} />
 			</div>
 			<div className='flex flex-col gap-1 border-t border-border px-4 pt-3 pb-3'>
-				<div className='flex min-w-0 items-center gap-2'>
-					<CounterStrikeIcon aria-hidden className='h-5 w-5 shrink-0' />
+				<div className='flex min-w-0 items-center justify-between gap-2'>
 					<h3 className='truncate text-lg font-black uppercase leading-tight tracking-wide underline-offset-4 group-hover:underline'>{team.name}</h3>
+					{/* Some callers' selects predate teams having a game; show the tag only when it's there. */}
+					{team.game && <GameTag game={team.game} />}
 				</div>
 				<p className='flex items-center justify-between text-xs text-muted-foreground'>
 					<span className={openSlots === 0 ? 'font-semibold text-white' : undefined}>{rosterLabel}</span>

@@ -5,12 +5,12 @@ import type { TeamMember } from '@/lib/models/team-model';
 
 interface UserCardProps {
 	member: TeamMember;
-	/** The team the card is shown for (e.g. the banner's team); falls back to the member's own team if loaded. */
+	/** The team the card is shown for (e.g. the banner's team). Players can have one team per game, so there's no single "own team" to fall back to. */
 	team?: { name: string | null; logo: string | null } | null;
 }
 
 /** Player hover card: avatar, name with Verified mark + FACEIT level, team, and the player's bio. */
-export function UserCard({ member, team = member.cs2Team }: UserCardProps) {
+export function UserCard({ member, team }: UserCardProps) {
 	const bio = member.bio?.trim();
 	return (
 		<div className='flex gap-4'>
