@@ -23,6 +23,13 @@ STEAM_API_KEY=your_steam_api_key
 # Profiles just show no FACEIT level if this is unset.
 FACEIT_API_KEY=your_faceit_server_side_api_key
 
+# Optional — links a player's Riot ID (League of Legends) on their profile (src/lib/riot/client.ts),
+# resolved via Riot's account-v1/summoner-v4 APIs and proven with a profile-icon ownership check.
+# Get a key from https://developer.riotgames.com: a dev key expires every 24h (fine for local dev,
+# re-issue as needed); a production key needs a Riot-reviewed app. Without this set, Riot ID linking
+# returns a clear "not set up on this server yet" response instead of faking success.
+RIOT_API_KEY=your_riot_api_key
+
 # Tournament automation / game-server integration (see TOURNAMENT_GUIDE.md)
 GAME_SERVER_IP=your-game-server-ip.com
 GAME_SERVER_TOKEN=your_game_server_shared_secret

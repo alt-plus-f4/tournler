@@ -19,6 +19,14 @@ enum UserRole {
   @@map("user_role")
 }
 
+// Which game a tournament or team belongs to. Existing rows are CS2.
+enum Game {
+  CS2
+  LOL
+
+  @@map("game")
+}
+
 enum TournamentStatus {
   UPCOMING
   ONGOING
@@ -138,6 +146,7 @@ model User {
   // Profile privacy: whether linked accounts are shown on the public profile.
   showDiscord Boolean @default(true) @map("show_discord")
   showSteam   Boolean @default(true) @map("show_steam")
+  showRiot    Boolean @default(true) @map("show_riot")
 
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
@@ -146,9 +155,13 @@ model User {
   discord DiscordAccount?
   steam   SteamAccount?
 
-  cs2TeamId          Int?                @map("cs2_team_id")
-  cs2Team            Cs2Team?            @relation(name: "CS2TeamMembers", fields: [cs2TeamId], references: [id], onDelete: SetNull, onUpdate: Restrict)
-  cs2TeamCaptain     Cs2Team?            @relation(name: "CS2TeamCaptain")
+  // One team per game (enforced in src/lib/teams/membership.ts): a player can be on a CS2 team and a
+  // LoL team at the same time. Replaces the old single cs2TeamId column.
+  teams              Cs2Team[]           @relation(name: "TeamMembers")
+  captainOf          Cs2Team[]           @relation(name: "CS2TeamCaptain")
+  // Games the player said they play during onboarding (drives which account-linking steps show).
+  games              Game[]              @default([]) @map("games")
+  riot               RiotAccount?
   cs2TeamInvitations Cs2TeamInvitation[]
 
   organizedTournaments Cs2Tournament[]    @relation("TournamentOrganizers")
@@ -171,7 +184,6 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@index([cs2TeamId])
 }
 
 model Cs2Tournament {
@@ -188,6 +200,9 @@ model Cs2Tournament {
   prizePool    Int?      @map("prize_pool")
   teams        Cs2Team[] @relation("TournamentTeams")
   teamCapacity Int       @map("team_capacity")
+
+  // CS2 tournaments get hosted MatchZy servers; LoL tournaments don't (results are reported).
+  game Game @default(CS2) @map("game")
 
   location String           @map("location")
   type     TournamentType   @map("type")
@@ -215,13 +230,16 @@ model Cs2Tournament {
 model Cs2Team {
   id Int @id @default(autoincrement()) @map("id")
 
-  name       String  @unique @map("name")
+  name       String  @map("name")
   logo       String? @map("logo")
   background String? @map("background")
 
-  members User[] @relation("CS2TeamMembers")
+  game Game @default(CS2) @map("game")
 
-  capitanId String? @unique @map("capitan_id")
+  members User[] @relation("TeamMembers")
+
+  // One captaincy per user per game (see @@unique below).
+  capitanId String? @map("capitan_id")
   capitan   User?   @relation("CS2TeamCaptain", fields: [capitanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   teamInvitations Cs2TeamInvitation[] @relation(name: "TeamInvitations")
@@ -238,7 +256,10 @@ model Cs2Team {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@unique([name, game])
+  @@unique([capitanId, game])
   @@index([cs2TournamentId])
+  @@index([game])
   @@map("cs2_teams")
 }
 
@@ -769,4 +790,30 @@ model ForumVote {
   @@index([threadId])
   @@index([replyId])
   @@map("forum_votes")
+}
+
+// A player's League of Legends identity. Linked by entering a Riot ID (gameName#tagLine + region),
+// resolved to a puuid through Riot's account-v1 API, then proven by setting a requested profile icon.
+// Required to register for LoL tournaments (src/lib/games/eligibility.ts).
+model RiotAccount {
+  id String @id @default(uuid()) @map("id")
+
+  userId String @unique @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  puuid    String @unique @map("puuid")
+  gameName String @map("game_name")
+  tagLine  String @map("tag_line")
+  // Platform routing value, e.g. "euw1", "na1".
+  region   String @map("region")
+
+  // Ownership challenge: set this profile icon in the LoL client, then verify before it expires.
+  verificationIconId    Int?      @map("verification_icon_id")
+  verificationExpiresAt DateTime? @map("verification_expires_at")
+  verifiedAt            DateTime? @map("verified_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("riot_accounts")
 }

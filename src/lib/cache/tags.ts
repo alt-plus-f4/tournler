@@ -42,6 +42,7 @@ export const MODEL_TAGS: Record<string, readonly CacheTag[]> = {
 	SteamAccount: [T.users],
 	DiscordAccount: [T.users],
 	UserBan: [T.users],
+	RiotAccount: [T.users],
 	NewsPost: [T.news, T.homepage],
 	NewsComment: [T.news],
 	ForumThread: [T.forum],
