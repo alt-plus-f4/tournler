@@ -14,6 +14,7 @@ import { getAuthSession } from '@/lib/auth';
 import fetchInvitedPlayers from '@/lib/helpers/fetch-invited-players';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { TeamMatchList } from '@/components/teams/TeamMatchList';
 import { Skeleton } from '@/components/ui/skeleton';
 // The team payload is the public projection (like the old JSON response); the banner/actions
@@ -39,9 +40,10 @@ export async function generateMetadata({ params }: CS2TeamPageProps): Promise<Me
 	return { title: data?.team?.name ?? 'Team not found' };
 }
 
-async function fetchTeamMatches(teamId: number) {
-	try {
-		return await db.matches.findMany({
+/** Shared across viewers: a team's recent (non-pickup) matches with team and tournament names. */
+const loadTeamMatches = cachedQuery(
+	(teamId: number) =>
+		db.matches.findMany({
 			where: { isPickup: false, OR: [{ teamAId: teamId }, { teamBId: teamId }] },
 			orderBy: { matchDate: 'desc' },
 			take: RECENT_MATCHES,
@@ -58,7 +60,14 @@ async function fetchTeamMatches(teamId: number) {
 				teamB: { select: { id: true, name: true } },
 				tournament: { select: { id: true, name: true } },
 			},
-		});
+		}),
+	['team-matches', String(RECENT_MATCHES)],
+	{ tags: ['matches', 'teams', 'tournaments'], revalidate: REVALIDATE.standard },
+);
+
+async function fetchTeamMatches(teamId: number) {
+	try {
+		return await loadTeamMatches(teamId);
 	} catch (error) {
 		console.error('Error fetching team matches:', error);
 		return null;

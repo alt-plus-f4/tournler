@@ -5,7 +5,7 @@ import EmailProvider from 'next-auth/providers/email';
 import DiscordProvider from 'next-auth/providers/discord';
 // import nodemailer, { createTransport } from 'nodemailer';
 import { createTransport } from 'nodemailer';
-import { db } from '@/lib/db';
+import { db, baseDb } from '@/lib/db';
 import { activeBanWhere, toActiveBan } from '@/lib/bans';
 
 // const transporter = createTransport({
@@ -85,7 +85,7 @@ function text({ url, host }: { url: string; host: string }) {
 }
 
 export const authOptions: NextAuthOptions = {
-	adapter: PrismaAdapter(db),
+	adapter: PrismaAdapter(baseDb),
 	session: {
 		strategy: 'jwt',
 	},

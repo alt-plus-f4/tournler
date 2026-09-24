@@ -2,14 +2,13 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
-import { TournamentStatus } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { TournamentsSkeleton } from '@/components/public/TournamentsBrowser';
 import { getAuthSession } from '@/lib/auth';
-import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { TournamentsBrowser } from './_components/TournamentsBrowser';
 import { TournamentList, TOURNAMENT_VIEWS } from './_components/TournamentList';
+import { getActiveTournaments } from './queries';
 
 export const metadata: Metadata = { title: 'Tournaments' };
 
@@ -18,12 +17,7 @@ export const dynamic = 'force-dynamic';
 
 /** Same query GET /api/tournaments?status=active runs (first page of 10, prize pool first), read directly. */
 async function ActiveTournaments() {
-	const tournaments = await db.cs2Tournament.findMany({
-		where: { isSystem: false, status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } },
-		orderBy: { prizePool: 'desc' },
-		take: 10,
-		select: { id: true, name: true, bannerUrl: true, logoUrl: true, startDate: true, prizePool: true, location: true, teamCapacity: true, status: true, teams: { select: { id: true } } },
-	});
+	const tournaments = await getActiveTournaments();
 
 	return (
 		<TournamentList

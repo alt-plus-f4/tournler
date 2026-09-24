@@ -1,6 +1,7 @@
 import { TeamCard } from '@/components/TeamCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import type { ExtendedCs2Team } from '@/lib/models/team-model';
 
 const TEAMS_LIMIT = 100;
@@ -18,22 +19,28 @@ export function TeamsCardsSkeleton() {
 	);
 }
 
-/** Same shape GET /api/teams returned (public member fields only), read directly instead of over HTTP. */
-function listTeams() {
-	return db.cs2Team.findMany({
-		select: {
-			id: true,
-			name: true,
-			members: { select: { id: true, name: true, image: true, bio: true } },
-			capitanId: true,
-			logo: true,
-			background: true,
-			createdAt: true,
-			updatedAt: true,
-		},
-		take: TEAMS_LIMIT,
-	});
-}
+/**
+ * Same shape GET /api/teams returned (public member fields only), read directly instead of over
+ * HTTP. Shared by every viewer, so it lives in the data cache (rosters carry user names/avatars).
+ */
+const listTeams = cachedQuery(
+	() =>
+		db.cs2Team.findMany({
+			select: {
+				id: true,
+				name: true,
+				members: { select: { id: true, name: true, image: true, bio: true } },
+				capitanId: true,
+				logo: true,
+				background: true,
+				createdAt: true,
+				updatedAt: true,
+			},
+			take: TEAMS_LIMIT,
+		}),
+	['teams-list', String(TEAMS_LIMIT)],
+	{ tags: ['teams', 'users'], revalidate: REVALIDATE.standard },
+);
 
 export async function TeamsCards() {
 	let teams: Awaited<ReturnType<typeof listTeams>>;

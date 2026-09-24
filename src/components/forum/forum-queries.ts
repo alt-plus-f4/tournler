@@ -1,6 +1,7 @@
 import 'server-only';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { THREADS_PER_PAGE, type ForumCategoryValue } from './forum-shared';
 
 /** Public author shape: never expose email, role, or anything beyond id/name/image. */
@@ -35,6 +36,12 @@ export async function listForumThreads({ category, page }: { category: ForumCate
 	return { threads, total, totalPages: Math.max(1, Math.ceil(total / THREADS_PER_PAGE)) };
 }
 
+/**
+ * listForumThreads in the shared data cache, for the public /forum page (threads embed author
+ * names/avatars, hence 'users'). The admin page and the API keep reading live via listForumThreads.
+ */
+export const listForumThreadsCached = cachedQuery(listForumThreads, ['forum-thread-list'], { tags: ['forum', 'users'], revalidate: REVALIDATE.standard });
+
 /** Most recently active threads for the homepage block (pinned threads get no special treatment here). */
 export function recentForumThreads(take = 8) {
 	return db.forumThread.findMany({
@@ -64,6 +71,12 @@ export function getForumThread(id: number) {
 		},
 	});
 }
+
+/**
+ * getForumThread in the shared data cache, for the public /forum/[id] page (thread + replies with
+ * authors). A null (missing thread) is cached too; creating or deleting threads flushes 'forum'.
+ */
+export const getForumThreadCached = cachedQuery(getForumThread, ['forum-thread'], { tags: ['forum', 'users'], revalidate: REVALIDATE.standard });
 
 export type ForumThreadDetail = NonNullable<Awaited<ReturnType<typeof getForumThread>>>;
 

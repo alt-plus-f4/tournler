@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { cache, Suspense } from 'react';
 import { ArrowLeft, ExternalLink, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { isOptimizable } from '@/lib/image-hosts';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
@@ -24,22 +25,30 @@ interface NewsPostPageProps {
 	params: Promise<{ id: string }>;
 }
 
-/** One query per request, shared by generateMetadata and the page. */
+/** The public post (with author), in the shared data cache. A missing post caches as null; creating one flushes 'news'. */
+const loadPost = cachedQuery(
+	(id: number) =>
+		db.newsPost.findUnique({
+			where: { id },
+			select: {
+				id: true,
+				title: true,
+				blurb: true,
+				content: true,
+				imageUrl: true,
+				link: true,
+				publishedAt: true,
+				author: { select: { id: true, name: true, image: true } },
+			},
+		}),
+	['news-post'],
+	{ tags: ['news', 'users'], revalidate: REVALIDATE.standard },
+);
+
+/** One lookup per request, shared by generateMetadata and the page. */
 const getPost = cache(async (rawId: string) => {
 	if (!/^\d{1,9}$/.test(rawId)) return null;
-	return db.newsPost.findUnique({
-		where: { id: Number(rawId) },
-		select: {
-			id: true,
-			title: true,
-			blurb: true,
-			content: true,
-			imageUrl: true,
-			link: true,
-			publishedAt: true,
-			author: { select: { id: true, name: true, image: true } },
-		},
-	});
+	return loadPost(Number(rawId));
 });
 
 export async function generateMetadata({ params }: NewsPostPageProps): Promise<Metadata> {
@@ -53,9 +62,11 @@ export async function generateMetadata({ params }: NewsPostPageProps): Promise<M
 	};
 }
 
-function getComments(postId: number) {
-	return db.newsComment.findMany({ where: { postId }, orderBy: { createdAt: 'asc' }, select: commentSelect });
-}
+/** A post's comments with their authors, shared by every viewer (delete rights are decided in NewsComments from `viewer`). */
+const getComments = cachedQuery((postId: number) => db.newsComment.findMany({ where: { postId }, orderBy: { createdAt: 'asc' }, select: commentSelect }), ['news-comments'], {
+	tags: ['news', 'users'],
+	revalidate: REVALIDATE.standard,
+});
 
 /** Comments stream in below the article, which paints as soon as the post row is read. */
 async function CommentsSection({ postId, comments: commentsPromise, viewer }: { postId: number; comments: ReturnType<typeof getComments>; viewer: { id: string; canModerate: boolean } | null }) {

@@ -2,6 +2,7 @@ import { TeamLogo } from '@/components/TeamLogo';
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 
 const teamSelect = { select: { name: true, logo: true } } as const;
 
@@ -10,19 +11,22 @@ const teamSelect = { select: { name: true, logo: true } } as const;
  * them via MatchZy's series_start). The homepage leads with these when there are any; otherwise
  * it leads with the rewatch player instead — this panel never renders an empty placeholder.
  */
-export async function getLiveMatches() {
-	return db.matches.findMany({
-		where: { status: { in: ['LIVE', 'PAUSED'] } },
-		orderBy: [{ status: 'asc' }, { startedAt: 'desc' }],
-		take: 4,
-		include: {
-			tournament: { select: { name: true } },
-			teamA: teamSelect,
-			teamB: teamSelect,
-			maps: { where: { status: 'LIVE' }, take: 1, select: { mapName: true, scoreTeamA: true, scoreTeamB: true } },
-		},
-	});
-}
+export const getLiveMatches = cachedQuery(
+	async () =>
+		db.matches.findMany({
+			where: { status: { in: ['LIVE', 'PAUSED'] } },
+			orderBy: [{ status: 'asc' }, { startedAt: 'desc' }],
+			take: 4,
+			include: {
+				tournament: { select: { name: true } },
+				teamA: teamSelect,
+				teamB: teamSelect,
+				maps: { where: { status: 'LIVE' }, take: 1, select: { mapName: true, scoreTeamA: true, scoreTeamB: true } },
+			},
+		}),
+	['home-live-matches'],
+	{ tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live },
+);
 
 export type LiveMatch = Awaited<ReturnType<typeof getLiveMatches>>[number];
 

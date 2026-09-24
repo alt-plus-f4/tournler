@@ -1,19 +1,25 @@
 import type { Metadata } from 'next';
 import { cache } from 'react';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 
 // The match room is live; never prerender or cache its shell.
 export const dynamic = 'force-dynamic';
 
-/** Title-only lookup (one PK read, three columns), memoized per request. */
-const getMatchTitle = cache((id: number) =>
-	db.matches
-		.findUnique({
+/**
+ * Title-only lookup (one PK read, three columns), served from the data cache and memoized per
+ * request. Errors are caught outside the cached call so a failed read is never cached as null.
+ */
+const readMatchTitle = cachedQuery(
+	async (id: number) =>
+		db.matches.findUnique({
 			where: { id },
 			select: { isPickup: true, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
-		})
-		.catch(() => null),
+		}),
+	['match-room-title'],
+	{ tags: ['matches', 'teams'], revalidate: REVALIDATE.standard },
 );
+const getMatchTitle = cache((id: number) => readMatchTitle(id).catch(() => null));
 
 // The match room is a client component, so its <title> comes from this segment layout.
 export async function generateMetadata({ params }: { params: Promise<{ matchId: string }> }): Promise<Metadata> {

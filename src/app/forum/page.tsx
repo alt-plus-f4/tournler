@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { getAuthSession } from '@/lib/auth';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { listForumThreads } from '@/components/forum/forum-queries';
+import { listForumThreadsCached } from '@/components/forum/forum-queries';
 import { CATEGORY_LABELS, CATEGORY_SLUGS, FORUM_CATEGORIES, parseCategorySlug, type ForumCategoryValue } from '@/components/forum/forum-shared';
 import { ForumThreadList } from '@/components/forum/ForumThreadList';
 
@@ -35,7 +35,7 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 	const category = parseCategorySlug(first(query.category));
 	const requestedPage = Math.max(1, Number.parseInt(first(query.page) ?? '1', 10) || 1);
 
-	const [session, list] = await Promise.all([getAuthSession(), listForumThreads({ category, page: requestedPage })]);
+	const [session, list] = await Promise.all([getAuthSession(), listForumThreadsCached({ category, page: requestedPage })]);
 	const { threads, total, totalPages } = list;
 	const page = Math.min(requestedPage, totalPages);
 

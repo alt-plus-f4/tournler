@@ -1,9 +1,10 @@
+import type { DbTx } from '@/lib/db';
 import { randomBytes } from 'crypto';
-import { GameServer, Prisma } from '@prisma/client';
+import { GameServer } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getServerPool } from '@/lib/cs2/server-pool';
 
-type Db = Prisma.TransactionClient | typeof db;
+type Db = DbTx | typeof db;
 
 /** Thrown by `ensureGameServer` when every server in the pool is currently claimed by a live/paused match. */
 export class NoAvailableGameServerError extends Error {

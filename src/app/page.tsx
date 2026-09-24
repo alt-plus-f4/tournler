@@ -9,6 +9,7 @@ import { UpcomingTournament } from '@/components/UpcomingTournament';
 import { ForumHomeBlock } from '@/components/forum/ForumHomeBlock';
 import { recentForumThreads } from '@/components/forum/forum-queries';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import Link from 'next/link';
 import { TournamentStatus } from '@prisma/client';
 import { FeaturedSkeleton, ForumBlockSkeleton, HeroSkeleton, UpcomingSkeleton, UpNextSkeleton } from './_components/home-skeletons';
@@ -22,12 +23,85 @@ const UPCOMING_COUNT = 3;
 
 // Each homepage section is its own Suspense boundary; these loaders are memoized per request so
 // sections that need the same row (settings, live matches) share one query.
-const getHomepageSettings = cache(() => db.homepageSettings.findUnique({ where: { id: 1 } }));
+// Shared (non-viewer) reads are also served from Next's data cache; the Prisma extension in
+// src/lib/db.ts flushes their tags on every write.
+const getHomepageSettings = cache(
+	cachedQuery(async () => db.homepageSettings.findUnique({ where: { id: 1 } }), ['home-settings'], { tags: ['homepage'], revalidate: REVALIDATE.slow }),
+);
 const getLive = cache(getLiveMatches);
 
 // UPCOMING tournaments whose start date has passed are still shown (the cards label them
 // "Start pending"), since the organizer hasn't started or cancelled them yet.
 const activeTournament = { status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } };
+
+const getCuratedFeaturedTournaments = cachedQuery(
+	async () =>
+		db.cs2Tournament.findMany({
+			where: { isSystem: false, isFeatured: true, ...activeTournament },
+			orderBy: [{ featuredOrder: 'asc' }, { prizePool: 'desc' }],
+			take: 6,
+			include: { teams: true },
+		}),
+	['home-featured-tournaments-curated'],
+	{ tags: ['tournaments', 'teams'], revalidate: REVALIDATE.standard },
+);
+
+const getFallbackFeaturedTournaments = cachedQuery(
+	async () =>
+		db.cs2Tournament.findMany({
+			where: { isSystem: false, ...activeTournament },
+			orderBy: { prizePool: 'desc' },
+			take: 6,
+			include: { teams: true },
+		}),
+	['home-featured-tournaments-fallback'],
+	{ tags: ['tournaments', 'teams'], revalidate: REVALIDATE.standard },
+);
+
+const getFeaturedNews = cachedQuery(
+	async () =>
+		db.newsPost.findMany({
+			where: { isFeatured: true },
+			orderBy: [{ featuredOrder: 'asc' }, { publishedAt: 'desc' }],
+			take: 6,
+		}),
+	['home-featured-news'],
+	{ tags: ['news', 'homepage'], revalidate: REVALIDATE.standard },
+);
+
+// Compares startDate against the fill time, so it stays on the live window (<=15s drift).
+const getUpcomingTournaments = cachedQuery(
+	async () => {
+		const now = new Date();
+		const upcomingFuture = await db.cs2Tournament.findMany({
+			where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { gte: now } },
+			orderBy: { startDate: 'asc' },
+			take: UPCOMING_COUNT,
+			include: { teams: true },
+		});
+
+		// Genuinely upcoming first (soonest first); top up with overdue ones (most recently due first).
+		return upcomingFuture.length >= UPCOMING_COUNT
+			? upcomingFuture
+			: [
+					...upcomingFuture,
+					...(await db.cs2Tournament.findMany({
+						where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { lt: now } },
+						orderBy: { startDate: 'desc' },
+						take: UPCOMING_COUNT - upcomingFuture.length,
+						include: { teams: true },
+					})),
+				];
+	},
+	['home-upcoming-tournaments'],
+	{ tags: ['tournaments', 'teams'], revalidate: REVALIDATE.live },
+);
+
+// Only the homepage block's query; forum pages have their own loaders.
+const getRecentForumThreads = cachedQuery(async (take: number) => recentForumThreads(take), ['home-recent-forum-threads'], {
+	tags: ['forum'],
+	revalidate: REVALIDATE.standard,
+});
 
 /** Live scoreboard leads when a server reports a match in progress; otherwise the VOD is the hero. */
 async function Hero() {
@@ -54,21 +128,8 @@ async function FeaturedSections() {
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
 
 	const [curatedFeatured, featuredNews] = await Promise.all([
-		featuredSource !== 'NEWS'
-			? db.cs2Tournament.findMany({
-					where: { isSystem: false, isFeatured: true, ...activeTournament },
-					orderBy: [{ featuredOrder: 'asc' }, { prizePool: 'desc' }],
-					take: 6,
-					include: { teams: true },
-				})
-			: Promise.resolve([]),
-		featuredSource !== 'TOURNAMENTS'
-			? db.newsPost.findMany({
-					where: { isFeatured: true },
-					orderBy: [{ featuredOrder: 'asc' }, { publishedAt: 'desc' }],
-					take: 6,
-				})
-			: Promise.resolve([]),
+		featuredSource !== 'NEWS' ? getCuratedFeaturedTournaments() : Promise.resolve([]),
+		featuredSource !== 'TOURNAMENTS' ? getFeaturedNews() : Promise.resolve([]),
 	]);
 
 	// Nothing curated yet — fall back to the original prize-pool heuristic so the
@@ -77,12 +138,7 @@ async function FeaturedSections() {
 		curatedFeatured.length > 0
 			? curatedFeatured
 			: featuredSource !== 'NEWS'
-				? await db.cs2Tournament.findMany({
-						where: { isSystem: false, ...activeTournament },
-						orderBy: { prizePool: 'desc' },
-						take: 6,
-						include: { teams: true },
-					})
+				? await getFallbackFeaturedTournaments()
 				: [];
 
 	return (
@@ -132,27 +188,7 @@ async function FeaturedSections() {
 }
 
 async function UpcomingList() {
-	const now = new Date();
-	const upcomingFuture = await db.cs2Tournament.findMany({
-		where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { gte: now } },
-		orderBy: { startDate: 'asc' },
-		take: UPCOMING_COUNT,
-		include: { teams: true },
-	});
-
-	// Genuinely upcoming first (soonest first); top up with overdue ones (most recently due first).
-	const upcoming =
-		upcomingFuture.length >= UPCOMING_COUNT
-			? upcomingFuture
-			: [
-					...upcomingFuture,
-					...(await db.cs2Tournament.findMany({
-						where: { isSystem: false, status: TournamentStatus.UPCOMING, startDate: { lt: now } },
-						orderBy: { startDate: 'desc' },
-						take: UPCOMING_COUNT - upcomingFuture.length,
-						include: { teams: true },
-					})),
-				];
+	const upcoming = await getUpcomingTournaments();
 
 	return upcoming.length > 0 ? (
 		<>
@@ -169,7 +205,7 @@ async function UpcomingList() {
 async function ForumBlock() {
 	const settings = await getHomepageSettings();
 	if (!(settings?.showForumPosts ?? true)) return null;
-	const threads = await recentForumThreads(8);
+	const threads = await getRecentForumThreads(8);
 	return <ForumHomeBlock threads={threads} />;
 }
 

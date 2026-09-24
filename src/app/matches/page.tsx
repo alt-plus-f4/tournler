@@ -3,6 +3,7 @@ import { MatchStatus, type Prisma } from '@prisma/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { CreateMatchButton } from './_components/CreateMatchButton';
 import { MatchesBrowser } from './_components/MatchesBrowser';
@@ -18,8 +19,11 @@ type SearchParams = Promise<{ status?: string | string[]; tournament?: string | 
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
-/** Same listing GET /api/matches/public serves, read directly instead of fetched client-side after hydration. */
-async function listMatches(status: StatusFilter, tournamentId: number | undefined, page: number) {
+/**
+ * Same listing GET /api/matches/public serves, read directly instead of fetched client-side after
+ * hydration. Served from the data cache (keyed by the filter args) on the live window.
+ */
+const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: number | undefined, page: number) => {
 	const statusWhere: Prisma.MatchesWhereInput['status'] =
 		status === 'ALL' ? undefined : status === 'LIVE' ? { in: [MatchStatus.LIVE, MatchStatus.PAUSED] } : MatchStatus[status];
 	const where: Prisma.MatchesWhereInput = {
@@ -56,12 +60,18 @@ async function listMatches(status: StatusFilter, tournamentId: number | undefine
 
 	const matches: MatchListItem[] = rows.map(({ _count, matchDate, ...m }) => ({ ...m, matchDate: matchDate.toISOString(), participantCount: _count.participants }));
 	return { matches, totalPages: Math.max(1, Math.ceil(total / MATCHES_PER_PAGE)) };
-}
+}, ['matches-public-list'], { tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live });
+
+// Same set the old client fetch used (GET /api/tournaments?limit=100), names only.
+const getTournamentOptions = cachedQuery(
+	async () => db.cs2Tournament.findMany({ where: { isSystem: false }, orderBy: { prizePool: 'desc' }, take: 100, select: { id: true, name: true } }),
+	['matches-tournament-options'],
+	{ tags: ['tournaments'], revalidate: REVALIDATE.standard },
+);
 
 async function MatchesSection({ status, tournamentId, page }: { status: StatusFilter; tournamentId: string; page: number }) {
 	const [tournaments, { matches, totalPages }] = await Promise.all([
-		// Same set the old client fetch used (GET /api/tournaments?limit=100), names only.
-		db.cs2Tournament.findMany({ where: { isSystem: false }, orderBy: { prizePool: 'desc' }, take: 100, select: { id: true, name: true } }),
+		getTournamentOptions(),
 		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page),
 	]);
 

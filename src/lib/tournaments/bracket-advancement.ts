@@ -1,12 +1,13 @@
+import type { DbTx } from '@/lib/db';
 import { db } from '@/lib/db';
-import { Matches, MatchSlot, Prisma } from '@prisma/client';
+import { Matches, MatchSlot } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
 import { getDraftState } from './draft';
 import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 /** Thrown when a match result conflicts with an already-recorded, different result. */
 export class MatchResultConflictError extends Error {

@@ -6,7 +6,7 @@ import { ArrowLeft, Ban, Lock, Pin, Trash2 } from 'lucide-react';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { buttonVariants } from '@/components/ui/button';
-import { getForumThread, parseId } from '@/components/forum/forum-queries';
+import { getForumThreadCached, parseId } from '@/components/forum/forum-queries';
 import { CATEGORY_LABELS, CATEGORY_SLUGS, formatAbsolute } from '@/components/forum/forum-shared';
 import { AuthorLink, ForumAvatar } from '@/components/forum/ForumAuthor';
 import { ForumText } from '@/components/forum/ForumText';
@@ -27,7 +27,7 @@ interface ThreadPageProps {
 /** One query per request, shared by generateMetadata and the page. */
 const loadThread = cache(async (rawId: string) => {
 	const id = parseId(rawId);
-	return id ? getForumThread(id) : null;
+	return id ? getForumThreadCached(id) : null;
 });
 
 export async function generateMetadata({ params }: ThreadPageProps): Promise<Metadata> {

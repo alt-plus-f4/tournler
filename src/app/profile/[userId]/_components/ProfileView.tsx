@@ -16,7 +16,7 @@ import { TrophyIcon } from '@/components/trophies/TrophyIcon';
 import { TrophySlider } from '@/components/trophies/TrophySlider';
 import { LevelBadge } from '@/components/LevelBadge';
 import { DiscordIcon, SteamIcon } from '@/components/Icons';
-import { faceitLevelProgress } from '@/lib/faceit';
+import { faceitLevelProgress } from '@/lib/faceit-level';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 
 export interface SteamData {

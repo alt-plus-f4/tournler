@@ -1,7 +1,8 @@
-import { Prisma, MapActionType, MatchSlot } from '@prisma/client';
+import type { DbTx } from '@/lib/db';
+import { MapActionType, MatchSlot } from '@prisma/client';
 import { ACTIVE_DUTY_MAPS } from './maps';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 export type VetoAction = 'BAN' | 'PICK';
 export type VetoPhase = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE';

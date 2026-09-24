@@ -4,13 +4,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import type { TournamentFormat } from '@prisma/client';
 
-import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
 import { userHasPermission } from '@/lib/helpers/permissions';
-import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
+import { flairMapper } from '@/lib/helpers/player-flair';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -19,6 +17,7 @@ import type { Champion, TournamentDetail } from '@/components/tournament-tabs/ty
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
 import { StartTournamentButton } from '@/components/StartTournamentButton';
 import Timer from '@/components/Timer';
+import { getTournamentChampion, getTournamentDetail } from '../queries';
 
 // Registration, brackets and results change constantly (and JoinLeaveButton revalidates this path);
 // always render per request.
@@ -30,62 +29,12 @@ interface TournamentPageProps {
 	}>;
 }
 
-/** One query per request, shared by generateMetadata and the page. */
+/** One lookup per request (shared by generateMetadata and the page), served from the data cache. */
 const getTournament = cache(async (slug: string) => {
 	const id = Number.parseInt(slug, 10);
 	if (Number.isNaN(id)) return null;
-
-	return db.cs2Tournament.findUnique({
-		where: { id },
-		select: {
-			id: true,
-			name: true,
-			description: true,
-			prizePool: true,
-			teamCapacity: true,
-			location: true,
-			startDate: true,
-			endDate: true,
-			bannerUrl: true,
-			logoUrl: true,
-			status: true,
-			type: true,
-			format: true,
-			bestOf: true,
-			mapPool: true,
-			organizer: { select: { name: true } },
-			teams: {
-				select: {
-					id: true,
-					name: true,
-					logo: true,
-					background: true,
-					capitanId: true,
-					members: { select: { id: true, name: true, image: true, ...playerFlairSelect } },
-				},
-			},
-		},
-	});
+	return getTournamentDetail(id);
 });
-
-/**
- * The champion is only named when the bracket itself decided one: the completed last-round match
- * of the winners bracket (single elimination) or of the grand final (double elimination, where a
- * bracket reset adds a round 2). Round robin has no final match, so nothing is claimed.
- */
-async function getChampion(tournamentId: number, format: TournamentFormat): Promise<Champion | null> {
-	if (format === 'ROUND_ROBIN') return null;
-	const slot = format === 'DOUBLE_ELIMINATION' ? 'GRAND_FINAL' : 'WINNERS';
-	const finals = await db.matches.findMany({
-		where: { tournamentId, bracketSlot: slot },
-		orderBy: { round: 'desc' },
-		take: 2,
-		select: { round: true, status: true, winner: { select: { id: true, name: true } } },
-	});
-	const [last, previous] = finals;
-	if (!last || (previous && previous.round === last.round)) return null;
-	return last.status === 'COMPLETED' && last.winner ? last.winner : null;
-}
 
 type Registration = { label: string; detail: string; open: boolean; full: boolean };
 
@@ -118,7 +67,7 @@ type LoadedTournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;
  */
 async function loadTabs(tournament: LoadedTournament): Promise<{ detail: TournamentDetail; champion: Champion | null }> {
 	const [champion, withFlair] = await Promise.all([
-		tournament.status === 'COMPLETED' ? getChampion(tournament.id, tournament.format) : Promise.resolve(null),
+		tournament.status === 'COMPLETED' ? getTournamentChampion(tournament.id, tournament.format) : Promise.resolve(null),
 		// Verified badge + real FACEIT level per rostered player; Steam IDs/badge rows are stripped here.
 		flairMapper(tournament.teams.flatMap((t) => t.members)),
 	]);
