@@ -51,7 +51,7 @@ export function MatchesBrowser({ status, tournamentId, page, totalPages, tournam
 					))}
 				</div>
 				<Select value={tournamentId || 'ALL'} onValueChange={(value) => navigate({ tournamentId: value === 'ALL' ? '' : value })}>
-					<SelectTrigger className='w-full sm:w-56'>
+					<SelectTrigger className='w-full sm:w-56' aria-label='Filter by tournament'>
 						<SelectValue placeholder='All tournaments' />
 					</SelectTrigger>
 					<SelectContent>

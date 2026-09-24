@@ -7,14 +7,14 @@ import { FORMAT_LABEL, STATUS_LABEL, TYPE_LABEL, type Champion, type TournamentD
 
 function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return (
-		<div className='flex w-full items-center p-2 sm:w-1/2 lg:w-1/3'>
-			<span className='mr-4 shrink-0 text-white' aria-hidden>
-				{icon}
-			</span>
-			<div className='min-w-0'>
-				<dt className='text-xs uppercase text-muted-foreground'>{label}</dt>
-				<dd className='text-white'>{children}</dd>
-			</div>
+		<div className='grid w-full grid-cols-[auto_1fr] items-center gap-x-4 p-2 sm:w-1/2 lg:w-1/3'>
+			<dt className='contents'>
+				<span className='row-span-2 shrink-0 text-white' aria-hidden>
+					{icon}
+				</span>
+				<span className='min-w-0 text-xs uppercase text-muted-foreground'>{label}</span>
+			</dt>
+			<dd className='col-start-2 min-w-0 text-white'>{children}</dd>
 		</div>
 	);
 }

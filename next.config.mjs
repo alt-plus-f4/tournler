@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+	// ~20KB of atomic Tailwind CSS: inlining it removes the render-blocking stylesheet request on first
+	// load (Lighthouse: ~340ms). Production builds only.
+	experimental: { inlineCss: true },
 	images: {
 		// Keep in sync with OPTIMIZED_IMAGE_HOSTS in src/lib/image-hosts.ts. Anything else (SVG,
 		// third-party link previews, local blob: previews) is rendered with `unoptimized`.

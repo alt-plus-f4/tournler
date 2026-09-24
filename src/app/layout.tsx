@@ -46,7 +46,7 @@ export default function RootLayout({
 
 				<OnboardingGate />
 
-				<main id='content' className='flex-1'>
+				<main id='content' className='min-h-[100svh] flex-1'>
 					{children}
 				</main>
 

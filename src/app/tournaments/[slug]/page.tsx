@@ -55,7 +55,12 @@ function getRegistration(t: { status: string; startDate: Date; teamCapacity: num
 export async function generateMetadata({ params }: TournamentPageProps): Promise<Metadata> {
 	const { slug } = await params;
 	const tournament = await getTournament(slug);
-	return { title: tournament?.name ?? 'Tournament not found' };
+	if (!tournament) return { title: 'Tournament not found' };
+	const when = tournament.startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+	return {
+		title: tournament.name,
+		description: `${tournament.name}: CS2 tournament${tournament.location ? ` in ${tournament.location}` : ''} starting ${when}. Bracket, teams, matches and results on Tournler.`,
+	};
 }
 
 type LoadedTournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;

@@ -37,7 +37,8 @@ interface CS2TeamPageProps {
 export async function generateMetadata({ params }: CS2TeamPageProps): Promise<Metadata> {
 	const { slug } = await params;
 	const data = await fetchTeam(parseInt(slug, 10));
-	return { title: data?.team?.name ?? 'Team not found' };
+	if (!data?.team) return { title: 'Team not found' };
+	return { title: data.team.name, description: `${data.team.name} on Tournler: CS2 roster, captain and match history.` };
 }
 
 /** Shared across viewers: a team's recent (non-pickup) matches with team and tournament names. */

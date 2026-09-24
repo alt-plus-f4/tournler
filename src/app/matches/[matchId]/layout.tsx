@@ -30,9 +30,11 @@ export async function generateMetadata({ params }: { params: Promise<{ matchId: 
 	const match = await getMatchTitle(id);
 
 	if (!match) return { title: { absolute: 'Match · Tournler' } };
-	if (match.isPickup) return { title: { absolute: 'Pickup match · Tournler' } };
+	if (match.isPickup) return { title: { absolute: 'Pickup match · Tournler' }, description: 'Open CS2 pickup lobby on Tournler: join a side, run the map veto and connect to the hosted server.' };
+	const a = match.teamA?.name ?? 'TBD';
+	const b = match.teamB?.name ?? 'TBD';
 	// Absolute: the parent /matches layout sets a plain title, which stops the root template from applying here.
-	return { title: { absolute: `${match.teamA?.name ?? 'TBD'} vs ${match.teamB?.name ?? 'TBD'} · Tournler` } };
+	return { title: { absolute: `${a} vs ${b} · Tournler` }, description: `${a} vs ${b} on Tournler: live score from the game server, rosters, map veto and results.` };
 }
 
 export default function MatchLayout({ children }: { children: React.ReactNode }) {

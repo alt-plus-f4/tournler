@@ -37,4 +37,4 @@ export default async function proxy(request: NextRequest) {
 
 // Every matched path needs a signed-in user (except the sign-in/up pages, which need the opposite);
 // /admin additionally needs a staff role.
-export const config = { matcher: ['/admin/:path*', '/profile/:path*', '/forum/new', '/news/new', '/news/:id/edit', '/sign-in', '/sign-up'] };
+export const config = { matcher: ['/admin/:path*', '/forum/new', '/news/new', '/news/:id/edit', '/sign-in', '/sign-up'] };

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { useClientSession } from '@/lib/hooks/use-client-session';
 import { ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -86,8 +87,10 @@ export default function MatchPage() {
 	const showVeto = !!match && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
 	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
 
-	const { data: userData, error: userError } = useSWR('/api/user', userFetcher, { revalidateOnFocus: false });
-	const userLoaded = userData !== undefined || userError !== undefined;
+	// Only ask for the account when there is one: signed-out visitors got a 401 (console error) here.
+	const { status: sessionStatus } = useClientSession();
+	const { data: userData, error: userError } = useSWR(sessionStatus === 'authenticated' ? '/api/user' : null, userFetcher, { revalidateOnFocus: false });
+	const userLoaded = sessionStatus === 'unauthenticated' || userData !== undefined || userError !== undefined;
 	const canManage = userData?.user?.role === 'ADMIN' || userData?.user?.role === 'TOURNAMENT_ADMIN';
 	const currentUserId = userData?.user?.id ?? null;
 
@@ -254,6 +257,10 @@ export default function MatchPage() {
 					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]'>
 						<div className='order-2 lg:order-1'>{column('TEAM_A')}</div>
 						<div className='order-1 space-y-4 md:col-span-2 lg:order-2 lg:col-span-1'>
+							{/* Draft/veto load in a second request; reserve their space so the rosters below
+							    (first on mobile) don't jump when they arrive (Lighthouse CLS 0.37). */}
+							{showDraft && !draft && <Skeleton aria-hidden className='h-[420px] rounded-md bg-neutral-900' />}
+							{!showDraft && showVeto && !veto && <Skeleton aria-hidden className='h-[611px] rounded-md bg-neutral-900 md:h-[480px] lg:h-[438px]' />}
 							{showDraft && draft && (
 								<DraftPanel
 									matchId={matchId}

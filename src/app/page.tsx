@@ -12,11 +12,14 @@ import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import Link from 'next/link';
 import { TournamentStatus } from '@prisma/client';
-import { FeaturedSkeleton, ForumBlockSkeleton, HeroSkeleton, UpcomingSkeleton, UpNextSkeleton } from './_components/home-skeletons';
+import { FeaturedSkeleton, ForumBlockSkeleton, UpcomingSkeleton, UpNextSkeleton } from './_components/home-skeletons';
 
 // Live scores, lobbies, curation and forum activity all change by the minute. The root layout no
 // longer reads the session, so without this the homepage would be prerendered once at build.
-export const dynamic = 'force-dynamic';
+// No per-viewer data here, so the page is regenerated at most every 15s and otherwise served from
+// the cache. Any write to matches/tournaments/news/forum/homepage settings invalidates it at once
+// via the cache tags used by these queries (src/lib/cache).
+export const revalidate = 15;
 
 const FALLBACK_BANNER = '/info-image.png';
 const UPCOMING_COUNT = 3;
@@ -209,15 +212,16 @@ async function ForumBlock() {
 	return <ForumHomeBlock threads={threads} />;
 }
 
-export default function Page() {
+export default async function Page() {
+	// The hero is awaited up front (not streamed): it holds the LCP image, and its queries are cached.
+	const hero = await Hero();
+
 	return (
 		<div className='container mx-auto max-w-[1400px] px-4 lg:px-8'>
 			<h1 className='sr-only'>Tournler: hosted CS2 tournaments</h1>
 			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 py-8'>
 				<div className='space-y-8'>
-					<Suspense fallback={<HeroSkeleton />}>
-						<Hero />
-					</Suspense>
+					{hero}
 					<Suspense fallback={<UpNextSkeleton />}>
 						<UpNextBlock />
 					</Suspense>
