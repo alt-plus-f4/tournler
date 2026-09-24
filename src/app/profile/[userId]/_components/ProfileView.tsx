@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as TabsPrimitive from '@radix-ui/react-tabs';
-import { ArrowRight, Camera, ExternalLink, Pencil, Trophy, User as UserIcon, Users } from 'lucide-react';
+import { ArrowRight, Camera, EyeOff, ExternalLink, Pencil, Trophy, User as UserIcon, Users } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { AccountDataSection } from '@/components/profile/AccountDataSection';
 import { TrophyIcon } from '@/components/trophies/TrophyIcon';
-import { TrophySlider } from '@/components/trophies/TrophySlider';
+import { TrophySlider, type EventTrophyItem } from '@/components/trophies/TrophySlider';
+import { TeamLogo } from '@/components/TeamLogo';
+import { VisibilitySwitch } from '@/components/profile/VisibilitySwitch';
 import { LevelBadge } from '@/components/LevelBadge';
 import { DiscordIcon, SteamIcon } from '@/components/Icons';
 import { faceitLevelProgress } from '@/lib/faceit-level';
@@ -80,6 +82,12 @@ export interface PlayerRecentMatch {
 }
 
 type ProfileTab = 'overview' | 'matches';
+
+/** The owner's own privacy flags for linked accounts (only ever sent to the owner). */
+export interface ProfileVisibility {
+	showDiscord: boolean;
+	showSteam: boolean;
+}
 
 // The profile is server-rendered now, so dates and numbers are printed in a fixed locale/timezone
 // (en-US, UTC) for SSR + hydration and in the viewer's own locale right after (see useHydrated).
@@ -182,6 +190,15 @@ function EmptyPanel({ icon, title, children }: { icon: ReactNode; title: string;
 	);
 }
 
+/** Owner-only marker on a linked account that visitors can't see. */
+function HiddenNote() {
+	return (
+		<p className='flex items-center gap-1 text-xs text-neutral-300'>
+			<EyeOff className='h-3 w-3' aria-hidden /> Hidden from your public profile
+		</p>
+	);
+}
+
 /** Rendered by the server page when no account matches the link (same panel the client page used to show). */
 export function ProfileNotFound() {
 	return (
@@ -205,15 +222,19 @@ interface ProfileViewProps {
 	stats: PlayerCareerStats | null;
 	recentMatches: PlayerRecentMatch[];
 	faceit: FaceitInfo | null;
+	/** Completed tournaments this player won (derived from brackets, see load-profile.ts). */
+	eventTrophies: EventTrophyItem[];
 	/** Decided on the server from the session; only gates owner-only controls (every write re-checks). */
 	isOwner: boolean;
+	/** Present only for the owner. */
+	visibility?: ProfileVisibility;
 }
 
 /**
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: ProfileViewProps) {
+export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophies, isOwner, visibility }: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -227,6 +248,10 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 	const [editName, setEditName] = useState('');
 	const [editBio, setEditBio] = useState('');
 	const { toast } = useToast();
+	// Optimistic copy of the owner's privacy flags; re-synced whenever the server sends new props.
+	const [vis, setVis] = useState<ProfileVisibility | undefined>(visibility);
+	const [visSaving, setVisSaving] = useState<keyof ProfileVisibility | null>(null);
+	useEffect(() => setVis(visibility), [visibility?.showDiscord, visibility?.showSteam]);
 
 	/** Re-reads the profile on the server; `then` state updates commit together with the new props. */
 	const refresh = (then?: () => void) =>
@@ -269,6 +294,24 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 			toast({ variant: 'destructive', title: 'Couldn’t save your profile', description: 'Check your connection and try again.' });
 		} finally {
 			setIsSaving(false);
+		}
+	};
+
+	const setVisibility = async (key: keyof ProfileVisibility, value: boolean) => {
+		const account = key === 'showSteam' ? 'Steam' : 'Discord';
+		setVis((v) => (v ? { ...v, [key]: value } : v));
+		setVisSaving(key);
+		try {
+			const res = await fetch('/api/user', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [key]: value }) });
+			if (!res.ok) throw new Error('Failed to save');
+			toast({ title: value ? `${account} is shown on your profile` : `${account} is hidden from your profile` });
+			refresh();
+		} catch (e) {
+			console.error(e);
+			setVis((v) => (v ? { ...v, [key]: !value } : v));
+			toast({ variant: 'destructive', title: `Couldn’t update ${account} visibility`, description: 'Check your connection and try again.' });
+		} finally {
+			setVisSaving(null);
 		}
 	};
 
@@ -410,11 +453,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 								<div className='mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400'>
 									{profile.cs2Team && (
 										<Link href={`/teams/${profile.cs2Team.id}`} className='flex items-center gap-2 font-medium text-white hover:underline hover:underline-offset-4'>
-											{profile.cs2Team.logo ? (
-												<Image src={profile.cs2Team.logo} alt='' width={18} height={18} className='h-[18px] w-[18px] object-contain' />
-											) : (
-												<Users className='h-4 w-4 text-neutral-400' />
-											)}
+											{profile.cs2Team.logo ? <TeamLogo src={profile.cs2Team.logo} name={profile.cs2Team.name} size='xs' decorative /> : <Users className='h-4 w-4 text-neutral-400' />}
 											{profile.cs2Team.name}
 										</Link>
 									)}
@@ -494,7 +533,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 				</section>
 
 				{/* HLTV-style trophy row, attached under the hero. Hidden entirely when the player has none. */}
-				<TrophySlider trophies={trophies} className='border-x border-b border-border bg-neutral-950 px-5 py-4 sm:px-8' />
+				<TrophySlider trophies={trophies} events={eventTrophies} className='border-x border-b border-border bg-neutral-950 px-5 py-4 sm:px-8' />
 
 				<TabsPrimitive.Root value={tab} onValueChange={(v) => setTab(v as ProfileTab)}>
 					<div className='flex items-center justify-between gap-4 overflow-x-auto rounded-b-md border-x border-b border-border bg-neutral-950 pr-4'>
@@ -605,11 +644,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 									<SectionLabel>Team</SectionLabel>
 									{profile.cs2Team ? (
 										<Link href={`/teams/${profile.cs2Team.id}`} className='group flex items-center gap-3 rounded-md border border-border bg-neutral-950 p-4 transition-colors hover:border-neutral-600'>
-											{profile.cs2Team.logo ? (
-												<Image src={profile.cs2Team.logo} alt='' width={40} height={40} className='h-10 w-10 object-contain' />
-											) : (
-												<div className='flex h-10 w-10 items-center justify-center rounded-sm bg-neutral-800 text-xs font-bold text-neutral-400'>{initials(profile.cs2Team.name)}</div>
-											)}
+											<TeamLogo src={profile.cs2Team.logo} name={profile.cs2Team.name} size='md' decorative />
 											<span className='min-w-0 flex-1 truncate font-bold uppercase tracking-wide text-white'>{profile.cs2Team.name}</span>
 											<ArrowRight className='h-4 w-4 text-neutral-600 transition-colors group-hover:text-white' />
 										</Link>
@@ -638,12 +673,13 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 											</span>
 											<div className='min-w-0 flex-1'>
 												<p className='text-sm font-medium text-white'>Steam</p>
+												{profile.steam && vis && !vis.showSteam && <HiddenNote />}
 												{profile.steam ? (
 													<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='flex items-center gap-1 text-xs text-neutral-400 hover:text-white'>
 														View profile <ExternalLink className='h-3 w-3' />
 													</a>
 												) : (
-													<p className='text-xs text-neutral-400'>Not linked</p>
+													<p className='text-xs text-neutral-400'>{isOwner ? 'Not linked' : 'Not shown'}</p>
 												)}
 											</div>
 											{isOwner &&
@@ -663,6 +699,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 											</span>
 											<div className='min-w-0 flex-1'>
 												<p className='text-sm font-medium text-white'>Discord</p>
+												{profile.discord && vis && !vis.showDiscord && <HiddenNote />}
 												{profile.discord ? (
 													<a href={`https://discord.com/users/${profile.discord.discordId}`} target='_blank' rel='noreferrer' className='block truncate font-mono text-xs text-neutral-400 hover:text-white'>
 														{profile.discord.discordId}
@@ -677,6 +714,24 @@ export function ProfileView({ profile, stats, recentMatches, faceit, isOwner }: 
 												</Button>
 											)}
 										</div>
+										{isOwner && vis && (
+											<div className='space-y-4 p-4'>
+												<VisibilitySwitch
+													label='Show Steam on my profile'
+													description='Hides your Steam link and ID from visitors. Your FACEIT level still shows.'
+													checked={vis.showSteam}
+													disabled={visSaving === 'showSteam'}
+													onCheckedChange={(v) => setVisibility('showSteam', v)}
+												/>
+												<VisibilitySwitch
+													label='Show Discord on my profile'
+													description='Hides your Discord link and ID from visitors.'
+													checked={vis.showDiscord}
+													disabled={visSaving === 'showDiscord'}
+													onCheckedChange={(v) => setVisibility('showDiscord', v)}
+												/>
+											</div>
+										)}
 									</div>
 								</section>
 							</aside>

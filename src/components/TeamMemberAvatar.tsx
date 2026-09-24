@@ -90,7 +90,7 @@ export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capi
 			<HoverCardTrigger asChild>{avatar}</HoverCardTrigger>
 
 			<HoverCardContent className='z-40 w-fit min-w-64 max-w-96 cursor-default rounded-lg border border-border bg-black p-4' side='top'>
-				<UserCard member={member} />
+				<UserCard member={member} team={team} />
 			</HoverCardContent>
 		</HoverCard>
 	);

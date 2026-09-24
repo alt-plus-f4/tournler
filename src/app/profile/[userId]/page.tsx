@@ -12,19 +12,34 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 	const [session, user] = await Promise.all([getAuthSession(), getProfileUser(decodeURIComponent(userId))]);
 	if (!user) return <ProfileNotFound />;
 
-	const [stats, recentMatches, faceit] = await loadProfileExtras(user);
+	const [stats, recentMatches, faceit, eventTrophies] = await loadProfileExtras(user);
+	const isOwner = session?.user.id === user.id;
+
+	// Hidden linked accounts never reach a visitor's payload; the owner still sees them (flagged as hidden).
+	const steam = user.steam && (isOwner || user.showSteam) ? user.steam : null;
+	const discord = user.discord && (isOwner || user.showDiscord) ? user.discord : null;
 
 	const profile: PublicProfileData = {
 		id: user.id,
 		name: user.name ?? '',
 		bio: user.bio ?? undefined,
 		image: user.image ?? undefined,
-		steam: user.steam ? { steamId: user.steam.steamId, createdAt: user.steam.createdAt.toISOString() } : null,
-		discord: user.discord,
+		steam: steam ? { steamId: steam.steamId, createdAt: steam.createdAt.toISOString() } : null,
+		discord,
 		cs2Team: user.cs2Team,
 		badges: user.badges.map((b) => ({ ...b, awardedAt: b.awardedAt.toISOString() })),
 		createdAt: user.createdAt.toISOString(),
 	};
 
-	return <ProfileView profile={profile} stats={stats} recentMatches={recentMatches} faceit={faceit} isOwner={session?.user.id === user.id} />;
+	return (
+		<ProfileView
+			profile={profile}
+			stats={stats}
+			recentMatches={recentMatches}
+			faceit={faceit}
+			eventTrophies={eventTrophies.map((t) => ({ ...t, wonAt: t.wonAt.toISOString() }))}
+			isOwner={isOwner}
+			visibility={isOwner ? { showDiscord: user.showDiscord, showSteam: user.showSteam } : undefined}
+		/>
+	);
 }

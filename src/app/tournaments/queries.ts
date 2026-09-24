@@ -61,6 +61,23 @@ export const getTournamentDetail = cachedQuery(
 	{ tags: ['tournaments', 'teams', 'users'], revalidate: REVALIDATE.standard },
 );
 
+/** The bracket slot whose last round is the final; null for formats without a final (round robin). */
+export function finalBracketSlot(format: TournamentFormat): 'WINNERS' | 'GRAND_FINAL' | null {
+	if (format === 'ROUND_ROBIN') return null;
+	return format === 'DOUBLE_ELIMINATION' ? 'GRAND_FINAL' : 'WINNERS';
+}
+
+/**
+ * Given a tournament's matches in its final slot, newest round first, returns the deciding final
+ * match: the completed, single match of the highest round (two matches in the same top round
+ * means the bracket isn't down to one final, so nothing is claimed).
+ */
+export function pickDecidedFinal<M extends { round: number; status: string }>(finalsByRoundDesc: M[]): M | null {
+	const [last, previous] = finalsByRoundDesc;
+	if (!last || (previous && previous.round === last.round)) return null;
+	return last.status === 'COMPLETED' ? last : null;
+}
+
 /**
  * The champion is only named when the bracket itself decided one: the completed last-round match
  * of the winners bracket (single elimination) or of the grand final (double elimination, where a
@@ -68,17 +85,15 @@ export const getTournamentDetail = cachedQuery(
  */
 export const getTournamentChampion = cachedQuery(
 	async (tournamentId: number, format: TournamentFormat): Promise<Champion | null> => {
-		if (format === 'ROUND_ROBIN') return null;
-		const slot = format === 'DOUBLE_ELIMINATION' ? 'GRAND_FINAL' : 'WINNERS';
+		const slot = finalBracketSlot(format);
+		if (!slot) return null;
 		const finals = await db.matches.findMany({
 			where: { tournamentId, bracketSlot: slot },
 			orderBy: { round: 'desc' },
 			take: 2,
 			select: { round: true, status: true, winner: { select: { id: true, name: true } } },
 		});
-		const [last, previous] = finals;
-		if (!last || (previous && previous.round === last.round)) return null;
-		return last.status === 'COMPLETED' && last.winner ? last.winner : null;
+		return pickDecidedFinal(finals)?.winner ?? null;
 	},
 	['tournament-champion'],
 	{ tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.standard },

@@ -30,7 +30,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			// return whole User rows (email, role, ...) to anonymous callers.
 			// Steam ID + Verified badge are read only to compute `verified`/`faceitLevel` below and
 			// are stripped before the response.
-			members: { select: { ...publicUserSelect, ...playerFlairSelect } },
+			// bio feeds the roster hover card (public profile text).
+			members: { select: { ...publicUserSelect, bio: true, ...playerFlairSelect } },
 			capitan: { select: publicUserSelect },
 		},
 	});

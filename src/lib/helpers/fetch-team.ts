@@ -19,7 +19,8 @@ const loadPublicTeam = cachedQuery(
 				name: true,
 				logo: true,
 				background: true,
-				members: { select: { ...publicUserSelect, ...playerFlairSelect } },
+				// bio feeds the roster hover card (public profile text).
+				members: { select: { ...publicUserSelect, bio: true, ...playerFlairSelect } },
 				capitan: { select: publicUserSelect },
 			},
 		});

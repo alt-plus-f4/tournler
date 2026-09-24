@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ userId: string }> }): Promise<Metadata> {
 	const { userId } = await params;
 	const user = await getProfileUser(decodeURIComponent(userId));
-	return { title: user?.name ?? 'Player' };
+	if (!user) return { title: 'Player' };
+	const name = user.name ?? 'Player';
+	return { title: name, description: `${name} on Tournler: CS2 stats, recent matches, team and trophies.` };
 }
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {

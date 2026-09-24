@@ -29,6 +29,9 @@ const PUBLIC_USER_SELECT = {
 			logo: true,
 		},
 	},
+	// Privacy flags, read to gate steam/discord below; only echoed back to the owner.
+	showDiscord: true,
+	showSteam: true,
 	badges: {
 		orderBy: { awardedAt: 'desc' },
 		select: {
@@ -63,9 +66,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		const [stats, recentMatches, faceit] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id, 20), user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null)]);
+		// The FACEIT level is public FACEIT data, so it's looked up even when the player hides Steam.
+		const [stats, recentMatches, faceit, session] = await Promise.all([
+			computePlayerCareerStats(user.id),
+			getPlayerRecentMatches(user.id, 20),
+			user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
+			getAuthSession(),
+		]);
 
-		return NextResponse.json({ user, stats, recentMatches, faceit });
+		// Hidden linked accounts are omitted for everyone but the owner.
+		const isOwner = session?.user?.id === user.id;
+		const { showDiscord, showSteam, steam, discord, ...rest } = user;
+		const publicUser = {
+			...rest,
+			steam: isOwner || showSteam ? steam : null,
+			discord: isOwner || showDiscord ? discord : null,
+			...(isOwner ? { showDiscord, showSteam } : {}),
+		};
+
+		return NextResponse.json({ user: publicUser, stats, recentMatches, faceit });
 	} catch (error) {
 		console.error('Error fetching user:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
