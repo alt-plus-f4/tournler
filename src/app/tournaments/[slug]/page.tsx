@@ -6,10 +6,15 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 import { getAuthSession } from '@/lib/auth';
-import { fetchUserTeam } from '@/lib/helpers/fetch-user-team';
+import { fetchUserTeams } from '@/lib/helpers/fetch-user-team';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { flairMapper } from '@/lib/helpers/player-flair';
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/db';
+import { teamEligibility, gameAccountStatus } from '@/lib/games/eligibility';
+import { GAME_META } from '@/lib/games';
+import { GameTag } from '@/components/games/GameMark';
+import { RegistrationGate, WrongGameNotice, type GateRosterEntry } from './_components/RegistrationGate';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
@@ -59,7 +64,7 @@ export async function generateMetadata({ params }: TournamentPageProps): Promise
 	const when = tournament.startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 	return {
 		title: tournament.name,
-		description: `${tournament.name}: CS2 tournament${tournament.location ? ` in ${tournament.location}` : ''} starting ${when}. Bracket, teams, matches and results on Tournler.`,
+		description: `${tournament.name}: ${GAME_META[tournament.game].label} tournament${tournament.location ? ` in ${tournament.location}` : ''} starting ${when}. Bracket, teams, matches and results on Tournler.`,
 	};
 }
 
@@ -119,13 +124,35 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 
 	const session = await getAuthSession();
 	const user = session?.user;
-	const [canManageTournaments, userTeamResponse] = await Promise.all([
+	const [canManageTournaments, userTeamsByGame] = await Promise.all([
 		user ? userHasPermission(user.id, 'tournaments:manage') : Promise.resolve(false),
-		user ? fetchUserTeam(user.id) : Promise.resolve(null),
+		user ? fetchUserTeams(user.id) : Promise.resolve(null),
 	]);
-	const userTeam: { id: number; name: string } | null = userTeamResponse?.team ?? null;
+	// Only the team the viewer plays for in THIS tournament's game is eligible to register
+	// (teamEligibility — one team per game, src/lib/teams/membership.ts). A team for the other
+	// game exists but can't register here (WrongGameNotice below).
+	const userTeam = userTeamsByGame?.[tournament.game] ?? null;
+	const wrongGameTeam = !userTeam ? Object.values(userTeamsByGame ?? {}).find((t) => t !== null) ?? null : null;
 
 	const registration = getRegistration(tournament);
+
+	// The registration control IS the eligibility gate: computed here (not just checked at submit
+	// time) so a captain with an ineligible team sees why, exactly like the API that will refuse
+	// them (POST /api/tournaments/[slug]/teams calls the same teamEligibility).
+	let gate: { missingCount: number; viewerNeedsLink: boolean; roster: GateRosterEntry[] } | null = null;
+	if (registration.open && userTeam && user) {
+		const eligibility = await teamEligibility(userTeam.id, tournament.game);
+		if (!eligibility.ok && eligibility.missing.length > 0) {
+			const team = await db.cs2Team.findUnique({ where: { id: userTeam.id }, select: { members: { select: { id: true, name: true } } } });
+			const members = team?.members ?? eligibility.missing;
+			const statusMap = await gameAccountStatus(members.map((m) => m.id), tournament.game);
+			gate = {
+				missingCount: eligibility.missing.length,
+				viewerNeedsLink: eligibility.missing.some((m) => m.id === user.id),
+				roster: members.map((m) => ({ id: m.id, name: m.name, status: statusMap.get(m.id) ?? 'missing', isViewer: m.id === user.id })),
+			};
+		}
+	}
 	const timeLeftToJoin = Math.max(tournament.startDate.getTime() - Date.now(), 0);
 	const joinTarget = { id: tournament.id, name: tournament.name, startDate: tournament.startDate.toISOString() };
 
@@ -153,12 +180,15 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 					<div className='flex shrink-0 flex-col items-start gap-2 sm:items-end sm:text-right'>
 						{canManageTournaments && tournament.status === 'UPCOMING' && (
 							<div className='mb-1'>
-								<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} />
+								<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} game={tournament.game} />
 							</div>
 						)}
-						<div>
-							<p className='text-sm font-bold text-white'>{registration.label}</p>
-							<p className='font-mono text-xs tabular-nums text-muted-foreground'>{registration.detail}</p>
+						<div className='flex items-center gap-2'>
+							<GameTag game={tournament.game} />
+							<div>
+								<p className='text-sm font-bold text-white'>{registration.label}</p>
+								<p className='font-mono text-xs tabular-nums text-muted-foreground'>{registration.detail}</p>
+							</div>
 						</div>
 						{registration.open && timeLeftToJoin > 0 && (
 							<div className='text-muted-foreground'>
@@ -166,7 +196,11 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 							</div>
 						)}
 
-						{registration.open && userTeam && <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={joinTarget} team={userTeam} isFull={registration.full} />}
+						{registration.open && userTeam && !gate && <JoinLeaveButton timeLeftToJoin={timeLeftToJoin} tournament={joinTarget} team={userTeam} isFull={registration.full} />}
+						{registration.open && userTeam && gate && user && (
+							<RegistrationGate game={tournament.game} teamName={userTeam.name} viewerId={user.id} viewerNeedsLink={gate.viewerNeedsLink} missingCount={gate.missingCount} roster={gate.roster} />
+						)}
+						{registration.open && !registration.full && !userTeam && wrongGameTeam && <WrongGameNotice tournamentGame={tournament.game} teamGame={wrongGameTeam.game} teamName={wrongGameTeam.name} />}
 						{registration.open && !registration.full && !user && (
 							<p className='text-sm text-muted-foreground'>
 								<Link href='/sign-in' className='font-medium text-white underline underline-offset-4'>
@@ -175,7 +209,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 								to register your team.
 							</p>
 						)}
-						{registration.open && !registration.full && user && !userTeam && (
+						{registration.open && !registration.full && user && !userTeam && !wrongGameTeam && (
 							<p className='text-sm text-muted-foreground'>
 								You need a team to register.{' '}
 								<Link href='/teams' className='font-medium text-white underline underline-offset-4'>

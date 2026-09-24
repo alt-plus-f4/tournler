@@ -158,7 +158,7 @@ async function FeaturedSections() {
 						<div className={layoutClass}>
 							{featuredTournaments.map((tournament) => (
 								<div key={tournament.id} className={itemClass}>
-									<FeaturedTournamentCard id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} />
+									<FeaturedTournamentCard id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} game={tournament.game} />
 								</div>
 							))}
 						</div>
@@ -196,7 +196,7 @@ async function UpcomingList() {
 	return upcoming.length > 0 ? (
 		<>
 			{upcoming.map((tournament) => (
-				<UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} isHomePage />
+				<UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} game={tournament.game} isHomePage />
 			))}
 		</>
 	) : (

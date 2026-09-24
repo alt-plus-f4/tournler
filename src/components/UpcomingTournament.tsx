@@ -2,6 +2,7 @@ import { formatMoney } from '@/lib/helpers/format-money';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
+import { GameTag } from '@/components/games/GameMark';
 
 interface UpcomingTournamentProps {
 	id: number;
@@ -15,13 +16,14 @@ interface UpcomingTournamentProps {
 	/** UPCOMING / ONGOING / COMPLETED. Lets the card say "In progress" or "Start pending" honestly. */
 	status?: string;
 	isHomePage?: boolean;
+	game?: 'CS2' | 'LOL';
 }
 
 /**
  * The compact tournament card (home sidebar, /tournaments second row). Sized by its content
  * with a floor height, never a fixed one: a fixed height used to clip the stat captions.
  */
-export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity, status, isHomePage }: UpcomingTournamentProps) {
+export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, teams, location, teamCapacity, status, isHomePage, game = 'CS2' }: UpcomingTournamentProps) {
 	const hasPrize = prizePool !== null && prizePool !== undefined;
 	const start = getStartLabel(startDate, status);
 
@@ -43,6 +45,7 @@ export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, 
 					/>
 				)}
 				<div aria-hidden className='absolute bottom-0 left-0 h-5 w-full bg-gradient-to-t from-black to-transparent' />
+				<GameTag game={game} showLabel={false} className='absolute left-1.5 top-1.5 bg-black/70' />
 			</div>
 			<div className='flex flex-1 flex-col text-center'>
 				<h3 className='mx-3 mt-2 truncate text-base font-black uppercase tracking-wide text-white'>{name}</h3>

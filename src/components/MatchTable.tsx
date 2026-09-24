@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Match } from '@/types/types';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
+import { GameTag } from '@/components/games/GameMark';
 
 interface MatchTableProps {
 	matches: Match[];
@@ -10,7 +11,7 @@ interface MatchTableProps {
 	emptyMessage?: string;
 }
 
-const HEADERS = ['Match', 'Tournament', 'Round', 'Status', 'Score', 'Date'];
+const HEADERS = ['Game', 'Match', 'Tournament', 'Round', 'Status', 'Score', 'Date'];
 
 export function MatchStatusLabel({ status }: { status: string }) {
 	if (status === 'LIVE') {
@@ -64,6 +65,9 @@ export function MatchTable({ isLoading, matches, onEdit, emptyMessage = 'No matc
 							const label = `${match.teamA?.name ?? 'TBD'} vs ${match.teamB?.name ?? 'TBD'}`;
 							return (
 								<tr key={match.id} className={t.tr}>
+									<td className={cn(t.td, 'w-0')}>
+										<GameTag game={match.tournament?.game ?? 'CS2'} />
+									</td>
 									<td className={t.td}>
 										<button type='button' onClick={() => onEdit(match)} className={t.rowAction} aria-label={`Edit match ${label}`}>
 											{label}

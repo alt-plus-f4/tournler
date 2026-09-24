@@ -31,6 +31,8 @@ export interface TournamentDetail {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	/** CS2 (hosted servers) or LOL (results recorded by staff). */
+	game: 'CS2' | 'LOL';
 	bestOf: number;
 	mapPool: string[];
 	organizer: { name: string | null };

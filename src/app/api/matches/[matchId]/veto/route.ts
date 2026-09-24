@@ -4,6 +4,7 @@ import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { getVetoState, finalizeVeto, VetoError, VetoAction } from '@/lib/tournaments/veto';
 import { Prisma } from '@prisma/client';
+import { HostedServerUnsupportedError, hostsGameServers } from '@/lib/tournaments/game-rules';
 
 function loadMatchForVeto(matchId: number) {
 	return db.matches.findUnique({
@@ -27,6 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 
 	const match = await loadMatchForVeto(id);
 	if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+	if (!hostsGameServers(match.tournament.game)) return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'veto maps for').message }, { status: 409 });
 
 	const state = getVetoState(match, match.tournament.mapPool, match.tournament.bestOf);
 	return NextResponse.json(state);
@@ -53,6 +55,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 
 		const match = await loadMatchForVeto(id);
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+		// Map veto is CS2's pre-match step; LoL has no maps to veto and no server to load them on.
+		if (!hostsGameServers(match.tournament.game)) return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'veto maps for').message }, { status: 409 });
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			return NextResponse.json({ error: 'Both team slots must be filled before veto can start' }, { status: 400 });
 		}

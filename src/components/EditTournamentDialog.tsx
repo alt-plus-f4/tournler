@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
 import { RichTextEditor } from '@/components/LazyRichTextEditor';
+import { GAME_META, GAMES } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
 
 export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
 export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
@@ -61,14 +63,17 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 				body: JSON.stringify(updatedFields),
 			});
 
-			if (!response.ok) throw new Error('Failed to update tournament');
+			if (!response.ok) {
+				const payload = await response.json().catch(() => null);
+				throw new Error(payload?.error || 'Failed to update tournament');
+			}
 
 			toast({ title: 'Success', description: 'Tournament updated successfully', variant: 'default' });
 			onSave({ ...editingTournament, ...updatedFields });
 			onClose();
 		} catch (error) {
 			console.error('Failed to update tournament', error);
-			toast({ title: 'Error', description: 'Failed to update tournament', variant: 'destructive' });
+			toast({ title: 'Could not save tournament', description: error instanceof Error ? error.message : 'Failed to update tournament', variant: 'destructive' });
 		} finally {
 			setIsSaving(false);
 		}
@@ -93,6 +98,12 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 			setIsConfirmingDelete(false);
 		}
 	};
+
+	// The API refuses a game change once any team registered (they were checked against the old
+	// game's accounts); the control mirrors that rule instead of letting the save fail.
+	const registeredTeams = tournament?.teams?.length ?? 0;
+	const gameLocked = registeredTeams > 0 || (tournament?.matches?.length ?? 0) > 0;
+	const game = editingTournament?.game ?? 'CS2';
 
 	if (isConfirmingDelete) {
 		return (
@@ -165,6 +176,31 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 
 					<div className='space-y-3'>
 						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Configuration</p>
+						<div className='space-y-2'>
+							<Label htmlFor='edit-game'>Game</Label>
+							<Select value={game} onValueChange={(value) => handleChange('game', value)} disabled={gameLocked}>
+								<SelectTrigger id='edit-game' aria-describedby='edit-game-hint'>
+									<SelectValue placeholder='Select a game' />
+								</SelectTrigger>
+								<SelectContent>
+									{GAMES.map((g) => (
+										<SelectItem key={g} value={g}>
+											<span className='inline-flex items-center gap-2'>
+												<GameGlyph game={g} className='h-3.5 w-3.5' />
+												{GAME_META[g].label}
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<p id='edit-game-hint' className='text-xs text-muted-foreground'>
+								{gameLocked
+									? `Locked: ${registeredTeams} team${registeredTeams === 1 ? '' : 's'} registered for ${GAME_META[game].label}. Remove every team to change the game.`
+									: game === 'LOL'
+										? 'No hosted servers: staff record each match result.'
+										: 'Every match gets a hosted CS2 server.'}
+							</p>
+						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-status'>Status</Label>

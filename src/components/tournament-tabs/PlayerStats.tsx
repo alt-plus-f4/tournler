@@ -45,7 +45,7 @@ export default function PlayerStats({ tournament }: PlayerStatsProps) {
 	}
 
 	if (stats.length === 0) {
-		return <p className='p-8 text-center text-muted-foreground'>No player stats yet. They appear once the game server reports a finished map.</p>;
+		return <p className='p-8 text-center text-muted-foreground'>{tournament.game === 'LOL' ? 'No player stats yet.' : 'No player stats yet. They appear once the game server reports a finished map.'}</p>;
 	}
 
 	return (

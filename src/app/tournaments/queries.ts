@@ -1,5 +1,5 @@
 import 'server-only';
-import { TournamentStatus, type TournamentFormat } from '@prisma/client';
+import { TournamentStatus, type Game, type TournamentFormat } from '@prisma/client';
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { playerFlairSelect } from '@/lib/helpers/player-flair';
@@ -10,14 +10,19 @@ import type { Champion } from '@/components/tournament-tabs/types';
  * The Prisma extension in src/lib/db.ts flushes the tags below on every write.
  */
 
-/** Same query GET /api/tournaments?status=active runs (first page of 10, prize pool first). */
+/**
+ * Same query GET /api/tournaments?status=active runs (first page of 10, prize pool first).
+ * `game` narrows the one feed (src/lib/games) — it's a cachedQuery ARGUMENT, not a new cache tag:
+ * each game filter gets its own cache entry, and a write still invalidates every entry via the
+ * shared 'tournaments'/'teams' tags (see src/lib/cache/tags.ts).
+ */
 export const getActiveTournaments = cachedQuery(
-	async () =>
+	async (game: Game | null) =>
 		db.cs2Tournament.findMany({
-			where: { isSystem: false, status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] } },
+			where: { isSystem: false, status: { in: [TournamentStatus.UPCOMING, TournamentStatus.ONGOING] }, ...(game ? { game } : {}) },
 			orderBy: { prizePool: 'desc' },
 			take: 10,
-			select: { id: true, name: true, bannerUrl: true, logoUrl: true, startDate: true, prizePool: true, location: true, teamCapacity: true, status: true, teams: { select: { id: true } } },
+			select: { id: true, name: true, bannerUrl: true, logoUrl: true, startDate: true, prizePool: true, location: true, teamCapacity: true, status: true, game: true, teams: { select: { id: true } } },
 		}),
 	['tournaments-active-list'],
 	{ tags: ['tournaments', 'teams'], revalidate: REVALIDATE.standard },
@@ -42,6 +47,7 @@ export const getTournamentDetail = cachedQuery(
 				status: true,
 				type: true,
 				format: true,
+				game: true,
 				bestOf: true,
 				mapPool: true,
 				organizer: { select: { name: true } },

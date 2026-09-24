@@ -4,12 +4,13 @@ import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Check, Copy, Download, ExternalLink, Loader2, Server } from 'lucide-react';
+import { Check, Copy, Download, ExternalLink, Loader2, Server, Swords } from 'lucide-react';
+import { GameGlyph } from '@/components/games/GameMark';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import { RoomPanel, SectionLabel, SignalDot } from './room-ui';
-import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
+import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, isLolMatch, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
 
 function useCopy() {
 	const [copied, setCopied] = useState<string | null>(null);
@@ -107,6 +108,33 @@ export function ServerPanel({ match }: { match: Match }) {
 					</Button>
 				</div>
 			)}
+		</RoomPanel>
+	);
+}
+
+/**
+ * Replaces the Server panel for a League of Legends match (Phase 1 — no hosted LoL servers, see
+ * src/lib/tournaments/game-rules.ts): there's no connect info or RCON to show, so the room says
+ * plainly where the match actually happens and who's responsible for the result.
+ */
+export function LolMatchPanel({ match }: { match: Match }) {
+	return (
+		<RoomPanel
+			label={
+				<>
+					<Swords className='h-3.5 w-3.5' aria-hidden /> League of Legends match
+				</>
+			}
+			bodyClassName='space-y-3'
+		>
+			<div className='flex items-start gap-3'>
+				<GameGlyph game='LOL' className='mt-0.5 h-5 w-5 shrink-0 text-neutral-400' />
+				<p className='text-sm text-neutral-200'>
+					Tournler doesn&apos;t host League servers. Play this match in the League client{match.status === 'SCHEDULED' ? ' once it starts' : ''} — an organizer records the result here once it&apos;s over.
+				</p>
+			</div>
+			{match.status === 'SCHEDULED' && <p className='text-xs text-muted-foreground'>An admin marks this match Live from the Admin tab when it&apos;s time to play.</p>}
+			{(match.status === 'LIVE' || match.status === 'PAUSED') && <p className='text-xs text-muted-foreground'>When the game ends, an organizer enters the result from the Admin tab.</p>}
 		</RoomPanel>
 	);
 }
@@ -293,7 +321,9 @@ function MapStrip({ match }: { match: Match }) {
 export function MapsTab({ match, onGoToVeto }: { match: Match; onGoToVeto?: () => void }) {
 	const { teamALabel, teamBLabel } = getSideLabels(match);
 	if (match.maps.length === 0) {
-		return (
+		return isLolMatch(match) ? (
+			<EmptyState title='No map veto for League' body='League of Legends matches aren’t played on a map pool, so there’s nothing to veto — see the result on the Overview tab once an organizer records it.' />
+		) : (
 			<EmptyState title='No maps yet' body='Maps are locked in when the veto finishes. Both sides ban and pick from the active-duty pool on the Overview tab.'>
 				{onGoToVeto && (
 					<Button variant='outline' onClick={onGoToVeto}>

@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
 import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
+import { hostsGameServers } from './game-rules';
 
 const PREWARM_WINDOW_MS = 5 * 60 * 1000;
 
@@ -38,7 +39,8 @@ export async function prewarmUpcomingMatches(): Promise<PrewarmResult[]> {
 	const windowEnd = new Date(now.getTime() + PREWARM_WINDOW_MS);
 
 	const candidates = await db.matches.findMany({
-		where: { status: 'SCHEDULED', isPickup: false, matchDate: { gte: now, lte: windowEnd } },
+		// CS2 only: LoL matches are played in the Riot client and never get a hosted server.
+		where: { status: 'SCHEDULED', isPickup: false, matchDate: { gte: now, lte: windowEnd }, tournament: { game: 'CS2' } },
 		include: { tournament: true, mapActions: true, gameServer: true },
 	});
 
@@ -46,6 +48,7 @@ export async function prewarmUpcomingMatches(): Promise<PrewarmResult[]> {
 
 	for (const match of candidates) {
 		if (match.gameServer) continue; // already pre-warmed (or started) — nothing to do
+		if (!hostsGameServers(match.tournament.game)) continue; // belt and braces with the where above
 
 		// Not ready to load yet — will be picked up on a later tick if it becomes ready
 		// before matchDate passes, otherwise it just never gets pre-warmed (no harder than

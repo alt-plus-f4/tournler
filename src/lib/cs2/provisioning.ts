@@ -5,6 +5,7 @@ import { withRcon } from './rcon-client';
 import { findServerByConnect, Cs2ServerConfig } from './server-pool';
 import { gameServerCallbackUrl } from './callback-url';
 import { buildMatchConfig } from './match-config';
+import { assertMatchHostsGameServer } from '@/lib/tournaments/game-rules';
 
 const POOL_CONTROLLER_RESTART_TIMEOUT_MS = 120_000;
 const POOL_CONTROLLER_POLL_INTERVAL_MS = 3_000;
@@ -137,6 +138,7 @@ async function resolveMatchServer(matchId: number): Promise<Cs2ServerConfig> {
  * transaction commits and treat failures as non-fatal, same as `pushMatchConfigToServer`.
  */
 export async function pushRconCommand(matchId: number, command: string): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'send RCON commands to');
 	const server = await resolveMatchServer(matchId);
 	await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute(command));
 }
@@ -155,6 +157,7 @@ export async function pushRconCommand(matchId: number, command: string): Promise
  * an organizer retries manually).
  */
 export async function pushMatchConfigToServer(matchId: number, options: { bots?: boolean } = {}): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'load a MatchZy config onto');
 	const appBaseUrl = gameServerCallbackUrl();
 	const gameServerToken = process.env.GAME_SERVER_TOKEN;
 	if (!appBaseUrl || !gameServerToken) {
@@ -214,6 +217,7 @@ export async function pushMatchConfigToServer(matchId: number, options: { bots?:
  * non-fatal — same convention as `pushMatchConfigToServer`.
  */
 export async function releaseGameServerAfterMatch(matchId: number): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'release');
 	const server = await resolveMatchServer(matchId);
 	const throwawayPassword = randomBytes(9).toString('base64url');
 

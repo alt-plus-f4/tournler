@@ -100,6 +100,8 @@ export interface Match {
 		id: number;
 		name: string;
 		status: string;
+		/** CS2 gets a hosted server, veto and RCON; LoL is played in the client and staff record the result (Phase 1 — see src/lib/tournaments/game-rules.ts). */
+		game: 'CS2' | 'LOL';
 	};
 	teamA: Team | null;
 	teamB: Team | null;
@@ -138,6 +140,11 @@ export function formatDuration(ms: number) {
 
 export function formatKd(kills: number, deaths: number) {
 	return (deaths > 0 ? kills / deaths : kills).toFixed(2);
+}
+
+/** No hosted server, map veto, captain draft or RCON for LoL (Phase 1) — see src/lib/tournaments/game-rules.ts, the same rule enforced server-side. */
+export function isLolMatch(match: Match): boolean {
+	return match.tournament.game === 'LOL';
 }
 
 export function getSideLabels(match: Match) {

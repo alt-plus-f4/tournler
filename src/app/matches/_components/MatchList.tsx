@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { TeamLogo } from '@/components/TeamLogo';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
+import { GameTag } from '@/components/games/GameMark';
 
 type Side = { id: number; name: string; logo: string | null };
 
@@ -17,7 +18,7 @@ export interface MatchListItem {
 	winnerSide: string | null;
 	teamAName: string | null;
 	teamBName: string | null;
-	tournament: { id: number; name: string };
+	tournament: { id: number; name: string; game?: 'CS2' | 'LOL' };
 	teamA: Side | null;
 	teamB: Side | null;
 	winner: Side | null;
@@ -77,6 +78,7 @@ function MatchRow({ match, timeZone }: { match: MatchListItem; timeZone: string 
 
 	return (
 		<Link href={`/matches/${match.id}`} className='flex items-center gap-2 rounded-md border border-border px-3 py-3 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:px-4'>
+			<GameTag game={match.tournament.game ?? 'CS2'} showLabel={false} className='shrink-0' />
 			<span className='hidden w-28 shrink-0 truncate text-xs text-muted-foreground sm:block'>{match.isPickup ? 'Pickup' : match.tournament.name}</span>
 
 			<div className='flex min-w-0 flex-1 items-center justify-center gap-2 sm:gap-3'>

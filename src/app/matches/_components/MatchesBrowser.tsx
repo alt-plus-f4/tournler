@@ -15,6 +15,8 @@ interface MatchesBrowserProps {
 	totalPages: number;
 	tournaments: { id: number; name: string }[];
 	matches: MatchListItem[];
+	/** The current ?game= filter (see the /matches page) — preserved across status/tournament/page navigation. */
+	game: 'CS2' | 'LOL' | null;
 }
 
 /**
@@ -22,7 +24,7 @@ interface MatchesBrowserProps {
  * (?status=&tournament=&page=); changing a filter pushes a new URL inside a transition, so the
  * current list stays up (dimmed) until the server's new list arrives.
  */
-export function MatchesBrowser({ status, tournamentId, page, totalPages, tournaments, matches }: MatchesBrowserProps) {
+export function MatchesBrowser({ status, tournamentId, page, totalPages, tournaments, matches, game }: MatchesBrowserProps) {
 	const router = useRouter();
 	const pathname = usePathname();
 	const [isPending, startTransition] = useTransition();
@@ -36,6 +38,7 @@ export function MatchesBrowser({ status, tournamentId, page, totalPages, tournam
 		if (s !== 'ALL') params.set('status', s.toLowerCase());
 		if (t) params.set('tournament', t);
 		if (p > 1) params.set('page', String(p));
+		if (game) params.set('game', game.toLowerCase());
 		const query = params.toString();
 		startTransition(() => router.push(query ? `${pathname}?${query}` : pathname, { scroll: false }));
 	};

@@ -14,7 +14,7 @@ const readMatchTitle = cachedQuery(
 	async (id: number) =>
 		db.matches.findUnique({
 			where: { id },
-			select: { isPickup: true, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
+			select: { isPickup: true, teamA: { select: { name: true } }, teamB: { select: { name: true } }, tournament: { select: { game: true } } },
 		}),
 	['match-room-title'],
 	{ tags: ['matches', 'teams'], revalidate: REVALIDATE.standard },
@@ -30,11 +30,16 @@ export async function generateMetadata({ params }: { params: Promise<{ matchId: 
 	const match = await getMatchTitle(id);
 
 	if (!match) return { title: { absolute: 'Match · Tournler' } };
+	// Pickups (open lobbies, join-a-side, map veto) are CS2-only for now — see src/lib/tournaments/game-rules.ts.
 	if (match.isPickup) return { title: { absolute: 'Pickup match · Tournler' }, description: 'Open CS2 pickup lobby on Tournler: join a side, run the map veto and connect to the hosted server.' };
 	const a = match.teamA?.name ?? 'TBD';
 	const b = match.teamB?.name ?? 'TBD';
+	const isLol = match.tournament.game === 'LOL';
 	// Absolute: the parent /matches layout sets a plain title, which stops the root template from applying here.
-	return { title: { absolute: `${a} vs ${b} · Tournler` }, description: `${a} vs ${b} on Tournler: live score from the game server, rosters, map veto and results.` };
+	return {
+		title: { absolute: `${a} vs ${b} · Tournler` },
+		description: isLol ? `${a} vs ${b} on Tournler: League of Legends match, rosters and the recorded result.` : `${a} vs ${b} on Tournler: live score from the game server, rosters, map veto and results.`,
+	};
 }
 
 export default function MatchLayout({ children }: { children: React.ReactNode }) {

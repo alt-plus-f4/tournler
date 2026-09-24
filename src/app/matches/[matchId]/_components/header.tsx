@@ -7,6 +7,7 @@ import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import { StatusReadout, TeamMark } from './room-ui';
+import { GameTag } from '@/components/games/GameMark';
 import { getBestOf, getSideLabels, getWinningSide, type Match, type Side } from './types';
 
 /** "BO3 · Pickup · Captain draft" — the BO part is left out when the series length isn't known. */
@@ -100,6 +101,7 @@ export function RoomHeader({ match, quickBar, tabs }: { match: Match; quickBar?:
 			<div className='mx-auto max-w-7xl px-4'>
 				<div className='flex flex-wrap items-center justify-between gap-x-4 gap-y-3 pt-5'>
 					<div className='flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2'>
+						<GameTag game={match.tournament.game} showLabel={false} className='shrink-0' />
 						<nav aria-label='Breadcrumb' className='flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground'>
 							{match.isPickup ? (
 								<Link href='/matches' className='shrink-0 hover:text-white'>

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { LocalTime } from '@/components/LocalTime';
 import { DRAFT_POOL_SIZE } from '@/lib/tournaments/draft';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { GameTag } from '@/components/games/GameMark';
 
 const MAX_ROWS = 5;
 // Mirrors the join route's caps: OPEN = 5 per side, CAPTAIN_DRAFT = 2 captains + the pool.
@@ -30,7 +31,7 @@ export const getUpNext = cachedQuery(async () => {
 			where: { status: 'SCHEDULED', isPickup: false, teamAId: { not: null }, teamBId: { not: null } },
 			orderBy: { matchDate: 'asc' },
 			take: MAX_ROWS * 2,
-			select: { id: true, matchDate: true, tournament: { select: { name: true } }, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
+			select: { id: true, matchDate: true, tournament: { select: { name: true, game: true } }, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
 		}),
 	]);
 
@@ -40,8 +41,8 @@ export const getUpNext = cachedQuery(async () => {
 
 	const rows = [
 		...pickups.map((m) => ({ kind: 'pickup' as const, id: m.id, mode: m.pickupMode, joined: m._count.participants, capacity: m.pickupMode === 'CAPTAIN_DRAFT' ? DRAFT_LOBBY_SIZE : OPEN_LOBBY_SIZE })),
-		...future.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, matchDate: m.matchDate.toISOString(), overdue: false })),
-		...overdue.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, matchDate: m.matchDate.toISOString(), overdue: true })),
+		...future.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, game: m.tournament.game, matchDate: m.matchDate.toISOString(), overdue: false })),
+		...overdue.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, game: m.tournament.game, matchDate: m.matchDate.toISOString(), overdue: true })),
 	];
 	return rows.slice(0, MAX_ROWS);
 }, ['home-up-next'], { tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live });
@@ -55,6 +56,7 @@ function Row({ row }: { row: UpNextRow }) {
 		const full = row.joined >= row.capacity;
 		return (
 			<Link href={`/matches/${row.id}`} className={rowClass}>
+				<GameTag game='CS2' showLabel={false} className='shrink-0' />
 				<span className='min-w-0 flex-1'>
 					<span className='block truncate font-bold uppercase tracking-wide text-white'>Pickup lobby</span>
 					<span className='block truncate text-xs text-muted-foreground'>{row.mode === 'CAPTAIN_DRAFT' ? 'Captain draft' : 'Open sides'}</span>
@@ -75,6 +77,7 @@ function Row({ row }: { row: UpNextRow }) {
 
 	return (
 		<Link href={`/matches/${row.id}`} className={rowClass}>
+			<GameTag game={row.game} showLabel={false} className='shrink-0' />
 			<span className='min-w-0 flex-1'>
 				<span className='block truncate font-bold uppercase tracking-wide text-white'>
 					{row.teamA} <span className='font-normal normal-case text-muted-foreground'>vs</span> {row.teamB}

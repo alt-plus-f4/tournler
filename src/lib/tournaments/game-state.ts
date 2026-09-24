@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { recordMatchResult } from './bracket-advancement';
 import { recordMapResult } from './map-advancement';
 import { upsertPlayerMatchStats, PlayerStatInput } from './player-stats';
+import { assertMatchHostsGameServer } from './game-rules';
 
 export interface GameStateUpdate {
 	matchId: number;
@@ -62,6 +63,8 @@ export function isValidGameStateUpdate(payload: unknown): payload is GameStateUp
  * when a result arrives" regardless of which producer called it.
  */
 export async function applyGameStateUpdate(update: GameStateUpdate) {
+	// Server-reported state only exists for games Tournler hosts (CS2); LoL results are staff-recorded.
+	await assertMatchHostsGameServer(db, update.matchId, 'report game state for');
 	if (update.mapOrder !== undefined) {
 		// bo1/bo3 series: this event is one map's result, not the whole series' — recordMapResult
 		// only calls recordMatchResult (bracket propagation) once the series is actually decided.

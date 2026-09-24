@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { GameServer } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getServerPool } from '@/lib/cs2/server-pool';
+import { assertMatchHostsGameServer } from './game-rules';
 
 type Db = DbTx | typeof db;
 
@@ -25,6 +26,9 @@ export class NoAvailableGameServerError extends Error {
  * right after this.
  */
 export async function ensureGameServer(tx: Db, matchId: number): Promise<{ gameServer: GameServer; created: boolean }> {
+	// Never claim a CS2 pool slot for a game Tournler doesn't host (LoL): throws HostedServerUnsupportedError.
+	await assertMatchHostsGameServer(tx, matchId, 'provision');
+
 	const existing = await tx.gameServer.findUnique({ where: { matchId } });
 	if (existing) return { gameServer: existing, created: false };
 

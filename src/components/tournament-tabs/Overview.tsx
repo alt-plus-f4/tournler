@@ -4,6 +4,8 @@ import { Button } from '../ui/button';
 import { formatDate } from '@/lib/helpers/format-date';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { FORMAT_LABEL, STATUS_LABEL, TYPE_LABEL, type Champion, type TournamentDetail } from './types';
+import { GAME_META } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
 
 function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return (
@@ -68,8 +70,8 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 							<Detail icon={<MapPin className={ICON} />} label='Location'>
 								{tournament.location}
 							</Detail>
-							<Detail icon={<Gamepad2 className={ICON} />} label='Game'>
-								CS2
+							<Detail icon={<GameGlyph game={tournament.game} className={ICON} />} label='Game'>
+								{GAME_META[tournament.game].label}
 							</Detail>
 							<Detail icon={<Wifi className={ICON} />} label='Type'>
 								{TYPE_LABEL[tournament.type]}

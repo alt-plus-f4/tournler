@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
 				where,
 				orderBy: { matchDate: 'desc' },
 				include: {
-					tournament: { select: { id: true, name: true } },
+					tournament: { select: { id: true, name: true, game: true } },
 					teamA: { select: { id: true, name: true } },
 					teamB: { select: { id: true, name: true } },
 					winner: { select: { id: true, name: true } },
@@ -128,13 +128,16 @@ export async function POST(request: Request) {
 		}
 
 		const [tournament, teamA, teamB] = await Promise.all([
-			db.cs2Tournament.findUnique({ where: { id: tournamentId }, select: { id: true } }),
-			db.cs2Team.findUnique({ where: { id: teamAId }, select: { id: true } }),
-			db.cs2Team.findUnique({ where: { id: teamBId }, select: { id: true } }),
+			db.cs2Tournament.findUnique({ where: { id: tournamentId }, select: { id: true, game: true } }),
+			db.cs2Team.findUnique({ where: { id: teamAId }, select: { id: true, game: true } }),
+			db.cs2Team.findUnique({ where: { id: teamBId }, select: { id: true, game: true } }),
 		]);
 
 		if (!tournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
 		if (!teamA || !teamB) return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+		if (teamA.game !== tournament.game || teamB.game !== tournament.game) {
+			return NextResponse.json({ error: 'Both teams must play the tournament’s game' }, { status: 400 });
+		}
 
 		const round = 1;
 		const position = await db.matches.count({ where: { tournamentId, round } });

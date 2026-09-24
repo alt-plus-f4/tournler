@@ -9,7 +9,7 @@ import { TournamentList, TOURNAMENT_VIEWS as VIEWS, type ListedTournament, type 
  * arrives as server-rendered `active` (streamed from the page, no client fetch); only the
  * "Completed" view is fetched on demand, then cached for the visit.
  */
-export function TournamentsBrowser({ active }: { active: ReactNode }) {
+export function TournamentsBrowser({ active, game }: { active: ReactNode; game: 'CS2' | 'LOL' | null }) {
 	const [view, setView] = useState<TournamentView>('active');
 	const [completed, setCompleted] = useState<ListedTournament[] | null>(null);
 	const [error, setError] = useState(false);
@@ -17,11 +17,17 @@ export function TournamentsBrowser({ active }: { active: ReactNode }) {
 	const loadedRef = useRef(false);
 	const switching = view === 'completed' && completed === null && !error;
 
+	// A game-filter change should re-fetch "Completed" even if it already loaded once for another game.
+	useEffect(() => {
+		loadedRef.current = false;
+		setCompleted(null);
+	}, [game]);
+
 	useEffect(() => {
 		if (view !== 'completed' || loadedRef.current) return;
 		let cancelled = false;
 		setError(false);
-		fetch('/api/tournaments?status=completed')
+		fetch(`/api/tournaments?status=completed${game ? `&game=${game.toLowerCase()}` : ''}`)
 			.then((res) => {
 				if (!res.ok) throw new Error(`HTTP ${res.status}`);
 				return res.json() as Promise<ListedTournament[]>;
@@ -39,7 +45,7 @@ export function TournamentsBrowser({ active }: { active: ReactNode }) {
 		return () => {
 			cancelled = true;
 		};
-	}, [view, reloadKey]);
+	}, [view, reloadKey, game]);
 
 	return (
 		<div>
@@ -67,7 +73,7 @@ export function TournamentsBrowser({ active }: { active: ReactNode }) {
 						</Button>
 					</div>
 				) : (
-					completed && <TournamentList tournaments={completed} empty={VIEWS[1].empty} />
+					completed && <TournamentList tournaments={completed} empty={game ? `No completed ${game === 'CS2' ? 'CS2' : 'League of Legends'} tournaments yet.` : VIEWS[1].empty} />
 				))}
 		</div>
 	);

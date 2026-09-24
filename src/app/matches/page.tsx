@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
-import { MatchStatus, type Prisma } from '@prisma/client';
+import { cookies } from 'next/headers';
+import { MatchStatus, type Game, type Prisma } from '@prisma/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getAuthSession } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -9,13 +10,15 @@ import { CreateMatchButton } from './_components/CreateMatchButton';
 import { MatchesBrowser } from './_components/MatchesBrowser';
 import type { MatchListItem } from './_components/MatchList';
 import { parseStatusFilter, type StatusFilter } from './_components/status';
+import { GAME_FILTER_COOKIE, parseGameParam } from '@/lib/games';
+import { GameFilterChips } from '@/components/teams/GameFilterChips';
 
 // Live scores and new lobbies change by the minute; always render per request.
 export const dynamic = 'force-dynamic';
 
 const MATCHES_PER_PAGE = 20;
 
-type SearchParams = Promise<{ status?: string | string[]; tournament?: string | string[]; page?: string | string[] }>;
+type SearchParams = Promise<{ status?: string | string[]; tournament?: string | string[]; page?: string | string[]; game?: string | string[] }>;
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
@@ -23,12 +26,13 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
  * Same listing GET /api/matches/public serves, read directly instead of fetched client-side after
  * hydration. Served from the data cache (keyed by the filter args) on the live window.
  */
-const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: number | undefined, page: number) => {
+const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: number | undefined, page: number, game: Game | null) => {
 	const statusWhere: Prisma.MatchesWhereInput['status'] =
 		status === 'ALL' ? undefined : status === 'LIVE' ? { in: [MatchStatus.LIVE, MatchStatus.PAUSED] } : MatchStatus[status];
 	const where: Prisma.MatchesWhereInput = {
 		...(statusWhere ? { status: statusWhere } : {}),
 		...(tournamentId ? { tournamentId } : {}),
+		...(game ? { tournament: { game } } : {}),
 	};
 	const side = { select: { id: true, name: true, logo: true } } as const;
 
@@ -46,7 +50,7 @@ const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: numbe
 				winnerSide: true,
 				teamAName: true,
 				teamBName: true,
-				tournament: { select: { id: true, name: true } },
+				tournament: { select: { id: true, name: true, game: true } },
 				teamA: side,
 				teamB: side,
 				winner: side,
@@ -62,20 +66,21 @@ const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: numbe
 	return { matches, totalPages: Math.max(1, Math.ceil(total / MATCHES_PER_PAGE)) };
 }, ['matches-public-list'], { tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live });
 
-// Same set the old client fetch used (GET /api/tournaments?limit=100), names only.
+// Same set the old client fetch used (GET /api/tournaments?limit=100), names only. `game` narrows
+// the dropdown to the active game filter — a cachedQuery argument, not a new tag (see listMatches).
 const getTournamentOptions = cachedQuery(
-	async () => db.cs2Tournament.findMany({ where: { isSystem: false }, orderBy: { prizePool: 'desc' }, take: 100, select: { id: true, name: true } }),
+	async (game: Game | null) => db.cs2Tournament.findMany({ where: { isSystem: false, ...(game ? { game } : {}) }, orderBy: { prizePool: 'desc' }, take: 100, select: { id: true, name: true } }),
 	['matches-tournament-options'],
 	{ tags: ['tournaments'], revalidate: REVALIDATE.standard },
 );
 
-async function MatchesSection({ status, tournamentId, page }: { status: StatusFilter; tournamentId: string; page: number }) {
+async function MatchesSection({ status, tournamentId, page, game }: { status: StatusFilter; tournamentId: string; page: number; game: Game | null }) {
 	const [tournaments, { matches, totalPages }] = await Promise.all([
-		getTournamentOptions(),
-		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page),
+		getTournamentOptions(game),
+		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page, game),
 	]);
 
-	return <MatchesBrowser status={status} tournamentId={tournamentId} page={page} totalPages={totalPages} tournaments={tournaments} matches={matches} />;
+	return <MatchesBrowser status={status} tournamentId={tournamentId} page={page} totalPages={totalPages} tournaments={tournaments} matches={matches} game={game} />;
 }
 
 function MatchesSkeleton() {
@@ -102,11 +107,14 @@ function MatchesSkeleton() {
 }
 
 export default async function MatchesPage({ searchParams }: { searchParams: SearchParams }) {
-	const query = await searchParams;
+	const [query, cookieStore] = await Promise.all([searchParams, cookies()]);
 	const status = parseStatusFilter(first(query.status));
 	const rawTournament = first(query.tournament);
 	const tournamentId = rawTournament && /^\d{1,9}$/.test(rawTournament) ? rawTournament : '';
 	const page = Math.max(1, Number.parseInt(first(query.page) ?? '1', 10) || 1);
+	// ?game= wins (links, shares); without it, the filter the viewer last picked (cookie) — same rule as /teams and /tournaments.
+	const rawGame = first(query.game) ?? cookieStore.get(GAME_FILTER_COOKIE)?.value;
+	const game = parseGameParam(rawGame);
 
 	const session = await getAuthSession();
 	const canCreateMatch = session ? await userHasPermission(session.user.id, 'matches:manage') : false;
@@ -117,9 +125,12 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
 				<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
 				{canCreateMatch && <CreateMatchButton />}
 			</div>
+			<div className='mb-6'>
+				<GameFilterChips basePath='/matches' active={game} label='Filter matches by game' />
+			</div>
 
-			<Suspense fallback={<MatchesSkeleton />}>
-				<MatchesSection status={status} tournamentId={tournamentId} page={page} />
+			<Suspense fallback={<MatchesSkeleton />} key={game ?? 'all'}>
+				<MatchesSection status={status} tournamentId={tournamentId} page={page} game={game} />
 			</Suspense>
 		</div>
 	);

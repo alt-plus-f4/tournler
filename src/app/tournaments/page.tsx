@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { cookies } from 'next/headers';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TournamentsSkeleton } from '@/components/public/TournamentsBrowser';
@@ -9,6 +10,8 @@ import { userHasPermission } from '@/lib/helpers/permissions';
 import { TournamentsBrowser } from './_components/TournamentsBrowser';
 import { TournamentList, TOURNAMENT_VIEWS } from './_components/TournamentList';
 import { getActiveTournaments } from './queries';
+import { GameFilterChips } from '@/components/teams/GameFilterChips';
+import { GAME_FILTER_COOKIE, GAME_META, parseGameParam } from '@/lib/games';
 
 export const metadata: Metadata = { title: 'Tournaments' };
 
@@ -16,20 +19,23 @@ export const metadata: Metadata = { title: 'Tournaments' };
 export const dynamic = 'force-dynamic';
 
 /** Same query GET /api/tournaments?status=active runs (first page of 10, prize pool first), read directly. */
-async function ActiveTournaments() {
-	const tournaments = await getActiveTournaments();
+async function ActiveTournaments({ game }: { game: 'CS2' | 'LOL' | null }) {
+	const tournaments = await getActiveTournaments(game);
 
 	return (
 		<TournamentList
 			tournaments={tournaments.map((t) => ({ ...t, startDate: t.startDate.toISOString(), teams: t.teams as [] }))}
-			empty={TOURNAMENT_VIEWS[0].empty}
+			empty={game ? `No upcoming or live ${GAME_META[game].label} tournaments right now.` : TOURNAMENT_VIEWS[0].empty}
 		/>
 	);
 }
 
-export default async function Page() {
-	const session = await getAuthSession();
+export default async function Page({ searchParams }: { searchParams: Promise<{ game?: string }> }) {
+	const [session, params, cookieStore] = await Promise.all([getAuthSession(), searchParams, cookies()]);
 	const canCreate = session?.user ? await userHasPermission(session.user.id, 'tournaments:manage') : false;
+	// ?game= wins (links, shares); without it, the filter the viewer last picked (cookie) — same rule as /teams.
+	const rawGame = params.game ?? cookieStore.get(GAME_FILTER_COOKIE)?.value;
+	const game = parseGameParam(rawGame);
 
 	return (
 		<div className='container mx-auto max-w-[1400px] px-4 py-8 lg:px-8'>
@@ -44,10 +50,14 @@ export default async function Page() {
 					</Button>
 				)}
 			</div>
+			<div className='mb-6'>
+				<GameFilterChips basePath='/tournaments' active={game} label='Filter tournaments by game' />
+			</div>
 			<TournamentsBrowser
+				game={game}
 				active={
-					<Suspense fallback={<TournamentsSkeleton />}>
-						<ActiveTournaments />
+					<Suspense fallback={<TournamentsSkeleton />} key={game ?? 'all'}>
+						<ActiveTournaments game={game} />
 					</Suspense>
 				}
 			/>

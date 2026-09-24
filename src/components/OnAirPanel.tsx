@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { GameTag } from '@/components/games/GameMark';
 
 const teamSelect = { select: { name: true, logo: true } } as const;
 
@@ -18,7 +19,7 @@ export const getLiveMatches = cachedQuery(
 			orderBy: [{ status: 'asc' }, { startedAt: 'desc' }],
 			take: 4,
 			include: {
-				tournament: { select: { name: true } },
+				tournament: { select: { name: true, game: true } },
 				teamA: teamSelect,
 				teamB: teamSelect,
 				maps: { where: { status: 'LIVE' }, take: 1, select: { mapName: true, scoreTeamA: true, scoreTeamB: true } },
@@ -90,7 +91,10 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 							<span className='h-2 w-2 rounded-full bg-signal-live motion-safe:animate-pulse' /> LIVE
 						</span>
 					)}
-					<span className='truncate text-muted-foreground'>{featured.tournament.name}</span>
+					<span className='inline-flex min-w-0 items-center gap-2 truncate text-muted-foreground'>
+						<GameTag game={featured.tournament.game} showLabel={false} />
+						{featured.tournament.name}
+					</span>
 				</div>
 				<Scoreline a={String(featured.scoreTeamA ?? 0)} b={String(featured.scoreTeamB ?? 0)} sideA={sideA} sideB={sideB} />
 				{liveMap && (
@@ -108,6 +112,7 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 								<Link href={`/matches/${match.id}`} className='flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.03] sm:px-8'>
 									<span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', match.status === 'PAUSED' ? 'bg-signal-hold' : 'bg-signal-live motion-safe:animate-pulse')} aria-hidden />
 									<span className='sr-only'>{match.status === 'PAUSED' ? 'Paused' : 'Live'}:</span>
+									<GameTag game={match.tournament.game} showLabel={false} className='shrink-0' />
 									<span className='min-w-0 flex-1 truncate text-white'>
 										{a.name} <span className='text-muted-foreground'>vs</span> {b.name}
 									</span>

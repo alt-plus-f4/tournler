@@ -13,10 +13,10 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
 import { RoomHeader } from './_components/header';
-import { MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
+import { LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
 import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
 import { SignalDot } from './_components/room-ui';
-import { getSideLabels, getStatsBySide, getWinningSide, type DraftState, type Match, type Side, type VetoState } from './_components/types';
+import { getSideLabels, getStatsBySide, getWinningSide, isLolMatch, type DraftState, type Match, type Side, type VetoState } from './_components/types';
 import { DraftPanel, getVetoTurn, VetoPanel } from './_components/veto-draft';
 
 const fetcher = async (url: string) => {
@@ -81,10 +81,14 @@ export default function MatchPage() {
 	}, [mutate]);
 	const admin = useMatchAdmin(matchId, refresh);
 
-	const showDraft = !!match && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
+	// Phase 1: LoL has no hosted server, so no map veto or captain draft either (see game-rules.ts —
+	// the same guard the API enforces on the veto/draft routes; a LoL match should never reach SCHEDULED
+	// with an incomplete draft/veto in the first place, but this keeps the room honest either way).
+	const isLol = !!match && isLolMatch(match);
+	const showDraft = !!match && !isLol && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
 	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
 	// Veto can't start until the draft has put people on sides — otherwise maps get banned before anyone's rostered.
-	const showVeto = !!match && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
+	const showVeto = !!match && !isLol && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
 	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
 
 	// Only ask for the account when there is one: signed-out visitors got a 401 (console error) here.
@@ -290,7 +294,7 @@ export default function MatchPage() {
 									}}
 								/>
 							)}
-							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : isLol ? <LolMatchPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
 							<MatchInfoPanel match={match} />
 						</div>
 						<div className='order-3'>{column('TEAM_B')}</div>
