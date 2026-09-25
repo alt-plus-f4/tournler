@@ -17,8 +17,8 @@ export async function GET() {
 		}
 
 		const [usersInTeam, usersNotInTeam] = await Promise.all([
-			db.user.count({ where: { cs2TeamId: { not: null } } }),
-			db.user.count({ where: { cs2TeamId: null } }),
+			db.user.count({ where: { teams: { some: {} } } }),
+			db.user.count({ where: { teams: { none: {} } } }),
 		]);
 
 		return NextResponse.json({ usersInTeam, usersNotInTeam });

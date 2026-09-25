@@ -1,24 +1,11 @@
 'use client';
-/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { isOptimizable } from '@/lib/image-hosts';
 
-/** The one Vercel Blob host listed in next.config `images.remotePatterns`. */
-const OPTIMIZED_HOST = '6q0iedxcfemxlbr8.public.blob.vercel-storage.com';
-
-export function isOptimizable(src: string) {
-	try {
-		const url = new URL(src);
-		// SVG never goes through the optimizer (Next refuses it without dangerouslyAllowSVG).
-		if (url.pathname.toLowerCase().endsWith('.svg')) return false;
-		return url.protocol === 'https:' && url.hostname === OPTIMIZED_HOST;
-	} catch {
-		// Relative paths (served from /public) are always optimizable.
-		return src.startsWith('/') && !src.toLowerCase().endsWith('.svg');
-	}
-}
+export { isOptimizable };
 
 const SIZES = {
 	xs: { px: 20, box: 'h-5 w-5', pad: 'p-0.5', text: 'text-[9px]' },
@@ -71,11 +58,8 @@ export function TeamLogo({ src, name, size = 'md', decorative = false, className
 	const imgClass = 'h-full w-full object-contain';
 	return (
 		<span className={cn('relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-neutral-100', s.box, s.pad, className)}>
-			{isOptimizable(src) ? (
-				<Image src={src} alt={alt} width={s.px * 2} height={s.px * 2} className={imgClass} onError={() => setFailedSrc(src)} draggable={false} />
-			) : (
-				<img src={src} alt={alt} width={s.px} height={s.px} loading='lazy' decoding='async' className={imgClass} onError={() => setFailedSrc(src)} draggable={false} />
-			)}
+			{/* SVG logos and hosts outside remotePatterns skip the optimizer (unoptimized) but keep lazy loading. */}
+			<Image src={src} alt={alt} width={s.px} height={s.px} unoptimized={!isOptimizable(src)} className={imgClass} onError={() => setFailedSrc(src)} draggable={false} />
 		</span>
 	);
 }

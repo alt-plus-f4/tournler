@@ -12,7 +12,7 @@ export async function GET() {
 
 		const user = await db.user.findUnique({
 			where: { id: session.user.id },
-			select: { name: true, image: true, discord: { select: { id: true } }, steam: { select: { id: true } } },
+			select: { name: true, image: true, games: true, discord: { select: { id: true } }, steam: { select: { id: true } }, riot: { select: { id: true } } },
 		});
 
 		if (!user) {
@@ -23,6 +23,9 @@ export async function GET() {
 		const hasImage = !!user.image;
 		const hasLinkedDiscord = !!user.discord;
 		const hasLinkedSteam = !!user.steam;
+		// Whether the Riot ID step has been attempted (linked or still pending verification), not
+		// whether it's verified — mirrors hasLinkedSteam, which doesn't require FACEIT data either.
+		const hasLinkedRiot = !!user.riot;
 
 		return NextResponse.json(
 			{
@@ -30,6 +33,8 @@ export async function GET() {
 				hasImage,
 				hasLinkedDiscord,
 				hasLinkedSteam,
+				hasLinkedRiot,
+				games: user.games,
 			},
 			{ status: 200 }
 		);

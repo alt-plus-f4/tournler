@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
-import { TournamentForm } from '@/components/TournamentForm';
 import { SimulateTournamentButton } from '@/components/SimulateTournamentButton';
 import { DeleteSimulatedTournamentsButton } from '@/components/DeleteSimulatedTournamentsButton';
 import { TournamentTable } from '@/components/TournamentTable';
@@ -13,7 +12,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import EditTournamentDialog from '@/components/EditTournamentDialog';
+import dynamic from 'next/dynamic';
+import { useLatched } from '@/lib/hooks/use-latched';
+
+// The create wizard and the edit dialog (forms, uploads, zod) are only fetched on first open.
+const TournamentForm = dynamic(() => import('@/components/TournamentForm').then((m) => m.TournamentForm), { loading: () => <Button disabled>Create tournament</Button> });
+const EditTournamentDialog = dynamic(() => import('@/components/EditTournamentDialog'));
 import { Tournament } from '@/types/types';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +42,9 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 	const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 	const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+	const editMounted = useLatched(isEditDialogOpen);
+	// ?create=1 mounts (and opens) the wizard right away; otherwise the first click does.
+	const [createMounted, setCreateMounted] = useState(openCreate);
 	const [searchInput, setSearchInput] = useState('');
 	const [search, setSearch] = useState('');
 	const [status, setStatus] = useState<StatusFilter>('');
@@ -145,7 +152,7 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 						</DropdownMenuContent>
 					</DropdownMenu>
 					<span aria-hidden className='h-6 w-px bg-border' />
-					<TournamentForm onSubmit={handleSubmit} defaultOpen={openCreate} onOpenChange={handleCreateOpenChange} />
+					{createMounted ? <TournamentForm onSubmit={handleSubmit} defaultOpen onOpenChange={handleCreateOpenChange} /> : <Button onClick={() => setCreateMounted(true)}>Create tournament</Button>}
 				</div>
 			</div>
 
@@ -196,7 +203,7 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 				}}
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={setPage} />
-			<EditTournamentDialog tournament={editingTournament} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />
+			{editMounted && <EditTournamentDialog tournament={editingTournament} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
 		</div>
 	);
 }

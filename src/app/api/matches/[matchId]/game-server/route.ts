@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { ensureGameServer } from '@/lib/tournaments/game-server';
 import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
+import { HostedServerUnsupportedError, hostsGameServers } from '@/lib/tournaments/game-rules';
 import { NextResponse } from 'next/server';
 
 /**
@@ -41,6 +42,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		// Tournament organizer or privileged staff can create game servers
 		if (match.tournament.organizerId !== session.user.id && !canManageServers) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+
+		if (!hostsGameServers(match.tournament.game)) {
+			return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'provision').message }, { status: 409 });
 		}
 
 		const { gameServer, created } = await ensureGameServer(db, match.id);

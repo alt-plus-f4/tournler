@@ -8,7 +8,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from './ui/tooltip';
-import { LuUserX } from 'react-icons/lu';
+import { UserX } from 'lucide-react';
 import { removeMember } from '@/lib/helpers/remove-member';
 import { useRouter } from 'next/navigation'
 interface RemoveMemberButtonProps {
@@ -53,7 +53,7 @@ export function RemoveMemberButton({
 									aria-label={`Remove ${memberName || 'member'} from the team`}
 									onClick={() => lremoveMember()}
 								>
-									<LuUserX aria-hidden />
+									<UserX aria-hidden />
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent>

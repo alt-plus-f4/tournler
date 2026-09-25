@@ -2,6 +2,7 @@ import { safeEqual } from '@/lib/helpers/safe-equal';
 import { MatchResultConflictError } from '@/lib/tournaments/bracket-advancement';
 import { applyGameStateUpdate, isValidGameStateUpdate } from '@/lib/tournaments/game-state';
 import { Prisma } from '@prisma/client';
+import { HostedServerUnsupportedError } from '@/lib/tournaments/game-rules';
 import { NextResponse } from 'next/server';
 
 /**
@@ -36,6 +37,9 @@ export async function POST(request: Request) {
 		});
 	} catch (error) {
 		if (error instanceof MatchResultConflictError) {
+			return NextResponse.json({ error: error.message }, { status: 409 });
+		}
+		if (error instanceof HostedServerUnsupportedError) {
 			return NextResponse.json({ error: error.message }, { status: 409 });
 		}
 		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {

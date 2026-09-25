@@ -22,13 +22,19 @@ const PUBLIC_USER_SELECT = {
 			discordId: true,
 		},
 	},
-	cs2Team: {
+	// One team per game (see src/lib/teams/membership.ts) — replaces the old single cs2Team relation.
+	teams: {
 		select: {
 			id: true,
 			name: true,
 			logo: true,
+			game: true,
 		},
 	},
+	// Privacy flags, read to gate steam/discord below; only echoed back to the owner.
+	showDiscord: true,
+	showSteam: true,
+	showRiot: true,
 	badges: {
 		orderBy: { awardedAt: 'desc' },
 		select: {
@@ -63,9 +69,25 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			return NextResponse.json({ error: 'User not found' }, { status: 404 });
 		}
 
-		const [stats, recentMatches, faceit] = await Promise.all([computePlayerCareerStats(user.id), getPlayerRecentMatches(user.id, 20), user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null)]);
+		// The FACEIT level is public FACEIT data, so it's looked up even when the player hides Steam.
+		const [stats, recentMatches, faceit, session] = await Promise.all([
+			computePlayerCareerStats(user.id),
+			getPlayerRecentMatches(user.id, 20),
+			user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
+			getAuthSession(),
+		]);
 
-		return NextResponse.json({ user, stats, recentMatches, faceit });
+		// Hidden linked accounts are omitted for everyone but the owner.
+		const isOwner = session?.user?.id === user.id;
+		const { showDiscord, showSteam, showRiot, steam, discord, ...rest } = user;
+		const publicUser = {
+			...rest,
+			steam: isOwner || showSteam ? steam : null,
+			discord: isOwner || showDiscord ? discord : null,
+			...(isOwner ? { showDiscord, showSteam, showRiot } : {}),
+		};
+
+		return NextResponse.json({ user: publicUser, stats, recentMatches, faceit });
 	} catch (error) {
 		console.error('Error fetching user:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -100,11 +122,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 		const body = await request.json();
 
-		const allowedFields = ['name', 'bio', 'image', 'role'] as const;
+		// Every field EditUserDialog can actually send — it used to outpace this list, so an edit
+		// limited to (say) the email or onboarding toggle silently produced an empty `data` and a
+		// confusing "No valid fields to update provided".
+		const allowedFields = ['name', 'bio', 'email', 'image', 'role', 'isOnboardingCompleted'] as const;
 		const data: Record<string, unknown> = {};
 		for (const key of allowedFields) {
 			if (body[key] !== undefined) data[key] = body[key];
 		}
+		// The dialog sends emailVerified as a datetime-local string (or '' to clear it), not a Date.
+		if (body.emailVerified !== undefined) data.emailVerified = body.emailVerified ? new Date(body.emailVerified) : null;
 
 		if (Object.keys(data).length === 0) {
 			return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });

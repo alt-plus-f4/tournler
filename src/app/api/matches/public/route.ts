@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { MatchStatus, Prisma } from '@prisma/client';
+import { parseGameParam } from '@/lib/games';
 
 /**
  * GET /api/matches/public — public, paginated match listing for the /matches page.
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
 		const limit = parseInt(searchParams.get('limit') || '20', 10);
 		const statusParam = searchParams.get('status')?.trim().toUpperCase();
 		const tournamentIdParam = searchParams.get('tournamentId');
+		const game = parseGameParam(searchParams.get('game'));
 
 		if (isNaN(page) || isNaN(limit)) {
 			return NextResponse.json({ error: 'Invalid pagination parameters' }, { status: 400 });
@@ -41,6 +43,7 @@ export async function GET(req: NextRequest) {
 		const where: Prisma.MatchesWhereInput = {
 			...(status ? { status: Array.isArray(status) ? { in: status } : status } : {}),
 			...(tournamentId ? { tournamentId } : {}),
+			...(game ? { tournament: { game } } : {}),
 		};
 
 		const orderBy: Prisma.MatchesOrderByWithRelationInput = status === MatchStatus.SCHEDULED ? { matchDate: 'asc' } : { matchDate: 'desc' };

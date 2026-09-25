@@ -173,6 +173,10 @@ The signal colors are Tailwind tokens backed by CSS variables in `globals.css`: 
 ### Named Rules
 **The On-Air Rule.** Color is a signal, never decoration. Red means live or danger, green means ready or your turn, amber means paused. If an element isn't reporting state, it's monochrome.
 
+**The Hub Accent exception.** The CS2 and LoL hubs (Tournaments/Matches/Teams) each carry one deliberate, very faint hue — warm yellow `#fde68a` for CS2, blue `#93c5fd` for LoL (`GAME_ACCENT` in `src/lib/games`) — as a soft fixed radial wash on the page itself (`HubPageGlow`), not on the nav: the CS2/LoL nav entries, the hub subnav bar, and every label/icon/border stay plain white/monochrome. It never reports state and never appears outside the three hub pages: profile, home, news, forum and every signal color stay exactly as the On-Air Rule says.
+
+**Game marks are real icons, everywhere.** `GameGlyph`/`GameTag` (`src/components/games/GameMark.tsx`) draw each game's own icon (`GAME_ICON_SRC` in `src/lib/games`: the CS2 soldier icon, Ahri for LoL — both in `/public`) rather than a hand-drawn Tournler mark, wherever a game is labeled — nav, profile, teams, tournament and match lists, onboarding. They're white-on-transparent and fixed-color (they don't tint via `currentColor` the way an SVG glyph would), so a "selected" or "active" state for a game control must read from its border/background/text, never by inverting the icon onto a light fill — it would just disappear.
+
 **The Pulse Means Now Rule.** A pulsing dot is only allowed when the game server has actually reported that state (live, ready, on the clock). Never pulse something decorative, scheduled or finished.
 
 ## Typography

@@ -7,6 +7,7 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { listForumThreads } from '@/components/forum/forum-queries';
 import { CATEGORY_LABELS, formatAbsolute, formatRelative } from '@/components/forum/forum-shared';
 import { authorName } from '@/components/forum/ForumAuthor';
+import { formatScore } from '@/components/forum/forum-votes';
 import { ThreadModControls } from '@/components/forum/ThreadModControls';
 import { ConfirmActionButton } from '@/components/forum/ConfirmActionButton';
 import { buttonVariants } from '@/components/ui/button';
@@ -42,11 +43,12 @@ export default async function AdminForumPage({ searchParams }: { searchParams: P
 				<div className='rounded-md border border-border py-12 text-center text-muted-foreground'>No threads yet.</div>
 			) : (
 				<div className='overflow-x-auto rounded-md border border-border'>
-					<table className='w-full min-w-[760px] text-sm'>
+					<table className='w-full min-w-[820px] text-sm'>
 						<thead>
 							<tr className='border-b border-border text-left text-xs font-bold uppercase tracking-widest text-muted-foreground'>
 								<th scope='col' className='px-3 py-2 font-bold'>Thread</th>
 								<th scope='col' className='px-3 py-2 font-bold'>Author</th>
+								<th scope='col' className='px-3 py-2 text-right font-bold'>Score</th>
 								<th scope='col' className='px-3 py-2 text-right font-bold'>Replies</th>
 								<th scope='col' className='px-3 py-2 text-right font-bold'>Last activity</th>
 								<th scope='col' className='px-3 py-2 text-right font-bold'>
@@ -72,6 +74,7 @@ export default async function AdminForumPage({ searchParams }: { searchParams: P
 											{authorName(thread.author)}
 										</Link>
 									</td>
+									<td className='px-3 py-2 text-right font-mono tabular-nums'>{formatScore(thread.score)}</td>
 									<td className='px-3 py-2 text-right font-mono tabular-nums'>{thread._count.replies}</td>
 									<td className='px-3 py-2 text-right'>
 										<time dateTime={thread.lastActivityAt.toISOString()} title={formatAbsolute(thread.lastActivityAt)} className='font-mono text-xs tabular-nums text-muted-foreground'>

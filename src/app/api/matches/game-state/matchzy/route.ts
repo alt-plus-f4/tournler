@@ -4,6 +4,7 @@ import { safeEqual } from '@/lib/helpers/safe-equal';
 import { MatchResultConflictError, goLiveFromServer } from '@/lib/tournaments/bracket-advancement';
 import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
 import { updateLiveScore } from '@/lib/tournaments/live-score';
+import { hostsGameServers } from '@/lib/tournaments/game-rules';
 
 /**
  * POST /api/matches/game-state/matchzy
@@ -64,12 +65,18 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'Missing or invalid matchid' }, { status: 400 });
 		}
 
+		const match = await db.matches.findUnique({ where: { id: matchId }, include: { tournament: { select: { game: true } } } });
+		// A server can only be reporting on a match it hosts; a LoL match id here is a stale/misrouted
+		// event and must never flip a LoL match live or record its result.
+		if (match && !hostsGameServers(match.tournament.game)) {
+			return NextResponse.json({ error: 'This match has no hosted server' }, { status: 409 });
+		}
+
 		if (event === 'series_start') {
 			await goLiveFromServer(matchId);
 			return NextResponse.json({ success: true });
 		}
 
-		const match = await db.matches.findUnique({ where: { id: matchId } });
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
 		const data = body as Record<string, any>;

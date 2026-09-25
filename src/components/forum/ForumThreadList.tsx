@@ -3,8 +3,9 @@ import { Lock, Pin } from 'lucide-react';
 import { CATEGORY_LABELS, formatAbsolute, formatRelative } from './forum-shared';
 import type { ForumThreadListItem } from './forum-queries';
 import { authorName } from './ForumAuthor';
+import { formatScore } from './forum-votes';
 
-const COLS = 'sm:grid sm:grid-cols-[minmax(0,1fr)_8rem_4.5rem_6.5rem] sm:items-center sm:gap-4';
+const COLS = 'sm:grid sm:grid-cols-[3.5rem_minmax(0,1fr)_8rem_4.5rem_6.5rem] sm:items-center sm:gap-4';
 
 /** Dense HLTV-style thread table. Rendered as a list with column headers for screen readers and sighted users alike. */
 export function ForumThreadList({ threads, showCategory }: { threads: ForumThreadListItem[]; showCategory: boolean }) {
@@ -12,6 +13,7 @@ export function ForumThreadList({ threads, showCategory }: { threads: ForumThrea
 	return (
 		<div className='overflow-hidden rounded-md border border-border'>
 			<div className={`hidden border-b border-border bg-muted/40 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground ${COLS}`} aria-hidden>
+				<span className='text-right'>Score</span>
 				<span>Thread</span>
 				<span>Author</span>
 				<span className='text-right'>Replies</span>
@@ -22,6 +24,10 @@ export function ForumThreadList({ threads, showCategory }: { threads: ForumThrea
 					const replies = thread._count.replies;
 					return (
 						<li key={thread.id} className={`group relative px-3 py-2.5 transition-colors hover:bg-muted/40 ${COLS}`}>
+							<span className='hidden text-right font-mono text-sm tabular-nums text-foreground sm:block'>
+								<span className='sr-only'>Score </span>
+								{formatScore(thread.score)}
+							</span>
 							<div className='flex min-w-0 items-center gap-2'>
 								{thread.isPinned && (
 									<Pin aria-hidden className='h-3.5 w-3.5 shrink-0 text-foreground' />
@@ -46,6 +52,10 @@ export function ForumThreadList({ threads, showCategory }: { threads: ForumThrea
 							</time>
 							{/* Mobile meta line */}
 							<p className='mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted-foreground sm:hidden'>
+								<span>
+									<span className='font-mono tabular-nums text-foreground'>{formatScore(thread.score)}</span> {Math.abs(thread.score) === 1 ? 'point' : 'points'}
+								</span>
+								<span aria-hidden>·</span>
 								<span className='truncate'>{authorName(thread.author)}</span>
 								<span aria-hidden>·</span>
 								<span>

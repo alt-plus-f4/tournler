@@ -180,7 +180,6 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 							type='button'
 							disabled={!clickable || pendingMap !== null}
 							onClick={() => act(map.id)}
-							aria-label={`${map.name}: ${acted ? label : clickable ? `${veto.nextActionType === 'PICK' ? 'pick' : 'ban'} this map` : 'available'}`}
 							className={cn(
 								'group relative aspect-[16/9] overflow-hidden rounded-md border text-left transition-[border-color,filter] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 								tone,

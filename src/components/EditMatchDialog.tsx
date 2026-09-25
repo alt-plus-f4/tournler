@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Match } from '@/types/types';
+import { GameTag } from '@/components/games/GameMark';
 
 interface EditMatchDialogProps {
 	match: Match | null;
@@ -42,6 +43,8 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 	if (!match) return null;
 
 	const canEditResult = match.teamA !== null && match.teamB !== null;
+	// LoL has no hosted server reporting scores: what staff enter here IS the result, not an override.
+	const isLol = match.tournament?.game === 'LOL';
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -78,7 +81,10 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 			<DialogContent className='sm:max-w-[460px]'>
 				<DialogHeader>
 					<DialogTitle>Edit match</DialogTitle>
-					<DialogDescription>{match.tournament?.name}</DialogDescription>
+					<DialogDescription className='flex items-center gap-2'>
+						<GameTag game={match.tournament?.game ?? 'CS2'} />
+						{match.tournament?.name}
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className='flex items-center justify-center gap-4 rounded-md border border-border py-4'>
@@ -95,8 +101,12 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 
 					{canEditResult ? (
 						<div className='space-y-3'>
-							<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Result override</p>
-							<p className='text-sm text-muted-foreground'>Scores normally come from the game server. Anything entered here overrides what the server reported.</p>
+							<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>{isLol ? 'Record result' : 'Result override'}</p>
+							<p className='text-sm text-muted-foreground'>
+								{isLol
+									? 'League matches are played in the League client, so nothing reports the score. Enter the games won and pick the winner to record the result and advance the bracket.'
+									: 'Scores normally come from the game server. Anything entered here overrides what the server reported.'}
+							</p>
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-2'>
 									<Label htmlFor='edit-score-a'>{match.teamA?.name} score</Label>

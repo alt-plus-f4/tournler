@@ -1,147 +1,50 @@
 'use client';
 
-import { z } from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
-} from '@/components/ui/drawer';
-import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/lib/hooks/use-toast';
-import { SiCounterstrike } from 'react-icons/si';
+import { useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Plus } from 'lucide-react';
+import type { Game } from '@prisma/client';
+import { GameGlyph } from '@/components/games/GameMark';
+import { GAME_META } from '@/lib/games';
 
-const formSchema = z.object({
-	teamName: z
-		.string()
-		.min(3, 'Team name must be at least 3 characters long')
-		.max(50, 'Team name cannot exceed 50 characters'),
-});
+const loadPanel = () => import('./TeamDrawerPanel');
+// The drawer + form (vaul, react-hook-form, zod) are fetched on first hover/focus/tap of the tile,
+// not shipped with the teams page.
+const TeamCreationDrawerPanel = dynamic(loadPanel, { ssr: false });
 
-export function TeamCreationDrawer() {
-	const {
-		register,
-		handleSubmit,
-		formState: { errors, isSubmitting },
-	} = useForm({
-		resolver: zodResolver(formSchema),
-	});
-	const router = useRouter();
-	const { toast } = useToast();
-
-	const onSubmit = async (data: any) => {
-		try {
-			const response = await fetch('/api/teams', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify(data),
-			});
-
-			if (response.ok) {
-				toast({
-					title: 'Created Team',
-					description: "You've successfully created a new team.",
-				});
-				router.refresh();
-			} else if (response.status === 409) {
-				toast({
-					variant: 'destructive',
-					title: 'Error',
-					description: 'Failed to create team (Team name taken).',
-				});
-			} else {
-				toast({
-					variant: 'destructive',
-					title: 'Error',
-					description: 'Failed to create team.',
-				});
-			}
-		} catch (error) {
-			console.error(error);
-			toast({
-				variant: 'destructive',
-				title: 'Error',
-				description: 'Failed to create team.',
-			});
-		}
-	};
+/** `games`: the games the viewer has no team for yet (one team per game); the form offers only those. */
+export function TeamCreationDrawer({ games, defaultGame }: { games: Game[]; defaultGame?: Game }) {
+	const [open, setOpen] = useState(false);
+	// Stays true after the first open so the drawer stays mounted and can animate closed.
+	const [mounted, setMounted] = useState(false);
+	const triggerRef = useRef<HTMLButtonElement>(null);
 
 	return (
-		<Drawer>
-			<DrawerTrigger asChild>
-				<button
-					type='button'
-					className='flex min-h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-dashed border-neutral-600 bg-transparent px-4 text-center transition-colors hover:border-neutral-400 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
-				>
-					<SiCounterstrike aria-hidden className='h-10 w-10 text-neutral-300' />
-					<span className='text-lg font-black uppercase tracking-wide text-white'>Create a team</span>
-					<span className='text-sm text-muted-foreground'>You become captain and can invite up to 4 players.</span>
-				</button>
-			</DrawerTrigger>
-			<DrawerContent>
-				<div className='mx-auto w-full max-w-sm'>
-					<DrawerHeader>
-						<DrawerTitle className='text-center'>
-							Create a New Team
-						</DrawerTitle>
-						<DrawerDescription className='text-center'>
-							Fill in the details below to create a new team.
-						</DrawerDescription>
-					</DrawerHeader>
-					<form
-						onSubmit={handleSubmit(onSubmit)}
-						className='p-4 pb-0 space-y-4 mb-10'
-					>
-						<div>
-							<label
-								htmlFor='team-name'
-								className='block text-sm font-medium'
-							>
-								Team Name
-							</label>
-							<Input
-								id='team-name'
-								placeholder='Enter team name'
-								{...register('teamName')}
-								disabled={isSubmitting}
-							/>
-							{errors.teamName && (
-								<p role='alert' className='mt-1 text-sm text-signal-live'>
-									{String(errors.teamName.message)}
-								</p>
-							)}
-						</div>
-						<div className='space-x-2'>
-							<Button
-								className='w-[40%]'
-								type='submit'
-								disabled={isSubmitting}
-							>
-								{isSubmitting ? 'Creating...' : 'Create Team'}
-							</Button>
-							<DrawerClose asChild>
-								<Button
-									className='w-[56%] h-[42px]'
-									type='button'
-									variant='outline'
-								>
-									Cancel
-								</Button>
-							</DrawerClose>
-						</div>
-					</form>
-				</div>
-			</DrawerContent>
-		</Drawer>
+		<>
+			<button
+				ref={triggerRef}
+				type='button'
+				aria-haspopup='dialog'
+				aria-expanded={open}
+				onPointerEnter={loadPanel}
+				onFocus={loadPanel}
+				onClick={() => {
+					setMounted(true);
+					setOpen(true);
+				}}
+				className='flex min-h-[200px] w-full flex-col items-center justify-center gap-3 rounded-md border border-dashed border-neutral-600 bg-transparent px-4 text-center transition-colors hover:border-neutral-400 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+			>
+				<Plus aria-hidden className='h-10 w-10 text-neutral-300' />
+				<span className='text-lg font-black uppercase tracking-wide text-white'>{games.length === 1 ? `Create a ${GAME_META[games[0]].short} team` : 'Create a team'}</span>
+				<span className='flex items-center gap-2 text-neutral-400' aria-hidden>
+					{games.map((g) => (
+						<GameGlyph key={g} game={g} />
+					))}
+				</span>
+				<span className='text-sm text-muted-foreground'>You become captain and can invite up to 4 players.</span>
+			</button>
+			{mounted && <TeamCreationDrawerPanel open={open} onOpenChange={setOpen} triggerRef={triggerRef} games={games} defaultGame={defaultGame && games.includes(defaultGame) ? defaultGame : games[0]} />}
+		</>
 	);
 }
 

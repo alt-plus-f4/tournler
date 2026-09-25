@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AlertTriangle, Flag, Loader2, Pause, Play, RefreshCw, RotateCcw, ShieldCheck, Terminal, Trash2, Zap } from 'lucide-react';
+import { AlertTriangle, ClipboardCheck, Flag, Loader2, Pause, Play, RefreshCw, RotateCcw, ShieldCheck, Terminal, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { RoomPanel, SectionLabel } from './room-ui';
-import { getSideLabels, type GameServer, type Match } from './types';
+import { getSideLabels, isLolMatch, type GameServer, type Match } from './types';
 
 export type AdminAction = 'start' | 'pause' | 'resume' | 'force-start' | 'restart' | 'update score' | 'end';
 
@@ -147,13 +147,14 @@ function ControlRow({ title, hint, children }: { title: string; hint: string; ch
 export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }: { match: Match; admin: MatchAdmin; vetoComplete: boolean; isDeleting: boolean; onDelete: () => void }) {
 	const { pendingAction, run } = admin;
 	const busy = pendingAction !== null;
+	const isLol = isLolMatch(match);
 	const { teamALabel, teamBLabel } = getSideLabels(match);
 	const [scoreA, setScoreA] = useState(() => String(match.scoreTeamA ?? 0));
 	const [scoreB, setScoreB] = useState(() => String(match.scoreTeamB ?? 0));
 	const [winnerId, setWinnerId] = useState('');
 
 	const inPlay = match.status === 'LIVE' || match.status === 'PAUSED';
-	const scoreUnit = (match.bestOf ?? 1) > 1 ? 'maps won' : 'rounds';
+	const scoreUnit = isLol ? 'games' : (match.bestOf ?? 1) > 1 ? 'maps won' : 'rounds';
 	const canEnd = inPlay && (match.isPickup || (match.teamA !== null && match.teamB !== null));
 
 	const winnerName = !winnerId ? null : winnerId === 'TEAM_A' || winnerId === String(match.teamA?.id) ? teamALabel : teamBLabel;
@@ -172,34 +173,37 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 					) : (
 						<div className='divide-y divide-border'>
 							{match.status === 'SCHEDULED' && (
-								<ControlRow title='Start match' hint={vetoComplete ? 'Loads the veto result onto the server and opens it to players.' : 'Available once the map veto is complete.'}>
+								<ControlRow title='Start match' hint={isLol ? 'Marks the match live — play happens in the League client; nothing is loaded onto a server.' : vetoComplete ? 'Loads the veto result onto the server and opens it to players.' : 'Available once the map veto is complete.'}>
 									<Button onClick={() => run('start', { action: 'START' })} disabled={busy || !canStart(match, vetoComplete)} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'start'} icon={Play} /> Start
 									</Button>
 								</ControlRow>
 							)}
 							{match.status === 'LIVE' && (
-								<ControlRow title='Pause or force start' hint='Pause freezes the server. Force start skips the ready-up wait if players can’t type .ready.'>
+								<ControlRow title={isLol ? 'Pause' : 'Pause or force start'} hint={isLol ? 'Marks the match paused — there’s no server to freeze.' : 'Pause freezes the server. Force start skips the ready-up wait if players can’t type .ready.'}>
 									<Button variant='outline' onClick={() => run('pause', { action: 'PAUSE' })} disabled={busy} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'pause'} icon={Pause} /> Pause
 									</Button>
-									<Button variant='outline' onClick={() => run('force-start', { action: 'FORCE_START' })} disabled={busy} className='gap-2'>
-										<ActionSpinner show={pendingAction === 'force-start'} icon={Zap} /> Force start
-									</Button>
+									{/* Force start skips the server's ready-up wait — meaningless (and refused server-side) for a LoL match with no server. */}
+									{!isLol && (
+										<Button variant='outline' onClick={() => run('force-start', { action: 'FORCE_START' })} disabled={busy} className='gap-2'>
+											<ActionSpinner show={pendingAction === 'force-start'} icon={Zap} /> Force start
+										</Button>
+									)}
 								</ControlRow>
 							)}
 							{match.status === 'PAUSED' && (
-								<ControlRow title='Resume match' hint='Unpauses the server and restarts the match timer.'>
+								<ControlRow title='Resume match' hint={isLol ? 'Marks the match live again.' : 'Unpauses the server and restarts the match timer.'}>
 									<Button onClick={() => run('resume', { action: 'RESUME' })} disabled={busy} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'resume'} icon={Play} /> Resume
 									</Button>
 								</ControlRow>
 							)}
 							{inPlay && (
-								<ControlRow title='Restart match' hint='Clears score, timer and map results. Teams and veto stay.'>
+								<ControlRow title='Restart match' hint={isLol ? 'Clears score and timer back to zero. Teams stay.' : 'Clears score, timer and map results. Teams and veto stay.'}>
 									<ConfirmAction
 										title='Restart this match?'
-										description='Score, timer and every map result are cleared back to zero and the server restarts the match. Team assignments and the map veto stay as they are.'
+										description={isLol ? 'Score and timer are cleared back to zero. Team assignments stay as they are.' : 'Score, timer and every map result are cleared back to zero and the server restarts the match. Team assignments and the map veto stay as they are.'}
 										confirmLabel='Restart match'
 										onConfirm={() => run('restart', { action: 'RESTART' })}
 										trigger={
@@ -215,8 +219,8 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 				</RoomPanel>
 
 				{inPlay && (
-					<RoomPanel label='Result override'>
-						<p className='mb-4 text-sm text-muted-foreground'>Scores normally come from the game server. Only type them in if the server stopped reporting.</p>
+					<RoomPanel label={isLol ? 'Record result' : 'Result override'}>
+						<p className='mb-4 text-sm text-muted-foreground'>{isLol ? 'League has no hosted server to report a score, so an organizer enters it here.' : 'Scores normally come from the game server. Only type them in if the server stopped reporting.'}</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-1.5'>
 								<Label htmlFor='admin-score-a' className='truncate text-muted-foreground'>
@@ -232,12 +236,12 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 							</div>
 						</div>
 						<Button variant='outline' onClick={() => run('update score', { scoreTeamA: Number(scoreA), scoreTeamB: Number(scoreB) })} disabled={busy} className='mt-3 w-full'>
-							{pendingAction === 'update score' ? 'Saving…' : 'Save score override'}
+							{pendingAction === 'update score' ? 'Saving…' : isLol ? 'Save score' : 'Save score override'}
 						</Button>
 
 						{canEnd && (
 							<div className='mt-5 border-t border-border pt-5'>
-								<SectionLabel className='mb-3'>Force end</SectionLabel>
+								<SectionLabel className='mb-3'>{isLol ? 'Confirm winner' : 'Force end'}</SectionLabel>
 								<div className='flex flex-col gap-3 sm:flex-row sm:items-end'>
 									<div className='flex-1 space-y-1.5'>
 										<Label htmlFor='admin-winner' className='text-muted-foreground'>
@@ -263,26 +267,36 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 										</Select>
 									</div>
 									<ConfirmAction
-										title={`Force end with ${winnerName ?? 'this winner'}?`}
+										title={isLol ? `Record ${winnerName ?? 'this winner'} as the winner?` : `Force end with ${winnerName ?? 'this winner'}?`}
 										description={
-											<>
-												This records <span className='font-bold text-white'>{winnerName}</span> as the winner at{' '}
-												<span className='font-mono tabular-nums text-white'>
-													{scoreA}–{scoreB}
-												</span>
-												{match.isPickup ? ' and closes the match.' : ' and advances the bracket.'} The game server&apos;s score will be overridden.
-											</>
+											isLol ? (
+												<>
+													This records <span className='font-bold text-white'>{winnerName}</span> as the winner at{' '}
+													<span className='font-mono tabular-nums text-white'>
+														{scoreA}–{scoreB}
+													</span>
+													{match.isPickup ? ' and closes the match.' : ' and advances the bracket.'}
+												</>
+											) : (
+												<>
+													This records <span className='font-bold text-white'>{winnerName}</span> as the winner at{' '}
+													<span className='font-mono tabular-nums text-white'>
+														{scoreA}–{scoreB}
+													</span>
+													{match.isPickup ? ' and closes the match.' : ' and advances the bracket.'} The game server&apos;s score will be overridden.
+												</>
+											)
 										}
-										confirmLabel='Force end match'
+										confirmLabel={isLol ? 'Record result' : 'Force end match'}
 										onConfirm={endMatch}
 										trigger={
 											<Button disabled={busy || !winnerId} variant='destructive' className='gap-2'>
-												<ActionSpinner show={pendingAction === 'end'} icon={Flag} /> Force end (override server)
+												<ActionSpinner show={pendingAction === 'end'} icon={isLol ? ClipboardCheck : Flag} /> {isLol ? 'Record result' : 'Force end (override server)'}
 											</Button>
 										}
 									/>
 								</div>
-								<p className='mt-2 text-xs text-muted-foreground'>Records the scores above as the result instead of what the server reports{match.isPickup ? '.' : ', and advances the bracket.'}</p>
+								<p className='mt-2 text-xs text-muted-foreground'>{isLol ? `Records the scores above as the result${match.isPickup ? '.' : ', and advances the bracket.'}` : `Records the scores above as the result instead of what the server reports${match.isPickup ? '.' : ', and advances the bracket.'}`}</p>
 							</div>
 						)}
 					</RoomPanel>
@@ -310,7 +324,17 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 			</div>
 
 			<div>
-				{match.gameServer && match.status !== 'COMPLETED' ? (
+				{isLol ? (
+					<RoomPanel
+						label={
+							<>
+								<Terminal className='h-3.5 w-3.5' aria-hidden /> Server console
+							</>
+						}
+					>
+						<p className='text-sm text-muted-foreground'>League of Legends matches have no hosted server, so there&apos;s no console here — nothing to configure or query.</p>
+					</RoomPanel>
+				) : match.gameServer && match.status !== 'COMPLETED' ? (
 					<RconConsole matchId={String(match.id)} gameServer={match.gameServer} />
 				) : (
 					<RoomPanel

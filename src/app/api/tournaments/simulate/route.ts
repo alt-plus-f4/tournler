@@ -7,7 +7,8 @@ import { generateFakePlayers } from '@/lib/helpers/fake-player-names';
 import { startTournament } from '@/lib/tournaments/tournament-service';
 import { recordMatchResult } from '@/lib/tournaments/bracket-advancement';
 import { upsertPlayerMatchStats, PlayerStatInput } from '@/lib/tournaments/player-stats';
-import { TournamentFormat } from '@prisma/client';
+import { Game, TournamentFormat } from '@prisma/client';
+import { GAMES } from '@/lib/games';
 
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 64;
@@ -18,6 +19,12 @@ const SIMULATED_EMAIL_DOMAIN = '@simulated.tournler.local';
 
 function randomStat(max: number): number {
 	return Math.floor(Math.random() * (max + 1));
+}
+
+function parseGame(raw: unknown): Game | null {
+	if (raw === undefined) return 'CS2';
+	const normalized = typeof raw === 'string' ? raw.trim().toUpperCase() : '';
+	return (GAMES as readonly string[]).includes(normalized) ? (normalized as Game) : null;
 }
 
 function parseFormat(raw: unknown): TournamentFormat | null {
@@ -50,9 +57,13 @@ export async function POST(request: Request) {
 		const body = await request.json().catch(() => ({}));
 		const teamCount = Number.parseInt(body.teamCount, 10);
 		const format = parseFormat(body.format);
+		const game = parseGame(body.game);
 
 		if (!format) {
 			return NextResponse.json({ error: 'Invalid format value' }, { status: 400 });
+		}
+		if (!game) {
+			return NextResponse.json({ error: 'Invalid game value' }, { status: 400 });
 		}
 		if (!Number.isFinite(teamCount) || teamCount < MIN_TEAMS || teamCount > MAX_TEAMS) {
 			return NextResponse.json({ error: `teamCount must be between ${MIN_TEAMS} and ${MAX_TEAMS}` }, { status: 400 });
@@ -71,6 +82,7 @@ export async function POST(request: Request) {
 				type: 'ONLINE',
 				status: 'UPCOMING',
 				format,
+				game,
 				organizerId: session.user.id,
 			},
 		});
@@ -80,17 +92,25 @@ export async function POST(request: Request) {
 
 		let playerIndex = 0;
 		for (const name of teamNames) {
-			const team = await db.cs2Team.create({ data: { name, cs2TournamentId: tournament.id } });
 			const roster = fakePlayers.slice(playerIndex, playerIndex + PLAYERS_PER_TEAM);
 			playerIndex += PLAYERS_PER_TEAM;
-			await db.user.createMany({
-				data: roster.map((player) => ({
-					name: player.name,
-					email: player.email,
-					cs2TeamId: team.id,
-					isOnboardingCompleted: true,
-					emailVerified: new Date(),
-				})),
+			// Team membership is many-to-many (src/lib/teams/membership.ts) — creating the fake
+			// roster nested under the team connects them in one write instead of the old scalar
+			// User.cs2TeamId, which no longer exists.
+			await db.cs2Team.create({
+				data: {
+					name,
+					cs2TournamentId: tournament.id,
+					game,
+					members: {
+						create: roster.map((player) => ({
+							name: player.name,
+							email: player.email,
+							isOnboardingCompleted: true,
+							emailVerified: new Date(),
+						})),
+					},
+				},
 			});
 		}
 
@@ -188,7 +208,7 @@ export async function DELETE() {
 		// — so fake players and teams must be deleted explicitly, before the
 		// tournament, rather than relied on to cascade.
 		const { count: playersDeleted } = await db.user.deleteMany({
-			where: { cs2TeamId: { in: teamIds }, email: { endsWith: SIMULATED_EMAIL_DOMAIN } },
+			where: { teams: { some: { id: { in: teamIds } } }, email: { endsWith: SIMULATED_EMAIL_DOMAIN } },
 		});
 		await db.matches.deleteMany({ where: { tournamentId: { in: tournamentIds } } });
 		const { count: teamsDeleted } = await db.cs2Team.deleteMany({ where: { id: { in: teamIds } } });

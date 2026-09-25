@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { teamEligibility } from '@/lib/games/eligibility';
 
 async function assertCanManageTeamRoster(userId: string, teamId: number) {
 	const team = await db.cs2Team.findUnique({ where: { id: teamId }, select: { capitanId: true, members: { select: { id: true } } } });
@@ -120,6 +121,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 				teamCapacity: true,
 				status: true,
 				startDate: true,
+				game: true,
 			},
 		});
 
@@ -144,6 +146,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 		if (!team) {
 			return NextResponse.json({ error: 'Team not found' }, { status: 404 });
+		}
+
+		// The one eligibility rule (src/lib/games/eligibility.ts), shared with the registration gate
+		// UI: the team plays this tournament's game and every rostered player has its account linked.
+		const eligibility = await teamEligibility(teamId, tournament.game);
+		if (!eligibility.ok) {
+			return NextResponse.json({ error: eligibility.reason, reason: eligibility.reason, missing: eligibility.missing }, { status: 409 });
 		}
 
 		await db.cs2Tournament.update({

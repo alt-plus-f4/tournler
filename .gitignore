@@ -69,3 +69,6 @@ next-env.d.ts
 
 # Playwright MCP browser logs
 .playwright-mcp/
+
+# Unlighthouse scan output
+.unlighthouse/

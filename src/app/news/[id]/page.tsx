@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { cache } from 'react';
+import { cache, Suspense } from 'react';
 import { ArrowLeft, ExternalLink, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { isOptimizable } from '@/lib/image-hosts';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { buttonVariants } from '@/components/ui/button';
@@ -14,35 +16,40 @@ import { NewsAuthor, NewsDate } from '@/components/news/NewsMeta';
 import { NewsComments } from '@/components/news/NewsComments';
 import { hasEditorContent, htmlToPlainText } from '@/components/news/text';
 import { commentSelect } from '@/app/api/news/_lib/comments';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Comments and edits land at any time; always render per request.
+export const dynamic = 'force-dynamic';
 
 interface NewsPostPageProps {
 	params: Promise<{ id: string }>;
 }
 
+/** The public post (with author), in the shared data cache. A missing post caches as null; creating one flushes 'news'. */
+const loadPost = cachedQuery(
+	(id: number) =>
+		db.newsPost.findUnique({
+			where: { id },
+			select: {
+				id: true,
+				title: true,
+				blurb: true,
+				content: true,
+				imageUrl: true,
+				link: true,
+				publishedAt: true,
+				author: { select: { id: true, name: true, image: true } },
+			},
+		}),
+	['news-post'],
+	{ tags: ['news', 'users'], revalidate: REVALIDATE.standard },
+);
+
+/** One lookup per request, shared by generateMetadata and the page. */
 const getPost = cache(async (rawId: string) => {
 	if (!/^\d{1,9}$/.test(rawId)) return null;
-	return db.newsPost.findUnique({
-		where: { id: Number(rawId) },
-		select: {
-			id: true,
-			title: true,
-			blurb: true,
-			content: true,
-			imageUrl: true,
-			link: true,
-			publishedAt: true,
-			author: { select: { id: true, name: true, image: true } },
-		},
-	});
+	return loadPost(Number(rawId));
 });
-
-function isOptimizable(url: string) {
-	try {
-		return new URL(url).hostname.endsWith('.public.blob.vercel-storage.com');
-	} catch {
-		return url.startsWith('/');
-	}
-}
 
 export async function generateMetadata({ params }: NewsPostPageProps): Promise<Metadata> {
 	const post = await getPost((await params).id);
@@ -55,15 +62,43 @@ export async function generateMetadata({ params }: NewsPostPageProps): Promise<M
 	};
 }
 
+/** A post's comments with their authors, shared by every viewer (delete rights are decided in NewsComments from `viewer`). */
+const getComments = cachedQuery((postId: number) => db.newsComment.findMany({ where: { postId }, orderBy: { createdAt: 'asc' }, select: commentSelect }), ['news-comments'], {
+	tags: ['news', 'users'],
+	revalidate: REVALIDATE.standard,
+});
+
+/** Comments stream in below the article, which paints as soon as the post row is read. */
+async function CommentsSection({ postId, comments: commentsPromise, viewer }: { postId: number; comments: ReturnType<typeof getComments>; viewer: { id: string; canModerate: boolean } | null }) {
+	const comments = await commentsPromise;
+	return <NewsComments postId={postId} initialComments={comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))} viewer={viewer} />;
+}
+
+function CommentsSkeleton() {
+	return (
+		<div role='status' aria-busy='true' className='mt-12 border-t border-border pt-8'>
+			<span className='sr-only'>Loading comments…</span>
+			<Skeleton className='h-7 w-32 rounded-sm bg-neutral-900' />
+			<div className='mt-4 space-y-4'>
+				{Array.from({ length: 2 }).map((_, i) => (
+					<div key={i} className='space-y-2 py-4'>
+						<Skeleton className='h-5 w-40 rounded-sm bg-neutral-900' />
+						<Skeleton className='ml-8 h-4 w-3/4 rounded-sm bg-neutral-900' />
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export default async function NewsPostPage({ params }: NewsPostPageProps) {
 	const post = await getPost((await params).id);
 	if (!post) notFound();
 
+	// Kicked off now so it runs alongside the permission lookup; awaited inside the Suspense boundary.
+	const comments = getComments(post.id);
 	const session = await getAuthSession();
-	const [canManage, comments] = await Promise.all([
-		session ? userHasPermission(session.user.id, 'content:manage') : Promise.resolve(false),
-		db.newsComment.findMany({ where: { postId: post.id }, orderBy: { createdAt: 'asc' }, select: commentSelect }),
-	]);
+	const canManage = session ? await userHasPermission(session.user.id, 'content:manage') : false;
 
 	const hasBody = hasEditorContent(post.content);
 	const externalLink = post.link && /^https?:\/\//.test(post.link) ? post.link : null;
@@ -96,7 +131,7 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 
 			{post.imageUrl && (
 				<div className='relative mt-6 aspect-[16/9] w-full overflow-hidden rounded-md border border-border bg-neutral-900'>
-					<Image src={post.imageUrl} alt='' fill priority sizes='(max-width: 768px) 100vw, 768px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
+					<Image src={post.imageUrl} alt='' fill preload sizes='(max-width: 768px) 100vw, 768px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
 				</div>
 			)}
 
@@ -125,11 +160,9 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 				)}
 			</div>
 
-			<NewsComments
-				postId={post.id}
-				initialComments={comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))}
-				viewer={session ? { id: session.user.id, canModerate: canManage } : null}
-			/>
+			<Suspense fallback={<CommentsSkeleton />}>
+				<CommentsSection postId={post.id} comments={comments} viewer={session ? { id: session.user.id, canModerate: canManage } : null} />
+			</Suspense>
 		</article>
 	);
 }

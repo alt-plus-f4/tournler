@@ -1,12 +1,14 @@
+import type { DbTx } from '@/lib/db';
 import { db } from '@/lib/db';
-import { Matches, MatchSlot, Prisma } from '@prisma/client';
+import { Matches, MatchSlot } from '@prisma/client';
 import { finalizeTournamentIfComplete } from './tournament-service';
 import { ensureGameServer, NoAvailableGameServerError } from './game-server';
 import { getVetoState } from './veto';
 import { getDraftState } from './draft';
 import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
+import { getMatchGame, hostsGameServers } from './game-rules';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 /** Thrown when a match result conflicts with an already-recorded, different result. */
 export class MatchResultConflictError extends Error {
@@ -162,9 +164,10 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 	// Outside the transaction — RCON is a network side effect, and must run only once the DB write
 	// actually committed. Only for the call that just flipped the match to COMPLETED, not a repeat/
 	// idempotent call on an already-completed match (see this function's own idempotency contract).
+	// LoL matches never had a server (see game-rules.ts), so there's nothing to release.
 	if (justCompleted) {
 		try {
-			await releaseGameServerAfterMatch(matchId);
+			if (hostsGameServers(await getMatchGame(db, matchId))) await releaseGameServerAfterMatch(matchId);
 		} catch (error) {
 			console.error(`Failed to release game server after match ${matchId} completed:`, error);
 		}
@@ -205,6 +208,8 @@ export interface MatchActionResult {
 async function pushRconAfterCommit(matchId: number, match: Matches, command: string): Promise<MatchActionResult> {
 	let configPushError: string | null = null;
 	try {
+		// A LoL match's pause/resume/restart is only the app's record (staff-set); no server to tell.
+		if (!hostsGameServers(await getMatchGame(db, matchId))) return { match, configPushError: null };
 		await pushRconCommand(matchId, command);
 	} catch (error) {
 		console.error(`Failed to push RCON command "${command}" for match ${matchId}:`, error);
@@ -214,6 +219,7 @@ async function pushRconAfterCommit(matchId: number, match: Matches, command: str
 }
 
 export async function startMatch(matchId: number): Promise<MatchActionResult> {
+	let hosted = true;
 	const updated = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true, participants: true, draftPicks: true } });
 		if (match.status !== 'SCHEDULED') {
@@ -222,6 +228,12 @@ export async function startMatch(matchId: number): Promise<MatchActionResult> {
 		// Pickup matches have no Cs2Team slots to fill (sides are MatchParticipant rows).
 		if (!match.isPickup && (match.teamAId === null || match.teamBId === null)) {
 			throw new MatchLifecycleError('Cannot start a match whose bracket slots are not both filled yet');
+		}
+		// LoL (Phase 1): no hosted server, veto or draft. Staff marking it live is the whole start;
+		// the teams play in the League client and staff record the result afterwards.
+		if (!hostsGameServers(match.tournament.game)) {
+			hosted = false;
+			return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date() } });
 		}
 		// Captain-draft pickups must finish drafting the pool onto sides before veto/start — an
 		// undrafted POOL player has no side to act on behalf of in veto, and no side to load onto
@@ -249,6 +261,8 @@ export async function startMatch(matchId: number): Promise<MatchActionResult> {
 		}
 		return updatedMatch;
 	});
+
+	if (!hosted) return { match: updated, configPushError: null };
 
 	let configPushError: string | null = null;
 	try {
@@ -328,6 +342,9 @@ export async function forceStartMatch(matchId: number): Promise<{ configPushErro
 	const match = await db.matches.findUniqueOrThrow({ where: { id: matchId } });
 	if (match.status !== 'LIVE') {
 		throw new MatchLifecycleError(`Match ${matchId} is not live (current status: ${match.status})`);
+	}
+	if (!hostsGameServers(await getMatchGame(db, matchId))) {
+		throw new MatchLifecycleError('Force start skips a server ready-up; this match has no hosted server');
 	}
 	const { configPushError } = await pushRconAfterCommit(matchId, match, 'css_forcestart');
 	return { configPushError };

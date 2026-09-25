@@ -1,30 +1,16 @@
-'use client';
-
+import { Suspense } from 'react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FaUsers, FaUsersCog, FaTrophy } from 'react-icons/fa';
+import { Trophy, UserCog, Users } from 'lucide-react';
+import { AccessDenied } from '@/components/AccessDenied';
+import { getAuthSession } from '@/lib/auth';
+import { getDashboardData, type DashboardData } from '@/lib/admin/dashboard';
+import { userHasPermission } from '@/lib/helpers/permissions';
 
-interface ActivityItem {
-	type: 'user' | 'team' | 'tournament';
-	id: string;
-	name: string;
-	href: string;
-	createdAt: string;
-}
+// Live counts; never prerender.
+export const dynamic = 'force-dynamic';
 
-interface DashboardData {
-	totals: { users: number; teams: number; tournaments: number; ongoingTournaments: number };
-	usersInTeam: number;
-	usersNotInTeam: number;
-	verifiedTeams: number;
-	notFullTeams: number;
-	ended: number;
-	upcoming: number;
-	recentActivity: ActivityItem[];
-}
-
-const ACTIVITY_ICON = { user: FaUsers, team: FaUsersCog, tournament: FaTrophy };
+const ACTIVITY_ICON = { user: Users, team: UserCog, tournament: Trophy };
 
 function timeAgo(isoDate: string): string {
 	const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
@@ -38,48 +24,49 @@ function timeAgo(isoDate: string): string {
 	return new Date(isoDate).toLocaleDateString();
 }
 
-export default function AdminDashboard() {
-	const [data, setData] = useState<DashboardData | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+/**
+ * Server-rendered admin overview (it used to fetch /api/admin/dashboard from the browser after
+ * hydration). The heading paints first; the numbers stream in.
+ */
+export default async function AdminDashboard() {
+	// The proxy already requires a staff role; this is the page-level check (same gate as the API).
+	const session = await getAuthSession();
+	const allowed = session ? await userHasPermission(session.user.id, 'admin:access') : false;
+	if (!allowed) return <AccessDenied resource='the admin area' />;
 
-	useEffect(() => {
-		async function fetchData() {
-			setIsLoading(true);
-			setError(null);
-			try {
-				const response = await fetch('/api/admin/dashboard');
-				if (!response.ok) throw new Error('Failed to load dashboard data');
-				const json: DashboardData = await response.json();
-				setData(json);
-			} catch (err) {
-				console.error('Error fetching admin dashboard data:', err);
-				setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-			} finally {
-				setIsLoading(false);
-			}
-		}
-		fetchData();
-	}, []);
+	return (
+		<div className='mx-4 mb-12 mt-12 max-w-6xl md:mx-12'>
+			<h1 className='mb-6 text-2xl font-bold'>Dashboard</h1>
+			<Suspense fallback={<DashboardSkeleton />}>
+				<DashboardBody />
+			</Suspense>
+		</div>
+	);
+}
 
-	if (isLoading) {
-		return (
-			<div className='mx-4 mt-12 max-w-6xl space-y-6 md:mx-12' aria-busy='true'>
-				<Skeleton className='h-8 w-48 bg-muted' />
-				<Skeleton className='h-20 w-full bg-muted' />
+function DashboardSkeleton() {
+	return (
+		<div role='status' aria-busy='true'>
+			<span className='sr-only'>Loading dashboard…</span>
+			<Skeleton className='mb-8 h-[146px] w-full bg-muted md:h-[74px]' />
+			<div className='grid gap-8 lg:grid-cols-[1fr_1.4fr]'>
+				<Skeleton className='h-64 w-full bg-muted' />
 				<Skeleton className='h-64 w-full bg-muted' />
 			</div>
-		);
-	}
+		</div>
+	);
+}
 
-	if (error || !data) {
+async function DashboardBody() {
+	let data: DashboardData;
+	try {
+		data = await getDashboardData();
+	} catch (err) {
+		console.error('Error fetching admin dashboard data:', err);
 		return (
-			<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-				<h1 className='mb-4 text-2xl font-bold'>Dashboard</h1>
-				<div role='alert' className='rounded-md border border-signal-live/40 p-4'>
-					<p className='font-medium text-foreground'>Couldn&apos;t load the dashboard.</p>
-					<p className='text-sm text-muted-foreground'>{error ?? 'No data returned.'} Reload the page to try again.</p>
-				</div>
+			<div role='alert' className='rounded-md border border-signal-live/40 p-4'>
+				<p className='font-medium text-foreground'>Couldn&apos;t load the dashboard.</p>
+				<p className='text-sm text-muted-foreground'>Failed to load dashboard data. Reload the page to try again.</p>
 			</div>
 		);
 	}
@@ -98,9 +85,7 @@ export default function AdminDashboard() {
 	];
 
 	return (
-		<div className='mx-4 mb-12 mt-12 max-w-6xl md:mx-12'>
-			<h1 className='mb-6 text-2xl font-bold'>Dashboard</h1>
-
+		<>
 			<dl className='mb-8 grid grid-cols-2 divide-x divide-y divide-border rounded-md border border-border md:grid-cols-4 md:divide-y-0'>
 				{kpis.map((kpi) => (
 					<div key={kpi.label} className='relative'>
@@ -156,7 +141,7 @@ export default function AdminDashboard() {
 								return (
 									<li key={`${item.type}-${item.id}`}>
 										<Link href={item.href} className='flex items-center gap-3 px-3 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
-											<Icon aria-hidden className='shrink-0 text-muted-foreground' />
+											<Icon aria-hidden size='1em' className='shrink-0 text-muted-foreground' />
 											<span className='flex-1 truncate'>{item.name}</span>
 											<span className='text-xs uppercase tracking-widest text-muted-foreground'>{item.type}</span>
 											<span className='w-16 shrink-0 text-right font-mono text-xs tabular-nums text-muted-foreground'>{timeAgo(item.createdAt)}</span>
@@ -168,6 +153,6 @@ export default function AdminDashboard() {
 					)}
 				</section>
 			</div>
-		</div>
+		</>
 	);
 }

@@ -3,6 +3,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, MessageSquare, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { isOptimizable } from '@/lib/image-hosts';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { buttonVariants } from '@/components/ui/button';
@@ -17,16 +19,35 @@ export const metadata: Metadata = {
 	description: 'Announcements, patch notes and tournament news from Tournler.',
 };
 
+// New posts and comment counts; always render per request (it also reads the session).
+export const dynamic = 'force-dynamic';
+
+/** One page of the public post list plus the total, shared by every viewer (posts embed author names/avatars). */
+const loadNewsPage = cachedQuery(
+	(page: number) =>
+		Promise.all([
+			db.newsPost.count(),
+			db.newsPost.findMany({
+				orderBy: { publishedAt: 'desc' },
+				skip: (page - 1) * PAGE_SIZE,
+				take: PAGE_SIZE,
+				select: {
+					id: true,
+					title: true,
+					blurb: true,
+					imageUrl: true,
+					publishedAt: true,
+					author: { select: { id: true, name: true, image: true } },
+					_count: { select: { comments: true } },
+				},
+			}),
+		]),
+	['news-list', String(PAGE_SIZE)],
+	{ tags: ['news', 'users'], revalidate: REVALIDATE.standard },
+);
+
 interface NewsPageProps {
 	searchParams: Promise<{ page?: string }>;
-}
-
-function isOptimizable(url: string) {
-	try {
-		return new URL(url).hostname.endsWith('.public.blob.vercel-storage.com');
-	} catch {
-		return url.startsWith('/');
-	}
 }
 
 export default async function NewsPage({ searchParams }: NewsPageProps) {
@@ -34,24 +55,8 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 	const page = Math.max(1, Number.parseInt(rawPage ?? '1', 10) || 1);
 	const session = await getAuthSession();
 
-	const [canWrite, total, posts] = await Promise.all([
-		session ? userHasPermission(session.user.id, 'content:manage') : Promise.resolve(false),
-		db.newsPost.count(),
-		db.newsPost.findMany({
-			orderBy: { publishedAt: 'desc' },
-			skip: (page - 1) * PAGE_SIZE,
-			take: PAGE_SIZE,
-			select: {
-				id: true,
-				title: true,
-				blurb: true,
-				imageUrl: true,
-				publishedAt: true,
-				author: { select: { id: true, name: true, image: true } },
-				_count: { select: { comments: true } },
-			},
-		}),
-	]);
+	// Only the "can write" check is per viewer; the list itself comes from the shared cache.
+	const [canWrite, [total, posts]] = await Promise.all([session ? userHasPermission(session.user.id, 'content:manage') : Promise.resolve(false), loadNewsPage(page)]);
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
 	return (

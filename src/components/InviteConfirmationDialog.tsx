@@ -54,11 +54,11 @@ export function InviteConfirmationDialog({
 			return;
 		}
 
-		const json = await response.json();
+		const json = await response.json().catch(() => ({}));
 		toast({
 			variant: 'destructive',
-			title: json.message || 'Error',
-			description: "Couldn't send the invitation",
+			title: "Couldn't send the invitation",
+			description: json.error || json.message || 'Something went wrong. Try again.',
 		});
 	}
 

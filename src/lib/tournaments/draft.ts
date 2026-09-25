@@ -1,6 +1,7 @@
-import { MatchSlot, Prisma } from '@prisma/client';
+import type { DbTx } from '@/lib/db';
+import { MatchSlot } from '@prisma/client';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 export type DraftPhase = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE';
 

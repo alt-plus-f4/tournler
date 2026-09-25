@@ -3,6 +3,7 @@ import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch, restartMatch, forceStartMatch } from '@/lib/tournaments/bracket-advancement';
 import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
+import { HostedServerUnsupportedError } from '@/lib/tournaments/game-rules';
 import { NextResponse } from 'next/server';
 
 /**
@@ -25,6 +26,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 						status: true,
 						organizerId: true,
 						bestOf: true,
+						game: true,
 					},
 				},
 				teamA: {
@@ -223,7 +225,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 		if (error instanceof MatchResultConflictError) {
 			return NextResponse.json({ error: error.message }, { status: 409 });
 		}
-		if (error instanceof MatchLifecycleError) {
+		if (error instanceof MatchLifecycleError || error instanceof HostedServerUnsupportedError) {
 			return NextResponse.json({ error: error.message }, { status: 409 });
 		}
 		console.error('Error updating match:', error);

@@ -12,6 +12,8 @@ declare module 'next-auth' {
 			image?: string | null;
 			discordId?: string | null;
 			role?: UserRole;
+			/** Active suspension, if any (see src/lib/bans.ts). */
+			ban?: { id: number; reason: string; expiresAt: string | null; createdAt: string } | null;
 		};
 	}
 }

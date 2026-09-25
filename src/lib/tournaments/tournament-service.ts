@@ -1,3 +1,4 @@
+import type { DbTx } from '@/lib/db';
 import { db } from '@/lib/db';
 import { generateBracket, GeneratedMatch } from './bracket-generator';
 import { Prisma, TournamentStatus } from '@prisma/client';
@@ -143,7 +144,7 @@ export async function checkAndStartTournaments() {
  * check called after every match result via `recordMatchResult`, so it must
  * be safe to call speculatively on every single match completion.
  */
-export async function finalizeTournamentIfComplete(tx: Prisma.TransactionClient, tournamentId: number): Promise<void> {
+export async function finalizeTournamentIfComplete(tx: DbTx, tournamentId: number): Promise<void> {
 	const incompleteCount = await tx.matches.count({ where: { tournamentId, status: { not: 'COMPLETED' } } });
 	if (incompleteCount > 0) return;
 

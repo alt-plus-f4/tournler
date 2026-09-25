@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor } from '@/components/LazyRichTextEditor';
+import { GAME_META, GAMES } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
+import { ImageField } from '@/components/ImageField';
 
 export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
 export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
@@ -24,6 +27,8 @@ interface EditTournamentDialogProps {
 export default function EditTournamentDialog({ tournament, isOpen, onClose, onSave, onDelete }: EditTournamentDialogProps) {
 	const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
 	const [updatedFields, setUpdatedFields] = useState<Partial<Tournament>>({});
+	const [bannerFile, setBannerFile] = useState<File | null>(null);
+	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -37,6 +42,8 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 				endDate: tournament.endDate ? new Date(tournament.endDate).toISOString().split('T')[0] : '',
 			});
 			setUpdatedFields({});
+			setBannerFile(null);
+			setLogoFile(null);
 			setIsConfirmingDelete(false);
 		}
 	}, [tournament]);
@@ -48,27 +55,45 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 
 	const handleEdit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!editingTournament || Object.keys(updatedFields).length === 0) {
+		const hasFieldChanges = Object.keys(updatedFields).length > 0;
+		const hasMediaChanges = !!bannerFile || !!logoFile;
+		if (!editingTournament || (!hasFieldChanges && !hasMediaChanges)) {
 			toast({ title: 'No Changes', description: 'No changes were made to the tournament.', variant: 'default' });
 			return;
 		}
 
 		setIsSaving(true);
 		try {
-			const response = await fetch(`/api/tournaments/${editingTournament.id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(updatedFields),
-			});
+			let mediaUpdates: Partial<Tournament> = {};
+			if (hasMediaChanges) {
+				const media = new FormData();
+				if (bannerFile) media.append('bannerFile', bannerFile);
+				if (logoFile) media.append('logoFile', logoFile);
+				const mediaResponse = await fetch(`/api/tournaments/${editingTournament.id}/media`, { method: 'POST', body: media });
+				const mediaPayload = await mediaResponse.json().catch(() => null);
+				if (!mediaResponse.ok) throw new Error(mediaPayload?.error || 'Failed to upload image');
+				mediaUpdates = { bannerUrl: mediaPayload.tournament.bannerUrl, logoUrl: mediaPayload.tournament.logoUrl };
+			}
 
-			if (!response.ok) throw new Error('Failed to update tournament');
+			if (hasFieldChanges) {
+				const response = await fetch(`/api/tournaments/${editingTournament.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(updatedFields),
+				});
+
+				if (!response.ok) {
+					const payload = await response.json().catch(() => null);
+					throw new Error(payload?.error || 'Failed to update tournament');
+				}
+			}
 
 			toast({ title: 'Success', description: 'Tournament updated successfully', variant: 'default' });
-			onSave({ ...editingTournament, ...updatedFields });
+			onSave({ ...editingTournament, ...updatedFields, ...mediaUpdates });
 			onClose();
 		} catch (error) {
 			console.error('Failed to update tournament', error);
-			toast({ title: 'Error', description: 'Failed to update tournament', variant: 'destructive' });
+			toast({ title: 'Could not save tournament', description: error instanceof Error ? error.message : 'Failed to update tournament', variant: 'destructive' });
 		} finally {
 			setIsSaving(false);
 		}
@@ -93,6 +118,12 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 			setIsConfirmingDelete(false);
 		}
 	};
+
+	// The API refuses a game change once any team registered (they were checked against the old
+	// game's accounts); the control mirrors that rule instead of letting the save fail.
+	const registeredTeams = tournament?.teams?.length ?? 0;
+	const gameLocked = registeredTeams > 0 || (tournament?.matches?.length ?? 0) > 0;
+	const game = editingTournament?.game ?? 'CS2';
 
 	if (isConfirmingDelete) {
 		return (
@@ -164,7 +195,40 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 					</div>
 
 					<div className='space-y-3'>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Media</p>
+						<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+							<ImageField id='edit-bannerFile' label='Banner' currentUrl={editingTournament?.bannerUrl} onFileChange={setBannerFile} aspect='aspect-video' />
+							<ImageField id='edit-logoFile' label='Logo' currentUrl={editingTournament?.logoUrl} onFileChange={setLogoFile} aspect='aspect-square' />
+						</div>
+					</div>
+
+					<div className='space-y-3'>
 						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Configuration</p>
+						<div className='space-y-2'>
+							<Label htmlFor='edit-game'>Game</Label>
+							<Select value={game} onValueChange={(value) => handleChange('game', value)} disabled={gameLocked}>
+								<SelectTrigger id='edit-game' aria-describedby='edit-game-hint'>
+									<SelectValue placeholder='Select a game' />
+								</SelectTrigger>
+								<SelectContent>
+									{GAMES.map((g) => (
+										<SelectItem key={g} value={g}>
+											<span className='inline-flex items-center gap-2'>
+												<GameGlyph game={g} className='h-3.5 w-3.5' />
+												{GAME_META[g].label}
+											</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+							<p id='edit-game-hint' className='text-xs text-muted-foreground'>
+								{gameLocked
+									? `Locked: ${registeredTeams} team${registeredTeams === 1 ? '' : 's'} registered for ${GAME_META[game].label}. Remove every team to change the game.`
+									: game === 'LOL'
+										? 'No hosted servers: staff record each match result.'
+										: 'Every match gets a hosted CS2 server.'}
+							</p>
+						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-status'>Status</Label>

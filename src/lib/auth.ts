@@ -1,10 +1,12 @@
+import { cache } from 'react';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import DiscordProvider from 'next-auth/providers/discord';
 // import nodemailer, { createTransport } from 'nodemailer';
 import { createTransport } from 'nodemailer';
-import { db } from '@/lib/db';
+import { db, baseDb } from '@/lib/db';
+import { activeBanWhere, toActiveBan } from '@/lib/bans';
 
 // const transporter = createTransport({
 //   host: process.env.EMAIL_SERVER_HOST!,
@@ -83,7 +85,7 @@ function text({ url, host }: { url: string; host: string }) {
 }
 
 export const authOptions: NextAuthOptions = {
-	adapter: PrismaAdapter(db),
+	adapter: PrismaAdapter(baseDb),
 	session: {
 		strategy: 'jwt',
 	},
@@ -130,6 +132,7 @@ export const authOptions: NextAuthOptions = {
 								discord: {
 									select: { discordId: true },
 								},
+								bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, reason: true, expiresAt: true, createdAt: true } },
 							},
 						})
 					: null;
@@ -141,6 +144,8 @@ export const authOptions: NextAuthOptions = {
 					image: dbUser?.image || token.picture || '',
 					discordId: (token.discordId as string) || dbUser?.discord?.discordId || '',
 					role: dbUser?.role || (token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined),
+					// Re-read on every request, so a ban (or lifting it) applies immediately.
+					ban: toActiveBan(dbUser?.bans[0]),
 				};
 			}
 			return session;
@@ -251,4 +256,19 @@ export const authOptions: NextAuthOptions = {
 	},
 };
 
-export const getAuthSession = () => getServerSession(authOptions);
+/**
+ * The session for authorization. Wrapped in React `cache` so every server component, layout and
+ * generateMetadata in one request shares a single lookup instead of hitting the DB each time.
+ * Banned users get `null`, so every route and page that checks
+ * for a signed-in user refuses them without needing its own ban check.
+ */
+export const getAuthSession = cache(async () => {
+	const session = await getServerSession(authOptions);
+	return session?.user?.ban ? null : session;
+});
+
+/**
+ * The raw session, including banned users. Only for UI that must still recognize them (the
+ * navbar's account menu so they can sign out, and the suspension notice). Never for authorization.
+ */
+export const getSessionIncludingBanned = cache(() => getServerSession(authOptions));
