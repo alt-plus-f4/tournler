@@ -4,7 +4,8 @@ import type { RefObject } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
-import { NAV_LINKS } from '@/lib/nav-links';
+import { HUB_LINKS, NAV_LINKS } from '@/lib/nav-links';
+import { HubNavLink } from '@/components/shell/HubNavLink';
 import { cn } from '@/lib/utils';
 
 interface BurgerMenuPanelProps {
@@ -33,6 +34,16 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 				<SheetTitle className='px-6 pb-4 pt-6 text-xs font-bold uppercase tracking-widest text-neutral-400'>Menu</SheetTitle>
 				<nav aria-label='Main'>
 					<ul className='border-t border-border'>
+						{HUB_LINKS.map(({ game, href }) => (
+							<li key={game} className='border-b border-border'>
+								<HubNavLink
+									game={game}
+									href={href}
+									onNavigate={() => onOpenChange(false)}
+									className='flex h-14 items-center gap-3 px-6 text-base font-medium text-neutral-300 transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none'
+								/>
+							</li>
+						))}
 						{NAV_LINKS.map(({ href, label }) => {
 							const isActive = pathname === href || pathname.startsWith(`${href}/`);
 							return (

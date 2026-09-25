@@ -24,7 +24,7 @@ export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePo
 			className='group block overflow-hidden rounded-md border border-border bg-card transition-[transform,border-color] duration-200 hover:border-neutral-500 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 		>
 			<div className='relative h-32 w-full bg-neutral-900'>
-				<GameTag game={game} className='absolute left-2 top-2 z-10 bg-black/70' />
+				<GameTag game={game} className='absolute right-2 top-2 z-10 bg-black/70' />
 				<Image
 					src={bannerUrl}
 					alt=''

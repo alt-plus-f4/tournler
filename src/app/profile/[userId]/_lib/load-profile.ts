@@ -3,6 +3,8 @@ import { TournamentStatus } from '@prisma/client';
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { getFaceitInfo } from '@/lib/faceit';
+import { getLolRank } from '@/lib/riot/rank';
+import { isRiotPlatform } from '@/lib/riot/regions';
 import { computePlayerCareerStats, getPlayerRecentMatches } from '@/lib/tournaments/player-stats';
 import { finalBracketSlot, pickDecidedFinal } from '@/app/tournaments/queries';
 
@@ -17,7 +19,8 @@ const PUBLIC_USER_SELECT = {
 	// One team per game (CS2 and/or LoL), shown in that game's profile section.
 	teams: { select: { id: true, name: true, logo: true, game: true, _count: { select: { members: true } } } },
 	// Public part of the Riot ID only; the ownership challenge is loaded for the owner separately.
-	riot: { select: { gameName: true, tagLine: true, region: true, verifiedAt: true } },
+	// puuid never reaches the client — it's only used server-side to look up the ranked standing.
+	riot: { select: { gameName: true, tagLine: true, region: true, puuid: true, verifiedAt: true } },
 	games: true,
 	// Privacy flags: the page strips steam/discord for everyone but the owner when these are false.
 	showDiscord: true,
@@ -153,13 +156,18 @@ const loadEventTrophies = cachedQuery(computeEventTrophies, ['profile-event-trop
 	revalidate: REVALIDATE.standard,
 });
 
-/** Career stats, the last 20 matches, the real FACEIT level (external API; getFaceitInfo caches it an hour) and event trophies. */
+/**
+ * Career stats, the last 20 matches, the real FACEIT level and LoL rank (external APIs, both cache
+ * their own lookup an hour) and event trophies.
+ */
 export function loadProfileExtras(user: ProfileUser) {
 	return Promise.all([
 		loadCareerStats(user.id),
 		loadRecentMatches(user.id),
 		// The FACEIT level is public FACEIT data, so it's looked up even when the player hides Steam.
 		user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
+		// Same rule for the LoL rank: public Riot data once the Riot ID is verified.
+		user.riot?.verifiedAt && isRiotPlatform(user.riot.region) ? getLolRank(user.riot.region, user.riot.puuid) : Promise.resolve(null),
 		loadEventTrophies(user.id, user.teams.map((t) => t.id).sort((a, b) => a - b)),
 	]);
 }

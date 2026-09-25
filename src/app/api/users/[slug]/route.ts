@@ -22,11 +22,13 @@ const PUBLIC_USER_SELECT = {
 			discordId: true,
 		},
 	},
-	cs2Team: {
+	// One team per game (see src/lib/teams/membership.ts) — replaces the old single cs2Team relation.
+	teams: {
 		select: {
 			id: true,
 			name: true,
 			logo: true,
+			game: true,
 		},
 	},
 	// Privacy flags, read to gate steam/discord below; only echoed back to the owner.
@@ -120,11 +122,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 		const body = await request.json();
 
-		const allowedFields = ['name', 'bio', 'image', 'role'] as const;
+		// Every field EditUserDialog can actually send — it used to outpace this list, so an edit
+		// limited to (say) the email or onboarding toggle silently produced an empty `data` and a
+		// confusing "No valid fields to update provided".
+		const allowedFields = ['name', 'bio', 'email', 'image', 'role', 'isOnboardingCompleted'] as const;
 		const data: Record<string, unknown> = {};
 		for (const key of allowedFields) {
 			if (body[key] !== undefined) data[key] = body[key];
 		}
+		// The dialog sends emailVerified as a datetime-local string (or '' to clear it), not a Date.
+		if (body.emailVerified !== undefined) data.emailVerified = body.emailVerified ? new Date(body.emailVerified) : null;
 
 		if (Object.keys(data).length === 0) {
 			return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });

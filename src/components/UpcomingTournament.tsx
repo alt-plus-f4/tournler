@@ -45,7 +45,7 @@ export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, 
 					/>
 				)}
 				<div aria-hidden className='absolute bottom-0 left-0 h-5 w-full bg-gradient-to-t from-black to-transparent' />
-				<GameTag game={game} showLabel={false} className='absolute left-1.5 top-1.5 bg-black/70' />
+				<GameTag game={game} showLabel={false} className='absolute right-1.5 top-1.5 bg-black/70' />
 			</div>
 			<div className='flex flex-1 flex-col text-center'>
 				<h3 className='mx-3 mt-2 truncate text-base font-black uppercase tracking-wide text-white'>{name}</h3>

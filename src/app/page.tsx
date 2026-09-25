@@ -28,9 +28,7 @@ const UPCOMING_COUNT = 3;
 // sections that need the same row (settings, live matches) share one query.
 // Shared (non-viewer) reads are also served from Next's data cache; the Prisma extension in
 // src/lib/db.ts flushes their tags on every write.
-const getHomepageSettings = cache(
-	cachedQuery(async () => db.homepageSettings.findUnique({ where: { id: 1 } }), ['home-settings'], { tags: ['homepage'], revalidate: REVALIDATE.slow }),
-);
+const getHomepageSettings = cache(cachedQuery(async () => db.homepageSettings.findUnique({ where: { id: 1 } }), ['home-settings'], { tags: ['homepage'], revalidate: REVALIDATE.slow }));
 const getLive = cache(getLiveMatches);
 
 // UPCOMING tournaments whose start date has passed are still shown (the cards label them
@@ -130,19 +128,11 @@ async function FeaturedSections() {
 	const layoutClass = featuredLayout === 'CAROUSEL' ? 'flex gap-5 overflow-x-auto snap-x snap-mandatory pb-2' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5';
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
 
-	const [curatedFeatured, featuredNews] = await Promise.all([
-		featuredSource !== 'NEWS' ? getCuratedFeaturedTournaments() : Promise.resolve([]),
-		featuredSource !== 'TOURNAMENTS' ? getFeaturedNews() : Promise.resolve([]),
-	]);
+	const [curatedFeatured, featuredNews] = await Promise.all([featuredSource !== 'NEWS' ? getCuratedFeaturedTournaments() : Promise.resolve([]), featuredSource !== 'TOURNAMENTS' ? getFeaturedNews() : Promise.resolve([])]);
 
 	// Nothing curated yet — fall back to the original prize-pool heuristic so the
 	// section isn't empty the moment this feature ships with no admin curation done.
-	const featuredTournaments =
-		curatedFeatured.length > 0
-			? curatedFeatured
-			: featuredSource !== 'NEWS'
-				? await getFallbackFeaturedTournaments()
-				: [];
+	const featuredTournaments = curatedFeatured.length > 0 ? curatedFeatured : featuredSource !== 'NEWS' ? await getFallbackFeaturedTournaments() : [];
 
 	return (
 		<>
@@ -158,7 +148,16 @@ async function FeaturedSections() {
 						<div className={layoutClass}>
 							{featuredTournaments.map((tournament) => (
 								<div key={tournament.id} className={itemClass}>
-									<FeaturedTournamentCard id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} location={tournament.location} game={tournament.game} />
+									<FeaturedTournamentCard
+										id={tournament.id}
+										name={tournament.name}
+										status={tournament.status}
+										startDate={tournament.startDate.toISOString()}
+										bannerUrl={tournament.bannerUrl || FALLBACK_BANNER}
+										prizePool={tournament.prizePool}
+										location={tournament.location}
+										game={tournament.game}
+									/>
 								</div>
 							))}
 						</div>
@@ -196,7 +195,20 @@ async function UpcomingList() {
 	return upcoming.length > 0 ? (
 		<>
 			{upcoming.map((tournament) => (
-				<UpcomingTournament key={tournament.id} id={tournament.id} name={tournament.name} status={tournament.status} startDate={tournament.startDate.toISOString()} bannerUrl={tournament.bannerUrl || FALLBACK_BANNER} prizePool={tournament.prizePool} teams={tournament.teams} location={tournament.location} teamCapacity={tournament.teamCapacity} game={tournament.game} isHomePage />
+				<UpcomingTournament
+					key={tournament.id}
+					id={tournament.id}
+					name={tournament.name}
+					status={tournament.status}
+					startDate={tournament.startDate.toISOString()}
+					bannerUrl={tournament.bannerUrl || FALLBACK_BANNER}
+					prizePool={tournament.prizePool}
+					teams={tournament.teams}
+					location={tournament.location}
+					teamCapacity={tournament.teamCapacity}
+					game={tournament.game}
+					isHomePage
+				/>
 			))}
 		</>
 	) : (
@@ -222,11 +234,11 @@ export default async function Page() {
 			<div className='grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 py-8'>
 				<div className='space-y-8'>
 					{hero}
-					<Suspense fallback={<UpNextSkeleton />}>
-						<UpNextBlock />
-					</Suspense>
 					<Suspense fallback={<FeaturedSkeleton />}>
 						<FeaturedSections />
+					</Suspense>
+					<Suspense fallback={<UpNextSkeleton />}>
+						<UpNextBlock />
 					</Suspense>
 				</div>
 

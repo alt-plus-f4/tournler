@@ -65,7 +65,9 @@ export async function assertCanJoin(userId: string, game: Game, client: Client =
  */
 export async function withJoinLock<T>(userId: string, teamId: number | null, fn: (tx: DbTx) => Promise<T>): Promise<T> {
 	return db.$transaction(async (tx) => {
-		await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
+		// User.id is `uuid` in Postgres; Prisma sends the template param as text, so it needs an
+		// explicit cast or Postgres refuses the comparison outright ("operator does not exist: uuid = text").
+		await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId}::uuid FOR UPDATE`;
 		if (teamId !== null) await tx.$queryRaw`SELECT id FROM "cs2_teams" WHERE id = ${teamId} FOR UPDATE`;
 		return fn(tx);
 	});

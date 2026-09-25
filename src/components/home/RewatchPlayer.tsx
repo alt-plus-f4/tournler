@@ -29,7 +29,7 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 	return (
 		<section aria-labelledby='rewatch-heading' className='overflow-hidden rounded-md border border-border bg-black'>
 			{hasTeams ? (
-				<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border px-4 py-3 sm:gap-6 sm:px-6 sm:py-4'>
+				<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border p-[0.725rem] sm:gap-6'>
 					<TeamMark name={rewatch.teamA} logo={rewatch.teamALogo} align='start' />
 					<h2 id='rewatch-heading' className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>
 						<span className='sr-only'>{label}</span>
@@ -38,7 +38,7 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 					<TeamMark name={rewatch.teamB} logo={rewatch.teamBLogo} align='end' />
 				</div>
 			) : (
-				<div className='flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-6 sm:py-4'>
+				<div className='flex items-center justify-between gap-4 border-b border-border p-[0.725rem]'>
 					<h2 id='rewatch-heading' className='min-w-0 truncate text-base font-black uppercase tracking-wide text-white sm:text-2xl'>
 						{rewatch.title}
 					</h2>

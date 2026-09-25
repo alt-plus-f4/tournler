@@ -253,7 +253,9 @@ export default function MatchPage() {
 	);
 
 	return (
-		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-16 text-white'>
+		// Zoomed out slightly, and the footer is hidden on this route (ConditionalFooter), so the room
+		// comes closer to fitting one screen on typical viewports instead of needing a page scroll.
+		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-8 text-white' style={{ zoom: 0.9 }}>
 			<RoomHeader match={match} quickBar={canManage ? <AdminQuickBar match={match} admin={admin} vetoComplete={vetoComplete} /> : undefined} tabs={tabs} />
 
 			<div className='mx-auto max-w-7xl px-4 pt-6'>

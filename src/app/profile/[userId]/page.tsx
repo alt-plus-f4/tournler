@@ -20,14 +20,15 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 	if (!user) return <ProfileNotFound />;
 
 	const isOwner = session?.user.id === user.id;
-	const [[stats, recentMatches, faceit, eventTrophies], riotStatus] = await Promise.all([loadProfileExtras(user), isOwner ? getRiotStatus(user.id) : Promise.resolve(undefined)]);
+	const [[stats, recentMatches, faceit, lolRank, eventTrophies], riotStatus] = await Promise.all([loadProfileExtras(user), isOwner ? getRiotStatus(user.id) : Promise.resolve(undefined)]);
 
 	// Hidden linked accounts never reach a visitor's payload; the owner still sees them (flagged as hidden).
 	const steam = user.steam && (isOwner || user.showSteam) ? user.steam : null;
 	const discord = user.discord && (isOwner || user.showDiscord) ? user.discord : null;
 	// A Riot ID is public once verified (it's the in-game name) unless the owner hid it; a pending one is
-	// only the owner's business regardless.
+	// only the owner's business regardless. The rank follows the same visibility.
 	const riot = user.riot?.verifiedAt && (isOwner || user.showRiot) ? { gameName: user.riot.gameName, tagLine: user.riot.tagLine, region: user.riot.region } : null;
+	const rank = riot ? lolRank : null;
 
 	const teams = { CS2: teamFor(user, 'CS2'), LOL: teamFor(user, 'LOL') };
 	// A game's section shows only if the player plays it: picked it in onboarding, or has its team/account.
@@ -57,6 +58,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 			stats={stats}
 			recentMatches={recentMatches}
 			faceit={faceit}
+			lolRank={rank}
 			eventTrophies={eventTrophies.map((t) => ({ ...t, wonAt: t.wonAt.toISOString() }))}
 			isOwner={isOwner}
 			visibility={isOwner ? { showDiscord: user.showDiscord, showSteam: user.showSteam, showRiot: user.showRiot } : undefined}

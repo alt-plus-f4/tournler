@@ -9,7 +9,7 @@ import { GameGlyph } from '@/components/games/GameMark';
 
 function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return (
-		<div className='grid w-full grid-cols-[auto_1fr] items-center gap-x-4 p-2 sm:w-1/2 lg:w-1/3'>
+		<div className='grid w-full grid-cols-[auto_1fr] items-center gap-x-4 rounded-md p-2 transition-colors hover:bg-white/5 sm:w-1/2 lg:w-1/3'>
 			<dt className='contents'>
 				<span className='row-span-2 shrink-0 text-white' aria-hidden>
 					{icon}

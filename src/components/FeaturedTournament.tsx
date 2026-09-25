@@ -17,7 +17,7 @@ export function FeaturedTournament({ id, name, startDate, bannerUrl, prizePool, 
 			<div className='relative h-48 w-full bg-neutral-900 sm:h-64'>
 				{bannerUrl && <Image src={bannerUrl} alt='' fill sizes='(max-width: 1400px) 100vw, 1400px' preload className='object-cover transition-[filter] duration-200 group-hover:brightness-110' />}
 				<div aria-hidden className='absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black to-transparent' />
-				<GameTag game={game} className='absolute left-4 top-4 bg-black/70' />
+				<GameTag game={game} className='absolute right-4 top-4 bg-black/70' />
 				<div className='absolute inset-x-4 bottom-3 flex items-end'>
 					<h2 className='text-balance text-2xl font-black uppercase tracking-wide text-white sm:text-4xl'>{name}</h2>
 				</div>

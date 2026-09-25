@@ -2,8 +2,7 @@
 
 import { SteamSymbolIcon } from '@/components/Icons';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Button } from '../ui/button';
-import { DialogFooter } from '../ui/dialog';
+import { StepHeading, StepFooter } from './StepChrome';
 
 interface SteamStepProps {
 	previousStep: () => void;
@@ -40,9 +39,6 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 			}
 
 			window.location.href = steamLoginUrl;
-
-			// Open the Steam login URL in a new tab
-			//   window.open(steamLoginUrl, '_blank');
 		} catch (error) {
 			toast({
 				variant: 'destructive',
@@ -54,26 +50,21 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 	};
 
 	return (
-		<>
-			<h2 className='text-center text-2xl font-semibold'>Link your Steam account</h2>
-			<p className='mt-1 text-center text-sm text-muted-foreground'>You&apos;ll sign in on Steam and come straight back here.</p>
+		<div className='flex flex-1 flex-col px-6 py-10 sm:px-12'>
+			<StepHeading title='Link your Steam account' description="You'll sign in on Steam and come straight back here." />
+
 			<button
 				type='button'
 				onClick={handleSteamLogin}
-				className='m-1 mt-4 flex w-full flex-col items-center gap-3 rounded-md border border-border p-6 text-center transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-32 sm:py-16'
+				className='flex w-full flex-col items-center gap-4 rounded-md border border-border bg-black/40 px-6 py-12 text-center transition-colors hover:border-neutral-600 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 			>
-				<SteamSymbolIcon aria-hidden className='h-16 w-16 sm:h-32 sm:w-32' />
-				<span className='text-base font-medium'>Sign in with Steam</span>
+				<span className='flex h-20 w-20 items-center justify-center rounded-full border border-border'>
+					<SteamSymbolIcon aria-hidden className='h-10 w-10 text-white' />
+				</span>
+				<span className='text-sm font-bold uppercase tracking-wide text-white'>Sign in with Steam</span>
 			</button>
 
-			<DialogFooter className='flex mt-8 justify-around'>
-				<Button onClick={previousStep} variant='secondary' className='sm:w-48'>
-					Previous
-				</Button>
-				<Button onClick={nextStep} variant='outline' className='sm:w-48'>
-					Skip for now
-				</Button>
-			</DialogFooter>
-		</>
+			<StepFooter onPrevious={previousStep} onNext={nextStep} nextLabel='Skip for now' />
+		</div>
 	);
 }

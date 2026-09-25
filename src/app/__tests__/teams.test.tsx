@@ -9,7 +9,7 @@ import { ExtendedCs2Team } from '@/lib/models/team-model';
 jest.mock('@/lib/auth', () => ({ getAuthSession: jest.fn() }));
 
 // The page reads the game filter cookie (next/headers), which only works inside a request scope.
-const cookiesGet = jest.fn(() => undefined);
+const cookiesGet = jest.fn<{ value: string } | undefined, []>(() => undefined);
 jest.mock('next/headers', () => ({ cookies: () => Promise.resolve({ get: cookiesGet }) }));
 
 // Mock the components used in the page
@@ -97,18 +97,34 @@ describe('Teams Page', () => {
 		expect(screen.getByTestId('team-drawer')).toBeInTheDocument();
 	});
 
-	it('does not offer team creation once the viewer has a team in every game', async () => {
+	it('does not offer team creation once the viewer has a team in the active channel', async () => {
 		(getAuthSession as jest.Mock).mockResolvedValue({ user: { email: 'test@example.com', id: '123' } });
 		(fetchUserTeams as jest.Mock).mockResolvedValue({
 			CS2: { id: 1, name: 'Alpha', game: 'CS2', logo: null, capitanId: '123' },
 			LOL: { id: 2, name: 'Bravo', game: 'LOL', logo: null, capitanId: '123' },
 		});
 
+		// No ?game= and no cookie: defaults to the CS2 channel.
 		const page = await Page({});
 		render(page);
 
 		expect(screen.queryByTestId('team-drawer')).not.toBeInTheDocument();
 		expect(screen.getByText('Alpha')).toBeInTheDocument();
+		expect(screen.queryByText('Bravo')).not.toBeInTheDocument();
+	});
+
+	it('re-scopes to the LoL channel remembered in the game filter cookie', async () => {
+		(getAuthSession as jest.Mock).mockResolvedValue({ user: { email: 'test@example.com', id: '123' } });
+		(fetchUserTeams as jest.Mock).mockResolvedValue({
+			CS2: { id: 1, name: 'Alpha', game: 'CS2', logo: null, capitanId: '123' },
+			LOL: { id: 2, name: 'Bravo', game: 'LOL', logo: null, capitanId: '123' },
+		});
+		cookiesGet.mockReturnValue({ value: 'lol' });
+
+		const page = await Page({});
+		render(page);
+
 		expect(screen.getByText('Bravo')).toBeInTheDocument();
+		expect(screen.queryByText('Alpha')).not.toBeInTheDocument();
 	});
 });

@@ -22,6 +22,7 @@ import type { Game } from '@prisma/client';
 import { faceitLevelProgress } from '@/lib/faceit-level';
 import { GAMES } from '@/lib/games';
 import { platformLabel } from '@/lib/riot/regions';
+import { formatLolRank, type LolRank } from '@/lib/riot/rank-format';
 import type { RiotStatusResponse } from '@/lib/riot/types';
 import { GameTag } from '@/components/games/GameMark';
 import { GameAccountsSection } from '@/components/profile/GameAccountsSection';
@@ -239,6 +240,8 @@ interface ProfileViewProps {
 	stats: PlayerCareerStats | null;
 	recentMatches: PlayerRecentMatch[];
 	faceit: FaceitInfo | null;
+	/** The player's current ranked solo/duo standing, once their Riot ID is verified and visible. */
+	lolRank: LolRank | null;
 	/** Completed tournaments this player won (derived from brackets, see load-profile.ts). */
 	eventTrophies: EventTrophyItem[];
 	/** Decided on the server from the session; only gates owner-only controls (every write re-checks). */
@@ -253,7 +256,7 @@ interface ProfileViewProps {
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophies, isOwner, visibility, riotStatus }: ProfileViewProps) {
+export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus }: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -334,6 +337,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 		}
 	};
 
+	const activeGames = GAMES.filter((g) => profile.plays[g]);
 	const overlayBadges = (profile.badges ?? []).filter((b) => b.badge.isOverlay).slice(0, 2);
 	const trophies = (profile.badges ?? []).filter((b) => !b.badge.isOverlay);
 	const progress = faceit ? faceitLevelProgress(faceit.level, faceit.elo) : null;
@@ -436,7 +440,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 								)}
 
 								<div className='mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-neutral-400'>
-									{GAMES.filter((g) => profile.plays[g]).map((g) => {
+									{activeGames.map((g) => {
 										const team = profile.teams[g];
 										return team ? (
 											<Link key={g} href={`/teams/${team.id}`} className='flex items-center gap-2 font-medium text-white hover:underline hover:underline-offset-4'>
@@ -475,13 +479,14 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 				{/* HLTV-style trophy row, attached under the hero. Hidden entirely when the player has none. */}
 				<TrophySlider trophies={trophies} events={eventTrophies} className='border-x border-b border-border bg-neutral-950 px-5 py-4 sm:px-8' />
 
-				{/* Direction C: one game section per game the player plays, side by side (stacked on mobile). */}
-				{GAMES.some((g) => profile.plays[g]) && (
+				{/* Direction C: one game section per game the player plays, side by side (stacked on mobile).
+				    A single game spans the full row instead of leaving the second column empty. */}
+				{activeGames.length > 0 && (
 					<section className='mt-6' aria-label='Games'>
 						<div className='grid gap-4 sm:grid-cols-2'>
-							{GAMES.filter((g) => profile.plays[g]).map((g) =>
+							{activeGames.map((g) =>
 								g === 'CS2' ? (
-									<GameSection key='CS2' game='CS2'>
+									<GameSection key='CS2' game='CS2' className={activeGames.length === 1 ? 'sm:col-span-2' : undefined}>
 										<GameRow label='Account'>
 											{profile.steam ? (
 												<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1.5 text-sm text-neutral-200 hover:text-white hover:underline hover:underline-offset-4'>
@@ -539,7 +544,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 										</GameRow>
 									</GameSection>
 								) : (
-									<GameSection key='LOL' game='LOL'>
+									<GameSection key='LOL' game='LOL' className={activeGames.length === 1 ? 'sm:col-span-2' : undefined}>
 										<GameRow label='Account'>
 											{profile.riot ? (
 												<span className='text-sm text-neutral-200'>
@@ -555,7 +560,19 @@ export function ProfileView({ profile, stats, recentMatches, faceit, eventTrophi
 											<GameTeam game='LOL' team={profile.teams.LOL} isOwner={isOwner} />
 										</GameRow>
 										<GameRow label='Rating'>
-											<p className='text-sm text-neutral-400'>Stats coming later</p>
+											{lolRank ? (
+												<div>
+													<div className='font-mono text-lg font-bold leading-none tabular-nums text-white'>
+														{formatLolRank(lolRank)}
+														<span className='ml-2 text-sm font-normal text-neutral-400'>{lolRank.leaguePoints} LP</span>
+													</div>
+													<div className='mt-1 text-xs text-neutral-400'>
+														{lolRank.wins}W {lolRank.losses}L · Ranked solo/duo via Riot
+													</div>
+												</div>
+											) : (
+												<p className='text-sm text-neutral-400'>{profile.riot ? 'Unranked in solo/duo' : 'Link Riot ID to show your rank'}</p>
+											)}
 										</GameRow>
 									</GameSection>
 								),

@@ -3,7 +3,7 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import { Toaster } from '@/components/ui/toaster';
 import { Roboto } from 'next/font/google';
-import Footer from '@/components/Footer';
+import { ConditionalFooter } from '@/components/shell/ConditionalFooter';
 import { SuspensionBanner } from '@/components/shell/SuspensionBanner';
 import { OnboardingGate } from '@/components/shell/OnboardingGate';
 import { InteractiveBackground } from '@/components/InteractiveBackground';
@@ -46,13 +46,13 @@ export default function RootLayout({
 
 				<OnboardingGate />
 
-				<main id='content' className='min-h-[100svh] flex-1'>
+				<main id='content' className='relative z-10 min-h-[100svh] flex-1 shadow-[0_16px_50px_-18px_rgba(0,0,0,0.8),0_8px_32px_-8px_hsl(var(--background))]'>
 					{children}
 				</main>
 
 				<Toaster />
 
-				<Footer />
+				<ConditionalFooter />
 			</body>
 		</html>
 	);

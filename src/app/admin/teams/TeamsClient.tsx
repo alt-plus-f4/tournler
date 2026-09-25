@@ -104,7 +104,7 @@ export default function TeamsClient() {
 								}}
 								className={cn(
 									'inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-bold uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-									active ? 'border-foreground bg-foreground text-background' : 'border-border text-neutral-300 hover:border-neutral-500 hover:text-white',
+									active ? 'border-white bg-white/10 text-white' : 'border-border text-neutral-300 hover:border-neutral-500 hover:text-white',
 								)}
 							>
 								{g && <GameGlyph game={g} className='h-3.5 w-3.5' />}

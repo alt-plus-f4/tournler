@@ -64,7 +64,7 @@ export function TeamMemberAvatar({ team, member, enableTeamCapitanControls, capi
 				className='relative block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white'
 			>
 				<MemberAvatarImage image={member.image} name={member.name} />
-				<span aria-hidden className='pointer-events-none absolute inset-x-0 bottom-10 z-20 flex min-w-0 items-center justify-center gap-1 bg-gradient-to-t from-black via-black/80 to-transparent px-1 pt-5 pb-1.5'>
+				<span aria-hidden className='pointer-events-none absolute inset-x-0 bottom-2 z-20 flex min-w-0 items-center justify-center gap-1 bg-gradient-to-t from-black via-black/80 to-transparent px-1 pt-5 pb-1.5'>
 					<span className='truncate text-xs font-bold uppercase tracking-wide text-white underline-offset-4 group-hover/avatar:underline group-has-[a:focus-visible]/avatar:underline'>{member.name}</span>
 					<PlayerFlair verified={member.verified} faceitLevel={member.faceitLevel} className='max-sm:hidden' />
 				</span>

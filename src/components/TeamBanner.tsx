@@ -41,15 +41,7 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId,
 				}}
 			>
 				{members.map((member) => (
-					<TeamMemberAvatar
-						key={member.id}
-						team={team}
-						member={member}
-						userId={userId}
-						capitanId={capitanId}
-						enableTeamCapitanControls={enableTeamCapitanControls}
-						interactive={interactive}
-					/>
+					<TeamMemberAvatar key={member.id} team={team} member={member} userId={userId} capitanId={capitanId} enableTeamCapitanControls={enableTeamCapitanControls} interactive={interactive} />
 				))}
 			</div>
 		</div>

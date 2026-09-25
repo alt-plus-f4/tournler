@@ -73,6 +73,15 @@ html {
 		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px);
 }
 
+/* The same 42px grid texture, without the pointer-tracked glow: for panels that sit above
+   InteractiveBackground (a modal, a loading shell) and need the stage's texture on their own. */
+.stage-grid {
+	background-color: black;
+	background-image:
+		repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 42px),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 42px);
+}
+
 /* Reduced motion keeps the state (a solid dot) and drops only the pulse. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-pulse {

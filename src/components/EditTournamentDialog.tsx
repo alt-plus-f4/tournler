@@ -11,6 +11,7 @@ import { Tournament } from '@/types/types';
 import { RichTextEditor } from '@/components/LazyRichTextEditor';
 import { GAME_META, GAMES } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
+import { ImageField } from '@/components/ImageField';
 
 export const tournamentStatuses = ['UPCOMING', 'ONGOING', 'COMPLETED'] as const;
 export const tournamentTypes = ['ONLINE', 'OFFLINE'] as const;
@@ -26,6 +27,8 @@ interface EditTournamentDialogProps {
 export default function EditTournamentDialog({ tournament, isOpen, onClose, onSave, onDelete }: EditTournamentDialogProps) {
 	const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
 	const [updatedFields, setUpdatedFields] = useState<Partial<Tournament>>({});
+	const [bannerFile, setBannerFile] = useState<File | null>(null);
+	const [logoFile, setLogoFile] = useState<File | null>(null);
 	const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
@@ -39,6 +42,8 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 				endDate: tournament.endDate ? new Date(tournament.endDate).toISOString().split('T')[0] : '',
 			});
 			setUpdatedFields({});
+			setBannerFile(null);
+			setLogoFile(null);
 			setIsConfirmingDelete(false);
 		}
 	}, [tournament]);
@@ -50,26 +55,41 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 
 	const handleEdit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!editingTournament || Object.keys(updatedFields).length === 0) {
+		const hasFieldChanges = Object.keys(updatedFields).length > 0;
+		const hasMediaChanges = !!bannerFile || !!logoFile;
+		if (!editingTournament || (!hasFieldChanges && !hasMediaChanges)) {
 			toast({ title: 'No Changes', description: 'No changes were made to the tournament.', variant: 'default' });
 			return;
 		}
 
 		setIsSaving(true);
 		try {
-			const response = await fetch(`/api/tournaments/${editingTournament.id}`, {
-				method: 'PATCH',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(updatedFields),
-			});
+			let mediaUpdates: Partial<Tournament> = {};
+			if (hasMediaChanges) {
+				const media = new FormData();
+				if (bannerFile) media.append('bannerFile', bannerFile);
+				if (logoFile) media.append('logoFile', logoFile);
+				const mediaResponse = await fetch(`/api/tournaments/${editingTournament.id}/media`, { method: 'POST', body: media });
+				const mediaPayload = await mediaResponse.json().catch(() => null);
+				if (!mediaResponse.ok) throw new Error(mediaPayload?.error || 'Failed to upload image');
+				mediaUpdates = { bannerUrl: mediaPayload.tournament.bannerUrl, logoUrl: mediaPayload.tournament.logoUrl };
+			}
 
-			if (!response.ok) {
-				const payload = await response.json().catch(() => null);
-				throw new Error(payload?.error || 'Failed to update tournament');
+			if (hasFieldChanges) {
+				const response = await fetch(`/api/tournaments/${editingTournament.id}`, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(updatedFields),
+				});
+
+				if (!response.ok) {
+					const payload = await response.json().catch(() => null);
+					throw new Error(payload?.error || 'Failed to update tournament');
+				}
 			}
 
 			toast({ title: 'Success', description: 'Tournament updated successfully', variant: 'default' });
-			onSave({ ...editingTournament, ...updatedFields });
+			onSave({ ...editingTournament, ...updatedFields, ...mediaUpdates });
 			onClose();
 		} catch (error) {
 			console.error('Failed to update tournament', error);
@@ -171,6 +191,14 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 								<Label htmlFor='edit-endDate'>End Date</Label>
 								<Input id='edit-endDate' type='date' value={editingTournament?.endDate || ''} onChange={(e) => handleChange('endDate', e.target.value)} required />
 							</div>
+						</div>
+					</div>
+
+					<div className='space-y-3'>
+						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Media</p>
+						<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+							<ImageField id='edit-bannerFile' label='Banner' currentUrl={editingTournament?.bannerUrl} onFileChange={setBannerFile} aspect='aspect-video' />
+							<ImageField id='edit-logoFile' label='Logo' currentUrl={editingTournament?.logoUrl} onFileChange={setLogoFile} aspect='aspect-square' />
 						</div>
 					</div>
 

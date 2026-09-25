@@ -674,6 +674,7 @@ model NewsComment {
 enum ForumCategory {
   GENERAL
   COUNTER_STRIKE
+  LEAGUE_OF_LEGENDS
   TOURNAMENTS
   OFF_TOPIC
 

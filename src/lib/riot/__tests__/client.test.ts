@@ -3,7 +3,7 @@
  */
 jest.mock('server-only', () => ({}));
 
-import { __resetDataDragonCache, getAccountByRiotId, getDataDragonVersion, getSummonerByPuuid, profileIconUrl, riotApiConfigured, RiotApiError } from '../client';
+import { __resetDataDragonCache, getAccountByRiotId, getDataDragonVersion, getLeagueEntriesByPuuid, getSummonerByPuuid, profileIconUrl, riotApiConfigured, RiotApiError } from '../client';
 
 const originalFetch = global.fetch;
 const originalKey = process.env.RIOT_API_KEY;
@@ -102,6 +102,17 @@ describe('riot client', () => {
 	it('getSummonerByPuuid propagates a 404 as not_found (no LoL summoner on that platform)', async () => {
 		global.fetch = jest.fn().mockResolvedValue(jsonResponse({}, { status: 404 })) as unknown as typeof fetch;
 		await expect(getSummonerByPuuid('na1', 'p-1')).rejects.toMatchObject({ kind: 'not_found' });
+	});
+
+	it('gets the league entries for a summoner by PUUID', async () => {
+		const entries = [{ queueType: 'RANKED_SOLO_5x5', tier: 'GOLD', rank: 'II', leaguePoints: 42, wins: 10, losses: 8 }];
+		global.fetch = jest.fn().mockResolvedValue(jsonResponse(entries)) as unknown as typeof fetch;
+		await expect(getLeagueEntriesByPuuid('euw1', 'p-1')).resolves.toEqual(entries);
+	});
+
+	it('getLeagueEntriesByPuuid returns an empty list for an unranked summoner (Riot answers 200, not 404)', async () => {
+		global.fetch = jest.fn().mockResolvedValue(jsonResponse([])) as unknown as typeof fetch;
+		await expect(getLeagueEntriesByPuuid('euw1', 'p-1')).resolves.toEqual([]);
 	});
 
 	it('fetches and caches the Data Dragon version, and builds an icon URL from it', async () => {

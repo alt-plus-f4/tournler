@@ -80,7 +80,7 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 			<h2 id='on-air-heading' className='sr-only'>
 				Live now
 			</h2>
-			<Link href={`/matches/${featured.id}`} className='block p-5 transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:p-8'>
+			<Link href={`/matches/${featured.id}`} className='block p-[0.725rem] transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
 				<div className='mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm'>
 					{isPaused ? (
 						<span className='inline-flex items-center gap-2 font-bold text-signal-hold'>

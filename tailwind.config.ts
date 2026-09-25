@@ -6,6 +6,10 @@ const config: Config = {
 		"./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
 		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
 		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+		// Some Tailwind class names (GAME_ACCENT's `text-[#..]`/`border-[#..]`) live in plain data
+		// modules, not components — without this, the JIT scanner never sees them and silently
+		// drops the classes (no build error, the utility just never gets generated).
+		"./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
 	],
 	theme: {
 		extend: {

@@ -9,13 +9,13 @@ import { GamesStep } from './onboarding/GamesStep';
 import { SteamStep } from './onboarding/SteamStep';
 import { RiotStep } from './onboarding/RiotStep';
 import { CompletedStep } from './onboarding/CompletedStep';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from './ui/dialog';
+import { Dialog } from './ui/dialog';
 import { Button } from './ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/lib/onboarding-slice';
-import Step from './Steps';
+import { OnboardingShell } from './onboarding/OnboardingShell';
 
 interface OnboardingDialogProps {
 	isOpen: boolean;
@@ -283,41 +283,26 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	};
 
 	const renderSkipButton = () => {
-		// Render the skip button only if the current step has already been completed and it is not the final step.
+		// Only if the current step has already been completed and it is not the final step: lets a
+		// player who came back to review an earlier step move on again without resubmitting it.
 		if (completedSteps.includes(currentStep) && currentStep !== OnboardingDialogSteps.Completed) {
 			return (
-				<Button variant='outline' onClick={handleSkip} className='mt-4 w-[30%] sm:w-[80%] mx-auto' disabled={isStepLoading}>
-					{isStepLoading ? 'Skipping…' : 'Skip'}
-				</Button>
+				<div className='px-6 pb-8 text-center sm:px-12'>
+					<Button variant='link' size='sm' onClick={handleSkip} disabled={isStepLoading} className='text-neutral-500 hover:text-white'>
+						{isStepLoading ? 'Skipping…' : 'Skip this step'}
+					</Button>
+				</div>
 			);
 		}
 		return null;
 	};
 
-	const currentIndex = steps.findIndex((s) => s.number === currentStep);
-
 	return (
-		<>
-			<Dialog open={open}>
-				<DialogContent className='max-w-max'>
-					<DialogTitle className='sr-only'>Set up your account</DialogTitle>
-					<DialogDescription className='sr-only'>
-						Step {Math.max(0, currentIndex) + 1} of {steps.length}: {STEP_TITLES[currentStep as OnboardingDialogSteps]}
-					</DialogDescription>
-					<div className='flex flex-row py-5'>
-						<ol aria-label='Onboarding steps' className='hidden flex-col justify-between border-r border-border py-8 sm:flex'>
-							{steps.map((step) => (
-								<Step key={step.number} step={step} completed={completedSteps.includes(step.number)} />
-							))}
-						</ol>
-
-						<div className='flex flex-col m-auto'>
-							{renderStep()}
-							{renderSkipButton()}
-						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
-		</>
+		<Dialog open={open}>
+			<OnboardingShell steps={steps} currentStep={currentStep} completedSteps={completedSteps}>
+				{renderStep()}
+				{renderSkipButton()}
+			</OnboardingShell>
+		</Dialog>
 	);
 }

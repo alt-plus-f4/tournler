@@ -1,24 +1,15 @@
+import Image from 'next/image';
 import type { Game } from '@prisma/client';
-import { GAME_META } from '@/lib/games';
+import { GAME_META, GAME_ICON_SRC } from '@/lib/games';
 import { cn } from '@/lib/utils';
 
 /**
- * Tournler's own geometric game marks (not Valve or Riot artwork): a squared crosshair for CS2, a
- * split diamond for League of Legends. Monochrome by design: game identity lives in shape and the
- * tag, never in hue (DESIGN.md On-Air Rule).
+ * Each game's real mark, everywhere a game is labeled: the white-on-transparent icons in /public
+ * (the CS2 soldier icon, Ahri for LoL — GAME_ICON_SRC). The hue accent stays confined to the CS2/LoL
+ * hub chrome (GAME_ACCENT, DESIGN.md's Hub Accent exception); this icon itself does not.
  */
 export function GameGlyph({ game, className }: { game: Game; className?: string }) {
-	return game === 'CS2' ? (
-		<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={1.75} strokeLinecap='square' aria-hidden className={cn('h-4 w-4 shrink-0', className)}>
-			<rect x='5' y='5' width='14' height='14' />
-			<path d='M12 2v6M12 16v6M2 12h6M16 12h6' />
-		</svg>
-	) : (
-		<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth={1.75} strokeLinejoin='miter' aria-hidden className={cn('h-4 w-4 shrink-0', className)}>
-			<path d='M12 2 22 12 12 22 2 12Z' />
-			<path d='M12 2v20' />
-		</svg>
-	);
+	return <Image src={GAME_ICON_SRC[game]} alt='' width={16} height={16} className={cn('h-4 w-4 shrink-0 object-contain', className)} />;
 }
 
 /** Glyph + short tag ("CS2" / "LoL"), the per-row game marker of the one feed. */

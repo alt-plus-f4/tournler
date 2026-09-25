@@ -165,6 +165,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 				<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'absolute left-2 top-2 z-10 bg-black/60')}>
 					<ArrowLeft className='h-4 w-4' aria-hidden />
 				</Link>
+				<GameTag game={tournament.game} className='absolute right-2 top-2 z-10 bg-black/70' />
 
 				{/* In flow (not absolutely stacked) so a long name and the register block never overlap. */}
 				<div className='relative z-10 flex flex-col gap-4 p-4 pt-16 sm:flex-row sm:items-end sm:justify-between sm:p-10 sm:pt-20'>
@@ -183,12 +184,9 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 								<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} game={tournament.game} />
 							</div>
 						)}
-						<div className='flex items-center gap-2'>
-							<GameTag game={tournament.game} />
-							<div>
-								<p className='text-sm font-bold text-white'>{registration.label}</p>
-								<p className='font-mono text-xs tabular-nums text-muted-foreground'>{registration.detail}</p>
-							</div>
+						<div>
+							<p className='text-sm font-bold text-white'>{registration.label}</p>
+							<p className='font-mono text-xs tabular-nums text-muted-foreground'>{registration.detail}</p>
 						</div>
 						{registration.open && timeLeftToJoin > 0 && (
 							<div className='text-muted-foreground'>

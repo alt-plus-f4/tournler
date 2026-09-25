@@ -2,12 +2,13 @@ import { z } from 'zod';
 
 /** Shared, framework-free forum constants and helpers (safe to import from server and client). */
 
-export const FORUM_CATEGORIES = ['GENERAL', 'COUNTER_STRIKE', 'TOURNAMENTS', 'OFF_TOPIC'] as const;
+export const FORUM_CATEGORIES = ['GENERAL', 'COUNTER_STRIKE', 'LEAGUE_OF_LEGENDS', 'TOURNAMENTS', 'OFF_TOPIC'] as const;
 export type ForumCategoryValue = (typeof FORUM_CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<ForumCategoryValue, string> = {
 	GENERAL: 'General',
 	COUNTER_STRIKE: 'Counter-Strike',
+	LEAGUE_OF_LEGENDS: 'League of Legends',
 	TOURNAMENTS: 'Tournaments',
 	OFF_TOPIC: 'Off topic',
 };
@@ -16,6 +17,7 @@ export const CATEGORY_LABELS: Record<ForumCategoryValue, string> = {
 export const CATEGORY_SLUGS: Record<ForumCategoryValue, string> = {
 	GENERAL: 'general',
 	COUNTER_STRIKE: 'counter-strike',
+	LEAGUE_OF_LEGENDS: 'league-of-legends',
 	TOURNAMENTS: 'tournaments',
 	OFF_TOPIC: 'off-topic',
 };

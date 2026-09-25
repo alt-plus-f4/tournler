@@ -198,7 +198,7 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 													key={g}
 													className={cn(
 														'flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background',
-														field.value === g ? 'border-foreground bg-foreground font-bold text-background' : 'border-border text-neutral-300 hover:border-neutral-500',
+														field.value === g ? 'border-white bg-white/10 font-bold text-white' : 'border-border text-neutral-300 hover:border-neutral-500',
 													)}
 												>
 													<input type='radio' name={field.name} value={g} checked={field.value === g} onChange={() => field.onChange(g)} className='sr-only' />

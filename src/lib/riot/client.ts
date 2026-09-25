@@ -95,6 +95,24 @@ export async function getSummonerByPuuid(platform: RiotPlatform, puuid: string):
 	return { puuid: data.puuid ?? puuid, profileIconId: data.profileIconId, summonerLevel: data.summonerLevel };
 }
 
+export interface LeagueEntryDto {
+	queueType: string;
+	tier: string;
+	rank: string;
+	leaguePoints: number;
+	wins: number;
+	losses: number;
+}
+
+/**
+ * league-v4 by PUUID on one platform: every queue the summoner has an entry in (solo/duo, flex...).
+ * An unranked player has no entries at all — Riot answers 200 with `[]`, not a 404.
+ */
+export async function getLeagueEntriesByPuuid(platform: RiotPlatform, puuid: string): Promise<LeagueEntryDto[]> {
+	const data = await riotGet<unknown>(`https://${platform}.api.riotgames.com/lol/league/v4/entries/by-puuid/${encodeURIComponent(puuid)}`);
+	return Array.isArray(data) ? (data as LeagueEntryDto[]) : [];
+}
+
 // Data Dragon (Riot's public static CDN, no key). The latest version is needed to build icon URLs;
 // held in memory for 6 hours per server instance. Failure just means "show the number, no image".
 const DDRAGON_TTL_MS = 6 * 60 * 60 * 1000;

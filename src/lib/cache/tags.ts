@@ -18,6 +18,8 @@ export const CACHE_TAGS = {
 	homepage: 'homepage',
 	/** External FACEIT lookups: keyed by Steam ID, refreshed on a timer only (no DB write affects them). */
 	faceit: 'faceit',
+	/** External Riot league-v4 lookups: keyed by PUUID, refreshed on a timer only (no DB write affects them). */
+	riotRank: 'riot-rank',
 } as const;
 
 export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];

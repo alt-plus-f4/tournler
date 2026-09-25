@@ -11,7 +11,8 @@ import { MatchesBrowser } from './_components/MatchesBrowser';
 import type { MatchListItem } from './_components/MatchList';
 import { parseStatusFilter, type StatusFilter } from './_components/status';
 import { GAME_FILTER_COOKIE, parseGameParam } from '@/lib/games';
-import { GameFilterChips } from '@/components/teams/GameFilterChips';
+import { HubSubnav } from '@/components/shell/HubSubnav';
+import { HubPageGlow } from '@/components/shell/HubPageGlow';
 
 // Live scores and new lobbies change by the minute; always render per request.
 export const dynamic = 'force-dynamic';
@@ -74,7 +75,7 @@ const getTournamentOptions = cachedQuery(
 	{ tags: ['tournaments'], revalidate: REVALIDATE.standard },
 );
 
-async function MatchesSection({ status, tournamentId, page, game }: { status: StatusFilter; tournamentId: string; page: number; game: Game | null }) {
+async function MatchesSection({ status, tournamentId, page, game }: { status: StatusFilter; tournamentId: string; page: number; game: Game }) {
 	const [tournaments, { matches, totalPages }] = await Promise.all([
 		getTournamentOptions(game),
 		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page, game),
@@ -83,7 +84,7 @@ async function MatchesSection({ status, tournamentId, page, game }: { status: St
 	return <MatchesBrowser status={status} tournamentId={tournamentId} page={page} totalPages={totalPages} tournaments={tournaments} matches={matches} game={game} />;
 }
 
-function MatchesSkeleton() {
+export function MatchesSkeleton() {
 	return (
 		<div role='status' aria-busy='true'>
 			<span className='sr-only'>Loading matches…</span>
@@ -112,26 +113,28 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
 	const rawTournament = first(query.tournament);
 	const tournamentId = rawTournament && /^\d{1,9}$/.test(rawTournament) ? rawTournament : '';
 	const page = Math.max(1, Number.parseInt(first(query.page) ?? '1', 10) || 1);
-	// ?game= wins (links, shares); without it, the filter the viewer last picked (cookie) — same rule as /teams and /tournaments.
+	// ?game= wins (links, shares); without it, the channel the viewer last picked (cookie, set by the
+	// navbar switch) — same rule as /teams and /tournaments. The list only ever shows one channel.
 	const rawGame = first(query.game) ?? cookieStore.get(GAME_FILTER_COOKIE)?.value;
-	const game = parseGameParam(rawGame);
+	const game = parseGameParam(rawGame) ?? 'CS2';
 
 	const session = await getAuthSession();
 	const canCreateMatch = session ? await userHasPermission(session.user.id, 'matches:manage') : false;
 
 	return (
-		<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
-			<div className='mb-6 flex items-center justify-between gap-3'>
-				<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
-				{canCreateMatch && <CreateMatchButton />}
-			</div>
-			<div className='mb-6'>
-				<GameFilterChips basePath='/matches' active={game} label='Filter matches by game' />
-			</div>
+		<>
+			<HubPageGlow game={game} />
+			<HubSubnav game={game} active='matches' />
+			<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
+				<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
+					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
+					{canCreateMatch && <CreateMatchButton />}
+				</div>
 
-			<Suspense fallback={<MatchesSkeleton />} key={game ?? 'all'}>
-				<MatchesSection status={status} tournamentId={tournamentId} page={page} game={game} />
-			</Suspense>
-		</div>
+				<Suspense fallback={<MatchesSkeleton />} key={game}>
+					<MatchesSection status={status} tournamentId={tournamentId} page={page} game={game} />
+				</Suspense>
+			</div>
+		</>
 	);
 }

@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import { RiotIdLinker } from '@/components/profile/RiotIdLinker';
 import type { RiotStatusResponse } from '@/lib/riot/types';
-import { Button } from '../ui/button';
-import { DialogFooter } from '../ui/dialog';
+import { StepHeading, StepFooter } from './StepChrome';
 
 interface RiotStepProps {
 	previousStep: () => void;
@@ -37,20 +36,12 @@ export function RiotStep({ previousStep, nextStep }: RiotStepProps) {
 	const linked = riot.account?.status === 'linked';
 
 	return (
-		<div className='w-full max-w-md'>
-			<h2 className='text-center text-2xl font-semibold'>Link your Riot ID</h2>
-			<p className='mt-1 text-center text-sm text-muted-foreground'>Needed to register for League of Legends tournaments. We never ask for your Riot password.</p>
+		<div className='flex flex-1 flex-col px-6 py-10 sm:px-12'>
+			<StepHeading title='Link your Riot ID' description="Needed to register for League of Legends tournaments. We never ask for your Riot password." />
 
-			<div className='mt-6 rounded-md border border-border p-4'>{loaded && <RiotIdLinker value={riot} onChange={setRiot} />}</div>
+			<div className='rounded-md border border-border bg-black/40 p-4'>{loaded && <RiotIdLinker value={riot} onChange={setRiot} />}</div>
 
-			<DialogFooter className='mt-8 flex justify-around'>
-				<Button onClick={previousStep} variant='secondary' className='sm:w-48'>
-					Previous
-				</Button>
-				<Button onClick={nextStep} variant='outline' className='sm:w-48'>
-					{linked ? 'Continue' : 'Skip for now'}
-				</Button>
-			</DialogFooter>
+			<StepFooter onPrevious={previousStep} onNext={nextStep} nextLabel={linked ? 'Continue' : 'Skip for now'} />
 		</div>
 	);
 }

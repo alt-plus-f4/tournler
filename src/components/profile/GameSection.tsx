@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { GAME_META, gameParam } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
 import { TeamLogo } from '@/components/TeamLogo';
+import { cn } from '@/lib/utils';
 
 export interface ProfileTeamRef {
 	id: number;
@@ -15,12 +16,13 @@ export interface ProfileTeamRef {
 
 /**
  * One game's column on the dual-game profile (direction C): header with the game's monochrome
- * mark, then label/value rows (account, team, rating). CS2 and LoL sit side by side, stacked on mobile.
+ * mark, then label/value rows (account, team, rating). CS2 and LoL sit side by side, stacked on
+ * mobile; a lone game spans the full row instead of leaving the second column empty.
  */
-export function GameSection({ game, children }: { game: Game; children: ReactNode }) {
+export function GameSection({ game, children, className }: { game: Game; children: ReactNode; className?: string }) {
 	const headingId = `game-${gameParam(game)}-heading`;
 	return (
-		<section aria-labelledby={headingId} className='min-w-0 rounded-md border border-border bg-neutral-950'>
+		<section aria-labelledby={headingId} className={cn('min-w-0 rounded-md border border-border bg-neutral-950', className)}>
 			<h3 id={headingId} className='flex items-center gap-2 border-b border-border px-4 py-3 text-sm font-black uppercase tracking-wide text-white sm:px-5'>
 				<GameGlyph game={game} />
 				{GAME_META[game].label}
