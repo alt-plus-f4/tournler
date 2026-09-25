@@ -1,11 +1,15 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import type { Game } from '@prisma/client';
 import { GAME_FILTER_COOKIE, GAME_META, gameParam } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
+// The three hub tabs (see HubSubnav) — switching games from one of these keeps you on the same
+// tab (e.g. Teams·CS2 → Teams·LoL) instead of always landing back on Tournaments.
+const HUB_TAB_PATHS = ['/tournaments', '/matches', '/teams'];
 
 /**
  * A top-nav entry into a game hub (direction B). Writes GAME_FILTER_COOKIE on click so the hub
@@ -14,9 +18,13 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
  * hub page itself (HubPageGlow), not on this nav entry.
  */
 export function HubNavLink({ game, href, className, onNavigate }: { game: Game; href: string; className?: string; onNavigate?: () => void }) {
+	const pathname = usePathname();
+	const currentTabPath = HUB_TAB_PATHS.find((p) => pathname === p || pathname.startsWith(`${p}/`));
+	const target = currentTabPath ? `${currentTabPath}?game=${gameParam(game)}` : href;
+
 	return (
 		<Link
-			href={href}
+			href={target}
 			onClick={() => {
 				try {
 					document.cookie = `${GAME_FILTER_COOKIE}=${gameParam(game)}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
