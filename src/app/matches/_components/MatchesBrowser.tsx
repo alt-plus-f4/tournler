@@ -72,7 +72,9 @@ export function MatchesBrowser({ status, tournamentId, page, totalPages, tournam
 				{matches.length === 0 ? (
 					<div className='rounded-md border border-border px-4 py-24 text-center'>
 						<p className='font-semibold'>No matches found</p>
-						<p className='mt-1 text-sm text-muted-foreground'>{status !== 'ALL' || tournamentId ? 'Nothing matches these filters. Try All, or pick another tournament.' : 'Matches appear here once a tournament starts or a pickup is created.'}</p>
+						<p className='mt-1 text-sm text-muted-foreground'>
+							{status !== 'ALL' || tournamentId ? 'Nothing matches these filters. Try All, or pick another tournament.' : 'Matches appear here once a tournament starts or a pickup is created.'}
+						</p>
 					</div>
 				) : (
 					<MatchList matches={matches} />

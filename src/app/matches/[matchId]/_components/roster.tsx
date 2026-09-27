@@ -100,7 +100,14 @@ export function TeamColumn({
 							>
 								<PlayerAvatar src={player.image} name={player.name} size={32} />
 								<span className='flex min-w-0 flex-1 items-center gap-1.5'>
-									<span className={cn('truncate text-sm font-medium underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline', result === 'loss' ? 'text-neutral-300' : 'text-white')}>{player.name}</span>
+									<span
+										className={cn(
+											'truncate text-sm font-medium underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline',
+											result === 'loss' ? 'text-neutral-300' : 'text-white',
+										)}
+									>
+										{player.name}
+									</span>
 									{player.verified && <VerifiedMark badge={player.verified} />}
 									{player.isCaptain && (
 										<span title='Captain' className='shrink-0 text-muted-foreground'>
@@ -117,14 +124,18 @@ export function TeamColumn({
 									{stat ? (
 										<>
 											{stat.kills}
-											<span className='text-neutral-600' aria-hidden>–</span>
+											<span className='text-neutral-600' aria-hidden>
+												–
+											</span>
 											<span className='sr-only'> kills, </span>
 											{stat.deaths}
 											<span className='sr-only'> deaths</span>
 										</>
 									) : (
 										<>
-											<span className='text-muted-foreground' aria-hidden>—</span>
+											<span className='text-muted-foreground' aria-hidden>
+												—
+											</span>
 											<span className='sr-only'>No stats</span>
 										</>
 									)}

@@ -160,7 +160,8 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					<DialogHeader>
 						<DialogTitle>Delete this user?</DialogTitle>
 						<DialogDescription>
-							{editingUser?.name || 'This user'}{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
+							{editingUser?.name || 'This user'}
+							{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-end gap-2'>
@@ -256,7 +257,12 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 									<span key={badge.id} className='inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-2 pr-1 text-xs' style={{ backgroundColor: `${badge.color}15` }}>
 										<BadgeIcon name={badge.icon} className='h-3.5 w-3.5' style={{ color: badge.color }} />
 										{badge.name}
-										<button type='button' onClick={() => handleRevokeBadge(badge.id)} className='flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label={`Revoke ${badge.name} badge`}>
+										<button
+											type='button'
+											onClick={() => handleRevokeBadge(badge.id)}
+											className='flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+											aria-label={`Revoke ${badge.name} badge`}
+										>
 											<X className='h-3 w-3' aria-hidden />
 										</button>
 									</span>

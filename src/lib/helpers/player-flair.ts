@@ -53,8 +53,10 @@ export async function flairByUserId(userIds: string[]): Promise<Map<string, Play
 	if (userIds.length === 0) return new Map();
 	const users = await db.user.findMany({ where: { id: { in: [...new Set(userIds)] } }, select: { id: true, ...playerFlairSelect } });
 	const toFlair = await flairMapper(users);
-	return new Map(users.map((u) => {
-		const { verified, faceitLevel } = toFlair(u);
-		return [u.id, { verified, faceitLevel }];
-	}));
+	return new Map(
+		users.map((u) => {
+			const { verified, faceitLevel } = toFlair(u);
+			return [u.id, { verified, faceitLevel }];
+		}),
+	);
 }

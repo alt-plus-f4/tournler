@@ -28,9 +28,12 @@ export function ImageField({
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
 	// Local object URL for the newly picked file only; revoked whenever it's replaced or unmounted.
-	useEffect(() => () => {
-		if (previewUrl) URL.revokeObjectURL(previewUrl);
-	}, [previewUrl]);
+	useEffect(
+		() => () => {
+			if (previewUrl) URL.revokeObjectURL(previewUrl);
+		},
+		[previewUrl],
+	);
 
 	const shown = previewUrl ?? currentUrl;
 

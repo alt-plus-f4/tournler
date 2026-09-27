@@ -33,7 +33,10 @@ export default function RootLayout({
 	return (
 		<html lang='en' data-scroll-behavior='smooth'>
 			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
-				<a href='#content' className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black'>
+				<a
+					href='#content'
+					className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black'
+				>
 					Skip to content
 				</a>
 				<InteractiveBackground />

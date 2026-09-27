@@ -128,7 +128,10 @@ async function FeaturedSections() {
 	const layoutClass = featuredLayout === 'CAROUSEL' ? 'flex gap-5 overflow-x-auto snap-x snap-mandatory pb-2' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5';
 	const itemClass = featuredLayout === 'CAROUSEL' ? 'min-w-[280px] max-w-[320px] snap-start shrink-0' : '';
 
-	const [curatedFeatured, featuredNews] = await Promise.all([featuredSource !== 'NEWS' ? getCuratedFeaturedTournaments() : Promise.resolve([]), featuredSource !== 'TOURNAMENTS' ? getFeaturedNews() : Promise.resolve([])]);
+	const [curatedFeatured, featuredNews] = await Promise.all([
+		featuredSource !== 'NEWS' ? getCuratedFeaturedTournaments() : Promise.resolve([]),
+		featuredSource !== 'TOURNAMENTS' ? getFeaturedNews() : Promise.resolve([]),
+	]);
 
 	// Nothing curated yet — fall back to the original prize-pool heuristic so the
 	// section isn't empty the moment this feature ships with no admin curation done.
@@ -176,7 +179,15 @@ async function FeaturedSections() {
 						<div className={layoutClass}>
 							{featuredNews.map((post) => (
 								<div key={post.id} className={itemClass}>
-									<FeaturedNewsPostCard id={post.id} hasContent={post.content != null} title={post.title} blurb={post.blurb} imageUrl={post.imageUrl} link={post.link} publishedAt={post.publishedAt.toISOString()} />
+									<FeaturedNewsPostCard
+										id={post.id}
+										hasContent={post.content != null}
+										title={post.title}
+										blurb={post.blurb}
+										imageUrl={post.imageUrl}
+										link={post.link}
+										publishedAt={post.publishedAt.toISOString()}
+									/>
 								</div>
 							))}
 						</div>

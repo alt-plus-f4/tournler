@@ -14,6 +14,10 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 const HUB_TAB_PATHS = ['/tournaments', '/matches', '/teams'];
 // Fired whenever a click here changes which game a hub page shows. Same pathname, new `?game=` —
 // usePathname alone can't see that, so every other HubNavLink instance listens for this instead.
+// Carries the clicked game as `detail`: at dispatch time (synchronously inside onClick) the Link's
+// navigation hasn't committed yet, so window.location.search still reflects the *previous* page —
+// reading it here instead of trusting the detail made the first click show stale state and only
+// the next click (once the prior navigation had settled) show the correct one.
 const GAME_CHANGE_EVENT = 'tournler:hub-game-change';
 
 /** Same "?game= wins, else the cookie, else CS2" rule the hub pages resolve server-side. */
@@ -43,7 +47,13 @@ export function HubNavLink({ game, href, className, onNavigate }: { game: Game; 
 			setActiveGame(null);
 			return;
 		}
-		const handler = () => setActiveGame(readActiveGame());
+		// GAME_CHANGE_EVENT carries the just-clicked game directly (see its definition above) so this
+		// updates in the same tick as the click, before the URL itself has changed. Other triggers
+		// (mount, back/forward) have no such detail, so they fall back to reading the settled URL/cookie.
+		const handler = (event?: Event) => {
+			const detail = event instanceof CustomEvent ? (event.detail as Game | undefined) : undefined;
+			setActiveGame(detail ?? readActiveGame());
+		};
 		handler();
 		window.addEventListener(GAME_CHANGE_EVENT, handler);
 		window.addEventListener('popstate', handler);
@@ -64,7 +74,7 @@ export function HubNavLink({ game, href, className, onNavigate }: { game: Game; 
 				} catch {
 					// Cookies blocked: the ?game= in the href still opens the right hub this once.
 				}
-				window.dispatchEvent(new Event(GAME_CHANGE_EVENT));
+				window.dispatchEvent(new CustomEvent(GAME_CHANGE_EVENT, { detail: game }));
 				onNavigate?.();
 			}}
 			aria-current={isActive ? 'page' : undefined}

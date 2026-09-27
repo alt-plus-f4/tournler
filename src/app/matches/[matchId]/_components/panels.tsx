@@ -57,7 +57,11 @@ export function ServerPanel({ match }: { match: Match }) {
 	} else {
 		statusLine = (
 			<span className='text-sm text-muted-foreground'>
-				{match.status === 'SCHEDULED' ? (match.isPickup ? 'The server opens once an admin starts the match.' : 'The server opens about 5 minutes before the start.') : 'Waiting for a free server — every pool server is in use.'}
+				{match.status === 'SCHEDULED'
+					? match.isPickup
+						? 'The server opens once an admin starts the match.'
+						: 'The server opens about 5 minutes before the start.'
+					: 'Waiting for a free server — every pool server is in use.'}
 			</span>
 		);
 	}
@@ -77,7 +81,12 @@ export function ServerPanel({ match }: { match: Match }) {
 					<div className='flex items-center gap-3 px-3 py-2'>
 						<dt className='w-16 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>IP</dt>
 						<dd className='flex-1 truncate font-mono text-sm text-white'>{address}</dd>
-						<button type='button' onClick={() => copy('ip', address)} className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label={copied === 'ip' ? 'IP copied' : 'Copy IP'}>
+						<button
+							type='button'
+							onClick={() => copy('ip', address)}
+							className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+							aria-label={copied === 'ip' ? 'IP copied' : 'Copy IP'}
+						>
 							{copied === 'ip' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
 						</button>
 					</div>
@@ -130,7 +139,8 @@ export function LolMatchPanel({ match }: { match: Match }) {
 			<div className='flex items-start gap-3'>
 				<GameGlyph game='LOL' className='mt-0.5 h-5 w-5 shrink-0 text-neutral-400' />
 				<p className='text-sm text-neutral-200'>
-					Tournler doesn&apos;t host League servers. Play this match in the League client{match.status === 'SCHEDULED' ? ' once it starts' : ''} — an organizer records the result here once it&apos;s over.
+					Tournler doesn&apos;t host League servers. Play this match in the League client{match.status === 'SCHEDULED' ? ' once it starts' : ''} — an organizer records the result here once it&apos;s
+					over.
 				</p>
 			</div>
 			{match.status === 'SCHEDULED' && <p className='text-xs text-muted-foreground'>An admin marks this match Live from the Admin tab when it&apos;s time to play.</p>}
@@ -288,7 +298,9 @@ function MapStrip({ match }: { match: Match }) {
 						{played && (
 							<span className='font-mono tabular-nums'>
 								<span className={win === 'TEAM_B' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
-								<span className='text-neutral-600' aria-hidden>–</span>
+								<span className='text-neutral-600' aria-hidden>
+									–
+								</span>
 								<span className='sr-only'> to </span>
 								<span className={win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
 							</span>
@@ -322,7 +334,10 @@ export function MapsTab({ match, onGoToVeto }: { match: Match; onGoToVeto?: () =
 	const { teamALabel, teamBLabel } = getSideLabels(match);
 	if (match.maps.length === 0) {
 		return isLolMatch(match) ? (
-			<EmptyState title='No map veto for League' body='League of Legends matches aren’t played on a map pool, so there’s nothing to veto — see the result on the Overview tab once an organizer records it.' />
+			<EmptyState
+				title='No map veto for League'
+				body='League of Legends matches aren’t played on a map pool, so there’s nothing to veto — see the result on the Overview tab once an organizer records it.'
+			/>
 		) : (
 			<EmptyState title='No maps yet' body='Maps are locked in when the veto finishes. Both sides ban and pick from the active-duty pool on the Overview tab.'>
 				{onGoToVeto && (
@@ -343,7 +358,9 @@ export function MapsTab({ match, onGoToVeto }: { match: Match; onGoToVeto?: () =
 				return (
 					<li key={m.id} className='overflow-hidden rounded-md border border-border bg-neutral-950/90'>
 						<div className='relative aspect-[21/9]'>
-							{image && <Image src={image} alt='' fill sizes='(min-width: 1280px) 400px, (min-width: 768px) 50vw, 100vw' className={cn('object-cover', isFinalMap ? 'opacity-40 grayscale' : 'opacity-60')} />}
+							{image && (
+								<Image src={image} alt='' fill sizes='(min-width: 1280px) 400px, (min-width: 768px) 50vw, 100vw' className={cn('object-cover', isFinalMap ? 'opacity-40 grayscale' : 'opacity-60')} />
+							)}
 							<div className='absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent' />
 							<div className='absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4'>
 								<p className='text-xl font-black uppercase tracking-wide text-white'>{getMapDisplayName(m.mapName)}</p>
@@ -362,15 +379,17 @@ export function MapsTab({ match, onGoToVeto }: { match: Match; onGoToVeto?: () =
 								{played ? (
 									<>
 										<span className={win === 'TEAM_B' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamA ?? 0}</span>
-										<span className='mx-1 text-neutral-600' aria-hidden>:</span>
+										<span className='mx-1 text-neutral-600' aria-hidden>
+											:
+										</span>
 										<span className='sr-only'> to </span>
-								<span className={win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
+										<span className={win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white'}>{m.scoreTeamB ?? 0}</span>
 									</>
 								) : (
 									<span className='text-muted-foreground'>
-											<span aria-hidden>– : –</span>
-											<span className='sr-only'>Not played yet</span>
-										</span>
+										<span aria-hidden>– : –</span>
+										<span className='sr-only'>Not played yet</span>
+									</span>
 								)}
 							</span>
 							<span className={cn('truncate text-right text-sm font-bold uppercase', win === 'TEAM_A' ? 'text-muted-foreground' : 'text-white')}>{teamBLabel}</span>
@@ -433,7 +452,10 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 								return (
 									<tr key={s.userId} className='group/player transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5'>
 										<td className='px-4 py-2.5'>
-											<Link href={`/profile/${s.userId}`} className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+											<Link
+												href={`/profile/${s.userId}`}
+												className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+											>
 												<PlayerAvatar src={s.user.image} name={s.user.name} size={24} />
 												<span className='truncate text-white underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline'>{s.user.name || 'Unknown player'}</span>
 											</Link>

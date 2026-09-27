@@ -59,11 +59,7 @@ export function OnboardingShell({ steps, currentStep, completedSteps, children }
 									<span
 										className={cn(
 											'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border font-mono text-xs font-bold tabular-nums transition-colors',
-											isCurrent
-												? 'border-white bg-white text-black shadow-[0_0_0_4px_rgba(255,255,255,0.08)]'
-												: isDone
-													? 'border-white/60 text-white'
-													: 'border-border text-neutral-600',
+											isCurrent ? 'border-white bg-white text-black shadow-[0_0_0_4px_rgba(255,255,255,0.08)]' : isDone ? 'border-white/60 text-white' : 'border-border text-neutral-600',
 										)}
 									>
 										{isDone ? <Check className='h-3.5 w-3.5' aria-hidden /> : i + 1}

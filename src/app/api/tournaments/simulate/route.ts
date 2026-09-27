@@ -134,7 +134,10 @@ export async function POST(request: Request) {
 			const winnerScore = 13 + Math.floor(Math.random() * 4);
 			const loserScore = Math.floor(Math.random() * (winnerScore - 1));
 
-			const [teamA, teamB] = await Promise.all([db.cs2Team.findUnique({ where: { id: readyMatch.teamAId! }, include: { members: true } }), db.cs2Team.findUnique({ where: { id: readyMatch.teamBId! }, include: { members: true } })]);
+			const [teamA, teamB] = await Promise.all([
+				db.cs2Team.findUnique({ where: { id: readyMatch.teamAId! }, include: { members: true } }),
+				db.cs2Team.findUnique({ where: { id: readyMatch.teamBId! }, include: { members: true } }),
+			]);
 			const playerStats: PlayerStatInput[] = [
 				...(teamA?.members ?? []).map((member) => ({ userId: member.id, teamId: teamA!.id, kills: randomStat(30), deaths: randomStat(20), assists: randomStat(10) })),
 				...(teamB?.members ?? []).map((member) => ({ userId: member.id, teamId: teamB!.id, kills: randomStat(30), deaths: randomStat(20), assists: randomStat(10) })),

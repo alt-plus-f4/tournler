@@ -63,7 +63,10 @@ export function TeamTable({ isLoading, teams, onEdit, emptyMessage = 'No teams f
 									<td className={cn(t.td, t.num, 'text-right')}>{team.members?.length || 0}</td>
 									<td className={cn(t.td, t.num, 'whitespace-nowrap text-neutral-300')}>{formatAdminDate(team.createdAt)}</td>
 									<td className={cn(t.td, 'whitespace-nowrap text-right')}>
-										<Link href={`/teams/${team.id}`} className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+										<Link
+											href={`/teams/${team.id}`}
+											className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+										>
 											View<span className='sr-only'> {team.name} team page</span>
 										</Link>
 									</td>

@@ -76,14 +76,7 @@ export function TournamentsBrowser() {
 		<div>
 			<div role='group' aria-label='Filter tournaments' className='mb-8 inline-flex rounded-md border border-border p-1'>
 				{VIEWS.map((v) => (
-					<Button
-						key={v.value}
-						size='sm'
-						variant={view === v.value ? 'default' : 'ghost'}
-						aria-pressed={view === v.value}
-						onClick={() => setView(v.value)}
-						className='rounded-sm'
-					>
+					<Button key={v.value} size='sm' variant={view === v.value ? 'default' : 'ghost'} aria-pressed={view === v.value} onClick={() => setView(v.value)} className='rounded-sm'>
 						{v.label}
 					</Button>
 				))}

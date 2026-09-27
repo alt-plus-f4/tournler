@@ -112,7 +112,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 			canSeePassword = isOrganizerOrAdmin || isRostered;
 		}
 
-		const responseMatch = matchWithFaceitLevels.gameServer && !canSeePassword ? { ...matchWithFaceitLevels, gameServer: { ...matchWithFaceitLevels.gameServer, password: null } } : matchWithFaceitLevels;
+		const responseMatch =
+			matchWithFaceitLevels.gameServer && !canSeePassword ? { ...matchWithFaceitLevels, gameServer: { ...matchWithFaceitLevels.gameServer, password: null } } : matchWithFaceitLevels;
 
 		return NextResponse.json({ match: responseMatch });
 	} catch (error) {

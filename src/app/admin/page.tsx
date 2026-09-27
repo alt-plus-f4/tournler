@@ -79,9 +79,30 @@ async function DashboardBody() {
 	];
 
 	const breakdown = [
-		{ group: 'Users', href: '/admin/users', rows: [{ label: 'In a team', value: data.usersInTeam }, { label: 'Not in a team', value: data.usersNotInTeam }] },
-		{ group: 'Teams', href: '/admin/teams', rows: [{ label: 'Verified', value: data.verifiedTeams }, { label: 'Not full', value: data.notFullTeams }] },
-		{ group: 'Tournaments', href: '/admin/tournaments', rows: [{ label: 'Upcoming', value: data.upcoming }, { label: 'Ended', value: data.ended }] },
+		{
+			group: 'Users',
+			href: '/admin/users',
+			rows: [
+				{ label: 'In a team', value: data.usersInTeam },
+				{ label: 'Not in a team', value: data.usersNotInTeam },
+			],
+		},
+		{
+			group: 'Teams',
+			href: '/admin/teams',
+			rows: [
+				{ label: 'Verified', value: data.verifiedTeams },
+				{ label: 'Not full', value: data.notFullTeams },
+			],
+		},
+		{
+			group: 'Tournaments',
+			href: '/admin/tournaments',
+			rows: [
+				{ label: 'Upcoming', value: data.upcoming },
+				{ label: 'Ended', value: data.ended },
+			],
+		},
 	];
 
 	return (
@@ -140,7 +161,10 @@ async function DashboardBody() {
 								const Icon = ACTIVITY_ICON[item.type];
 								return (
 									<li key={`${item.type}-${item.id}`}>
-										<Link href={item.href} className='flex items-center gap-3 px-3 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
+										<Link
+											href={item.href}
+											className='flex items-center gap-3 px-3 py-2 text-sm transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+										>
 											<Icon aria-hidden size='1em' className='shrink-0 text-muted-foreground' />
 											<span className='flex-1 truncate'>{item.name}</span>
 											<span className='text-xs uppercase tracking-widest text-muted-foreground'>{item.type}</span>

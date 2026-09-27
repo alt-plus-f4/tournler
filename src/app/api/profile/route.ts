@@ -3,49 +3,43 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
 export async function PATCH(request: Request) {
-  const session = await getAuthSession();
+	const session = await getAuthSession();
 
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+	if (!session?.user) {
+		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	}
 
-  try {
-    const { name, bio, avatarUrl } = await request.json();
+	try {
+		const { name, bio, avatarUrl } = await request.json();
 
-    if (!name || typeof name !== 'string') {
-      return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
-    }
+		if (!name || typeof name !== 'string') {
+			return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+		}
 
-    if (bio !== undefined && (typeof bio !== 'string' || bio.length > 160)) {
-      return NextResponse.json({ error: 'Invalid bio' }, { status: 400 });
-    }
+		if (bio !== undefined && (typeof bio !== 'string' || bio.length > 160)) {
+			return NextResponse.json({ error: 'Invalid bio' }, { status: 400 });
+		}
 
-    if (avatarUrl && typeof avatarUrl !== 'string') {
-      return NextResponse.json({ error: 'Invalid avatarUrl' }, { status: 400 });
-    }
+		if (avatarUrl && typeof avatarUrl !== 'string') {
+			return NextResponse.json({ error: 'Invalid avatarUrl' }, { status: 400 });
+		}
 
-    session.user.name = name;
-    if (bio !== undefined) session.user.bio = bio;
-    session.user.image = avatarUrl;
+		session.user.name = name;
+		if (bio !== undefined) session.user.bio = bio;
+		session.user.image = avatarUrl;
 
-    const updatedUser = await db.user.update({
-      where: { email: session.user.email || '' },
-      data: {
-        name,
-        ...(bio !== undefined ? { bio } : {}),
-        image: avatarUrl
-      },
-    });
+		const updatedUser = await db.user.update({
+			where: { email: session.user.email || '' },
+			data: {
+				name,
+				...(bio !== undefined ? { bio } : {}),
+				image: avatarUrl,
+			},
+		});
 
-    return NextResponse.json(
-      { message: 'User updated successfully', updatedUser },
-      { status: 200 }
-    );
-  } catch (error: any) {
-    console.error('Error updating profile:', error);
-    return NextResponse.json(
-      { error: error.message || 'Error updating profile' },
-      { status: 500 }
-    );
-  }
+		return NextResponse.json({ message: 'User updated successfully', updatedUser }, { status: 200 });
+	} catch (error: any) {
+		console.error('Error updating profile:', error);
+		return NextResponse.json({ error: error.message || 'Error updating profile' }, { status: 500 });
+	}
 }

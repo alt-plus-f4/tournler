@@ -36,7 +36,7 @@ export async function GET() {
 				hasLinkedRiot,
 				games: user.games,
 			},
-			{ status: 200 }
+			{ status: 200 },
 		);
 	} catch (error) {
 		console.error('Error fetching onboarding status:', error);

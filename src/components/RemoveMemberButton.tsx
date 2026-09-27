@@ -2,27 +2,18 @@
 
 import { toast } from '@/lib/hooks/use-toast';
 import { Button } from './ui/button';
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { UserX } from 'lucide-react';
 import { removeMember } from '@/lib/helpers/remove-member';
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
 interface RemoveMemberButtonProps {
 	teamId: number;
 	memberId: string;
 	memberName: string;
 }
 
-export function RemoveMemberButton({
-	teamId,
-	memberId,
-	memberName,
-}: RemoveMemberButtonProps) {
-	const router = useRouter()
+export function RemoveMemberButton({ teamId, memberId, memberName }: RemoveMemberButtonProps) {
+	const router = useRouter();
 	async function lremoveMember() {
 		const response = await removeMember(teamId, memberId);
 		if (response?.error) {
@@ -48,11 +39,7 @@ export function RemoveMemberButton({
 					<TooltipProvider>
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<Button
-									variant='secondary'
-									aria-label={`Remove ${memberName || 'member'} from the team`}
-									onClick={() => lremoveMember()}
-								>
+								<Button variant='secondary' aria-label={`Remove ${memberName || 'member'} from the team`} onClick={() => lremoveMember()}>
 									<UserX aria-hidden />
 								</Button>
 							</TooltipTrigger>

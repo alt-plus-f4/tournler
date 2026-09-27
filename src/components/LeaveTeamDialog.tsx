@@ -1,16 +1,7 @@
 'use client';
 
 import { useToast } from '@/lib/hooks/use-toast';
-import {
-	Dialog,
-	DialogTrigger,
-	DialogContent,
-	DialogTitle,
-	DialogClose,
-	DialogDescription,
-	DialogHeader,
-	DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogClose, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import React, { ReactNode, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { removeMember } from '@/lib/helpers/remove-member';
@@ -22,11 +13,7 @@ interface LeaveTeamDialogProps {
 	children: ReactNode;
 }
 
-export function LeaveTeamDialog({
-	teamId,
-	userId,
-	children,
-}: LeaveTeamDialogProps) {
+export function LeaveTeamDialog({ teamId, userId, children }: LeaveTeamDialogProps) {
 	const { toast } = useToast();
 	const router = useRouter();
 	const [open, setOpen] = useState(false);
@@ -48,9 +35,7 @@ export function LeaveTeamDialog({
 			<DialogContent className='w-[300px]'>
 				<DialogHeader className='flex flex-col items-center gap-2'>
 					<DialogTitle>Leave Team?</DialogTitle>
-					<DialogDescription>
-						Do you really want to do that?
-					</DialogDescription>
+					<DialogDescription>Do you really want to do that?</DialogDescription>
 				</DialogHeader>
 				<DialogFooter className='flex justify-center gap-2 pt-2'>
 					<DialogClose asChild>

@@ -9,7 +9,7 @@ export const GAME_META: Record<Game, { label: string; short: string; account: st
 };
 
 /**
- * Hub accent hue — direction B's one deliberate exception to the On-Air Rule (see DESIGN.md):
+ * Hub accent hue — direction B's one deliberate exception to the On-Air Rule (see docs/DESIGN.md):
  * a very subtle warm yellow wash for the CS2 hub, a very subtle blue wash for the LoL hub. Lives on
  * the hub page itself (HubPageGlow — a soft, fixed radial wash behind the content), not on the nav:
  * the CS2/LoL nav entries and the hub subnav bar stay plain white/monochrome. Never used to report

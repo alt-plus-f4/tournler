@@ -31,7 +31,8 @@ export default function InformationPage() {
 			<div className='mx-auto max-w-prose'>
 				<h1 className='text-4xl font-black uppercase tracking-wide text-white'>How Tournler works</h1>
 				<p className='mt-4 text-lg text-neutral-300'>
-					Tournler runs a CS2 tournament end to end: registration, bracket, server, match and result. The organizer sets up the event. Tournler generates the bracket, loads a CS2 server for every match, and records the score the game server reports.
+					Tournler runs a CS2 tournament end to end: registration, bracket, server, match and result. The organizer sets up the event. Tournler generates the bracket, loads a CS2 server for every
+					match, and records the score the game server reports.
 				</p>
 
 				<nav aria-label='On this page' className='mt-8 flex flex-wrap gap-x-6 gap-y-2 border-y border-border py-3 text-sm'>
@@ -70,26 +71,32 @@ export default function InformationPage() {
 
 						<Step icon={<Play className={ICON} />} title='Start it, or let it start itself'>
 							<p>
-								Start a tournament from its page with <strong className='text-white'>Start tournament</strong>. The confirmation shows the registered teams against capacity before anything happens. If you don&apos;t, a scheduled check starts it once its start time has passed, so it can begin a few minutes late.
+								Start a tournament from its page with <strong className='text-white'>Start tournament</strong>. The confirmation shows the registered teams against capacity before anything happens. If
+								you don&apos;t, a scheduled check starts it once its start time has passed, so it can begin a few minutes late.
 							</p>
 							<p>Starting locks the teams, generates the bracket and creates every match.</p>
 						</Step>
 
 						<Step icon={<Server className={ICON} />} title='Servers are handled for you'>
 							<p>
-								Each match gets a CS2 dedicated server from Tournler&apos;s pool, configured through MatchZy. About 5 minutes before a match&apos;s scheduled start, the server is loaded with that match so players can connect and warm up. You never hand out IPs or passwords.
+								Each match gets a CS2 dedicated server from Tournler&apos;s pool, configured through MatchZy. About 5 minutes before a match&apos;s scheduled start, the server is loaded with that
+								match so players can connect and warm up. You never hand out IPs or passwords.
 							</p>
 							<p>Only as many matches can run at once as there are servers in the pool.</p>
 						</Step>
 
 						<Step icon={<Trophy className={ICON} />} title='Scores come from the server'>
 							<p>
-								A match goes live when the game server reports that the series has started. The server reports the score as it happens. When a series ends, the winner advances in the bracket automatically and player stats are recorded.
+								A match goes live when the game server reports that the series has started. The server reports the score as it happens. When a series ends, the winner advances in the bracket
+								automatically and player stats are recorded.
 							</p>
 						</Step>
 
 						<Step icon={<ShieldCheck className={ICON} />} title='Step in from the match room'>
-							<p>Admins can pause, resume, restart or end a match from its match page. Those controls send real commands to the server. If the server fails to report a score, an admin can enter it by hand there.</p>
+							<p>
+								Admins can pause, resume, restart or end a match from its match page. Those controls send real commands to the server. If the server fails to report a score, an admin can enter it by
+								hand there.
+							</p>
 						</Step>
 					</ol>
 				</section>
@@ -110,7 +117,10 @@ export default function InformationPage() {
 						</Step>
 
 						<Step icon={<Gamepad2 className={ICON} />} title='Link your Steam account'>
-							<p>You need a linked Steam account to connect to match servers. The server knows you by it. Link it from your profile if you signed in another way. It also lets your profile show your FACEIT level, if you have one.</p>
+							<p>
+								You need a linked Steam account to connect to match servers. The server knows you by it. Link it from your profile if you signed in another way. It also lets your profile show your
+								FACEIT level, if you have one.
+							</p>
 						</Step>
 
 						<Step icon={<Users className={ICON} />} title='Put a team together'>
@@ -138,7 +148,10 @@ export default function InformationPage() {
 						</Step>
 
 						<Step icon={<MonitorPlay className={ICON} />} title='Connect when your server is ready'>
-							<p>The match page tells you when your server is ready, about 5 minutes before the start. It then shows the server address, a button that launches CS2 and connects you, and a button that copies the console command. Join early to warm up.</p>
+							<p>
+								The match page tells you when your server is ready, about 5 minutes before the start. It then shows the server address, a button that launches CS2 and connects you, and a button that
+								copies the console command. Join early to warm up.
+							</p>
 						</Step>
 					</ol>
 

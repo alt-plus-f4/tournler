@@ -1,5 +1,5 @@
 /**
- * The LoL match-flow guard (Phase 1 — no hosted LoL servers, PRODUCT.md's "hosted servers, zero
+ * The LoL match-flow guard (Phase 1 — no hosted LoL servers, docs/PRODUCT.md's "hosted servers, zero
  * setup" only holds for CS2): hostsGameServers/assertHostsGameServers/assertMatchHostsGameServer
  * are the single choke point every server-provisioning, RCON and veto/draft call goes through
  * (see src/lib/cs2/provisioning.ts, src/lib/tournaments/game-server.ts, game-state.ts, and the

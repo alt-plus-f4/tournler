@@ -7,6 +7,22 @@ import DiscordProvider from 'next-auth/providers/discord';
 import { createTransport } from 'nodemailer';
 import { db, baseDb } from '@/lib/db';
 import { activeBanWhere, toActiveBan } from '@/lib/bans';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { CACHE_TAGS } from '@/lib/cache/tags';
+
+/**
+ * The `jwt` callback runs on almost every authenticated request (see getAuthSession /
+ * getSessionIncludingBanned) and always re-checks `role` so a promotion/demotion takes effect on
+ * next token refresh. Un-cached, that's an extra `SELECT` per request purely to re-check a role
+ * that changes rarely (docs/SCALING_AT_1000_USERS.md #2). Any write to `User` already invalidates the
+ * `users` tag (see MODEL_TAGS in src/lib/cache/tags.ts), so a role change is still visible
+ * immediately — `revalidate` here is only the time-based fallback, not the primary freshness path.
+ */
+const getCachedUserRole = cachedQuery(
+	async (userId: string) => (await db.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role ?? null,
+	['auth-user-role'],
+	{ tags: [CACHE_TAGS.users], revalidate: REVALIDATE.standard },
+);
 
 // const transporter = createTransport({
 //   host: process.env.EMAIL_SERVER_HOST!,
@@ -241,13 +257,9 @@ export const authOptions: NextAuthOptions = {
 			}
 
 			if (token.id) {
-				const dbUser = await db.user.findUnique({
-					where: { id: token.id as string },
-					select: { role: true },
-				});
-
-				if (dbUser) {
-					token.role = dbUser.role;
+				const role = await getCachedUserRole(token.id as string);
+				if (role) {
+					token.role = role;
 				}
 			}
 

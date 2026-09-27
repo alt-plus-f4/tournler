@@ -154,7 +154,9 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 				</DialogHeader>
 
 				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5'>
-					<p className='text-sm text-muted-foreground'>{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}</p>
+					<p className='text-sm text-muted-foreground'>
+						{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}
+					</p>
 					<Link href={isCreating ? '/news/new' : `/news/${post.id}/edit`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}>
 						<PenLine aria-hidden className='mr-2 h-4 w-4' />
 						{isCreating ? 'Open editor' : 'Edit body'}

@@ -15,28 +15,33 @@ import { useLatched } from '@/lib/hooks/use-latched';
 // The news editor dialog is only fetched once an admin first opens it.
 const EditNewsDialog = dynamic(() => import('@/components/EditNewsDialog'));
 import { Tournament } from '@/types/types';
-import { DEFAULT_REWATCH, parseYouTubeId } from '@/components/home/rewatch-config';
+import { DEFAULT_REWATCH, parseRewatchSource } from '@/components/home/rewatch-config';
 
 const REWATCH_KEYS = ['rewatchVideoId', 'rewatchTitle', 'rewatchTeamA', 'rewatchTeamALogo', 'rewatchTeamB', 'rewatchTeamBLogo'] as const;
 type RewatchKey = (typeof REWATCH_KEYS)[number];
-type RewatchDraft = Record<RewatchKey, string>;
+type RewatchDraft = Record<RewatchKey, string> & { rewatchProvider: 'YOUTUBE' | 'TWITCH' };
 
 interface HomepageSettings extends Partial<Record<RewatchKey, string | null>> {
 	featuredSource: 'TOURNAMENTS' | 'NEWS' | 'MIXED';
 	featuredLayout: 'GRID' | 'CAROUSEL';
 	showForumPosts?: boolean;
+	rewatchProvider?: 'YOUTUBE' | 'TWITCH';
 }
 
-const REWATCH_FIELDS: { key: RewatchKey; label: string; placeholder: string; mono?: boolean }[] = [
-	{ key: 'rewatchVideoId', label: 'YouTube video', placeholder: `https://youtu.be/${DEFAULT_REWATCH.videoId}`, mono: true },
-	{ key: 'rewatchTitle', label: 'Title', placeholder: DEFAULT_REWATCH.title },
-	{ key: 'rewatchTeamA', label: 'Team A name', placeholder: DEFAULT_REWATCH.teamA },
-	{ key: 'rewatchTeamALogo', label: 'Team A logo URL', placeholder: 'https://…', mono: true },
-	{ key: 'rewatchTeamB', label: 'Team B name', placeholder: DEFAULT_REWATCH.teamB },
-	{ key: 'rewatchTeamBLogo', label: 'Team B logo URL', placeholder: 'https://…', mono: true },
+const REWATCH_FIELDS: { key: RewatchKey; label: string; placeholder: (provider: 'YOUTUBE' | 'TWITCH') => string; mono?: boolean }[] = [
+	{ key: 'rewatchVideoId', label: 'Video / channel', placeholder: (provider) => (provider === 'TWITCH' ? 'https://twitch.tv/<channel>' : `https://youtu.be/${DEFAULT_REWATCH.videoId}`), mono: true },
+	{ key: 'rewatchTitle', label: 'Title', placeholder: () => DEFAULT_REWATCH.title },
+	{ key: 'rewatchTeamA', label: 'Team A name', placeholder: () => DEFAULT_REWATCH.teamA },
+	{ key: 'rewatchTeamALogo', label: 'Team A logo URL', placeholder: () => 'https://…', mono: true },
+	{ key: 'rewatchTeamB', label: 'Team B name', placeholder: () => DEFAULT_REWATCH.teamB },
+	{ key: 'rewatchTeamBLogo', label: 'Team B logo URL', placeholder: () => 'https://…', mono: true },
 ];
 
-const toDraft = (settings: HomepageSettings): RewatchDraft => Object.fromEntries(REWATCH_KEYS.map((key) => [key, settings[key] ?? ''])) as RewatchDraft;
+const toDraft = (settings: HomepageSettings): RewatchDraft =>
+	({
+		...Object.fromEntries(REWATCH_KEYS.map((key) => [key, settings[key] ?? ''])),
+		rewatchProvider: settings.rewatchProvider ?? 'YOUTUBE',
+	}) as RewatchDraft;
 
 export default function FeaturedClient() {
 	const [settings, setSettings] = useState<HomepageSettings | null>(null);
@@ -129,7 +134,7 @@ export default function FeaturedClient() {
 			const response = await fetch('/api/admin/homepage-settings', {
 				method: 'PATCH',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(Object.fromEntries(REWATCH_KEYS.map((key) => [key, draft[key].trim() || null]))),
+				body: JSON.stringify({ rewatchProvider: draft.rewatchProvider, ...Object.fromEntries(REWATCH_KEYS.map((key) => [key, draft[key].trim() || null])) }),
 			});
 			const data = await response.json().catch(() => ({}));
 			if (!response.ok) throw new Error(data.error || 'Could not save the rewatch video');
@@ -247,7 +252,10 @@ export default function FeaturedClient() {
 						onClick={() => saveShowForumPosts(!(settings.showForumPosts ?? true))}
 						className='relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-checked:bg-foreground'
 					>
-						<span aria-hidden className='pointer-events-none block h-4 w-4 translate-x-1 rounded-full bg-muted-foreground transition-transform [[aria-checked=true]>&]:translate-x-6 [[aria-checked=true]>&]:bg-background' />
+						<span
+							aria-hidden
+							className='pointer-events-none block h-4 w-4 translate-x-1 rounded-full bg-muted-foreground transition-transform [[aria-checked=true]>&]:translate-x-6 [[aria-checked=true]>&]:bg-background'
+						/>
 					</button>
 				</div>
 			</section>
@@ -255,8 +263,8 @@ export default function FeaturedClient() {
 			{/* Homepage rewatch */}
 			<section className='space-y-4 rounded-md border border-border p-5'>
 				<div>
-					<h2 className='text-lg font-semibold'>Homepage rewatch</h2>
-					<p className='text-sm text-muted-foreground'>The VOD player that leads the homepage when no match is live. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).</p>
+					<h2 className='text-lg font-semibold'>Homepage watch</h2>
+					<p className='text-sm text-muted-foreground'>The player that leads the homepage when no match is live — a YouTube rewatch or a live Twitch channel. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).</p>
 				</div>
 				<form
 					className='space-y-4'
@@ -265,6 +273,18 @@ export default function FeaturedClient() {
 						saveRewatch(rewatchDraft);
 					}}
 				>
+					<div className='max-w-xs space-y-1.5'>
+						<Label htmlFor='rewatch-provider'>Source</Label>
+						<Select value={rewatchDraft.rewatchProvider} onValueChange={(value) => setRewatchDraft({ ...rewatchDraft, rewatchProvider: value as 'YOUTUBE' | 'TWITCH' })} disabled={isSavingRewatch}>
+							<SelectTrigger id='rewatch-provider'>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value='YOUTUBE'>YouTube (VOD)</SelectItem>
+								<SelectItem value='TWITCH'>Twitch (live channel)</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
 					<div className='grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2'>
 						{REWATCH_FIELDS.map((field) => (
 							<div key={field.key} className='space-y-1.5'>
@@ -273,7 +293,7 @@ export default function FeaturedClient() {
 									id={field.key}
 									value={rewatchDraft[field.key]}
 									onChange={(e) => setRewatchDraft({ ...rewatchDraft, [field.key]: e.target.value })}
-									placeholder={field.placeholder}
+									placeholder={field.placeholder(rewatchDraft.rewatchProvider)}
 									className={field.mono ? 'font-mono text-xs' : undefined}
 									aria-describedby={field.key === 'rewatchVideoId' ? 'rewatch-video-hint' : undefined}
 									disabled={isSavingRewatch}
@@ -284,12 +304,13 @@ export default function FeaturedClient() {
 											<>
 												Default video <span className='font-mono'>{DEFAULT_REWATCH.videoId}</span>
 											</>
-										) : parseYouTubeId(rewatchDraft.rewatchVideoId) ? (
+										) : parseRewatchSource(rewatchDraft.rewatchProvider === 'TWITCH' ? 'twitch' : 'youtube', rewatchDraft.rewatchVideoId) ? (
 											<>
-												Video id <span className='font-mono text-white'>{parseYouTubeId(rewatchDraft.rewatchVideoId)}</span>
+												{rewatchDraft.rewatchProvider === 'TWITCH' ? 'Channel' : 'Video id'}{' '}
+												<span className='font-mono text-white'>{parseRewatchSource(rewatchDraft.rewatchProvider === 'TWITCH' ? 'twitch' : 'youtube', rewatchDraft.rewatchVideoId)}</span>
 											</>
 										) : (
-											<span className='text-signal-live'>Not a YouTube link or video id</span>
+											<span className='text-signal-live'>{rewatchDraft.rewatchProvider === 'TWITCH' ? 'Not a Twitch link or channel name' : 'Not a YouTube link or video id'}</span>
 										)}
 									</p>
 								)}
@@ -302,14 +323,17 @@ export default function FeaturedClient() {
 						</p>
 					)}
 					<div className='flex flex-wrap gap-2'>
-						<Button type='submit' disabled={isSavingRewatch || (rewatchDraft.rewatchVideoId.trim() !== '' && !parseYouTubeId(rewatchDraft.rewatchVideoId))}>
-							{isSavingRewatch ? 'Saving…' : 'Save rewatch'}
+						<Button
+							type='submit'
+							disabled={isSavingRewatch || (rewatchDraft.rewatchVideoId.trim() !== '' && !parseRewatchSource(rewatchDraft.rewatchProvider === 'TWITCH' ? 'twitch' : 'youtube', rewatchDraft.rewatchVideoId))}
+						>
+							{isSavingRewatch ? 'Saving…' : 'Save watch'}
 						</Button>
 						<Button
 							type='button'
 							variant='outline'
-							disabled={isSavingRewatch || REWATCH_KEYS.every((key) => !settings[key])}
-							onClick={() => saveRewatch(Object.fromEntries(REWATCH_KEYS.map((key) => [key, ''])) as RewatchDraft)}
+							disabled={isSavingRewatch || (REWATCH_KEYS.every((key) => !settings[key]) && (settings.rewatchProvider ?? 'YOUTUBE') === 'YOUTUBE')}
+							onClick={() => saveRewatch({ ...(Object.fromEntries(REWATCH_KEYS.map((key) => [key, ''])) as Record<RewatchKey, string>), rewatchProvider: 'YOUTUBE' })}
 						>
 							Reset to default
 						</Button>
@@ -366,7 +390,9 @@ export default function FeaturedClient() {
 			<section className='space-y-4'>
 				<div className='flex items-center justify-between'>
 					<h2 className='text-lg font-semibold'>News posts</h2>
-					<Button variant='outline' onClick={openCreatePost}>Create post</Button>
+					<Button variant='outline' onClick={openCreatePost}>
+						Create post
+					</Button>
 				</div>
 				{isLoadingPosts ? (
 					<div className='space-y-2'>
@@ -398,7 +424,9 @@ export default function FeaturedClient() {
 				)}
 			</section>
 
-			{postDialogMounted && <EditNewsDialog post={isCreatingPost ? null : editingPost} isOpen={isPostDialogOpen} onClose={() => setIsPostDialogOpen(false)} onSave={handleSavePost} onDelete={handleDeletePost} />}
+			{postDialogMounted && (
+				<EditNewsDialog post={isCreatingPost ? null : editingPost} isOpen={isPostDialogOpen} onClose={() => setIsPostDialogOpen(false)} onSave={handleSavePost} onDelete={handleDeletePost} />
+			)}
 		</div>
 	);
 }

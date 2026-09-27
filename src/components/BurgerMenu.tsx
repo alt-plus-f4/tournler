@@ -25,7 +25,10 @@ export const BurgerMenu: React.FC<BurgerMenuProps> = ({ className }) => {
 			<button
 				ref={triggerRef}
 				type='button'
-				className={cn('-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-white transition-transform duration-100 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', className)}
+				className={cn(
+					'-ml-2 flex h-11 w-11 items-center justify-center rounded-md text-white transition-transform duration-100 active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+					className,
+				)}
 				aria-label='Open menu'
 				aria-haspopup='dialog'
 				aria-expanded={isOpen}

@@ -84,7 +84,8 @@ export default function BansClient() {
 			<div>
 				<h1 className='mb-1 text-2xl font-bold'>Bans</h1>
 				<p className='max-w-prose text-sm text-muted-foreground'>
-					A banned player can still browse, but can&apos;t post, comment, manage teams, register for tournaments or play until the ban ends or is lifted. Staff can only be banned by an admin, and admins can&apos;t be banned.
+					A banned player can still browse, but can&apos;t post, comment, manage teams, register for tournaments or play until the ban ends or is lifted. Staff can only be banned by an admin, and
+					admins can&apos;t be banned.
 				</p>
 			</div>
 
@@ -109,11 +110,7 @@ export default function BansClient() {
 									<PersonCell person={u} />
 									<span className='ml-auto flex items-center gap-3'>
 										{u.ban && <BanStatus active expiresAt={u.ban.expiresAt} />}
-										{u.role === 'ADMIN' ? (
-											<span className='text-xs text-muted-foreground'>Admin</span>
-										) : (
-											<BanUserDialog user={u} ban={u.ban} onChanged={refresh} />
-										)}
+										{u.role === 'ADMIN' ? <span className='text-xs text-muted-foreground'>Admin</span> : <BanUserDialog user={u} ban={u.ban} onChanged={refresh} />}
 									</span>
 								</li>
 							))
@@ -137,7 +134,10 @@ export default function BansClient() {
 									setStatus(s);
 									setPage(1);
 								}}
-								className={cn('h-8 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', status === s ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}
+								className={cn(
+									'h-8 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+									status === s ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
+								)}
 							>
 								{s === 'active' ? 'Active' : 'All history'}
 							</button>
@@ -226,7 +226,9 @@ function PersonCell({ person }: { person: Person }) {
 				</span>
 			)}
 			<span className='truncate font-medium underline-offset-4 group-hover:underline'>{person.name || 'Unnamed player'}</span>
-			{person.role !== 'USER' && <span className='shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs uppercase tracking-wide text-muted-foreground'>{person.role.replace('_', ' ').toLowerCase()}</span>}
+			{person.role !== 'USER' && (
+				<span className='shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs uppercase tracking-wide text-muted-foreground'>{person.role.replace('_', ' ').toLowerCase()}</span>
+			)}
 		</Link>
 	);
 }

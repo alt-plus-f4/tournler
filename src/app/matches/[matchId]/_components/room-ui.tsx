@@ -120,13 +120,32 @@ export function StatusReadout({ match }: { match: Match }) {
 
 /** A side's team logo in the match room — the shared sponsor-plate TeamLogo, dimmed for the losing side. */
 export function TeamMark({ logo, name, size = 'lg', dim = false }: { logo: string | null | undefined; name: string; size?: 'sm' | 'lg'; dim?: boolean }) {
-	return <TeamLogo src={logo} name={name} decorative size={size === 'lg' ? 'lg' : 'sm'} className={cn(size === 'lg' && 'sm:h-20 sm:w-20 sm:p-2 sm:text-2xl', size === 'sm' && 'h-9 w-9', dim && 'opacity-60 grayscale')} />;
+	return (
+		<TeamLogo
+			src={logo}
+			name={name}
+			decorative
+			size={size === 'lg' ? 'lg' : 'sm'}
+			className={cn(size === 'lg' && 'sm:h-20 sm:w-20 sm:p-2 sm:text-2xl', size === 'sm' && 'h-9 w-9', dim && 'opacity-60 grayscale')}
+		/>
+	);
 }
 
 export function PlayerAvatar({ src, name, size = 32 }: { src: string | null; name: string; size?: number }) {
 	const [failed, setFailed] = useState(false);
 	if (src && !failed) {
-		return <Image src={src} alt='' width={size} height={size} unoptimized={!isOptimizable(src)} style={{ width: size, height: size }} className='shrink-0 rounded-full border border-border object-cover' onError={() => setFailed(true)} />;
+		return (
+			<Image
+				src={src}
+				alt=''
+				width={size}
+				height={size}
+				unoptimized={!isOptimizable(src)}
+				style={{ width: size, height: size }}
+				className='shrink-0 rounded-full border border-border object-cover'
+				onError={() => setFailed(true)}
+			/>
+		);
 	}
 	return (
 		<span style={{ width: size, height: size }} className='flex shrink-0 items-center justify-center rounded-full border border-border bg-neutral-900 text-xs font-bold text-neutral-400' aria-hidden>

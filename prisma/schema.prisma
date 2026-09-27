@@ -172,9 +172,9 @@ model User {
   newsComments         NewsComment[]
   forumThreads         ForumThread[]
   forumReplies         ForumReply[]
-  bans                 UserBan[] @relation("BannedUser")
-  bansIssued           UserBan[] @relation("BanIssuer")
-  bansLifted           UserBan[] @relation("BanLifter")
+  bans                 UserBan[]          @relation("BannedUser")
+  bansIssued           UserBan[]          @relation("BanIssuer")
+  bansLifted           UserBan[]          @relation("BanLifter")
   forumVotes           ForumVote[]
   matchParticipations  MatchParticipant[]
   draftPicks           MatchDraftPick[]
@@ -184,7 +184,6 @@ model User {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-
 }
 
 model Cs2Tournament {
@@ -343,7 +342,7 @@ model Matches {
   bracketSlot BracketSlot @default(WINNERS) @map("bracket_slot")
   isPickup    Boolean     @default(false) @map("is_pickup")
   // Only meaningful when isPickup is true (see PickupMode) — null for non-pickup matches.
-  pickupMode PickupMode? @map("pickup_mode")
+  pickupMode  PickupMode? @map("pickup_mode")
 
   // Pickup-lobby-only display names ("Side A"/"Side B" otherwise) — set by that side's captain
   // (the first player to join it) via PATCH /api/matches/[matchId]/team-name. Unused for
@@ -497,8 +496,8 @@ model PlayerMatchStat {
   // Real (non-pickup) matches use teamId, a real Cs2Team. Pickup matches have no Cs2Team (sides
   // are MatchParticipant rows, not teams — see Matches.winnerSide for the same distinction), so
   // they record which side the player was on instead. Mutually exclusive in practice.
-  teamId Int?     @map("team_id")
-  team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  teamId Int?       @map("team_id")
+  team   Cs2Team?   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   side   MatchSlot? @map("side")
 
   kills   Int @default(0) @map("kills")
@@ -585,6 +584,11 @@ enum FeaturedLayout {
   CAROUSEL
 }
 
+enum RewatchProvider {
+  YOUTUBE
+  TWITCH
+}
+
 model HomepageSettings {
   id             Int            @id @default(1)
   featuredSource FeaturedSource @default(TOURNAMENTS) @map("featured_source")
@@ -592,12 +596,14 @@ model HomepageSettings {
 
   // Homepage rewatch/VOD player, shown as the hero when no match is live. All nullable: null
   // falls back to the built-in default VOD (see src/components/home/rewatch-defaults.ts).
-  rewatchVideoId   String? @map("rewatch_video_id")
-  rewatchTitle     String? @map("rewatch_title")
-  rewatchTeamA     String? @map("rewatch_team_a")
-  rewatchTeamB     String? @map("rewatch_team_b")
-  rewatchTeamALogo String? @map("rewatch_team_a_logo")
-  rewatchTeamBLogo String? @map("rewatch_team_b_logo")
+  // rewatchVideoId holds a YouTube video id or a Twitch channel login depending on rewatchProvider.
+  rewatchProvider  RewatchProvider @default(YOUTUBE) @map("rewatch_provider")
+  rewatchVideoId   String?         @map("rewatch_video_id")
+  rewatchTitle     String?         @map("rewatch_title")
+  rewatchTeamA     String?         @map("rewatch_team_a")
+  rewatchTeamB     String?         @map("rewatch_team_b")
+  rewatchTeamALogo String?         @map("rewatch_team_a_logo")
+  rewatchTeamBLogo String?         @map("rewatch_team_b_logo")
 
   // HLTV-style "recent forum posts" block on the homepage sidebar.
   showForumPosts Boolean @default(true) @map("show_forum_posts")
@@ -616,12 +622,12 @@ model MatchParticipant {
   userId String @map("user_id")
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  side MatchSlot @map("side")
+  side      MatchSlot @map("side")
   // CAPTAIN_DRAFT pickups only (see PickupMode) — the first joiner onto each side, before any
   // picks happen. Always false for OPEN pickups and non-pickup matches. Kept as an explicit flag
   // rather than inferred from join order, since a drafted pool player's `side` also becomes
   // TEAM_A/TEAM_B once picked, at which point join order alone can't tell captain from pick.
-  isCaptain Boolean @default(false) @map("is_captain")
+  isCaptain Boolean   @default(false) @map("is_captain")
 
   joinedAt DateTime @default(now()) @map("joined_at")
 
@@ -631,7 +637,9 @@ model MatchParticipant {
   @@map("match_participants")
 }
 
-/** One captain's pick in a CAPTAIN_DRAFT pickup (see PickupMode) — mirrors MatchMapAction's role for veto: an ordered, append-only history the draft's current-turn/completion state is derived from. */
+/**
+ * One captain's pick in a CAPTAIN_DRAFT pickup (see PickupMode) — mirrors MatchMapAction's role for veto: an ordered, append-only history the draft's current-turn/completion state is derived from.
+ */
 model MatchDraftPick {
   id Int @id @default(autoincrement()) @map("id")
 
@@ -639,10 +647,10 @@ model MatchDraftPick {
   match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   // Which captain made this pick.
-  captainSide MatchSlot @map("captain_side")
+  captainSide  MatchSlot @map("captain_side")
   // Which pool player got drafted onto captainSide.
-  pickedUserId String @map("picked_user_id")
-  pickedUser   User   @relation(fields: [pickedUserId], references: [id], onDelete: Cascade)
+  pickedUserId String    @map("picked_user_id")
+  pickedUser   User      @relation(fields: [pickedUserId], references: [id], onDelete: Cascade)
 
   order Int @map("order")
 

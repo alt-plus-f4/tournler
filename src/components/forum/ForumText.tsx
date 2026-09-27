@@ -7,7 +7,13 @@ export function ForumText({ text, className }: { text: string; className?: strin
 		<div className={cn('whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground', className)}>
 			{tokenizeLinks(text).map((token, i) =>
 				token.type === 'link' ? (
-					<a key={i} href={token.value} target='_blank' rel='nofollow ugc noopener noreferrer' className='[overflow-wrap:anywhere] text-foreground underline underline-offset-2 decoration-muted-foreground hover:decoration-foreground'>
+					<a
+						key={i}
+						href={token.value}
+						target='_blank'
+						rel='nofollow ugc noopener noreferrer'
+						className='[overflow-wrap:anywhere] text-foreground underline underline-offset-2 decoration-muted-foreground hover:decoration-foreground'
+					>
 						{token.value}
 					</a>
 				) : (

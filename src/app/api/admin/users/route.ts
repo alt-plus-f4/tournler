@@ -16,10 +16,7 @@ export async function GET() {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 
-		const [usersInTeam, usersNotInTeam] = await Promise.all([
-			db.user.count({ where: { teams: { some: {} } } }),
-			db.user.count({ where: { teams: { none: {} } } }),
-		]);
+		const [usersInTeam, usersNotInTeam] = await Promise.all([db.user.count({ where: { teams: { some: {} } } }), db.user.count({ where: { teams: { none: {} } } })]);
 
 		return NextResponse.json({ usersInTeam, usersNotInTeam });
 	} catch (error) {

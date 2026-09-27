@@ -106,7 +106,10 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 	return (
 		<article className='mx-auto my-8 w-full max-w-3xl px-4'>
 			<div className='flex items-center justify-between gap-4'>
-				<Link href='/news' className='inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+				<Link
+					href='/news'
+					className='inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+				>
 					<ArrowLeft aria-hidden className='h-4 w-4' />
 					All news
 				</Link>

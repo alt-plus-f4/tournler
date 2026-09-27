@@ -95,7 +95,10 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 								</div>
 								<div className='min-w-0 flex-1'>
 									<h2 className='text-lg font-bold leading-snug md:text-xl'>
-										<Link href={`/news/${post.id}`} className='after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background group-hover:underline group-hover:decoration-neutral-500 group-hover:underline-offset-4'>
+										<Link
+											href={`/news/${post.id}`}
+											className='after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background group-hover:underline group-hover:decoration-neutral-500 group-hover:underline-offset-4'
+										>
 											{post.title}
 										</Link>
 									</h2>

@@ -33,7 +33,11 @@ export async function GET(req: NextRequest) {
 
 		const where: Prisma.MatchesWhereInput | undefined = search
 			? {
-					OR: [{ tournament: { name: { contains: search, mode: 'insensitive' } } }, { teamA: { name: { contains: search, mode: 'insensitive' } } }, { teamB: { name: { contains: search, mode: 'insensitive' } } }],
+					OR: [
+						{ tournament: { name: { contains: search, mode: 'insensitive' } } },
+						{ teamA: { name: { contains: search, mode: 'insensitive' } } },
+						{ teamB: { name: { contains: search, mode: 'insensitive' } } },
+					],
 				}
 			: undefined;
 

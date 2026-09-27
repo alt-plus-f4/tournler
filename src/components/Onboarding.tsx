@@ -270,7 +270,9 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 			case OnboardingDialogSteps.Avatar:
 				return <AvatarStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))} nextStep={(avatar: Blob) => handleAvatar(avatar)} loading={isStepLoading} />;
 			case OnboardingDialogSteps.Games:
-				return <GamesStep initialGames={games} previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))} nextStep={(selected: Game[]) => handleGames(selected)} loading={isStepLoading} />;
+				return (
+					<GamesStep initialGames={games} previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))} nextStep={(selected: Game[]) => handleGames(selected)} loading={isStepLoading} />
+				);
 			case OnboardingDialogSteps.Steam:
 				return <SteamStep previousStep={() => dispatch(setCurrentStep(stepBefore(OnboardingDialogSteps.Steam)))} nextStep={() => handleSteam()} />;
 			case OnboardingDialogSteps.Riot:

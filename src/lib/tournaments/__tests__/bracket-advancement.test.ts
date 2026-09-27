@@ -11,6 +11,7 @@ jest.mock('@/lib/db', () => {
 	const state = {
 		matches: [] as any[],
 		tournament: { id: 1, status: 'ONGOING', format: 'SINGLE_ELIMINATION', teams: [] as any[], __nextId: 1000 } as any,
+		gameServers: [] as any[],
 	};
 
 	function notFoundError() {
@@ -98,9 +99,22 @@ jest.mock('@/lib/db', () => {
 		},
 	};
 
+	const gameServerApi = {
+		updateMany: async ({ where, data }: any) => {
+			let count = 0;
+			for (const gs of state.gameServers) {
+				if (where?.matchId !== undefined && gs.matchId !== where.matchId) continue;
+				Object.assign(gs, data);
+				count++;
+			}
+			return { count };
+		},
+	};
+
 	const fakeDb: any = {
 		matches: matchesApi,
 		cs2Tournament: cs2TournamentApi,
+		gameServer: gameServerApi,
 		$transaction: (fn: any) => fn(fakeDb),
 	};
 	fakeDb.__state = state;

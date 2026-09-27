@@ -103,15 +103,16 @@ export function BanUserDialog({ user, ban, onChanged, triggerProps, children }: 
 		>
 			<DialogTrigger asChild>
 				<Button variant='outline' size='sm' {...triggerProps}>
-					{children ?? (ban ? (
-						<>
-							<ShieldCheck aria-hidden /> Lift ban
-						</>
-					) : (
-						<>
-							<Ban aria-hidden /> Ban
-						</>
-					))}
+					{children ??
+						(ban ? (
+							<>
+								<ShieldCheck aria-hidden /> Lift ban
+							</>
+						) : (
+							<>
+								<Ban aria-hidden /> Ban
+							</>
+						))}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className='max-w-md'>

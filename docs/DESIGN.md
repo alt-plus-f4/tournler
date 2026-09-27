@@ -45,6 +45,10 @@ typography:
     letterSpacing: "0.1em"
   numeric:
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace"
+    # Self-hosted realization of this same token wherever the system stack isn't available to
+    # render — canvas/rasterized surfaces like next/og share-card images (src/lib/og/). Same
+    # tabular-numeral intent, concrete face instead of a system stack.
+    rasterFontFamily: "Roboto Mono"
     fontSize: "0.875rem"
     fontWeight: 400
     lineHeight: 1.4

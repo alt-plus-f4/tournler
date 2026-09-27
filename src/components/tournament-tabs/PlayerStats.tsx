@@ -45,7 +45,9 @@ export default function PlayerStats({ tournament }: PlayerStatsProps) {
 	}
 
 	if (stats.length === 0) {
-		return <p className='p-8 text-center text-muted-foreground'>{tournament.game === 'LOL' ? 'No player stats yet.' : 'No player stats yet. They appear once the game server reports a finished map.'}</p>;
+		return (
+			<p className='p-8 text-center text-muted-foreground'>{tournament.game === 'LOL' ? 'No player stats yet.' : 'No player stats yet. They appear once the game server reports a finished map.'}</p>
+		);
 	}
 
 	return (
@@ -54,13 +56,27 @@ export default function PlayerStats({ tournament }: PlayerStatsProps) {
 				<caption className='sr-only'>Player stats for this tournament</caption>
 				<thead>
 					<tr className='border-b border-border text-xs uppercase tracking-wide text-muted-foreground'>
-						<th scope='col' className='py-2 px-3'>#</th>
-						<th scope='col' className='py-2 px-3'>Player</th>
-						<th scope='col' className='py-2 px-3'>Team</th>
-						<th scope='col' className='py-2 px-3 text-right'>Kills</th>
-						<th scope='col' className='py-2 px-3 text-right'>Deaths</th>
-						<th scope='col' className='py-2 px-3 text-right'>Assists</th>
-						<th scope='col' className='py-2 px-3 text-right'>K/D</th>
+						<th scope='col' className='py-2 px-3'>
+							#
+						</th>
+						<th scope='col' className='py-2 px-3'>
+							Player
+						</th>
+						<th scope='col' className='py-2 px-3'>
+							Team
+						</th>
+						<th scope='col' className='py-2 px-3 text-right'>
+							Kills
+						</th>
+						<th scope='col' className='py-2 px-3 text-right'>
+							Deaths
+						</th>
+						<th scope='col' className='py-2 px-3 text-right'>
+							Assists
+						</th>
+						<th scope='col' className='py-2 px-3 text-right'>
+							K/D
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -69,8 +85,11 @@ export default function PlayerStats({ tournament }: PlayerStatsProps) {
 							<td className='py-2 px-3 font-mono tabular-nums text-muted-foreground'>{i + 1}</td>
 							<td className='py-2 px-3 font-medium text-white'>
 								<span className='flex items-center gap-2'>
-									<Link href={`/profile/${s.userId}`} className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-										<PlayerAvatar src={s.image} name={s.name} size={24}/>
+									<Link
+										href={`/profile/${s.userId}`}
+										className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2 rounded-sm px-1 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+									>
+										<PlayerAvatar src={s.image} name={s.name} size={24} />
 										<span className='truncate underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline'>{s.name ?? 'Unknown Player'}</span>
 									</Link>
 									<PlayerFlair verified={s.verified} faceitLevel={s.faceitLevel} />

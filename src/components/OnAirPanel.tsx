@@ -33,8 +33,18 @@ export type LiveMatch = Awaited<ReturnType<typeof getLiveMatches>>[number];
 
 type Side = { name: string; logo: string | null | undefined };
 
-function sideLabels(match: { isPickup: boolean; teamAName: string | null; teamBName: string | null; teamA: { name: string; logo: string | null } | null; teamB: { name: string; logo: string | null } | null }): [Side, Side] {
-	if (match.isPickup) return [{ name: match.teamAName || 'Side A', logo: null }, { name: match.teamBName || 'Side B', logo: null }];
+function sideLabels(match: {
+	isPickup: boolean;
+	teamAName: string | null;
+	teamBName: string | null;
+	teamA: { name: string; logo: string | null } | null;
+	teamB: { name: string; logo: string | null } | null;
+}): [Side, Side] {
+	if (match.isPickup)
+		return [
+			{ name: match.teamAName || 'Side A', logo: null },
+			{ name: match.teamBName || 'Side B', logo: null },
+		];
 	return [
 		{ name: match.teamA?.name ?? 'TBD', logo: match.teamA?.logo },
 		{ name: match.teamB?.name ?? 'TBD', logo: match.teamB?.logo },
@@ -99,7 +109,11 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 				<Scoreline a={String(featured.scoreTeamA ?? 0)} b={String(featured.scoreTeamB ?? 0)} sideA={sideA} sideB={sideB} />
 				{liveMap && (
 					<p className='mt-5 text-center text-sm text-muted-foreground'>
-						{formatMapName(liveMap.mapName)} · <span className='font-mono tabular-nums text-neutral-300'>{liveMap.scoreTeamA ?? 0} : {liveMap.scoreTeamB ?? 0}</span> rounds
+						{formatMapName(liveMap.mapName)} ·{' '}
+						<span className='font-mono tabular-nums text-neutral-300'>
+							{liveMap.scoreTeamA ?? 0} : {liveMap.scoreTeamB ?? 0}
+						</span>{' '}
+						rounds
 					</p>
 				)}
 			</Link>

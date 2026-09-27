@@ -2,7 +2,7 @@
  * LoL match-flow guard, exercised through the real bracket-advancement entry points (not just the
  * choke-point unit in game-rules.test.ts): starting, pausing and completing a match for a LOL
  * tournament must never touch the CS2 server pool, MatchZy config push, or RCON — see
- * src/lib/tournaments/game-rules.ts and PRODUCT.md's "the server is the source of truth", which
+ * src/lib/tournaments/game-rules.ts and docs/PRODUCT.md's "the server is the source of truth", which
  * only holds for CS2 in Phase 1.
  */
 jest.mock('../game-server', () => ({
@@ -57,6 +57,7 @@ jest.mock('@/lib/db', () => {
 
 	const fakeDb: any = {
 		matches: matchesApi,
+		gameServer: { updateMany: async () => ({ count: 0 }) },
 		$transaction: (fn: any) => fn(fakeDb),
 	};
 	fakeDb.__state = state;

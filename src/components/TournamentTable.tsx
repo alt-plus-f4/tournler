@@ -110,7 +110,10 @@ export function TournamentTable({ isLoading, tournaments, onEdit, emptyMessage =
 								</td>
 								<td className={cn(td, 'whitespace-nowrap text-right font-mono tabular-nums')}>{tour.prizePool ? formatMoney(tour.prizePool) : <span className='text-muted-foreground'>—</span>}</td>
 								<td className={cn(td, 'whitespace-nowrap text-right')}>
-									<Link href={`/tournaments/${tour.id}`} className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+									<Link
+										href={`/tournaments/${tour.id}`}
+										className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+									>
 										View<span className='sr-only'> {tour.name} public page</span>
 									</Link>
 								</td>

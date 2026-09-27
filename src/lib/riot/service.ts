@@ -16,11 +16,7 @@ import { CHALLENGE_TTL_MS, checkChallengeOpen, evaluateVerification, pickChallen
 export type ServiceResult = { ok: true; status: 200; body: RiotStatusResponse } | { ok: false; status: number; error: string; retryAfter?: number };
 
 export const linkRiotIdSchema = z.object({
-	gameName: z
-		.string()
-		.trim()
-		.min(RIOT_GAME_NAME_MIN, `Game name is at least ${RIOT_GAME_NAME_MIN} characters`)
-		.max(RIOT_GAME_NAME_MAX, `Game name is at most ${RIOT_GAME_NAME_MAX} characters`),
+	gameName: z.string().trim().min(RIOT_GAME_NAME_MIN, `Game name is at least ${RIOT_GAME_NAME_MIN} characters`).max(RIOT_GAME_NAME_MAX, `Game name is at most ${RIOT_GAME_NAME_MAX} characters`),
 	tagLine: z
 		.string()
 		.trim()

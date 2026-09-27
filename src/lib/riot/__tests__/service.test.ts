@@ -13,7 +13,14 @@ const update = jest.fn();
 const deleteMany = jest.fn();
 
 jest.mock('@/lib/db', () => ({
-	db: { riotAccount: { findUnique: (...a: unknown[]) => findUnique(...a), upsert: (...a: unknown[]) => upsert(...a), update: (...a: unknown[]) => update(...a), deleteMany: (...a: unknown[]) => deleteMany(...a) } },
+	db: {
+		riotAccount: {
+			findUnique: (...a: unknown[]) => findUnique(...a),
+			upsert: (...a: unknown[]) => upsert(...a),
+			update: (...a: unknown[]) => update(...a),
+			deleteMany: (...a: unknown[]) => deleteMany(...a),
+		},
+	},
 }));
 
 const getAccountByRiotId = jest.fn();

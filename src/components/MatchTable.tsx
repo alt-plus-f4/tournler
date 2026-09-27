@@ -83,7 +83,10 @@ export function MatchTable({ isLoading, matches, onEdit, emptyMessage = 'No matc
 									</td>
 									<td className={cn(t.td, t.num, 'whitespace-nowrap text-neutral-300')}>{formatAdminDate(match.matchDate, true)}</td>
 									<td className={cn(t.td, 'whitespace-nowrap text-right')}>
-										<Link href={`/matches/${match.id}`} className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+										<Link
+											href={`/matches/${match.id}`}
+											className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+										>
 											View<span className='sr-only'> match {label}</span>
 										</Link>
 									</td>

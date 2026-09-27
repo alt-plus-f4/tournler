@@ -155,6 +155,11 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		if (updated.status === 'COMPLETED') {
 			await propagateWinner(tx, updated);
 			await finalizeTournamentIfComplete(tx, updated.tournamentId);
+			// The DB's own record of the assigned server's state — distinct from
+			// releaseGameServerAfterMatch below, which acts on the *real* CS2 server over RCON.
+			// Both callers of recordMatchResult (the MatchZy webhook and the admin PATCH endpoint)
+			// go through here, so this can't be skipped depending on how the match was completed.
+			await tx.gameServer.updateMany({ where: { matchId }, data: { status: 'COMPLETED' } });
 			justCompleted = true;
 		}
 

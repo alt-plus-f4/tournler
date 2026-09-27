@@ -48,7 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		if (!gameServer) return NextResponse.json({ error: 'No game server found for this match' }, { status: 404 });
 
 		const server = findServerByConnect(gameServer.connectIp, gameServer.port);
-		if (!server) return NextResponse.json({ error: 'No CS2_SERVER_POOL entry matches this match\'s assigned server' }, { status: 500 });
+		if (!server) return NextResponse.json({ error: "No CS2_SERVER_POOL entry matches this match's assigned server" }, { status: 500 });
 
 		const status = await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute('status'));
 

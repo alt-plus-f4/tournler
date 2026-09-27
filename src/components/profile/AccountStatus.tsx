@@ -15,7 +15,7 @@ const STATUS: Record<AccountStatus, { label: string; icon: typeof CircleCheck; c
 
 /**
  * Linked / Verification pending / Not linked. Monochrome on purpose: linking isn't server-reported
- * match state, so no signal colors and no pulse (DESIGN.md On-Air and Pulse rules).
+ * match state, so no signal colors and no pulse (docs/DESIGN.md On-Air and Pulse rules).
  */
 export function AccountStatusLabel({ status, className }: { status: AccountStatus; className?: string }) {
 	const { label, icon: Icon, className: tone } = STATUS[status];

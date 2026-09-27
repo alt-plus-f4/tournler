@@ -24,7 +24,8 @@ interface ReplyItemProps {
 	children?: ReactNode;
 }
 
-const TOGGLE = 'inline-flex h-10 w-7 shrink-0 items-center justify-center rounded-sm font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-7';
+const TOGGLE =
+	'inline-flex h-10 w-7 shrink-0 items-center justify-center rounded-sm font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-7';
 
 /**
  * One reply in the chain: collapsible like Reddit ([–] / [+] N replies, or click the thread line),
@@ -62,13 +63,24 @@ export function ReplyItem({ number, descendantCount, indentChildren, header, too
 					<div className='mt-1 flex flex-wrap items-center gap-1 -ml-2 sm:-ml-1.5'>
 						{votes}
 						{reply?.kind === 'form' && (
-							<button type='button' onClick={() => setReplying((r) => !r)} aria-expanded={replying} aria-controls={replying ? formId : undefined} className='inline-flex h-10 items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8'>
+							<button
+								type='button'
+								onClick={() => setReplying((r) => !r)}
+								aria-expanded={replying}
+								aria-controls={replying ? formId : undefined}
+								className='inline-flex h-10 items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8'
+							>
 								<MessageSquareReply aria-hidden className='h-4 w-4' />
 								Reply
 							</button>
 						)}
 						{reply?.kind === 'sign-in' && (
-							<Link href={reply.href} aria-label='Sign in to reply' title='Sign in to reply' className='inline-flex h-10 items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8'>
+							<Link
+								href={reply.href}
+								aria-label='Sign in to reply'
+								title='Sign in to reply'
+								className='inline-flex h-10 items-center gap-1.5 rounded-sm px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8'
+							>
 								<MessageSquareReply aria-hidden className='h-4 w-4' />
 								Reply
 							</Link>
@@ -97,4 +109,3 @@ export function ReplyItem({ number, descendantCount, indentChildren, header, too
 		</div>
 	);
 }
-

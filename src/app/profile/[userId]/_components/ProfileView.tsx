@@ -169,7 +169,10 @@ function MatchTable({ matches, fmt }: { matches: PlayerRecentMatch[]; fmt: Fmt }
 										<ResultChip result={m.result} />
 										<span className='font-mono tabular-nums text-neutral-300'>
 											<span className={m.result === 'W' ? 'font-bold text-white' : ''}>{m.scoreFor ?? '-'}</span>
-											<span className='text-neutral-600' aria-hidden> : </span>
+											<span className='text-neutral-600' aria-hidden>
+												{' '}
+												:{' '}
+											</span>
 											<span className={m.result === 'L' ? 'font-bold text-white' : ''}>{m.scoreAgainst ?? '-'}</span>
 										</span>
 									</div>
@@ -182,9 +185,15 @@ function MatchTable({ matches, fmt }: { matches: PlayerRecentMatch[]; fmt: Fmt }
 								<td className='hidden max-w-[240px] truncate px-4 py-3 text-neutral-400 md:table-cell'>{m.tournamentName}</td>
 								<td className='hidden whitespace-nowrap px-4 py-3 text-center font-mono tabular-nums text-neutral-300 sm:table-cell'>
 									{m.kills}
-									<span className='text-neutral-600' aria-hidden> - </span>
+									<span className='text-neutral-600' aria-hidden>
+										{' '}
+										-{' '}
+									</span>
 									{m.deaths}
-									<span className='text-neutral-600' aria-hidden> - </span>
+									<span className='text-neutral-600' aria-hidden>
+										{' '}
+										-{' '}
+									</span>
 									{m.assists}
 								</td>
 								<td className={`px-4 py-3 text-center font-mono tabular-nums ${kd >= 1 ? 'font-bold text-white' : 'text-neutral-400'}`}>{kd.toFixed(2)}</td>
@@ -293,7 +302,6 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 		return () => cancelAnimationFrame(id);
 	}, [faceit]);
 
-
 	const startEdit = () => {
 		setEditName(profile.name || '');
 		setEditBio(profile.bio || '');
@@ -359,7 +367,8 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 		<span className='flex h-full w-full items-center justify-center bg-neutral-800 text-3xl font-black text-neutral-400'>{initials(profile.name)}</span>
 	);
 
-	const tabTrigger = 'relative flex h-12 shrink-0 items-center gap-2 px-4 text-xs font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[state=active]:text-white after:absolute after:inset-x-4 after:bottom-0 after:h-0.5 after:bg-white after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100 sm:px-5 sm:after:inset-x-5';
+	const tabTrigger =
+		'relative flex h-12 shrink-0 items-center gap-2 px-4 text-xs font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring data-[state=active]:text-white after:absolute after:inset-x-4 after:bottom-0 after:h-0.5 after:bg-white after:opacity-0 after:transition-opacity data-[state=active]:after:opacity-100 sm:px-5 sm:after:inset-x-5';
 
 	return (
 		<div className='min-h-screen bg-black pb-16 pt-6 selection:bg-white selection:text-black sm:pt-8'>
@@ -367,15 +376,9 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 				{/* Hero. There's no per-user cover image, so the player's own avatar is blown up, desaturated and
 				    pushed deep into black behind them, the same way a FACEIT profile banner sits behind the identity row. */}
 				<section className='relative isolate overflow-hidden rounded-t-md border border-border bg-neutral-950'>
-					{profile.image && (
-						<Image src={profile.image} alt='' aria-hidden fill sizes='100vw' className='-z-20 scale-125 object-cover opacity-50 blur-2xl grayscale' />
-					)}
+					{profile.image && <Image src={profile.image} alt='' aria-hidden fill sizes='100vw' className='-z-20 scale-125 object-cover opacity-50 blur-2xl grayscale' />}
 					<div className='absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/80 to-black/40' />
-					<div
-						aria-hidden
-						className='absolute inset-0 -z-10 opacity-[0.07]'
-						style={{ backgroundImage: 'repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 4px)' }}
-					/>
+					<div aria-hidden className='absolute inset-0 -z-10 opacity-[0.07]' style={{ backgroundImage: 'repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 4px)' }} />
 
 					{isOwner && (
 						<div className='absolute right-4 top-4 flex gap-2'>
@@ -454,12 +457,24 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 									})}
 									<span>Joined {formatMonthYear(profile.createdAt, fmt)}</span>
 									{profile.steam && (
-										<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='text-neutral-400 transition-colors hover:text-white' aria-label='Steam profile'>
+										<a
+											href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`}
+											target='_blank'
+											rel='noopener noreferrer'
+											className='text-neutral-400 transition-colors hover:text-white'
+											aria-label='Steam profile'
+										>
 											<SteamIcon className='h-4 w-4' />
 										</a>
 									)}
 									{profile.discord && (
-										<a href={`https://discord.com/users/${profile.discord.discordId}`} target='_blank' rel='noreferrer' className='text-neutral-400 transition-colors hover:text-white' aria-label='Discord profile'>
+										<a
+											href={`https://discord.com/users/${profile.discord.discordId}`}
+											target='_blank'
+											rel='noreferrer'
+											className='text-neutral-400 transition-colors hover:text-white'
+											aria-label='Discord profile'
+										>
 											<DiscordIcon className='h-4 w-4' />
 										</a>
 									)}
@@ -472,7 +487,6 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 								)}
 							</div>
 						</div>
-
 					</div>
 				</section>
 
@@ -489,7 +503,12 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 									<GameSection key='CS2' game='CS2' className={activeGames.length === 1 ? 'sm:col-span-2' : undefined}>
 										<GameRow label='Account'>
 											{profile.steam ? (
-												<a href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1.5 text-sm text-neutral-200 hover:text-white hover:underline hover:underline-offset-4'>
+												<a
+													href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`}
+													target='_blank'
+													rel='noopener noreferrer'
+													className='inline-flex items-center gap-1.5 text-sm text-neutral-200 hover:text-white hover:underline hover:underline-offset-4'
+												>
 													<SteamIcon className='h-3.5 w-3.5' aria-hidden /> {profile.name}
 													{vis && !vis.showSteam && isOwner && <HiddenNote />}
 												</a>
@@ -512,7 +531,12 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 															</div>
 														</div>
 														{faceit.faceitUrl && (
-															<a href={faceit.faceitUrl} target='_blank' rel='noopener noreferrer' className='flex shrink-0 items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-white'>
+															<a
+																href={faceit.faceitUrl}
+																target='_blank'
+																rel='noopener noreferrer'
+																className='flex shrink-0 items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-white'
+															>
 																View <ExternalLink className='h-3 w-3' />
 															</a>
 														)}
@@ -697,7 +721,12 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 												<p className='text-sm font-medium text-white'>Discord</p>
 												{profile.discord && vis && !vis.showDiscord && <HiddenNote />}
 												{profile.discord ? (
-													<a href={`https://discord.com/users/${profile.discord.discordId}`} target='_blank' rel='noreferrer' className='block truncate font-mono text-xs text-neutral-400 hover:text-white'>
+													<a
+														href={`https://discord.com/users/${profile.discord.discordId}`}
+														target='_blank'
+														rel='noreferrer'
+														className='block truncate font-mono text-xs text-neutral-400 hover:text-white'
+													>
 														{profile.discord.discordId}
 													</a>
 												) : (
@@ -748,7 +777,6 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 							</EmptyPanel>
 						)}
 					</TabsPrimitive.Content>
-
 				</TabsPrimitive.Root>
 
 				{isOwner && riotStatus && vis && (

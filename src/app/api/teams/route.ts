@@ -65,7 +65,8 @@ export async function POST(request: Request) {
 	} catch (error) {
 		if (error instanceof MembershipError) return NextResponse.json({ error: error.message, code: error.code }, { status: error.status });
 		// Unique (name, game) / (capitanId, game) caught a race the checks above didn't see.
-		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return NextResponse.json({ error: 'Team name is already taken or you already captain a team for this game', code: 'CONFLICT' }, { status: 409 });
+		if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002')
+			return NextResponse.json({ error: 'Team name is already taken or you already captain a team for this game', code: 'CONFLICT' }, { status: 409 });
 		console.error('Failed to create team:', error);
 		return NextResponse.json({ error: 'Failed to create team' }, { status: 500 });
 	}

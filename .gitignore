@@ -70,5 +70,7 @@ next-env.d.ts
 # Playwright MCP browser logs
 .playwright-mcp/
 
-# Unlighthouse scan output
+# Unlighthouse scan output — .unlighthouse/ is its default location, but running it without
+# --output-path from the repo root drops a bare `localhost/<hash>/` dashboard build here instead.
 .unlighthouse/
+/localhost/

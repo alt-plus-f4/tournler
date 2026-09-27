@@ -29,7 +29,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 			(error) => {
 				clearTimeout(timer);
 				reject(error);
-			}
+			},
 		);
 	});
 }
@@ -53,7 +53,9 @@ async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): 
 	const controllerUrl = process.env.POOL_CONTROLLER_URL;
 	const controllerToken = process.env.POOL_CONTROLLER_TOKEN;
 	if (!controllerUrl || !controllerToken) {
-		throw new Error('POOL_CONTROLLER_URL and POOL_CONTROLLER_TOKEN must both be configured to start a match (see cs-docker/pool-controller/index.js) — a live in-process map change is not safe on this stack.');
+		throw new Error(
+			'POOL_CONTROLLER_URL and POOL_CONTROLLER_TOKEN must both be configured to start a match (see cs-docker/pool-controller/index.js) — a live in-process map change is not safe on this stack.',
+		);
 	}
 
 	// docker-controller's own `docker compose up -d --force-recreate` normally returns in seconds
@@ -82,12 +84,14 @@ async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): 
 			await withTimeout(
 				withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute('status')),
 				POOL_CONTROLLER_POLL_ATTEMPT_TIMEOUT_MS,
-				`RCON attempt to ${server.containerName} took too long`
+				`RCON attempt to ${server.containerName} took too long`,
 			);
 			return;
 		} catch (error) {
 			if (Date.now() >= deadline) {
-				throw new Error(`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`);
+				throw new Error(
+					`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`,
+				);
 			}
 			await new Promise((resolve) => setTimeout(resolve, POOL_CONTROLLER_POLL_INTERVAL_MS));
 		}

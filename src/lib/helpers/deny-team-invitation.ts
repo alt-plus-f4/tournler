@@ -3,9 +3,7 @@ interface denyTeamInviteParams {
 	teamId: number;
 }
 
-export async function denyTeamInvite(
-	params: denyTeamInviteParams
-): Promise<void> {
+export async function denyTeamInvite(params: denyTeamInviteParams): Promise<void> {
 	const { userId, teamId } = params;
 	try {
 		const response = await fetch('/api/user/deny-invite', {

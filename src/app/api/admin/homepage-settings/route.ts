@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
-import { FeaturedLayout, FeaturedSource } from '@prisma/client';
-import { parseYouTubeId } from '@/components/home/rewatch-config';
+import { FeaturedLayout, FeaturedSource, RewatchProvider } from '@prisma/client';
+import { parseRewatchSource } from '@/components/home/rewatch-config';
 
 const SETTINGS_ID = 1;
 const MAX_TEXT = 120;
 const MAX_URL = 2048;
 
 type RewatchFields = {
+	rewatchProvider?: RewatchProvider;
 	rewatchVideoId?: string | null;
 	rewatchTitle?: string | null;
 	rewatchTeamA?: string | null;
@@ -30,17 +31,28 @@ function isHttpsUrl(value: string) {
 
 /**
  * Validates the optional rewatch fields. Each is `undefined` (leave as-is), `null`/'' (clear back
- * to the built-in default VOD) or a value. rewatchVideoId accepts a bare id or any YouTube URL.
+ * to the built-in default VOD) or a value. rewatchVideoId accepts a bare id/URL matching whichever
+ * provider is in effect (the one in this same body, or the currently stored one).
  */
-function parseRewatch(body: Record<string, unknown>): { data: RewatchFields } | { error: string } {
+async function parseRewatch(body: Record<string, unknown>): Promise<{ data: RewatchFields } | { error: string }> {
 	const data: RewatchFields = {};
+
+	let provider: RewatchProvider | undefined;
+	if (body.rewatchProvider !== undefined) {
+		if (!Object.values(RewatchProvider).includes(body.rewatchProvider as RewatchProvider)) {
+			return { error: 'rewatchProvider must be YOUTUBE or TWITCH' };
+		}
+		provider = body.rewatchProvider as RewatchProvider;
+		data.rewatchProvider = provider;
+	}
 
 	const video = body.rewatchVideoId;
 	if (video !== undefined) {
 		if (isBlank(video)) data.rewatchVideoId = null;
 		else {
-			const id = typeof video === 'string' ? parseYouTubeId(video) : null;
-			if (!id) return { error: 'rewatchVideoId must be a YouTube video id or URL' };
+			const effectiveProvider = provider ?? (await db.homepageSettings.findUnique({ where: { id: SETTINGS_ID }, select: { rewatchProvider: true } }))?.rewatchProvider ?? RewatchProvider.YOUTUBE;
+			const id = typeof video === 'string' ? parseRewatchSource(effectiveProvider === RewatchProvider.TWITCH ? 'twitch' : 'youtube', video) : null;
+			if (!id) return { error: effectiveProvider === RewatchProvider.TWITCH ? 'rewatchVideoId must be a Twitch channel name or URL' : 'rewatchVideoId must be a YouTube video id or URL' };
 			data.rewatchVideoId = id;
 		}
 	}
@@ -115,7 +127,7 @@ export async function PATCH(request: Request) {
 			return NextResponse.json({ error: 'showForumPosts must be a boolean' }, { status: 400 });
 		}
 
-		const rewatch = parseRewatch(body);
+		const rewatch = await parseRewatch(body);
 		if ('error' in rewatch) return NextResponse.json({ error: rewatch.error }, { status: 400 });
 
 		const changes = {

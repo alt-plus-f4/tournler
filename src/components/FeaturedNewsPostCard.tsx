@@ -16,7 +16,8 @@ interface FeaturedNewsPostCardProps {
 	publishedAt: string;
 }
 
-const LINK_CLASS = 'group block rounded-md transition-transform duration-200 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+const LINK_CLASS =
+	'group block rounded-md transition-transform duration-200 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 export function FeaturedNewsPostCard({ id, hasContent, title, blurb, imageUrl, link: externalLink, publishedAt }: FeaturedNewsPostCardProps) {
 	// Our own post page handles every post (legacy ones show their blurb); only a legacy post with an

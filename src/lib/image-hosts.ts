@@ -3,9 +3,14 @@
  * next.config.mjs (that file is plain ESM and can't import this TS module).
  * - Vercel Blob: every upload (avatars, team logos/banners, tournament art, news covers, trophies).
  * - cdn.discordapp.com: Discord OAuth profile pictures stored as User.image.
- * - i.ytimg.com: YouTube thumbnails for the homepage rewatch poster.
+ *
+ * i.ytimg.com (the homepage rewatch poster, RewatchPlayer.tsx) is deliberately excluded: it's
+ * already a small pre-compressed JPEG, so re-optimizing it buys nothing, and it's also the page's
+ * LCP image — routing it through our own fetch-then-resize proxy instead of letting the browser
+ * hit YouTube's own CDN directly measured as most of that page's LCP time (Lighthouse: ~2.5s of a
+ * ~5.2s LCP). RewatchPlayer renders it `unoptimized` for exactly this reason.
  */
-export const OPTIMIZED_IMAGE_HOSTS: readonly string[] = ['6q0iedxcfemxlbr8.public.blob.vercel-storage.com', 'cdn.discordapp.com', 'i.ytimg.com'];
+export const OPTIMIZED_IMAGE_HOSTS: readonly string[] = ['6q0iedxcfemxlbr8.public.blob.vercel-storage.com', 'cdn.discordapp.com'];
 
 /**
  * true when `src` can go through the next/image optimizer: an https URL on an allowlisted host, or a

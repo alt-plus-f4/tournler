@@ -79,13 +79,18 @@ export function TrophySlider({ trophies, events = [], className }: { trophies: T
 	// Only fade the edge that actually has more trophies behind it.
 	const mask = `linear-gradient(to right, ${canPrev ? 'transparent' : '#000'} 0, #000 ${canPrev ? FADE : '0px'}, #000 calc(100% - ${canNext ? FADE : '0px'}), ${canNext ? 'transparent' : '#000'} 100%)`;
 
-	const arrow = 'flex h-8 w-8 items-center justify-center rounded-md border border-border text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40';
+	const arrow =
+		'flex h-8 w-8 items-center justify-center rounded-md border border-border text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40';
 
 	return (
 		<section aria-labelledby='profile-trophies-label' className={className}>
 			<div className='mb-3 flex items-center justify-between gap-3'>
 				<h2 id='profile-trophies-label' className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>
-					Trophies <span aria-hidden className='text-neutral-600'>·</span> <span className='font-mono tabular-nums'>{sorted.length}</span>
+					Trophies{' '}
+					<span aria-hidden className='text-neutral-600'>
+						·
+					</span>{' '}
+					<span className='font-mono tabular-nums'>{sorted.length}</span>
 				</h2>
 				{(canPrev || canNext) && (
 					<div className='hidden gap-1.5 sm:flex'>
@@ -158,15 +163,7 @@ function EventArt({ event }: { event: EventTrophyItem }) {
 	const logo = event.imageKind === 'logo';
 	return (
 		<span aria-hidden className={cn(box, logo ? 'bg-neutral-100 p-2' : 'border border-border bg-neutral-900')}>
-			<Image
-				src={event.imageUrl}
-				alt=''
-				width={64}
-				height={64}
-				unoptimized={!isOptimizable(event.imageUrl)}
-				onError={() => setFailed(true)}
-				className={cn('h-full w-full', logo ? 'object-contain' : 'object-cover')}
-			/>
+			<Image src={event.imageUrl} alt='' width={64} height={64} unoptimized={!isOptimizable(event.imageUrl)} onError={() => setFailed(true)} className={cn('h-full w-full', logo ? 'object-contain' : 'object-cover')} />
 		</span>
 	);
 }

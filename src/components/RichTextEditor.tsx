@@ -34,7 +34,11 @@ function ToolbarButton({ onClick, active, children, label }: { onClick: () => vo
 
 export function RichTextEditor({ value, onChange, placeholder, className, labelId }: RichTextEditorProps) {
 	const editor = useEditor({
-		extensions: [StarterKit.configure({ heading: { levels: [2, 3] } }), Link.configure({ openOnClick: false, autolink: true }), Placeholder.configure({ placeholder: placeholder ?? 'Write something…' })],
+		extensions: [
+			StarterKit.configure({ heading: { levels: [2, 3] } }),
+			Link.configure({ openOnClick: false, autolink: true }),
+			Placeholder.configure({ placeholder: placeholder ?? 'Write something…' }),
+		],
 		content: value,
 		immediatelyRender: false,
 		editorProps: {

@@ -17,23 +17,35 @@ function TeamMark({ name, logo, align }: { name: string; logo: string | null; al
 }
 
 /**
- * Homepage VOD player. Renders a static poster (YouTube thumbnail + play button) and only swaps in
- * the YouTube iframe on click, so the homepage doesn't pay for YouTube's player JS up front and
- * nothing plays until the viewer asks for it. Always labelled as a rewatch — never as live.
+ * Homepage watch player. Renders a static poster (thumbnail + play button) and only swaps in the
+ * YouTube/Twitch iframe on click, so the homepage doesn't pay for the embed's player JS up front
+ * and nothing plays until the viewer asks for it.
  */
 export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchConfig; /** true when the poster is the page's LCP hero (no live match above it). */ priority?: boolean }) {
 	const [playing, setPlaying] = useState(false);
 	const hasTeams = Boolean(rewatch.teamA && rewatch.teamB);
-	const label = `Rewatch: ${rewatch.title}`;
+	const isTwitch = rewatch.provider === 'twitch';
+	const kicker = isTwitch ? 'Live stream' : 'Rewatch';
+	const label = `${kicker}: ${rewatch.title}`;
+	const posterSrc = isTwitch ? `https://static-cdn.jtvnw.net/previews-ttv/live_user_${rewatch.videoId.toLowerCase()}-960x540.jpg` : `https://i.ytimg.com/vi/${rewatch.videoId}/hqdefault.jpg`;
+	const watchUrl = isTwitch ? `https://www.twitch.tv/${rewatch.videoId}` : `https://www.youtube.com/watch?v=${rewatch.videoId}`;
 
 	return (
 		<section aria-labelledby='rewatch-heading' className='overflow-hidden rounded-md border border-border bg-black'>
+			{
+				// The poster loads directly from the provider's own CDN (i.ytimg.com / jtvnw.net) instead of
+				// through our own /_next/image proxy, which shares the page's own origin. Without this hint,
+				// the new origin's DNS/TLS handshake lands on the LCP image's critical path — costly under
+				// throttling specifically because it's a fresh connection, not because the fetch itself is
+				// slow. React hoists <link> into <head> from anywhere.
+				priority && <link rel='preconnect' href={isTwitch ? 'https://static-cdn.jtvnw.net' : 'https://i.ytimg.com'} />
+			}
 			{hasTeams ? (
 				<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-border p-[0.725rem] sm:gap-6'>
 					<TeamMark name={rewatch.teamA} logo={rewatch.teamALogo} align='start' />
 					<h2 id='rewatch-heading' className='text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>
 						<span className='sr-only'>{label}</span>
-						<span aria-hidden>Rewatch</span>
+						<span aria-hidden>{kicker}</span>
 					</h2>
 					<TeamMark name={rewatch.teamB} logo={rewatch.teamBLogo} align='end' />
 				</div>
@@ -42,7 +54,7 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 					<h2 id='rewatch-heading' className='min-w-0 truncate text-base font-black uppercase tracking-wide text-white sm:text-2xl'>
 						{rewatch.title}
 					</h2>
-					<span className='shrink-0 text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>Rewatch</span>
+					<span className='shrink-0 text-xs font-bold uppercase tracking-[0.1em] text-neutral-400'>{kicker}</span>
 				</div>
 			)}
 
@@ -50,21 +62,28 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 				{playing ? (
 					<iframe
 						className='absolute inset-0 h-full w-full'
-						src={`https://www.youtube-nocookie.com/embed/${rewatch.videoId}?rel=0&modestbranding=1&playsinline=1&autoplay=1`}
+						src={
+							isTwitch
+								? `https://player.twitch.tv/?channel=${encodeURIComponent(rewatch.videoId)}&parent=${encodeURIComponent(typeof window !== 'undefined' ? window.location.hostname : 'localhost')}&autoplay=true&muted=false`
+								: `https://www.youtube-nocookie.com/embed/${rewatch.videoId}?rel=0&modestbranding=1&playsinline=1&autoplay=1`
+						}
 						title={label}
 						allow='autoplay; encrypted-media; picture-in-picture; fullscreen'
 						allowFullScreen
 						// YouTube refuses to play (error 153) without a referrer, so don't strip it.
-						referrerPolicy='strict-origin-when-cross-origin'
+						referrerPolicy={isTwitch ? undefined : 'strict-origin-when-cross-origin'}
 					/>
 				) : (
 					<button type='button' onClick={() => setPlaying(true)} className='group absolute inset-0 block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
 						<span className='sr-only'>Play {label}</span>
 						<Image
-							src={`https://i.ytimg.com/vi/${rewatch.videoId}/hqdefault.jpg`}
+							src={posterSrc}
 							alt=''
 							fill
-							sizes='(min-width: 1400px) 964px, (min-width: 1024px) calc(100vw - 436px), calc(100vw - 32px)'
+							// Not routed through next/image's optimizer (see image-hosts.ts): it's already a
+							// small pre-compressed JPEG, and this is frequently the page's LCP element, so a
+							// direct fetch from the provider's own CDN beats a round trip through ours.
+							unoptimized
 							loading={priority ? 'eager' : 'lazy'}
 							fetchPriority={priority ? 'high' : undefined}
 							className='object-cover opacity-70 transition-opacity duration-300 group-hover:opacity-90'
@@ -82,9 +101,9 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 			</div>
 
 			<div className='flex items-center justify-between gap-4 px-4 py-2.5 text-xs text-muted-foreground sm:px-6'>
-				<span>Recorded broadcast</span>
-				<a href={`https://www.youtube.com/watch?v=${rewatch.videoId}`} target='_blank' rel='noopener noreferrer' className='font-medium underline-offset-4 transition-colors hover:text-white hover:underline'>
-					Open on YouTube
+				<span>{isTwitch ? 'Live on Twitch' : 'Recorded broadcast'}</span>
+				<a href={watchUrl} target='_blank' rel='noopener noreferrer' className='font-medium underline-offset-4 transition-colors hover:text-white hover:underline'>
+					Open on {isTwitch ? 'Twitch' : 'YouTube'}
 				</a>
 			</div>
 		</section>

@@ -92,14 +92,9 @@ export async function applyGameStateUpdate(update: GameStateUpdate) {
 		include: { teamA: true, teamB: true, winner: true },
 	});
 
-	// Only the whole series/match completing (not an individual map within a bo3) frees the
-	// game server up for the next match.
-	if (matchWithTeams?.status === 'COMPLETED') {
-		await db.gameServer.updateMany({
-			where: { matchId: update.matchId },
-			data: { status: 'COMPLETED' },
-		});
-	}
+	// gameServer.status flips to COMPLETED inside recordMatchResult itself (bracket-advancement.ts)
+	// once the whole series is decided, whichever path got it there (this webhook, recordMapResult,
+	// or the admin PATCH endpoint) — not duplicated here.
 
 	return matchWithTeams;
 }

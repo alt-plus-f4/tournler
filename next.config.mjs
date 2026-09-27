@@ -1,5 +1,14 @@
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+	// Pins the workspace root to this repo. Without it, Turbopack's root inference can pick up an
+	// unrelated package-lock.json higher up the filesystem (e.g. one sitting in $HOME) and warn
+	// that it's ignoring it since it's outside this Git repository.
+	turbopack: { root: __dirname },
 	// ~20KB of atomic Tailwind CSS: inlining it removes the render-blocking stylesheet request on first
 	// load (Lighthouse: ~340ms). Production builds only.
 	experimental: { inlineCss: true },
@@ -11,8 +20,7 @@ const nextConfig = {
 			{ protocol: 'https', hostname: '6q0iedxcfemxlbr8.public.blob.vercel-storage.com', pathname: '/**' },
 			// Discord OAuth profile pictures (User.image for Discord sign-ins).
 			{ protocol: 'https', hostname: 'cdn.discordapp.com', pathname: '/**' },
-			// YouTube thumbnails for the homepage rewatch poster.
-			{ protocol: 'https', hostname: 'i.ytimg.com', pathname: '/vi/**' },
+			// i.ytimg.com (the homepage rewatch poster) is deliberately NOT here — see image-hosts.ts.
 		],
 	},
 };

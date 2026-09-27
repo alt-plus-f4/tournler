@@ -168,6 +168,9 @@ export function loadProfileExtras(user: ProfileUser) {
 		user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
 		// Same rule for the LoL rank: public Riot data once the Riot ID is verified.
 		user.riot?.verifiedAt && isRiotPlatform(user.riot.region) ? getLolRank(user.riot.region, user.riot.puuid) : Promise.resolve(null),
-		loadEventTrophies(user.id, user.teams.map((t) => t.id).sort((a, b) => a - b)),
+		loadEventTrophies(
+			user.id,
+			user.teams.map((t) => t.id).sort((a, b) => a - b),
+		),
 	]);
 }

@@ -52,7 +52,6 @@ function PostDate({ date }: { date: Date }) {
 	);
 }
 
-
 /** Paints instantly on navigation while the thread, the viewer's votes and permissions load. */
 function ThreadSkeleton() {
 	return (
@@ -200,7 +199,15 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 
 			<article className='mt-4 rounded-md border border-border'>
 				<header className='flex gap-2 border-b border-border p-3 sm:gap-3 sm:p-5'>
-					<VoteControl endpoint={`/api/forum/threads/${thread.id}/vote`} score={thread.score} myVote={threadVote} orientation='vertical' subject='this thread' signInHref={session ? undefined : signInHref} className='-mt-1 shrink-0' />
+					<VoteControl
+						endpoint={`/api/forum/threads/${thread.id}/vote`}
+						score={thread.score}
+						myVote={threadVote}
+						orientation='vertical'
+						subject='this thread'
+						signInHref={session ? undefined : signInHref}
+						className='-mt-1 shrink-0'
+					/>
 					<div className='min-w-0 flex-1'>
 						<div className='flex flex-wrap items-center gap-2'>
 							{thread.isPinned && (
@@ -257,10 +264,7 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 					{thread.replies.length > 1 && <SortToggle threadId={thread.id} sort={sort} />}
 				</div>
 				{tree.length > 0 ? (
-					<ReplyTree
-						nodes={tree}
-						ctx={{ threadId: thread.id, viewerId, canModerate, isLocked: thread.isLocked, myVotes: replyVotes, signInHref, now: new Date(), banControl }}
-					/>
+					<ReplyTree nodes={tree} ctx={{ threadId: thread.id, viewerId, canModerate, isLocked: thread.isLocked, myVotes: replyVotes, signInHref, now: new Date(), banControl }} />
 				) : (
 					<p className='rounded-md border border-border px-4 py-8 text-center text-sm text-muted-foreground'>No replies yet.</p>
 				)}

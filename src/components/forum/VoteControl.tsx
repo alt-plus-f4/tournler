@@ -21,7 +21,8 @@ interface VoteControlProps {
 }
 
 // ≥40px hit targets on touch, tighter on desktop where the pointer is precise.
-const ARROW = 'inline-flex h-10 w-10 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8 [&_svg]:h-5 [&_svg]:w-5';
+const ARROW =
+	'inline-flex h-10 w-10 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 sm:w-8 [&_svg]:h-5 [&_svg]:w-5';
 
 /**
  * Up/down vote readout. Votes aren't state in the On-Air sense, so it stays monochrome: the chosen

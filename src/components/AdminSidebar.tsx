@@ -58,7 +58,11 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
 									const active = isActive(item.url);
 									return (
 										<SidebarMenuItem key={item.url}>
-											<SidebarMenuButton asChild isActive={active} className='h-9 text-neutral-300 hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:font-semibold data-[active=true]:text-foreground'>
+											<SidebarMenuButton
+												asChild
+												isActive={active}
+												className='h-9 text-neutral-300 hover:bg-muted hover:text-foreground data-[active=true]:bg-muted data-[active=true]:font-semibold data-[active=true]:text-foreground'
+											>
 												<Link href={item.url} aria-current={active ? 'page' : undefined}>
 													<item.icon aria-hidden />
 													<span>{item.title}</span>

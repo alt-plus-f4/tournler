@@ -35,7 +35,10 @@ const schema = z
 		format: z.enum(['0', '1', '2']),
 		type: z.enum(['0', '1']),
 		location: z.string().trim().min(1, 'Add a location (a city, venue or region)'),
-		teamCapacity: z.preprocess((v) => (v === '' || Number.isNaN(v) ? undefined : Number(v)), z.number({ required_error: 'Set how many teams can join', invalid_type_error: 'Set how many teams can join' }).int().min(2, 'At least 2 teams').max(256, 'At most 256 teams')),
+		teamCapacity: z.preprocess(
+			(v) => (v === '' || Number.isNaN(v) ? undefined : Number(v)),
+			z.number({ required_error: 'Set how many teams can join', invalid_type_error: 'Set how many teams can join' }).int().min(2, 'At least 2 teams').max(256, 'At most 256 teams'),
+		),
 		startDate: z.string().min(1, 'Pick a start time'),
 		endDate: z.string().min(1, 'Pick an end time'),
 		description: z.string().optional(),
@@ -168,7 +171,10 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						<li
 							key={s.title}
 							aria-current={i === step ? 'step' : undefined}
-							className={cn('border-t-2 pt-2 text-xs font-medium', i === step ? 'border-foreground text-foreground' : i < step ? 'border-neutral-400 text-neutral-300' : 'border-border text-muted-foreground')}
+							className={cn(
+								'border-t-2 pt-2 text-xs font-medium',
+								i === step ? 'border-foreground text-foreground' : i < step ? 'border-neutral-400 text-neutral-300' : 'border-border text-muted-foreground',
+							)}
 						>
 							<span className='font-mono tabular-nums'>{i + 1}</span> {s.title}
 						</li>
@@ -210,7 +216,9 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									)}
 								/>
 								<p className='text-xs text-muted-foreground'>
-									{v.game === 'LOL' ? 'Players need a verified Riot ID. Matches are played in the League client; staff record each result.' : 'Players need Steam linked. Tournler hosts a CS2 server for every match.'}
+									{v.game === 'LOL'
+										? 'Players need a verified Riot ID. Matches are played in the League client; staff record each result.'
+										: 'Players need Steam linked. Tournler hosts a CS2 server for every match.'}
 								</p>
 							</fieldset>
 							<div className='space-y-2'>
@@ -293,7 +301,13 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 							</div>
 							<div className='space-y-2'>
 								<Label id='create-description-label'>Description</Label>
-								<Controller control={control} name='description' render={({ field }) => <RichTextEditor labelId='create-description-label' value={field.value ?? ''} onChange={field.onChange} placeholder='Tell players what this tournament is about' />} />
+								<Controller
+									control={control}
+									name='description'
+									render={({ field }) => (
+										<RichTextEditor labelId='create-description-label' value={field.value ?? ''} onChange={field.onChange} placeholder='Tell players what this tournament is about' />
+									)}
+								/>
 							</div>
 							<div className='space-y-2'>
 								<Label htmlFor='create-prizePool'>Prize pool (USD, optional)</Label>

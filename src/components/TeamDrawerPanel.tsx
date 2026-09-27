@@ -123,7 +123,14 @@ export default function TeamCreationDrawerPanel({ open, onOpenChange, triggerRef
 							<label htmlFor='team-name' className='block text-sm font-medium'>
 								Team name
 							</label>
-							<Input id='team-name' placeholder='Enter team name' aria-invalid={!!errors.teamName} aria-describedby={errors.teamName ? 'team-name-error' : undefined} {...register('teamName')} disabled={isSubmitting} />
+							<Input
+								id='team-name'
+								placeholder='Enter team name'
+								aria-invalid={!!errors.teamName}
+								aria-describedby={errors.teamName ? 'team-name-error' : undefined}
+								{...register('teamName')}
+								disabled={isSubmitting}
+							/>
 							{errors.teamName ? (
 								<p id='team-name-error' role='alert' className='mt-1 text-sm text-signal-live'>
 									{String(errors.teamName.message)}

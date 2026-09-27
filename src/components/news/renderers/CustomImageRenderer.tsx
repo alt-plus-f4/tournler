@@ -14,7 +14,12 @@ function isBlobUrl(url: string) {
 }
 
 function stripTags(html: string) {
-	return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+	return html
+		.replace(/<[^>]*>/g, '')
+		.replace(/&nbsp;/g, ' ')
+		.replace(/&amp;/g, '&')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>');
 }
 
 function CustomImageRenderer({ data }: CustomImageRendererProps) {

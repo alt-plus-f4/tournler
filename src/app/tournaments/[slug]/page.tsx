@@ -132,7 +132,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 	// (teamEligibility — one team per game, src/lib/teams/membership.ts). A team for the other
 	// game exists but can't register here (WrongGameNotice below).
 	const userTeam = userTeamsByGame?.[tournament.game] ?? null;
-	const wrongGameTeam = !userTeam ? Object.values(userTeamsByGame ?? {}).find((t) => t !== null) ?? null : null;
+	const wrongGameTeam = !userTeam ? (Object.values(userTeamsByGame ?? {}).find((t) => t !== null) ?? null) : null;
 
 	const registration = getRegistration(tournament);
 
@@ -145,7 +145,10 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 		if (!eligibility.ok && eligibility.missing.length > 0) {
 			const team = await db.cs2Team.findUnique({ where: { id: userTeam.id }, select: { members: { select: { id: true, name: true } } } });
 			const members = team?.members ?? eligibility.missing;
-			const statusMap = await gameAccountStatus(members.map((m) => m.id), tournament.game);
+			const statusMap = await gameAccountStatus(
+				members.map((m) => m.id),
+				tournament.game,
+			);
 			gate = {
 				missingCount: eligibility.missing.length,
 				viewerNeedsLink: eligibility.missing.some((m) => m.id === user.id),
@@ -181,7 +184,15 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 					<div className='flex shrink-0 flex-col items-start gap-2 sm:items-end sm:text-right'>
 						{canManageTournaments && tournament.status === 'UPCOMING' && (
 							<div className='mb-1'>
-								<StartTournamentButton tournamentId={tournament.id} tournamentName={tournament.name} teamCount={tournament.teams.length} teamCapacity={tournament.teamCapacity} format={tournament.format} bestOf={tournament.bestOf} game={tournament.game} />
+								<StartTournamentButton
+									tournamentId={tournament.id}
+									tournamentName={tournament.name}
+									teamCount={tournament.teams.length}
+									teamCapacity={tournament.teamCapacity}
+									format={tournament.format}
+									bestOf={tournament.bestOf}
+									game={tournament.game}
+								/>
 							</div>
 						)}
 						<div>

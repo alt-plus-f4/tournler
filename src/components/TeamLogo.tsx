@@ -57,7 +57,7 @@ export function TeamLogo({ src, name, size = 'md', decorative = false, className
 
 	const imgClass = 'h-full w-full object-contain';
 	return (
-		<span className={cn('relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm bg-neutral-100', s.box, s.pad, className)}>
+		<span className={cn('relative flex shrink-0 items-center justify-center overflow-hidden rounded-sm', s.box, s.pad, className)}>
 			{/* SVG logos and hosts outside remotePatterns skip the optimizer (unoptimized) but keep lazy loading. */}
 			<Image src={src} alt={alt} width={s.px} height={s.px} unoptimized={!isOptimizable(src)} className={imgClass} onError={() => setFailedSrc(src)} draggable={false} />
 		</span>

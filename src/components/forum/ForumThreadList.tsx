@@ -29,25 +29,32 @@ export function ForumThreadList({ threads, showCategory }: { threads: ForumThrea
 								{formatScore(thread.score)}
 							</span>
 							<div className='flex min-w-0 items-center gap-2'>
-								{thread.isPinned && (
-									<Pin aria-hidden className='h-3.5 w-3.5 shrink-0 text-foreground' />
-								)}
-								{thread.isLocked && (
-									<Lock aria-hidden className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
-								)}
-								<Link href={`/forum/${thread.id}`} className='line-clamp-2 min-w-0 text-sm font-medium text-foreground sm:line-clamp-none sm:truncate after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring'>
+								{thread.isPinned && <Pin aria-hidden className='h-3.5 w-3.5 shrink-0 text-foreground' />}
+								{thread.isLocked && <Lock aria-hidden className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />}
+								<Link
+									href={`/forum/${thread.id}`}
+									className='line-clamp-2 min-w-0 text-sm font-medium text-foreground sm:line-clamp-none sm:truncate after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring'
+								>
 									{thread.isPinned && <span className='sr-only'>Pinned: </span>}
 									{thread.isLocked && <span className='sr-only'>Locked: </span>}
 									{thread.title}
 								</Link>
-								{showCategory && <span className='hidden shrink-0 rounded-sm border border-border px-1.5 py-px text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground md:inline'>{CATEGORY_LABELS[thread.category]}</span>}
+								{showCategory && (
+									<span className='hidden shrink-0 rounded-sm border border-border px-1.5 py-px text-[0.6875rem] font-bold uppercase tracking-wider text-muted-foreground md:inline'>
+										{CATEGORY_LABELS[thread.category]}
+									</span>
+								)}
 							</div>
 							<span className='hidden truncate text-sm text-muted-foreground sm:block'>{authorName(thread.author)}</span>
 							<span className='hidden text-right font-mono text-sm tabular-nums text-foreground sm:block'>
 								{replies}
 								<span className='sr-only'> {replies === 1 ? 'reply' : 'replies'}</span>
 							</span>
-							<time dateTime={thread.lastActivityAt.toISOString()} title={formatAbsolute(thread.lastActivityAt)} className='hidden text-right font-mono text-xs tabular-nums text-muted-foreground sm:block'>
+							<time
+								dateTime={thread.lastActivityAt.toISOString()}
+								title={formatAbsolute(thread.lastActivityAt)}
+								className='hidden text-right font-mono text-xs tabular-nums text-muted-foreground sm:block'
+							>
 								{formatRelative(thread.lastActivityAt, now)}
 							</time>
 							{/* Mobile meta line */}

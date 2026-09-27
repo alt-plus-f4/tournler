@@ -81,9 +81,7 @@ export function getVetoState(match: VetoMatchLike, tournamentMapPool: string[], 
 	const currentTurnTeamId = !isActing || match.isPickup ? null : nextIndex % 2 === 0 ? match.teamAId : match.teamBId;
 	const currentTurnSide: MatchSlot | null = !isActing || !match.isPickup ? null : nextIndex % 2 === 0 ? 'TEAM_A' : 'TEAM_B';
 
-	const confirmedMaps = actions
-		.filter((a) => a.action === 'PICK' || a.action === 'DECIDER')
-		.map((a) => a.mapName);
+	const confirmedMaps = actions.filter((a) => a.action === 'PICK' || a.action === 'DECIDER').map((a) => a.mapName);
 
 	return { phase, bestOf, sequenceLength: sequence.length, mapPool, availableMaps, actions, currentTurnTeamId, currentTurnSide, nextActionType, confirmedMaps };
 }

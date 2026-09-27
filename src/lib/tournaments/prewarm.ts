@@ -28,7 +28,7 @@ export interface PrewarmResult {
  * which point the participants who joined via the match page are the real, final roster.
  *
  * Piggybacks on whatever already periodically hits `GET /api/tournaments/check-start` (see
- * `TOURNAMENT_GUIDE.md` — GitHub Actions every 5 minutes, or Vercel Cron) rather than adding a
+ * `docs/TOURNAMENT_GUIDE.md` — GitHub Actions every 5 minutes, or Vercel Cron) rather than adding a
  * second scheduler — that cadence is exactly what a 5-minute pre-warm window needs anyway.
  *
  * Best-effort per match: one match failing (no available server slot, RCON unreachable, veto

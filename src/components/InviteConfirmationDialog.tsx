@@ -2,15 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from '@/lib/hooks/use-toast';
-import {
-	Dialog,
-	DialogContent,
-	DialogTitle,
-	DialogDescription,
-	DialogClose,
-	DialogHeader,
-	DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { Button } from './ui/button';
 import { ReducedUser } from '@/types/types';
 
@@ -21,12 +13,7 @@ interface InviteButtonProps {
 	onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function InviteConfirmationDialog({
-	user,
-	teamId,
-	completeSuccessfulInviteConfirmation,
-	onOpenChange,
-}: InviteButtonProps) {
+export function InviteConfirmationDialog({ user, teamId, completeSuccessfulInviteConfirmation, onOpenChange }: InviteButtonProps) {
 	const { toast } = useToast();
 	const [isOpen, setIsOpen] = useState(true);
 
@@ -68,9 +55,7 @@ export function InviteConfirmationDialog({
 				<DialogContent className='sm:max-w-[375px]'>
 					<DialogHeader className='flex items-center pt-3'>
 						<DialogTitle>Invitation confirmation</DialogTitle>
-						<DialogDescription>
-							{user.name} will get an invite to join your team. They can accept or decline it from their notifications.
-						</DialogDescription>
+						<DialogDescription>{user.name} will get an invite to join your team. They can accept or decline it from their notifications.</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-center gap-2 pt-2'>
 						<DialogClose asChild>
@@ -78,10 +63,7 @@ export function InviteConfirmationDialog({
 								Cancel
 							</Button>
 						</DialogClose>
-						<Button
-							className='w-[40%]'
-							onClick={() => inviteUser()}
-						>
+						<Button className='w-[40%]' onClick={() => inviteUser()}>
 							Invite
 						</Button>
 					</DialogFooter>

@@ -34,14 +34,7 @@ export function LevelBadge({ level, size = 'md', className = '' }: { level: numb
 	const progressLength = (clamped / 10) * RING_CIRCUMFERENCE;
 
 	return (
-		<svg
-			viewBox='0 0 24 24'
-			width={px}
-			height={px}
-			role='img'
-			aria-label={`Level ${level}`}
-			className={`inline-block shrink-0 ${className}`}
-		>
+		<svg viewBox='0 0 24 24' width={px} height={px} role='img' aria-label={`Level ${level}`} className={`inline-block shrink-0 ${className}`}>
 			<title>{`Level ${level}`}</title>
 			<circle cx='12' cy='12' r={RING_RADIUS} fill='#0a0a0a' stroke='#2a2a2a' strokeWidth='2.5' />
 			<circle

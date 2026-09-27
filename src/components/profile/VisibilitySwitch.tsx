@@ -49,10 +49,7 @@ export function VisibilitySwitch({ label, description, checked, onCheckedChange,
 			>
 				<span
 					aria-hidden
-					className={cn(
-						'block h-3.5 w-3.5 rounded-full transition-transform duration-150 motion-reduce:transition-none',
-						checked ? 'translate-x-[18px] bg-black' : 'translate-x-[2px] bg-neutral-400',
-					)}
+					className={cn('block h-3.5 w-3.5 rounded-full transition-transform duration-150 motion-reduce:transition-none', checked ? 'translate-x-[18px] bg-black' : 'translate-x-[2px] bg-neutral-400')}
 				/>
 			</button>
 		</div>

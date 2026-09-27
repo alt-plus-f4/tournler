@@ -75,11 +75,7 @@ export async function TeamsCards({ game = null }: { game?: Game | null }) {
 	return (
 		<>
 			{teams.map((team) => (
-				<TeamCard
-					key={team.id}
-					team={team as unknown as ExtendedCs2Team}
-					roster={<TeamRosterList members={team.members} captainId={team.capitanId} label={`${team.name} roster`} />}
-				/>
+				<TeamCard key={team.id} team={team as unknown as ExtendedCs2Team} roster={<TeamRosterList members={team.members} captainId={team.capitanId} label={`${team.name} roster`} />} />
 			))}
 		</>
 	);

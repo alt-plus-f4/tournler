@@ -25,7 +25,7 @@ export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
 		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:top-14'>
 			<div className='mx-auto flex h-11 max-w-[1400px] items-center gap-x-6 px-4 lg:px-8'>
 				<span className='flex shrink-0 items-center gap-2 text-sm'>
-					<span className='hidden text-neutral-500 sm:inline'>Tournler</span>
+					<span className='hidden text-neutral-400 sm:inline'>Tournler</span>
 					<span className='hidden text-neutral-600 sm:inline' aria-hidden>
 						/
 					</span>
@@ -69,7 +69,7 @@ export function HubSubnavSkeleton({ active }: { active: HubTab }) {
 		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:top-14' aria-hidden>
 			<div className='mx-auto flex h-11 max-w-[1400px] items-center gap-x-6 px-4 lg:px-8'>
 				<span className='flex shrink-0 items-center gap-2 text-sm'>
-					<span className='hidden text-neutral-500 sm:inline'>Tournler</span>
+					<span className='hidden text-neutral-400 sm:inline'>Tournler</span>
 					<span className='hidden text-neutral-600 sm:inline'>/</span>
 					<span className='flex items-center gap-1.5 font-bold text-neutral-400'>
 						<span className='h-4 w-5 animate-pulse rounded-full bg-neutral-800' />

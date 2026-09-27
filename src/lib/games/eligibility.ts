@@ -34,7 +34,10 @@ export async function teamEligibility(teamId: number, tournamentGame: Game): Pro
 	if (!team) return { ok: false, reason: 'Team not found', missing: [] };
 	const meta = GAME_META[tournamentGame];
 	if (team.game !== tournamentGame) return { ok: false, reason: `This is a ${meta.label} tournament; your team plays ${GAME_META[team.game].label}.`, missing: [] };
-	const status = await gameAccountStatus(team.members.map((m) => m.id), tournamentGame);
+	const status = await gameAccountStatus(
+		team.members.map((m) => m.id),
+		tournamentGame,
+	);
 	const missing = team.members.filter((m) => status.get(m.id) !== 'linked').map((m) => ({ ...m, status: status.get(m.id)! }));
 	if (missing.length > 0) return { ok: false, reason: `Every player needs a linked ${meta.account} to register.`, missing };
 	return { ok: true };

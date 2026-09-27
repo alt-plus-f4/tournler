@@ -57,15 +57,15 @@ export function DeleteSimulatedTournamentsButton({ open, onOpenChange }: DevTool
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			{!isControlled && (
 				<DialogTrigger asChild>
-					<Button variant='outline'>
-						Delete simulated tournaments
-					</Button>
+					<Button variant='outline'>Delete simulated tournaments</Button>
 				</DialogTrigger>
 			)}
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>Delete all simulated tournaments?</DialogTitle>
-					<DialogDescription>This permanently deletes every tournament created by Simulate Tournament, along with their teams and fake players. Real tournaments and teams are not affected.</DialogDescription>
+					<DialogDescription>
+						This permanently deletes every tournament created by Simulate Tournament, along with their teams and fake players. Real tournaments and teams are not affected.
+					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter className='flex justify-end gap-2'>
 					<DialogClose asChild>

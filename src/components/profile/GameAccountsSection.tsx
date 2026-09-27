@@ -105,7 +105,12 @@ export function GameAccountsSection({ steam, riot: initialRiot, showSteam, onSho
 				<p className='mt-1 text-sm text-neutral-300'>Link the account for each game you play. Link both to play both.</p>
 			</div>
 			<div className='divide-y divide-border rounded-md border border-border bg-neutral-950'>
-				<AccountRow tag={<GameTag game='CS2' />} title='Steam' requirement='Required for CS2: connecting to match servers, tournament registration and your FACEIT level.' status={steam ? 'linked' : 'missing'}>
+				<AccountRow
+					tag={<GameTag game='CS2' />}
+					title='Steam'
+					requirement='Required for CS2: connecting to match servers, tournament registration and your FACEIT level.'
+					status={steam ? 'linked' : 'missing'}
+				>
 					{steam ? (
 						<div className='space-y-4'>
 							<div className='flex flex-wrap items-center justify-between gap-3'>
@@ -114,7 +119,12 @@ export function GameAccountsSection({ steam, riot: initialRiot, showSteam, onSho
 									<dd className='font-mono tabular-nums text-neutral-200'>{steam.steamId}</dd>
 									<dt className='text-neutral-400'>Profile</dt>
 									<dd>
-										<a href={`https://steamcommunity.com/profiles/${steam.steamId}`} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1 text-neutral-200 underline-offset-4 hover:text-white hover:underline'>
+										<a
+											href={`https://steamcommunity.com/profiles/${steam.steamId}`}
+											target='_blank'
+											rel='noopener noreferrer'
+											className='inline-flex items-center gap-1 text-neutral-200 underline-offset-4 hover:text-white hover:underline'
+										>
 											Steam Community <ExternalLink className='h-3 w-3' aria-hidden />
 										</a>
 									</dd>

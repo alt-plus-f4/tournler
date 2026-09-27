@@ -38,7 +38,9 @@ export async function generateMetadata({ params }: { params: Promise<{ matchId: 
 	// Absolute: the parent /matches layout sets a plain title, which stops the root template from applying here.
 	return {
 		title: { absolute: `${a} vs ${b} · Tournler` },
-		description: isLol ? `${a} vs ${b} on Tournler: League of Legends match, rosters and the recorded result.` : `${a} vs ${b} on Tournler: live score from the game server, rosters, map veto and results.`,
+		description: isLol
+			? `${a} vs ${b} on Tournler: League of Legends match, rosters and the recorded result.`
+			: `${a} vs ${b} on Tournler: live score from the game server, rosters, map veto and results.`,
 	};
 }
 

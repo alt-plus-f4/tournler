@@ -46,11 +46,21 @@ export default async function AdminForumPage({ searchParams }: { searchParams: P
 					<table className='w-full min-w-[820px] text-sm'>
 						<thead>
 							<tr className='border-b border-border text-left text-xs font-bold uppercase tracking-widest text-muted-foreground'>
-								<th scope='col' className='px-3 py-2 font-bold'>Thread</th>
-								<th scope='col' className='px-3 py-2 font-bold'>Author</th>
-								<th scope='col' className='px-3 py-2 text-right font-bold'>Score</th>
-								<th scope='col' className='px-3 py-2 text-right font-bold'>Replies</th>
-								<th scope='col' className='px-3 py-2 text-right font-bold'>Last activity</th>
+								<th scope='col' className='px-3 py-2 font-bold'>
+									Thread
+								</th>
+								<th scope='col' className='px-3 py-2 font-bold'>
+									Author
+								</th>
+								<th scope='col' className='px-3 py-2 text-right font-bold'>
+									Score
+								</th>
+								<th scope='col' className='px-3 py-2 text-right font-bold'>
+									Replies
+								</th>
+								<th scope='col' className='px-3 py-2 text-right font-bold'>
+									Last activity
+								</th>
 								<th scope='col' className='px-3 py-2 text-right font-bold'>
 									Actions
 								</th>
@@ -111,7 +121,11 @@ export default async function AdminForumPage({ searchParams }: { searchParams: P
 					<span className='text-muted-foreground'>
 						Page <span className='font-mono tabular-nums text-foreground'>{page}</span> of <span className='font-mono tabular-nums text-foreground'>{totalPages}</span>
 					</span>
-					<Link href={`/admin/forum?page=${page + 1}`} aria-disabled={page >= totalPages} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), page >= totalPages && 'pointer-events-none opacity-50')}>
+					<Link
+						href={`/admin/forum?page=${page + 1}`}
+						aria-disabled={page >= totalPages}
+						className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), page >= totalPages && 'pointer-events-none opacity-50')}
+					>
 						Next
 					</Link>
 				</nav>

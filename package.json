@@ -7,9 +7,18 @@
 		"build": "prisma generate && next build",
 		"start": "next start",
 		"lint": "eslint src",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
 		"test": "jest",
 		"test:watch": "jest --watch"
 	},
+	"browserslist": [
+		"chrome >= 93",
+		"edge >= 93",
+		"firefox >= 92",
+		"safari >= 15.4",
+		"ios >= 15.4"
+	],
 	"dependencies": {
 		"@dicebear/avataaars": "^9.4.3",
 		"@dicebear/core": "^9.4.3",
@@ -83,9 +92,11 @@
 		"@types/react-dom": "^18",
 		"eslint": "^8",
 		"eslint-config-next": "^15.5.18",
+		"eslint-config-prettier": "^9.1.2",
 		"jest": "^30.4.2",
 		"jest-environment-jsdom": "^30.4.1",
 		"postcss": "^8.5.26",
+		"prettier": "3.9.9",
 		"prisma": "^6.2.1",
 		"tailwindcss": "^3.4.1",
 		"typescript": "^5"

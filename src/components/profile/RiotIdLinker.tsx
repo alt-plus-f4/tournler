@@ -125,11 +125,7 @@ export function RiotIdLinker({ value, onChange }: RiotIdLinkerProps) {
 					<dt className='text-neutral-400'>Region</dt>
 					<dd className='text-neutral-200'>{platformLabel(account.region)}</dd>
 				</dl>
-				<ConfirmUnlinkButton
-					title='Unlink your Riot ID?'
-					description='You won’t be able to register for League of Legends tournaments until you link and verify it again.'
-					onConfirm={remove}
-				/>
+				<ConfirmUnlinkButton title='Unlink your Riot ID?' description='You won’t be able to register for League of Legends tournaments until you link and verify it again.' onConfirm={remove} />
 			</div>
 		);
 	}
@@ -140,7 +136,11 @@ export function RiotIdLinker({ value, onChange }: RiotIdLinkerProps) {
 		return (
 			<div className='space-y-4'>
 				<p className='text-sm text-neutral-300'>
-					Found <span className='font-medium text-white'>{account.gameName}#{account.tagLine}</span> on {platformLabel(account.region)}.
+					Found{' '}
+					<span className='font-medium text-white'>
+						{account.gameName}#{account.tagLine}
+					</span>{' '}
+					on {platformLabel(account.region)}.
 				</p>
 				<div className='flex flex-col gap-4 rounded-md border border-border bg-black p-4 sm:flex-row sm:items-center'>
 					<div className='flex items-center gap-4'>
@@ -182,7 +182,11 @@ export function RiotIdLinker({ value, onChange }: RiotIdLinkerProps) {
 		return (
 			<div className='space-y-3'>
 				<p className='text-sm text-neutral-300'>
-					The icon check for <span className='font-medium text-white'>{account.gameName}#{account.tagLine}</span> expired. Start again for a new icon.
+					The icon check for{' '}
+					<span className='font-medium text-white'>
+						{account.gameName}#{account.tagLine}
+					</span>{' '}
+					expired. Start again for a new icon.
 				</p>
 				{errorLine}
 				<div className='flex flex-wrap gap-2'>

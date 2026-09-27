@@ -1,0 +1,10 @@
+version: 2
+
+# Dependency update PRs target development, same as day-to-day work (see CLAUDE.md's git
+# workflow) — main only changes through a reviewed PR from development.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: development
+    schedule:
+      interval: weekly

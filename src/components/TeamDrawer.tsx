@@ -43,7 +43,9 @@ export function TeamCreationDrawer({ games, defaultGame }: { games: Game[]; defa
 				</span>
 				<span className='text-sm text-muted-foreground'>You become captain and can invite up to 4 players.</span>
 			</button>
-			{mounted && <TeamCreationDrawerPanel open={open} onOpenChange={setOpen} triggerRef={triggerRef} games={games} defaultGame={defaultGame && games.includes(defaultGame) ? defaultGame : games[0]} />}
+			{mounted && (
+				<TeamCreationDrawerPanel open={open} onOpenChange={setOpen} triggerRef={triggerRef} games={games} defaultGame={defaultGame && games.includes(defaultGame) ? defaultGame : games[0]} />
+			)}
 		</>
 	);
 }

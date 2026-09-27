@@ -27,45 +27,48 @@ const first = (value: string | string[] | undefined) => (Array.isArray(value) ? 
  * Same listing GET /api/matches/public serves, read directly instead of fetched client-side after
  * hydration. Served from the data cache (keyed by the filter args) on the live window.
  */
-const listMatches = cachedQuery(async (status: StatusFilter, tournamentId: number | undefined, page: number, game: Game | null) => {
-	const statusWhere: Prisma.MatchesWhereInput['status'] =
-		status === 'ALL' ? undefined : status === 'LIVE' ? { in: [MatchStatus.LIVE, MatchStatus.PAUSED] } : MatchStatus[status];
-	const where: Prisma.MatchesWhereInput = {
-		...(statusWhere ? { status: statusWhere } : {}),
-		...(tournamentId ? { tournamentId } : {}),
-		...(game ? { tournament: { game } } : {}),
-	};
-	const side = { select: { id: true, name: true, logo: true } } as const;
+const listMatches = cachedQuery(
+	async (status: StatusFilter, tournamentId: number | undefined, page: number, game: Game | null) => {
+		const statusWhere: Prisma.MatchesWhereInput['status'] = status === 'ALL' ? undefined : status === 'LIVE' ? { in: [MatchStatus.LIVE, MatchStatus.PAUSED] } : MatchStatus[status];
+		const where: Prisma.MatchesWhereInput = {
+			...(statusWhere ? { status: statusWhere } : {}),
+			...(tournamentId ? { tournamentId } : {}),
+			...(game ? { tournament: { game } } : {}),
+		};
+		const side = { select: { id: true, name: true, logo: true } } as const;
 
-	const [rows, total] = await Promise.all([
-		db.matches.findMany({
-			where,
-			orderBy: { matchDate: status === 'SCHEDULED' ? 'asc' : 'desc' },
-			select: {
-				id: true,
-				status: true,
-				matchDate: true,
-				isPickup: true,
-				scoreTeamA: true,
-				scoreTeamB: true,
-				winnerSide: true,
-				teamAName: true,
-				teamBName: true,
-				tournament: { select: { id: true, name: true, game: true } },
-				teamA: side,
-				teamB: side,
-				winner: side,
-				_count: { select: { participants: true } },
-			},
-			skip: (page - 1) * MATCHES_PER_PAGE,
-			take: MATCHES_PER_PAGE,
-		}),
-		db.matches.count({ where }),
-	]);
+		const [rows, total] = await Promise.all([
+			db.matches.findMany({
+				where,
+				orderBy: { matchDate: status === 'SCHEDULED' ? 'asc' : 'desc' },
+				select: {
+					id: true,
+					status: true,
+					matchDate: true,
+					isPickup: true,
+					scoreTeamA: true,
+					scoreTeamB: true,
+					winnerSide: true,
+					teamAName: true,
+					teamBName: true,
+					tournament: { select: { id: true, name: true, game: true } },
+					teamA: side,
+					teamB: side,
+					winner: side,
+					_count: { select: { participants: true } },
+				},
+				skip: (page - 1) * MATCHES_PER_PAGE,
+				take: MATCHES_PER_PAGE,
+			}),
+			db.matches.count({ where }),
+		]);
 
-	const matches: MatchListItem[] = rows.map(({ _count, matchDate, ...m }) => ({ ...m, matchDate: matchDate.toISOString(), participantCount: _count.participants }));
-	return { matches, totalPages: Math.max(1, Math.ceil(total / MATCHES_PER_PAGE)) };
-}, ['matches-public-list'], { tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live });
+		const matches: MatchListItem[] = rows.map(({ _count, matchDate, ...m }) => ({ ...m, matchDate: matchDate.toISOString(), participantCount: _count.participants }));
+		return { matches, totalPages: Math.max(1, Math.ceil(total / MATCHES_PER_PAGE)) };
+	},
+	['matches-public-list'],
+	{ tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live },
+);
 
 // Same set the old client fetch used (GET /api/tournaments?limit=100), names only. `game` narrows
 // the dropdown to the active game filter — a cachedQuery argument, not a new tag (see listMatches).
@@ -86,10 +89,7 @@ async function CreateMatchButtonGate() {
 }
 
 async function MatchesSection({ status, tournamentId, page, game }: { status: StatusFilter; tournamentId: string; page: number; game: Game }) {
-	const [tournaments, { matches, totalPages }] = await Promise.all([
-		getTournamentOptions(game),
-		listMatches(status, tournamentId ? Number(tournamentId) : undefined, page, game),
-	]);
+	const [tournaments, { matches, totalPages }] = await Promise.all([getTournamentOptions(game), listMatches(status, tournamentId ? Number(tournamentId) : undefined, page, game)]);
 
 	return <MatchesBrowser status={status} tournamentId={tournamentId} page={page} totalPages={totalPages} tournaments={tournaments} matches={matches} game={game} />;
 }

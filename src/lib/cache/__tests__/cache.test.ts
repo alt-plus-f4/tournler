@@ -13,11 +13,13 @@ const store = new Map<string, unknown>();
 const revalidateTag = jest.fn();
 jest.mock('next/cache', () => ({
 	// Minimal stand-in: JSON round-trip like the real data cache, keyed by keyParts + args.
-	unstable_cache: (fn: (...a: unknown[]) => Promise<unknown>, keyParts: string[]) => async (...args: unknown[]) => {
-		const key = JSON.stringify([keyParts, args]);
-		if (!store.has(key)) store.set(key, JSON.parse(JSON.stringify(await fn(...args))));
-		return JSON.parse(JSON.stringify(store.get(key)));
-	},
+	unstable_cache:
+		(fn: (...a: unknown[]) => Promise<unknown>, keyParts: string[]) =>
+		async (...args: unknown[]) => {
+			const key = JSON.stringify([keyParts, args]);
+			if (!store.has(key)) store.set(key, JSON.parse(JSON.stringify(await fn(...args))));
+			return JSON.parse(JSON.stringify(store.get(key)));
+		},
 	revalidateTag: (...a: unknown[]) => revalidateTag(...a),
 }));
 jest.mock('next/server', () => ({ after: () => {} }));
@@ -52,7 +54,7 @@ describe('MODEL_TAGS', () => {
 		const models = [...schema.matchAll(/^model (\w+) \{/gm)].map((m) => m[1]);
 		// Auth plumbing that no cached page query reads.
 		const ignored = new Set(['Account', 'Session', 'VerificationToken']);
-		const unmapped = models.filter((m) => !ignored.has(m) && !(MODEL_TAGS[m]?.length));
+		const unmapped = models.filter((m) => !ignored.has(m) && !MODEL_TAGS[m]?.length);
 		expect(unmapped).toEqual([]);
 	});
 });

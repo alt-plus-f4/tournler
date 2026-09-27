@@ -26,11 +26,7 @@ export interface ChallengeState {
 }
 
 export type VerifyOutcome =
-	| { result: 'verified' }
-	| { result: 'already_verified' }
-	| { result: 'no_challenge' }
-	| { result: 'expired' }
-	| { result: 'mismatch'; expectedIconId: number; currentIconId: number };
+	{ result: 'verified' } | { result: 'already_verified' } | { result: 'no_challenge' } | { result: 'expired' } | { result: 'mismatch'; expectedIconId: number; currentIconId: number };
 
 /** Decide a verify attempt. The expiry is checked first, before Riot is even asked. */
 export function checkChallengeOpen(state: ChallengeState, now: Date): Exclude<VerifyOutcome, { result: 'verified' } | { result: 'mismatch' }> | null {

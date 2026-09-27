@@ -1,6 +1,6 @@
 # CS2 dedicated server pool
 
-For a full step-by-step setup + testing walkthrough, see `../CS2_SERVER_GUIDE.md`. This file is
+For a full step-by-step setup + testing walkthrough, see `../docs/CS2_SERVER_GUIDE.md`. This file is
 just the quick reference.
 
 This runs a fixed-size pool of long-running CS2 dedicated server containers (`joedwards32/cs2`,
@@ -34,7 +34,7 @@ docker compose up
 
 Then point the Next.js app's own `.env` at the pool via `CS2_SERVER_POOL` (a JSON array, one
 entry per server, matching each server's port/RCON port/passwords) — see the root `.examplenv`
-and `TOURNAMENT_GUIDE.md`. (A single-server fallback via `CS2_SERVER_IP`/`CS2_SERVER_PORT`/etc.
+and `../docs/TOURNAMENT_GUIDE.md`. (A single-server fallback via `CS2_SERVER_IP`/`CS2_SERVER_PORT`/etc.
 still works if `CS2_SERVER_POOL` is unset.)
 
 If the app is also running in Docker locally and needs to reach these containers by service name

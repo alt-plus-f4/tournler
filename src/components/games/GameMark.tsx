@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 /**
  * Each game's real mark, everywhere a game is labeled: the white-on-transparent icons in /public
  * (the CS2 soldier icon, Ahri for LoL — GAME_ICON_SRC). The hue accent stays confined to the CS2/LoL
- * hub chrome (GAME_ACCENT, DESIGN.md's Hub Accent exception); this icon itself does not.
+ * hub chrome (GAME_ACCENT, docs/DESIGN.md's Hub Accent exception); this icon itself does not.
  */
 export function GameGlyph({ game, className }: { game: Game; className?: string }) {
 	return <Image src={GAME_ICON_SRC[game]} alt='' width={16} height={16} className={cn('h-4 w-4 shrink-0 object-contain', className)} />;

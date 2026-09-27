@@ -173,14 +173,26 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 					) : (
 						<div className='divide-y divide-border'>
 							{match.status === 'SCHEDULED' && (
-								<ControlRow title='Start match' hint={isLol ? 'Marks the match live — play happens in the League client; nothing is loaded onto a server.' : vetoComplete ? 'Loads the veto result onto the server and opens it to players.' : 'Available once the map veto is complete.'}>
+								<ControlRow
+									title='Start match'
+									hint={
+										isLol
+											? 'Marks the match live — play happens in the League client; nothing is loaded onto a server.'
+											: vetoComplete
+												? 'Loads the veto result onto the server and opens it to players.'
+												: 'Available once the map veto is complete.'
+									}
+								>
 									<Button onClick={() => run('start', { action: 'START' })} disabled={busy || !canStart(match, vetoComplete)} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'start'} icon={Play} /> Start
 									</Button>
 								</ControlRow>
 							)}
 							{match.status === 'LIVE' && (
-								<ControlRow title={isLol ? 'Pause' : 'Pause or force start'} hint={isLol ? 'Marks the match paused — there’s no server to freeze.' : 'Pause freezes the server. Force start skips the ready-up wait if players can’t type .ready.'}>
+								<ControlRow
+									title={isLol ? 'Pause' : 'Pause or force start'}
+									hint={isLol ? 'Marks the match paused — there’s no server to freeze.' : 'Pause freezes the server. Force start skips the ready-up wait if players can’t type .ready.'}
+								>
 									<Button variant='outline' onClick={() => run('pause', { action: 'PAUSE' })} disabled={busy} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'pause'} icon={Pause} /> Pause
 									</Button>
@@ -203,7 +215,11 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 								<ControlRow title='Restart match' hint={isLol ? 'Clears score and timer back to zero. Teams stay.' : 'Clears score, timer and map results. Teams and veto stay.'}>
 									<ConfirmAction
 										title='Restart this match?'
-										description={isLol ? 'Score and timer are cleared back to zero. Team assignments stay as they are.' : 'Score, timer and every map result are cleared back to zero and the server restarts the match. Team assignments and the map veto stay as they are.'}
+										description={
+											isLol
+												? 'Score and timer are cleared back to zero. Team assignments stay as they are.'
+												: 'Score, timer and every map result are cleared back to zero and the server restarts the match. Team assignments and the map veto stay as they are.'
+										}
 										confirmLabel='Restart match'
 										onConfirm={() => run('restart', { action: 'RESTART' })}
 										trigger={
@@ -220,7 +236,11 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 
 				{inPlay && (
 					<RoomPanel label={isLol ? 'Record result' : 'Result override'}>
-						<p className='mb-4 text-sm text-muted-foreground'>{isLol ? 'League has no hosted server to report a score, so an organizer enters it here.' : 'Scores normally come from the game server. Only type them in if the server stopped reporting.'}</p>
+						<p className='mb-4 text-sm text-muted-foreground'>
+							{isLol
+								? 'League has no hosted server to report a score, so an organizer enters it here.'
+								: 'Scores normally come from the game server. Only type them in if the server stopped reporting.'}
+						</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-1.5'>
 								<Label htmlFor='admin-score-a' className='truncate text-muted-foreground'>
@@ -296,7 +316,11 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 										}
 									/>
 								</div>
-								<p className='mt-2 text-xs text-muted-foreground'>{isLol ? `Records the scores above as the result${match.isPickup ? '.' : ', and advances the bracket.'}` : `Records the scores above as the result instead of what the server reports${match.isPickup ? '.' : ', and advances the bracket.'}`}</p>
+								<p className='mt-2 text-xs text-muted-foreground'>
+									{isLol
+										? `Records the scores above as the result${match.isPickup ? '.' : ', and advances the bracket.'}`
+										: `Records the scores above as the result instead of what the server reports${match.isPickup ? '.' : ', and advances the bracket.'}`}
+								</p>
 							</div>
 						)}
 					</RoomPanel>
@@ -344,7 +368,9 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 							</>
 						}
 					>
-						<p className='text-sm text-muted-foreground'>{match.status === 'COMPLETED' ? 'The server was released when the match ended.' : 'No game server is attached yet. The console opens once one is assigned to this match.'}</p>
+						<p className='text-sm text-muted-foreground'>
+							{match.status === 'COMPLETED' ? 'The server was released when the match ended.' : 'No game server is attached yet. The console opens once one is assigned to this match.'}
+						</p>
 					</RoomPanel>
 				)}
 			</div>
@@ -432,7 +458,8 @@ function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: Gam
 				<div className='mb-3 flex items-start gap-2 rounded-md border border-border bg-neutral-900 p-3 text-xs text-neutral-200' role='status'>
 					<AlertTriangle className='mt-0.5 h-4 w-4 shrink-0' aria-hidden />
 					<span>
-						The server hasn&apos;t confirmed loading this match&apos;s config yet (maps, teams, password). If players can&apos;t connect, re-sync the config or run <code className='font-mono'>status</code>.
+						The server hasn&apos;t confirmed loading this match&apos;s config yet (maps, teams, password). If players can&apos;t connect, re-sync the config or run{' '}
+						<code className='font-mono'>status</code>.
 					</span>
 				</div>
 			)}
@@ -457,7 +484,14 @@ function RconConsole({ matchId, gameServer }: { matchId: string; gameServer: Gam
 					runCommand(command);
 				}}
 			>
-				<Input value={command} onChange={(e) => setCommand(e.target.value)} placeholder='RCON command, e.g. status' aria-label='RCON command' disabled={isRunning} className='bg-black font-mono text-sm' />
+				<Input
+					value={command}
+					onChange={(e) => setCommand(e.target.value)}
+					placeholder='RCON command, e.g. status'
+					aria-label='RCON command'
+					disabled={isRunning}
+					className='bg-black font-mono text-sm'
+				/>
 				<Button type='submit' disabled={isRunning || !command.trim()} className='shrink-0'>
 					{isRunning ? 'Running…' : 'Run'}
 				</Button>

@@ -77,7 +77,10 @@ function MatchRow({ match, timeZone }: { match: MatchListItem; timeZone: string 
 	const nameClass = (won: boolean, lost: boolean) => (lost ? 'text-muted-foreground' : won ? 'font-bold text-white' : 'font-medium text-white');
 
 	return (
-		<Link href={`/matches/${match.id}`} className='flex items-center gap-2 rounded-md border border-border px-3 py-3 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:px-4'>
+		<Link
+			href={`/matches/${match.id}`}
+			className='flex items-center gap-2 rounded-md border border-border px-3 py-3 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:px-4'
+		>
 			<GameTag game={match.tournament.game ?? 'CS2'} showLabel={false} className='shrink-0' />
 			<span className='hidden w-28 shrink-0 truncate text-xs text-muted-foreground sm:block'>{match.isPickup ? 'Pickup' : match.tournament.name}</span>
 
@@ -86,7 +89,9 @@ function MatchRow({ match, timeZone }: { match: MatchListItem; timeZone: string 
 					<span className={`truncate text-sm ${nameClass(aWon, bWon)}`}>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</span>
 					{!match.isPickup && <TeamLogo src={match.teamA?.logo} name={match.teamA?.name} size='sm' decorative />}
 				</div>
-				<div className='w-14 shrink-0 whitespace-nowrap text-center font-mono text-sm font-bold tabular-nums text-white'>{isOpen ? `${match.participantCount}/10` : inProgress ? `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}` : tiedFinal ? '–' : 'vs'}</div>
+				<div className='w-14 shrink-0 whitespace-nowrap text-center font-mono text-sm font-bold tabular-nums text-white'>
+					{isOpen ? `${match.participantCount}/10` : inProgress ? `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}` : tiedFinal ? '–' : 'vs'}
+				</div>
 				<div className='flex min-w-0 flex-1 items-center gap-2'>
 					{!match.isPickup && <TeamLogo src={match.teamB?.logo} name={match.teamB?.name} size='sm' decorative />}
 					<span className={`truncate text-sm ${nameClass(bWon, aWon)}`}>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</span>

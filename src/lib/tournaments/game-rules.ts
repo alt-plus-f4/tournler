@@ -9,7 +9,7 @@ type Db = DbTx | typeof db;
  * Which games Tournler runs the hosted-server pipeline for: provisioning a server from the pool,
  * MatchZy config pushes, RCON, map veto and captain draft. Only CS2. League of Legends is played
  * in the Riot client, so a LoL match never touches a game server; staff record its result instead
- * (Phase 1 — see PRODUCT.md "the server is the source of truth", which doesn't hold for LoL).
+ * (Phase 1 — see docs/PRODUCT.md "the server is the source of truth", which doesn't hold for LoL).
  */
 export function hostsGameServers(game: Game): boolean {
 	return game === 'CS2';

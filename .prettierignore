@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+coverage
+.unlighthouse
+localhost
+convex/_generated
+package-lock.json

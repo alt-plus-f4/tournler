@@ -98,7 +98,9 @@ export function TeamMatchList({ matches, teamId }: { matches: TeamMatchItem[]; t
 										<span className={won ? 'text-muted-foreground' : 'font-bold text-white'}>{opponentScore ?? 0}</span>
 									</>
 								) : (
-									<span className='text-muted-foreground' aria-label={tiedFinal ? 'No deciding score' : undefined}>{tiedFinal ? '–' : 'vs'}</span>
+									<span className='text-muted-foreground' aria-label={tiedFinal ? 'No deciding score' : undefined}>
+										{tiedFinal ? '–' : 'vs'}
+									</span>
 								)}
 							</span>
 							<span className='w-16 shrink-0 text-right'>

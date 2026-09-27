@@ -52,7 +52,10 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 										href={href}
 										onClick={() => onOpenChange(false)}
 										aria-current={isActive ? 'page' : undefined}
-										className={cn('flex h-14 items-center px-6 text-base font-medium transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none', isActive ? 'text-white' : 'text-neutral-300')}
+										className={cn(
+											'flex h-14 items-center px-6 text-base font-medium transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none',
+											isActive ? 'text-white' : 'text-neutral-300',
+										)}
 									>
 										{label}
 									</Link>

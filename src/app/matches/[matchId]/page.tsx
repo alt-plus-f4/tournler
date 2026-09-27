@@ -86,10 +86,14 @@ export default function MatchPage() {
 	// with an incomplete draft/veto in the first place, but this keeps the room honest either way).
 	const isLol = !!match && isLolMatch(match);
 	const showDraft = !!match && !isLol && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
-	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
+	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, {
+		refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000),
+	});
 	// Veto can't start until the draft has put people on sides — otherwise maps get banned before anyone's rostered.
 	const showVeto = !!match && !isLol && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
-	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
+	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, {
+		refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000),
+	});
 
 	// Only ask for the account when there is one: signed-out visitors got a 401 (console error) here.
 	const { status: sessionStatus } = useClientSession();
@@ -123,9 +127,16 @@ export default function MatchPage() {
 		}
 	};
 
-	const joinSide = (side: Side) => withPending(side, () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side }) }), 'Could not join');
+	const joinSide = (side: Side) =>
+		withPending(side, () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side }) }), 'Could not join');
 	// CAPTAIN_DRAFT pickups have no side at join time — the first 2 joiners become captains, everyone else lands in the pool.
-	const joinDraftPool = () => withPending('POOL', () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }), 'Could not join', () => mutateDraft());
+	const joinDraftPool = () =>
+		withPending(
+			'POOL',
+			() => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }),
+			'Could not join',
+			() => mutateDraft(),
+		);
 	const leaveMatch = () => withPending('LEAVE', () => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }), 'Could not leave match');
 
 	const deleteMatch = async () => {
@@ -168,7 +179,8 @@ export default function MatchPage() {
 
 	// "Your turn" beacon on the Overview tab while the viewer is elsewhere in the room.
 	const vetoNeedsMe = !!veto && veto.phase !== 'COMPLETE' && getVetoTurn(match, veto, currentUserId).isSideTurn;
-	const draftNeedsMe = draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
+	const draftNeedsMe =
+		draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
 	const needsMe = vetoNeedsMe || draftNeedsMe;
 
 	const rosterFor = (side: Side): RosterPlayer[] => {
@@ -176,10 +188,26 @@ export default function MatchPage() {
 			// Participants arrive ordered by joinedAt, so an open pickup side's first entry is its captain.
 			return match.participants
 				.filter((p) => p.side === side)
-				.map((p, i) => ({ id: p.user.id, name: p.user.name || 'Unknown player', image: p.user.image, faceitLevel: p.user.faceitLevel, verified: p.user.verified ?? null, isCaptain: p.isCaptain || (!isDraftMode && i === 0), isMe: p.user.id === currentUserId }));
+				.map((p, i) => ({
+					id: p.user.id,
+					name: p.user.name || 'Unknown player',
+					image: p.user.image,
+					faceitLevel: p.user.faceitLevel,
+					verified: p.user.verified ?? null,
+					isCaptain: p.isCaptain || (!isDraftMode && i === 0),
+					isMe: p.user.id === currentUserId,
+				}));
 		}
 		const team = side === 'TEAM_A' ? match.teamA : match.teamB;
-		return (team?.members ?? []).map((m) => ({ id: m.id, name: m.name || 'Unknown player', image: m.image, faceitLevel: m.faceitLevel, verified: m.verified ?? null, isCaptain: team?.capitanId === m.id, isMe: m.id === currentUserId }));
+		return (team?.members ?? []).map((m) => ({
+			id: m.id,
+			name: m.name || 'Unknown player',
+			image: m.image,
+			faceitLevel: m.faceitLevel,
+			verified: m.verified ?? null,
+			isCaptain: team?.capitanId === m.id,
+			isMe: m.id === currentUserId,
+		}));
 	};
 
 	const column = (side: Side) => {
@@ -208,7 +236,12 @@ export default function MatchPage() {
 					canJoinPickup && isDraftMode ? (
 						<span className='text-muted-foreground'>Awaiting draft pick</span>
 					) : canJoinPickup && currentUserId && !alreadyIn ? (
-						<button type='button' onClick={() => joinSide(side)} disabled={pendingSide !== null} className='max-w-full truncate font-medium text-white underline-offset-4 hover:underline disabled:opacity-50'>
+						<button
+							type='button'
+							onClick={() => joinSide(side)}
+							disabled={pendingSide !== null}
+							className='max-w-full truncate font-medium text-white underline-offset-4 hover:underline disabled:opacity-50'
+						>
 							{pendingSide === side ? 'Joining…' : `Join ${label}`}
 						</button>
 					) : (

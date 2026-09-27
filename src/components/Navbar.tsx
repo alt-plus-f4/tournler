@@ -7,7 +7,6 @@ import { NavAccount } from './shell/NavAccount';
 // Static shell: nothing here reads the request, so pages that don't need it can be prerendered.
 // Account-specific controls hydrate client-side in <NavAccount />.
 export default function Navbar() {
-
 	return (
 		<>
 			<header className='grid grid-cols-3 xl:grid-cols-[20%_60%_20%] w-full xl:h-14 h-16 items-center px-4 border-y navbar-color sticky top-0 z-50 overflow-x-hidden overflow-y-visible'>

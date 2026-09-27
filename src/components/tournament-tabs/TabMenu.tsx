@@ -60,7 +60,10 @@ export default function TabMenu({ tournament, champion }: TabMenuProps) {
 			<div className='border-b border-border md:mx-4'>
 				{/* The original spread-out tab bar: evenly spaced on phones, wide gaps from md. Scrolls sideways
 				    if it has to; focus rings are inset so the overflow never clips them. */}
-				<TabsList aria-label='Tournament sections' className='flex h-auto w-full justify-between gap-2 overflow-x-auto rounded-none bg-transparent px-0 py-2 [scrollbar-width:none] md:justify-start md:gap-16 lg:gap-24 [&::-webkit-scrollbar]:hidden'>
+				<TabsList
+					aria-label='Tournament sections'
+					className='flex h-auto w-full justify-between gap-2 overflow-x-auto rounded-none bg-transparent px-0 py-2 [scrollbar-width:none] md:justify-start md:gap-16 lg:gap-24 [&::-webkit-scrollbar]:hidden'
+				>
 					{TABS.map((tab) => (
 						<TabsTrigger
 							key={tab.value}

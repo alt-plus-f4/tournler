@@ -16,7 +16,9 @@ export function getVetoTurn(match: Match, veto: VetoState, currentUserId: string
 	const teamBLabel = match.teamBName || match.teamB?.name || 'Side B';
 	const actingTeam = match.isPickup ? null : veto.currentTurnTeamId === match.teamA?.id ? match.teamA : veto.currentTurnTeamId === match.teamB?.id ? match.teamB : null;
 	const actingSideLabel = match.isPickup ? (veto.currentTurnSide === 'TEAM_A' ? teamALabel : veto.currentTurnSide === 'TEAM_B' ? teamBLabel : null) : (actingTeam?.name ?? null);
-	const isSideTurn = veto.phase !== 'COMPLETE' && (match.isPickup ? match.participants.some((p) => p.userId === currentUserId && p.side === veto.currentTurnSide) : (actingTeam?.members.some((member) => member.id === currentUserId) ?? false));
+	const isSideTurn =
+		veto.phase !== 'COMPLETE' &&
+		(match.isPickup ? match.participants.some((p) => p.userId === currentUserId && p.side === veto.currentTurnSide) : (actingTeam?.members.some((member) => member.id === currentUserId) ?? false));
 	const activeSide = veto.currentTurnSide ?? (actingTeam ? (actingTeam.id === match.teamA?.id ? 'TEAM_A' : 'TEAM_B') : null);
 	return { teamALabel, teamBLabel, actingSideLabel, isSideTurn, activeSide };
 }
@@ -30,11 +32,33 @@ function TurnLine({ actingAsAdmin, children }: { actingAsAdmin: boolean; childre
 	);
 }
 
-function SideTurnHeader({ labelA, labelB, markA, markB, activeSide, done, activeText }: { labelA: string; labelB: string; markA: ReactNode; markB: ReactNode; activeSide: 'TEAM_A' | 'TEAM_B' | null; done: boolean; activeText: string }) {
+function SideTurnHeader({
+	labelA,
+	labelB,
+	markA,
+	markB,
+	activeSide,
+	done,
+	activeText,
+}: {
+	labelA: string;
+	labelB: string;
+	markA: ReactNode;
+	markB: ReactNode;
+	activeSide: 'TEAM_A' | 'TEAM_B' | null;
+	done: boolean;
+	activeText: string;
+}) {
 	const side = (key: 'TEAM_A' | 'TEAM_B', label: string, mark: ReactNode) => {
 		const active = !done && activeSide === key;
 		return (
-			<div className={cn('flex min-w-0 flex-1 items-center gap-2.5 transition-opacity duration-200', key === 'TEAM_A' ? 'flex-row-reverse text-right' : 'text-left', active ? 'opacity-100' : 'opacity-50')}>
+			<div
+				className={cn(
+					'flex min-w-0 flex-1 items-center gap-2.5 transition-opacity duration-200',
+					key === 'TEAM_A' ? 'flex-row-reverse text-right' : 'text-left',
+					active ? 'opacity-100' : 'opacity-50',
+				)}
+			>
 				{mark}
 				<div className='min-w-0'>
 					<p className='line-clamp-2 break-words text-sm font-black uppercase leading-tight tracking-wide text-white'>{label}</p>
@@ -56,7 +80,21 @@ function SideTurnHeader({ labelA, labelB, markA, markB, activeSide, done, active
 	);
 }
 
-export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVetoUpdated }: { matchId: string; match: Match; veto: VetoState; currentUserId: string | null; canManage: boolean; onVetoUpdated: (next: VetoState) => void }) {
+export function VetoPanel({
+	matchId,
+	match,
+	veto,
+	currentUserId,
+	canManage,
+	onVetoUpdated,
+}: {
+	matchId: string;
+	match: Match;
+	veto: VetoState;
+	currentUserId: string | null;
+	canManage: boolean;
+	onVetoUpdated: (next: VetoState) => void;
+}) {
 	const [pendingMap, setPendingMap] = useState<string | null>(null);
 	const { toast } = useToast();
 	const { teamALabel, teamBLabel, actingSideLabel, isSideTurn, activeSide } = getVetoTurn(match, veto, currentUserId);
@@ -140,7 +178,13 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 
 			<div className='flex items-center justify-center gap-1.5' role='img' aria-label={`Step ${Math.min(banPickActions.length + 1, veto.sequenceLength)} of ${veto.sequenceLength}`}>
 				{sequenceSteps.map((step, i) => (
-					<span key={i} className={cn('h-1.5 w-6 rounded-full transition-colors duration-200', step.done ? (step.done.action === 'BAN' ? 'bg-signal-live/70' : 'bg-signal-ready/70') : step.isCurrent ? 'bg-white' : 'bg-neutral-800')} />
+					<span
+						key={i}
+						className={cn(
+							'h-1.5 w-6 rounded-full transition-colors duration-200',
+							step.done ? (step.done.action === 'BAN' ? 'bg-signal-live/70' : 'bg-signal-ready/70') : step.isCurrent ? 'bg-white' : 'bg-neutral-800',
+						)}
+					/>
 				))}
 			</div>
 
@@ -186,7 +230,13 @@ export function VetoPanel({ matchId, match, veto, currentUserId, canManage, onVe
 								clickable ? 'cursor-pointer hover:border-white' : 'cursor-default',
 							)}
 						>
-							<Image src={map.image} alt='' fill sizes='(min-width: 1024px) 200px, 50vw' className={cn('object-cover transition-opacity duration-200', acted ? 'opacity-25 grayscale' : 'opacity-55 group-hover:opacity-80')} />
+							<Image
+								src={map.image}
+								alt=''
+								fill
+								sizes='(min-width: 1024px) 200px, 50vw'
+								className={cn('object-cover transition-opacity duration-200', acted ? 'opacity-25 grayscale' : 'opacity-55 group-hover:opacity-80')}
+							/>
 							<div className='absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent' />
 							{overlay && <div className='pointer-events-none absolute right-1.5 top-1.5'>{overlay}</div>}
 							<div className='absolute inset-x-0 bottom-0 p-2'>
@@ -313,7 +363,9 @@ export function DraftPanel({
 			</p>
 
 			{!isComplete && (
-				<TurnLine actingAsAdmin={actingAsAdmin}>{actingAsAdmin ? 'Acting as admin: pick from the pool' : isMyTurn ? 'Your turn — pick a player' : `Waiting for ${draft.currentTurnSide === 'TEAM_A' ? teamALabel : teamBLabel} to pick`}</TurnLine>
+				<TurnLine actingAsAdmin={actingAsAdmin}>
+					{actingAsAdmin ? 'Acting as admin: pick from the pool' : isMyTurn ? 'Your turn — pick a player' : `Waiting for ${draft.currentTurnSide === 'TEAM_A' ? teamALabel : teamBLabel} to pick`}
+				</TurnLine>
 			)}
 
 			{poolPlayers.length > 0 && (

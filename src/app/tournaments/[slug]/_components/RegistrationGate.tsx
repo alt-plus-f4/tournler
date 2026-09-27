@@ -17,7 +17,7 @@ export interface GateRosterEntry {
 	isViewer: boolean;
 }
 
-/** Monochrome status text + icon (see DESIGN.md's On-Air Rule — this isn't server state, so no signal color). */
+/** Monochrome status text + icon (see docs/DESIGN.md's On-Air Rule — this isn't server state, so no signal color). */
 function StatusMark({ status }: { status: RosterAccountStatus }) {
 	if (status === 'linked') {
 		return (

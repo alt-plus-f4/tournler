@@ -1,9 +1,13 @@
 /**
- * Homepage rewatch (VOD) config. Admins can override every field via HomepageSettings
+ * Homepage rewatch/watch config. Admins can override every field via HomepageSettings
  * (/admin/featured); any field left null falls back to the built-in G2 vs HEROIC VOD so the
  * homepage always has something to watch out of the box.
  */
+export type RewatchProvider = 'youtube' | 'twitch';
+
 export type RewatchConfig = {
+	provider: RewatchProvider;
+	/** YouTube video id when provider is 'youtube', Twitch channel login when provider is 'twitch'. */
 	videoId: string;
 	title: string;
 	teamA: string;
@@ -13,6 +17,7 @@ export type RewatchConfig = {
 };
 
 export const DEFAULT_REWATCH: RewatchConfig = {
+	provider: 'youtube',
 	videoId: 'z0rBsvbMapU',
 	title: 'G2 vs HEROIC',
 	teamA: 'G2',
@@ -45,7 +50,36 @@ export function parseYouTubeId(input: string): string | null {
 	return candidate && VIDEO_ID.test(candidate) ? candidate : null;
 }
 
+// Twitch login rules: 4-25 chars, alphanumeric + underscore, can't start with a digit-only... in
+// practice Twitch just requires letters/digits/underscore, 4-25 chars; good enough to validate.
+const TWITCH_CHANNEL = /^[A-Za-z0-9_]{4,25}$/;
+
+/**
+ * Accepts a bare Twitch channel login or a twitch.tv/<channel> URL and returns the login, or null
+ * if nothing valid can be extracted.
+ */
+export function parseTwitchChannel(input: string): string | null {
+	const value = input.trim();
+	if (TWITCH_CHANNEL.test(value)) return value;
+	let url: URL;
+	try {
+		url = new URL(value.startsWith('http') ? value : `https://${value}`);
+	} catch {
+		return null;
+	}
+	const host = url.hostname.replace(/^(www\.|m\.)/, '');
+	if (host !== 'twitch.tv') return null;
+	const candidate = url.pathname.split('/').filter(Boolean)[0] ?? null;
+	return candidate && TWITCH_CHANNEL.test(candidate) ? candidate : null;
+}
+
+/** Parses a video/channel value against the given provider. */
+export function parseRewatchSource(provider: RewatchProvider, input: string): string | null {
+	return provider === 'twitch' ? parseTwitchChannel(input) : parseYouTubeId(input);
+}
+
 type StoredRewatch = {
+	rewatchProvider: 'YOUTUBE' | 'TWITCH' | null;
 	rewatchVideoId: string | null;
 	rewatchTitle: string | null;
 	rewatchTeamA: string | null;
@@ -57,11 +91,13 @@ type StoredRewatch = {
 export function resolveRewatch(settings: StoredRewatch): RewatchConfig {
 	// A custom video with no custom teams shouldn't inherit the default VOD's G2/HEROIC labels.
 	const customVideo = Boolean(settings?.rewatchVideoId);
+	const provider: RewatchProvider = settings?.rewatchProvider === 'TWITCH' ? 'twitch' : customVideo ? 'youtube' : DEFAULT_REWATCH.provider;
 	const teamA = settings?.rewatchTeamA || (customVideo ? '' : DEFAULT_REWATCH.teamA);
 	const teamB = settings?.rewatchTeamB || (customVideo ? '' : DEFAULT_REWATCH.teamB);
 	return {
+		provider,
 		videoId: settings?.rewatchVideoId || DEFAULT_REWATCH.videoId,
-		title: settings?.rewatchTitle || (teamA && teamB ? `${teamA} vs ${teamB}` : customVideo ? 'Match rewatch' : DEFAULT_REWATCH.title),
+		title: settings?.rewatchTitle || (teamA && teamB ? `${teamA} vs ${teamB}` : customVideo ? (provider === 'twitch' ? 'Live stream' : 'Match rewatch') : DEFAULT_REWATCH.title),
 		teamA,
 		teamB,
 		teamALogo: settings?.rewatchTeamALogo || (customVideo ? null : DEFAULT_REWATCH.teamALogo),

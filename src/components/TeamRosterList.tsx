@@ -17,7 +17,10 @@ export function TeamRosterList({ members, captainId, label }: { members: RosterL
 		<ul aria-label={label} className='divide-y divide-border/60'>
 			{members.map((m) => (
 				<li key={m.id} className='group/player transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5'>
-					<Link href={`/profile/${m.id}`} className='flex min-h-11 cursor-pointer items-center gap-2.5 px-4 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
+					<Link
+						href={`/profile/${m.id}`}
+						className='flex min-h-11 cursor-pointer items-center gap-2.5 px-4 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+					>
 						<PlayerAvatar src={m.image} name={m.name} size={24} />
 						<span className='truncate text-sm font-medium text-white underline-offset-4 group-hover/player:underline group-has-[a:focus-visible]/player:underline'>{m.name ?? 'Unknown player'}</span>
 						{m.id === captainId && (

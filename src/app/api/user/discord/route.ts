@@ -15,8 +15,7 @@ export async function GET() {
 			select: { discord: { select: { id: true } } },
 		});
 
-		if (!user)
-			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
 		const hasLinkedDiscord = !!user.discord;
 

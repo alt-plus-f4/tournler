@@ -18,38 +18,67 @@ const DRAFT_LOBBY_SIZE = 2 + DRAFT_POOL_SIZE;
  */
 // Cached for REVALIDATE.live: the future/overdue split is computed against the time the entry was
 // filled, so it can lag the real clock by at most that window.
-export const getUpNext = cachedQuery(async () => {
-	const now = new Date();
-	const [pickups, teamMatches] = await Promise.all([
-		db.matches.findMany({
-			where: { status: 'SCHEDULED', isPickup: true },
-			orderBy: { matchDate: 'asc' },
-			take: MAX_ROWS,
-			select: { id: true, pickupMode: true, _count: { select: { participants: true } } },
-		}),
-		db.matches.findMany({
-			where: { status: 'SCHEDULED', isPickup: false, teamAId: { not: null }, teamBId: { not: null } },
-			orderBy: { matchDate: 'asc' },
-			take: MAX_ROWS * 2,
-			select: { id: true, matchDate: true, tournament: { select: { name: true, game: true } }, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
-		}),
-	]);
+export const getUpNext = cachedQuery(
+	async () => {
+		const now = new Date();
+		const [pickups, teamMatches] = await Promise.all([
+			db.matches.findMany({
+				where: { status: 'SCHEDULED', isPickup: true },
+				orderBy: { matchDate: 'asc' },
+				take: MAX_ROWS,
+				select: { id: true, pickupMode: true, _count: { select: { participants: true } } },
+			}),
+			db.matches.findMany({
+				where: { status: 'SCHEDULED', isPickup: false, teamAId: { not: null }, teamBId: { not: null } },
+				orderBy: { matchDate: 'asc' },
+				take: MAX_ROWS * 2,
+				select: { id: true, matchDate: true, tournament: { select: { name: true, game: true } }, teamA: { select: { name: true } }, teamB: { select: { name: true } } },
+			}),
+		]);
 
-	// Genuinely upcoming first (soonest first), then overdue ones (most recently due first).
-	const future = teamMatches.filter((m) => m.matchDate >= now);
-	const overdue = teamMatches.filter((m) => m.matchDate < now).reverse();
+		// Genuinely upcoming first (soonest first), then overdue ones (most recently due first).
+		const future = teamMatches.filter((m) => m.matchDate >= now);
+		const overdue = teamMatches.filter((m) => m.matchDate < now).reverse();
 
-	const rows = [
-		...pickups.map((m) => ({ kind: 'pickup' as const, id: m.id, mode: m.pickupMode, joined: m._count.participants, capacity: m.pickupMode === 'CAPTAIN_DRAFT' ? DRAFT_LOBBY_SIZE : OPEN_LOBBY_SIZE })),
-		...future.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, game: m.tournament.game, matchDate: m.matchDate.toISOString(), overdue: false })),
-		...overdue.map((m) => ({ kind: 'team' as const, id: m.id, teamA: m.teamA?.name ?? 'TBD', teamB: m.teamB?.name ?? 'TBD', tournament: m.tournament.name, game: m.tournament.game, matchDate: m.matchDate.toISOString(), overdue: true })),
-	];
-	return rows.slice(0, MAX_ROWS);
-}, ['home-up-next'], { tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live });
+		const rows = [
+			...pickups.map((m) => ({
+				kind: 'pickup' as const,
+				id: m.id,
+				mode: m.pickupMode,
+				joined: m._count.participants,
+				capacity: m.pickupMode === 'CAPTAIN_DRAFT' ? DRAFT_LOBBY_SIZE : OPEN_LOBBY_SIZE,
+			})),
+			...future.map((m) => ({
+				kind: 'team' as const,
+				id: m.id,
+				teamA: m.teamA?.name ?? 'TBD',
+				teamB: m.teamB?.name ?? 'TBD',
+				tournament: m.tournament.name,
+				game: m.tournament.game,
+				matchDate: m.matchDate.toISOString(),
+				overdue: false,
+			})),
+			...overdue.map((m) => ({
+				kind: 'team' as const,
+				id: m.id,
+				teamA: m.teamA?.name ?? 'TBD',
+				teamB: m.teamB?.name ?? 'TBD',
+				tournament: m.tournament.name,
+				game: m.tournament.game,
+				matchDate: m.matchDate.toISOString(),
+				overdue: true,
+			})),
+		];
+		return rows.slice(0, MAX_ROWS);
+	},
+	['home-up-next'],
+	{ tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.live },
+);
 
 type UpNextRow = Awaited<ReturnType<typeof getUpNext>>[number];
 
-const rowClass = 'group flex min-h-14 items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:gap-4 sm:px-5';
+const rowClass =
+	'group flex min-h-14 items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:gap-4 sm:px-5';
 
 function Row({ row }: { row: UpNextRow }) {
 	if (row.kind === 'pickup') {
@@ -84,7 +113,11 @@ function Row({ row }: { row: UpNextRow }) {
 				</span>
 				<span className='block truncate text-xs text-muted-foreground'>{row.tournament}</span>
 			</span>
-			{row.overdue ? <span className='shrink-0 text-muted-foreground'>Awaiting start</span> : <LocalTime iso={row.matchDate} className='shrink-0 font-mono text-xs tabular-nums text-neutral-300 sm:text-sm' />}
+			{row.overdue ? (
+				<span className='shrink-0 text-muted-foreground'>Awaiting start</span>
+			) : (
+				<LocalTime iso={row.matchDate} className='shrink-0 font-mono text-xs tabular-nums text-neutral-300 sm:text-sm' />
+			)}
 			<ChevronRight aria-hidden className='h-4 w-4 shrink-0 text-muted-foreground transition-transform motion-safe:group-hover:translate-x-0.5' />
 		</Link>
 	);

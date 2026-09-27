@@ -166,16 +166,34 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 						<div className='space-y-2'>
 							<Label id='edit-description-label'>Description</Label>
-							<RichTextEditor labelId='edit-description-label' value={editingTournament?.description || ''} onChange={(html) => handleChange('description', html)} placeholder='Tell players what this tournament is about' />
+							<RichTextEditor
+								labelId='edit-description-label'
+								value={editingTournament?.description || ''}
+								onChange={(html) => handleChange('description', html)}
+								placeholder='Tell players what this tournament is about'
+							/>
 						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-prizePool'>Prize Pool</Label>
-								<Input id='edit-prizePool' type='number' className='font-mono tabular-nums' value={editingTournament?.prizePool || ''} onChange={(e) => handleChange('prizePool', Number(e.target.value))} />
+								<Input
+									id='edit-prizePool'
+									type='number'
+									className='font-mono tabular-nums'
+									value={editingTournament?.prizePool || ''}
+									onChange={(e) => handleChange('prizePool', Number(e.target.value))}
+								/>
 							</div>
 							<div className='space-y-2'>
 								<Label htmlFor='edit-teamCapacity'>Team Capacity</Label>
-								<Input id='edit-teamCapacity' type='number' className='font-mono tabular-nums' value={editingTournament?.teamCapacity || ''} onChange={(e) => handleChange('teamCapacity', Number(e.target.value))} required />
+								<Input
+									id='edit-teamCapacity'
+									type='number'
+									className='font-mono tabular-nums'
+									value={editingTournament?.teamCapacity || ''}
+									onChange={(e) => handleChange('teamCapacity', Number(e.target.value))}
+									required
+								/>
 							</div>
 						</div>
 					</div>

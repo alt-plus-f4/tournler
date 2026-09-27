@@ -77,9 +77,7 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 		<Dialog open={isOpen} onOpenChange={setIsOpen}>
 			{!isControlled && (
 				<DialogTrigger asChild>
-					<Button variant='outline'>
-						Simulate tournament
-					</Button>
+					<Button variant='outline'>Simulate tournament</Button>
 				</DialogTrigger>
 			)}
 			<DialogContent>
@@ -121,7 +119,6 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 							))}
 						</SelectContent>
 					</Select>
-
 				</div>
 				<div className='flex justify-end gap-2 pt-2'>
 					<DialogClose asChild>
