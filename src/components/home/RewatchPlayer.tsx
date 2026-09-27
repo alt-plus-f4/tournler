@@ -74,7 +74,11 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 						referrerPolicy={isTwitch ? undefined : 'strict-origin-when-cross-origin'}
 					/>
 				) : (
-					<button type='button' onClick={() => setPlaying(true)} className='group absolute inset-0 block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'>
+					<button
+						type='button'
+						onClick={() => setPlaying(true)}
+						className='group absolute inset-0 block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+					>
 						<span className='sr-only'>Play {label}</span>
 						<Image
 							src={posterSrc}
@@ -90,7 +94,10 @@ export function RewatchPlayer({ rewatch, priority = true }: { rewatch: RewatchCo
 							draggable={false}
 						/>
 						<span aria-hidden className='absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent' />
-						<span aria-hidden className='absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-transform duration-200 ease-out motion-safe:group-hover:scale-110 sm:h-20 sm:w-20'>
+						<span
+							aria-hidden
+							className='absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-black shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-transform duration-200 ease-out motion-safe:group-hover:scale-110 sm:h-20 sm:w-20'
+						>
 							<Play className='ml-1 h-6 w-6 fill-current sm:h-8 sm:w-8' />
 						</span>
 						<span aria-hidden className='absolute bottom-3 left-4 right-4 truncate text-left text-sm font-medium text-white sm:bottom-4 sm:left-6'>

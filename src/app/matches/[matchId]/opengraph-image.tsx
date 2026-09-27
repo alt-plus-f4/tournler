@@ -72,11 +72,9 @@ export default async function Image({ params }: { params: Promise<{ matchId: str
 
 	if (!match) {
 		return new ImageResponse(
-			(
-				<div style={{ display: 'flex', width: '100%', height: '100%', backgroundColor: OG.stageBlack, alignItems: 'center', justifyContent: 'center' }}>
-					<span style={{ fontFamily: 'Roboto', fontWeight: 900, fontSize: 56, color: OG.inkMuted, textTransform: 'uppercase' }}>Match not found</span>
-				</div>
-			),
+			<div style={{ display: 'flex', width: '100%', height: '100%', backgroundColor: OG.stageBlack, alignItems: 'center', justifyContent: 'center' }}>
+				<span style={{ fontFamily: 'Roboto', fontWeight: 900, fontSize: 56, color: OG.inkMuted, textTransform: 'uppercase' }}>Match not found</span>
+			</div>,
 			{ ...size, fonts },
 		);
 	}
@@ -101,30 +99,28 @@ export default async function Image({ params }: { params: Promise<{ matchId: str
 		);
 
 	return new ImageResponse(
-		(
-			<div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', backgroundColor: OG.stageBlack, position: 'relative' }}>
-				<TopRule state={state} />
-				<BrandRow logoSrc={logoSrc} />
-				<div style={{ display: 'flex', position: 'absolute', top: 32, right: 48 }}>
-					<StatusReadout state={state} label={stateLabel} />
-				</div>
-
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'absolute', top: 148, left: 0, right: 0 }}>
-					<SectionLabel>{match.isPickup ? 'Pickup match' : match.tournament.name}</SectionLabel>
-					{!match.isPickup && (
-						<span style={{ display: 'flex', fontFamily: 'Roboto', fontSize: 18, color: OG.inkMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
-							{GAME_META[match.tournament.game].short} · {FORMAT_LABEL[match.tournament.format] ?? match.tournament.format} · Best of {bestOf}
-						</span>
-					)}
-				</div>
-
-				<div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 64, paddingTop: 40 }}>
-					<TeamSide name={aName} logo={aLogoSrc} muted={winnerIsB} />
-					{centerContent}
-					<TeamSide name={bName} logo={bLogoSrc} muted={winnerIsA} />
-				</div>
+		<div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', backgroundColor: OG.stageBlack, position: 'relative' }}>
+			<TopRule state={state} />
+			<BrandRow logoSrc={logoSrc} />
+			<div style={{ display: 'flex', position: 'absolute', top: 32, right: 48 }}>
+				<StatusReadout state={state} label={stateLabel} />
 			</div>
-		),
+
+			<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, position: 'absolute', top: 148, left: 0, right: 0 }}>
+				<SectionLabel>{match.isPickup ? 'Pickup match' : match.tournament.name}</SectionLabel>
+				{!match.isPickup && (
+					<span style={{ display: 'flex', fontFamily: 'Roboto', fontSize: 18, color: OG.inkMuted, textTransform: 'uppercase', letterSpacing: 1 }}>
+						{GAME_META[match.tournament.game].short} · {FORMAT_LABEL[match.tournament.format] ?? match.tournament.format} · Best of {bestOf}
+					</span>
+				)}
+			</div>
+
+			<div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: 64, paddingTop: 40 }}>
+				<TeamSide name={aName} logo={aLogoSrc} muted={winnerIsB} />
+				{centerContent}
+				<TeamSide name={bName} logo={bLogoSrc} muted={winnerIsA} />
+			</div>
+		</div>,
 		{ ...size, fonts },
 	);
 }

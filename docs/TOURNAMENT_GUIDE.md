@@ -47,9 +47,10 @@ Three tournament formats supported:
 
 **Server Creation**
 
-- Automatically assigns IP and port when match is started
-- Generates connection credentials (IP:PORT and password)
-- Creates Docker container (via separate API) with game server instance
+- Claims a free server from the fixed, persistent CS2 server pool when a match starts (no
+  per-match container is created — see `docs/CS2_SERVER_GUIDE.md` for the pool architecture)
+- Generates connection credentials (IP:PORT and password) and pushes match config via RCON
+- If every server in the pool is busy, starting another match is rejected until one frees up
 
 **Server Management**
 
@@ -102,7 +103,7 @@ Response: {
 **Fetch Tournament Matches**
 
 ```
-GET /api/tournaments/[tournamentId]/matches
+GET /api/tournaments/[slug]/matches
 Response: {
   "matches": Match[]
 }
@@ -124,6 +125,7 @@ Response: { "matches": Match[], "totalPages": number }
 GET /api/matches/public?status=ALL|SCHEDULED|LIVE|COMPLETED&tournamentId=number&page=1&limit=20
 Response: { "matches": Match[], "totalPages": number }
 ```
+
 Used by the public `/matches` page. No auth required.
 
 **Create a Standalone Match (Admin)**
@@ -139,6 +141,7 @@ Body: {
 }
 Response: { "match": Match }
 ```
+
 Creates a single `SCHEDULED` match not wired into any bracket (`nextMatchId`/`nextMatchSlot` are left null) — intended for manually testing the live-match/game-server flow without starting a whole tournament. `tournamentId` must reference an existing tournament (the schema requires it), but the two teams don't need to already be on that tournament's roster.
 
 **Create an Open Pickup Match (Admin)**
@@ -149,6 +152,7 @@ Auth: matches:manage
 Body: { "isPickup": true, "matchDate": ISO8601Date }
 Response: { "match": Match }
 ```
+
 No tournament or teams to pick — `tournamentId`/`teamAId`/`teamBId` are omitted. The match attaches internally to a hidden, auto-created "Pickup Matches" system tournament (`Cs2Tournament.isSystem: true`, created lazily on first use) so the required `tournamentId` FK is satisfied without a real tournament existing. `teamAId`/`teamBId` stay null — sides are filled by individual players via the join endpoint below, not by `Cs2Team`s. The system tournament is excluded from all tournament listings/counts (`isSystem: false` filters).
 
 **Join / Leave a Pickup Match**
@@ -159,11 +163,13 @@ Auth: any signed-in user
 Body: { "side": "TEAM_A" | "TEAM_B" }
 Response: { "participants": MatchParticipant[] }
 ```
+
 ```
 DELETE /api/matches/[matchId]/join
 Auth: any signed-in user
 Response: { "participants": MatchParticipant[] }
 ```
+
 Only works on `isPickup` matches still `SCHEDULED`, max 5 players per side. Re-joining with a different `side` switches you rather than erroring (upsert on `matchId`+`userId`). Note: pickup matches can be started/paused/resumed/scored like any other match, but **cannot be completed with a winner** — there's no `Cs2Team` to be the winner, so `recordMatchResult` rejects any `winnerId` for them (the `winnerId` check requires it to equal `teamAId`/`teamBId`, which are always null here).
 
 **Get Match Details**
@@ -188,13 +194,14 @@ Body: {
   "matchDate": ISO8601Date
 }
 ```
+
 `action`, score/winner fields, and `matchDate` can each be sent independently (or combined in one request; `action` is applied first).
 
 - `action: "START"` — `SCHEDULED` → `LIVE`, sets `startedAt`. Requires both `teamAId`/`teamBId` to be filled (skipped for pickup matches). Also provisions the match's `GameServer` (or reuses one that already exists) in the same transaction via `ensureGameServer()`, so connect IP/port/password — the data the game-state pipeline is keyed on — exist immediately, without a separate manual "create game server" step.
 - `action: "PAUSE"` — `LIVE` → `PAUSED`, sets `pausedAt`.
 - `action: "RESUME"` — `PAUSED` → `LIVE`, shifts `startedAt` forward by the paused duration (so elapsed-time math stays correct) and clears `pausedAt`.
 - Sending `scoreTeamA`/`scoreTeamB` without `winnerId` updates the score and moves the match to `LIVE` (via `recordMatchResult`, the same write path the game server uses).
-- Sending `winnerId` completes the match (`COMPLETED`), triggering bracket advancement — rejected with `409` if the match is already completed with a *different* winner.
+- Sending `winnerId` completes the match (`COMPLETED`), triggering bracket advancement — rejected with `409` if the match is already completed with a _different_ winner.
 - Invalid action / wrong-status transitions (e.g. pausing a non-live match) return `409`.
 
 These are also exposed as an "Admin Controls" panel directly on the public match page (`/matches/[matchId]`) for `ADMIN`/`TOURNAMENT_ADMIN` users — Start/Pause/Resume buttons, live score editing, and an End Match (pick winner) action.

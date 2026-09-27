@@ -1,9 +1,14 @@
 # Next Actions
 
 Updated 2026-09-27. Everything actionable by an agent from this list has been done (PR #82 merge,
-CI on PRs, Dependabot, issues #69/#42, the Convex auth gap — see git history and closed issues).
-What's left all needs either a human with account/deployment access, or is a deliberately-scoped
-future project too large for an incidental pass. Update this file as items are done or reprioritized.
+Dependabot, issues #69/#42, the Convex auth gap — see git history and closed issues). What's left
+all needs either a human with account/deployment access, or is a deliberately-scoped future
+project too large for an incidental pass. Update this file as items are done or reprioritized.
+
+Note: PR-check CI (`.github/workflows/pr-checks.yml`) was disabled by renaming the file to
+`.pr-checks` (commit `9b6a391`) — GitHub Actions won't pick up a dotfile, so no CI currently runs
+on PRs. The workflow content itself is intact if it needs to come back; rename it back to end in
+`.yml`.
 
 ## Needs a human (not something an agent can do here)
 

@@ -35,7 +35,14 @@ function CapacityRing({ count, capacity }: { count: number; capacity: number }) 
 		<div className='relative mr-4 h-12 w-12 shrink-0' aria-hidden>
 			<svg className='absolute inset-0' viewBox='0 0 36 36'>
 				<path className='text-white opacity-25' d='M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831' fill='none' stroke='currentColor' strokeWidth='1' />
-				<path className='text-white' d='M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831' fill='none' stroke='currentColor' strokeWidth='1' strokeDasharray={`${pct}, 100`} />
+				<path
+					className='text-white'
+					d='M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831'
+					fill='none'
+					stroke='currentColor'
+					strokeWidth='1'
+					strokeDasharray={`${pct}, 100`}
+				/>
 			</svg>
 			<Gamepad2 className='absolute inset-0 m-auto h-6 w-6 text-white' />
 		</div>
@@ -111,7 +118,9 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 						</svg>
 						<span className='flex min-w-0 flex-col'>
 							<span className='mb-1 text-lg font-bold'>{tournament.format === 'ROUND_ROBIN' ? 'Tournament Standings' : 'Tournament Bracket'}</span>
-							<span className='text-sm text-muted-foreground'>{tournament.status === 'UPCOMING' ? 'Generated from the registered teams when the tournament starts' : 'View the full bracket and results'}</span>
+							<span className='text-sm text-muted-foreground'>
+								{tournament.status === 'UPCOMING' ? 'Generated from the registered teams when the tournament starts' : 'View the full bracket and results'}
+							</span>
 						</span>
 						<span aria-hidden className='ml-auto text-muted-foreground transition-transform duration-300 group-hover:text-white motion-safe:group-hover:translate-x-2'>
 							→

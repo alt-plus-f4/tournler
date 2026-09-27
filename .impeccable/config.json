@@ -1,14 +1,14 @@
 {
-  "detector": {
-    "ignoreRules": [],
-    "ignoreFiles": [],
-    "ignoreValues": [
-      {
-        "rule": "design-system-font",
-        "value": "roboto mono",
-        "createdAt": "2026-09-27T14:37:10.012Z",
-        "reason": "Self-hosted realization of DESIGN.md's numeric/monospace typography token for canvas-rendered contexts (next/og share cards) where the system ui-monospace stack can't be used."
-      }
-    ]
-  }
+	"detector": {
+		"ignoreRules": [],
+		"ignoreFiles": [],
+		"ignoreValues": [
+			{
+				"rule": "design-system-font",
+				"value": "roboto mono",
+				"createdAt": "2026-09-27T14:37:10.012Z",
+				"reason": "Self-hosted realization of DESIGN.md's numeric/monospace typography token for canvas-rendered contexts (next/og share cards) where the system ui-monospace stack can't be used."
+			}
+		]
+	}
 }

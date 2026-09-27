@@ -99,10 +99,7 @@ export async function startTournament(tournamentId: number) {
 
 		if (feederUpdates.length > 0) {
 			const rows = Prisma.join(
-				feederUpdates.map(
-					(u) =>
-						Prisma.sql`(${u.id}::int, ${u.nextMatchId}::int, ${u.nextMatchSlot}::match_slot, ${u.nextLoserMatchId}::int, ${u.nextLoserMatchSlot}::match_slot)`,
-				),
+				feederUpdates.map((u) => Prisma.sql`(${u.id}::int, ${u.nextMatchId}::int, ${u.nextMatchSlot}::match_slot, ${u.nextLoserMatchId}::int, ${u.nextLoserMatchSlot}::match_slot)`),
 			);
 			await tx.$executeRaw`
 				UPDATE matches AS m

@@ -1,8 +1,9 @@
 ---
 version: 1
-slug: "src-lib-og-card-tsx"
-primary_target: "src/lib/og/card.tsx"
-related_targets: ["src/app/matches/[matchId]/opengraph-image.tsx","src/app/tournaments/[slug]/opengraph-image.tsx","src/app/teams/[slug]/opengraph-image.tsx","src/app/profile/[userId]/opengraph-image.tsx"]
+slug: 'src-lib-og-card-tsx'
+primary_target: 'src/lib/og/card.tsx'
+related_targets:
+  ['src/app/matches/[matchId]/opengraph-image.tsx', 'src/app/tournaments/[slug]/opengraph-image.tsx', 'src/app/teams/[slug]/opengraph-image.tsx', 'src/app/profile/[userId]/opengraph-image.tsx']
 ---
 
 Mode: **Persuade** (in the narrow sense that applies to a share card: it has one job, make a stranger on Discord/Twitter/Slack click through). Not interactive, not a page — a generated 1200×630 raster consumed by link-unfurl bots.
@@ -20,6 +21,7 @@ OWN-WORLD: Broadcast Booth, unchanged: stage black canvas, hairline rule, white 
 STORY: In under a second at thumbnail size, the viewer reads: what kind of thing this is (match/tournament/team/player), its name(s), and its current state or headline stat.
 
 FIRST VIEWPORT (= the whole card, there is no scroll):
+
 - **Match:** top rule colored by state. Center row: Team A plate+name — big mono score (or "VS" + kickoff time if scheduled) — Team B plate+name, winner in ink/loser muted when FINISHED. Small label row above the score: tournament name · format/BO. State readout (dot + word, mono timer omitted — a static image can't tick) top-right under the brand row.
 - **Tournament:** banner image full-bleed (object-cover) with bottom-to-black scrim when `bannerUrl` exists, else flat stage black. Tournament logo (if any) + Display-weight name lower-left over the scrim. Game tag chip, format label, and a status readout (registration open · N/cap teams, or in progress, or finished) stacked underneath.
 - **Team:** team `background` art full-bleed with scrim when present, else flat black. Logo on its light sponsor plate (same treatment as everywhere else in the app) + Display name. Game tag chip, roster size, captain name.

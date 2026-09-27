@@ -18,11 +18,10 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
  * `users` tag (see MODEL_TAGS in src/lib/cache/tags.ts), so a role change is still visible
  * immediately — `revalidate` here is only the time-based fallback, not the primary freshness path.
  */
-const getCachedUserRole = cachedQuery(
-	async (userId: string) => (await db.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role ?? null,
-	['auth-user-role'],
-	{ tags: [CACHE_TAGS.users], revalidate: REVALIDATE.standard },
-);
+const getCachedUserRole = cachedQuery(async (userId: string) => (await db.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role ?? null, ['auth-user-role'], {
+	tags: [CACHE_TAGS.users],
+	revalidate: REVALIDATE.standard,
+});
 
 // const transporter = createTransport({
 //   host: process.env.EMAIL_SERVER_HOST!,

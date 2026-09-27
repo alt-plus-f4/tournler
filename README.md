@@ -1,4 +1,3 @@
-
 # TOURNLER - Tournament Management System
 
 ![Next.js](https://img.shields.io/badge/Next.js-13.5+-000000?style=for-the-badge&logo=next.js&logoColor=white)
@@ -35,6 +34,7 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 ## Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/alt-plus-f4/tournler
 cd tournler
@@ -48,15 +48,19 @@ npm run dev
 ## Images
 
 ## Home Page
+
 <img width="1511" alt="image" src="https://github.com/user-attachments/assets/9ecac702-55f2-47ca-bff5-22cb459abe6f" />
 
 ## Teams Page
+
 <img width="1040" alt="image" src="https://github.com/user-attachments/assets/ec1d5f41-735a-4343-bb37-5493788d1177" />
 
 ## Tournaments Page
+
 <img width="1042" alt="image" src="https://github.com/user-attachments/assets/150442fd-3625-4340-883c-d4dcc03473ec" />
 
 ## Administrator Dashboard
+
 <img width="1502" alt="image" src="https://github.com/user-attachments/assets/dc4035d7-79b2-45e8-92df-a3476f3cab2b" />
 
 ## end

@@ -1,7 +1,7 @@
 ---
 version: 1
-slug: "src-app-matches-matchid-page-tsx"
-primary_target: "src/app/matches/[matchId]/page.tsx"
+slug: 'src-app-matches-matchid-page-tsx'
+primary_target: 'src/app/matches/[matchId]/page.tsx'
 related_targets: []
 ---
 
