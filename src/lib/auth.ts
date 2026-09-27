@@ -1,10 +1,28 @@
+import { cache } from 'react';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
 import EmailProvider from 'next-auth/providers/email';
 import DiscordProvider from 'next-auth/providers/discord';
 // import nodemailer, { createTransport } from 'nodemailer';
 import { createTransport } from 'nodemailer';
-import { db } from '@/lib/db';
+import { db, baseDb } from '@/lib/db';
+import { activeBanWhere, toActiveBan } from '@/lib/bans';
+import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
+import { CACHE_TAGS } from '@/lib/cache/tags';
+
+/**
+ * The `jwt` callback runs on almost every authenticated request (see getAuthSession /
+ * getSessionIncludingBanned) and always re-checks `role` so a promotion/demotion takes effect on
+ * next token refresh. Un-cached, that's an extra `SELECT` per request purely to re-check a role
+ * that changes rarely (docs/SCALING_AT_1000_USERS.md #2). Any write to `User` already invalidates the
+ * `users` tag (see MODEL_TAGS in src/lib/cache/tags.ts), so a role change is still visible
+ * immediately — `revalidate` here is only the time-based fallback, not the primary freshness path.
+ */
+const getCachedUserRole = cachedQuery(
+	async (userId: string) => (await db.user.findUnique({ where: { id: userId }, select: { role: true } }))?.role ?? null,
+	['auth-user-role'],
+	{ tags: [CACHE_TAGS.users], revalidate: REVALIDATE.standard },
+);
 
 // const transporter = createTransport({
 //   host: process.env.EMAIL_SERVER_HOST!,
@@ -83,7 +101,7 @@ function text({ url, host }: { url: string; host: string }) {
 }
 
 export const authOptions: NextAuthOptions = {
-	adapter: PrismaAdapter(db),
+	adapter: PrismaAdapter(baseDb),
 	session: {
 		strategy: 'jwt',
 	},
@@ -130,6 +148,7 @@ export const authOptions: NextAuthOptions = {
 								discord: {
 									select: { discordId: true },
 								},
+								bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, reason: true, expiresAt: true, createdAt: true } },
 							},
 						})
 					: null;
@@ -141,6 +160,8 @@ export const authOptions: NextAuthOptions = {
 					image: dbUser?.image || token.picture || '',
 					discordId: (token.discordId as string) || dbUser?.discord?.discordId || '',
 					role: dbUser?.role || (token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined),
+					// Re-read on every request, so a ban (or lifting it) applies immediately.
+					ban: toActiveBan(dbUser?.bans[0]),
 				};
 			}
 			return session;
@@ -236,13 +257,9 @@ export const authOptions: NextAuthOptions = {
 			}
 
 			if (token.id) {
-				const dbUser = await db.user.findUnique({
-					where: { id: token.id as string },
-					select: { role: true },
-				});
-
-				if (dbUser) {
-					token.role = dbUser.role;
+				const role = await getCachedUserRole(token.id as string);
+				if (role) {
+					token.role = role;
 				}
 			}
 
@@ -251,4 +268,19 @@ export const authOptions: NextAuthOptions = {
 	},
 };
 
-export const getAuthSession = () => getServerSession(authOptions);
+/**
+ * The session for authorization. Wrapped in React `cache` so every server component, layout and
+ * generateMetadata in one request shares a single lookup instead of hitting the DB each time.
+ * Banned users get `null`, so every route and page that checks
+ * for a signed-in user refuses them without needing its own ban check.
+ */
+export const getAuthSession = cache(async () => {
+	const session = await getServerSession(authOptions);
+	return session?.user?.ban ? null : session;
+});
+
+/**
+ * The raw session, including banned users. Only for UI that must still recognize them (the
+ * navbar's account menu so they can sign out, and the suspension notice). Never for authorization.
+ */
+export const getSessionIncludingBanned = cache(() => getServerSession(authOptions));

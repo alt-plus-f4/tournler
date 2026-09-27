@@ -7,7 +7,7 @@ import type { PlayerFlair as PlayerFlairData, VerifiedMark as VerifiedMarkData }
 export function VerifiedMark({ badge, className }: { badge: VerifiedMarkData; className?: string }) {
 	return (
 		<span role='img' aria-label='Verified' title='Verified' className={cn('inline-flex shrink-0 items-center', className)}>
-			<TrophyIcon badge={badge} size={16} decorative />
+			<TrophyIcon badge={badge} size={19} decorative />
 		</span>
 	);
 }

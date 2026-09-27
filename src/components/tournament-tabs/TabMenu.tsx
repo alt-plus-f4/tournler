@@ -1,13 +1,19 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import Overview from './Overview';
 import Participants from './Participants';
 import Prizes from './Prizes';
-import Matches from './Matches';
-import Bracket from './Bracket';
-import PlayerStats from './PlayerStats';
+
+// The data-driven tabs (each fetches its own data with SWR) are split out and only loaded when their
+// tab is opened; Radix doesn't mount inactive tab panels, so the default Overview tab never pulls them in.
+const tabLoading = () => <Skeleton className='mx-4 mt-6 h-64 rounded-md md:mx-8' />;
+const Matches = dynamic(() => import('./Matches'), { loading: tabLoading });
+const Bracket = dynamic(() => import('./Bracket'), { loading: tabLoading });
+const PlayerStats = dynamic(() => import('./PlayerStats'), { loading: tabLoading });
 import type { Champion, TournamentDetail } from './types';
 
 const TABS = [
@@ -54,7 +60,10 @@ export default function TabMenu({ tournament, champion }: TabMenuProps) {
 			<div className='border-b border-border md:mx-4'>
 				{/* The original spread-out tab bar: evenly spaced on phones, wide gaps from md. Scrolls sideways
 				    if it has to; focus rings are inset so the overflow never clips them. */}
-				<TabsList aria-label='Tournament sections' className='flex h-auto w-full justify-between gap-2 overflow-x-auto rounded-none bg-transparent px-0 py-2 [scrollbar-width:none] md:justify-start md:gap-16 lg:gap-24 [&::-webkit-scrollbar]:hidden'>
+				<TabsList
+					aria-label='Tournament sections'
+					className='flex h-auto w-full justify-between gap-2 overflow-x-auto rounded-none bg-transparent px-0 py-2 [scrollbar-width:none] md:justify-start md:gap-16 lg:gap-24 [&::-webkit-scrollbar]:hidden'
+				>
 					{TABS.map((tab) => (
 						<TabsTrigger
 							key={tab.value}

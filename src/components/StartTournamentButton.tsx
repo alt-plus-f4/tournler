@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { TournamentFormat } from '@prisma/client';
+import type { Game, TournamentFormat } from '@prisma/client';
+import { hostsGameServers } from '@/lib/tournaments/game-rules';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/lib/hooks/use-toast';
@@ -28,9 +29,10 @@ interface StartTournamentButtonProps {
 	teamCapacity: number;
 	format: TournamentFormat;
 	bestOf: number;
+	game: Game;
 }
 
-export function StartTournamentButton({ tournamentId, tournamentName, teamCount, teamCapacity, format, bestOf }: StartTournamentButtonProps) {
+export function StartTournamentButton({ tournamentId, tournamentName, teamCount, teamCapacity, format, bestOf, game }: StartTournamentButtonProps) {
 	const router = useRouter();
 	const { toast } = useToast();
 	const [open, setOpen] = useState(false);
@@ -119,8 +121,14 @@ export function StartTournamentButton({ tournamentId, tournamentName, teamCount,
 					<h3 className='font-bold text-white'>What happens next</h3>
 					<ol className='list-decimal space-y-1 pl-5 text-muted-foreground'>
 						<li>The bracket is generated and every match is created.</li>
-						<li>About 5 minutes before each match starts, a CS2 server from the pool is loaded with it.</li>
-						<li>Scores come from the game server, and winners advance automatically.</li>
+						{hostsGameServers(game) ? (
+							<>
+								<li>About 5 minutes before each match starts, a CS2 server from the pool is loaded with it.</li>
+								<li>Scores come from the game server, and winners advance automatically.</li>
+							</>
+						) : (
+							<li>Teams play each match in the League client; an organizer records the result and the bracket advances.</li>
+						)}
 					</ol>
 				</div>
 

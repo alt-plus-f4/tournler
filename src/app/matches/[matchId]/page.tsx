@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import useSWR from 'swr';
+import { useClientSession } from '@/lib/hooks/use-client-session';
 import { ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -12,10 +13,10 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
 import { RoomHeader } from './_components/header';
-import { MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
+import { LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
 import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
 import { SignalDot } from './_components/room-ui';
-import { getSideLabels, getStatsBySide, getWinningSide, type DraftState, type Match, type Side, type VetoState } from './_components/types';
+import { getSideLabels, getStatsBySide, getWinningSide, isLolMatch, type DraftState, type Match, type Side, type VetoState } from './_components/types';
 import { DraftPanel, getVetoTurn, VetoPanel } from './_components/veto-draft';
 
 const fetcher = async (url: string) => {
@@ -80,14 +81,24 @@ export default function MatchPage() {
 	}, [mutate]);
 	const admin = useMatchAdmin(matchId, refresh);
 
-	const showDraft = !!match && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
-	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
+	// Phase 1: LoL has no hosted server, so no map veto or captain draft either (see game-rules.ts —
+	// the same guard the API enforces on the veto/draft routes; a LoL match should never reach SCHEDULED
+	// with an incomplete draft/veto in the first place, but this keeps the room honest either way).
+	const isLol = !!match && isLolMatch(match);
+	const showDraft = !!match && !isLol && match.isPickup && match.pickupMode === 'CAPTAIN_DRAFT' && match.status === 'SCHEDULED';
+	const { data: draft, mutate: mutateDraft } = useSWR<DraftState>(showDraft ? `/api/matches/${matchId}/draft` : null, jsonFetcher, {
+		refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000),
+	});
 	// Veto can't start until the draft has put people on sides — otherwise maps get banned before anyone's rostered.
-	const showVeto = !!match && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
-	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, { refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000) });
+	const showVeto = !!match && !isLol && match.status === 'SCHEDULED' && (draft ? draft.phase === 'COMPLETE' : match.isPickup || (match.teamA !== null && match.teamB !== null));
+	const { data: veto, mutate: mutateVeto } = useSWR<VetoState>(showVeto ? `/api/matches/${matchId}/veto` : null, jsonFetcher, {
+		refreshInterval: (latest) => (latest?.phase === 'COMPLETE' ? 0 : 3000),
+	});
 
-	const { data: userData, error: userError } = useSWR('/api/user', userFetcher, { revalidateOnFocus: false });
-	const userLoaded = userData !== undefined || userError !== undefined;
+	// Only ask for the account when there is one: signed-out visitors got a 401 (console error) here.
+	const { status: sessionStatus } = useClientSession();
+	const { data: userData, error: userError } = useSWR(sessionStatus === 'authenticated' ? '/api/user' : null, userFetcher, { revalidateOnFocus: false });
+	const userLoaded = sessionStatus === 'unauthenticated' || userData !== undefined || userError !== undefined;
 	const canManage = userData?.user?.role === 'ADMIN' || userData?.user?.role === 'TOURNAMENT_ADMIN';
 	const currentUserId = userData?.user?.id ?? null;
 
@@ -116,9 +127,16 @@ export default function MatchPage() {
 		}
 	};
 
-	const joinSide = (side: Side) => withPending(side, () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side }) }), 'Could not join');
+	const joinSide = (side: Side) =>
+		withPending(side, () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ side }) }), 'Could not join');
 	// CAPTAIN_DRAFT pickups have no side at join time — the first 2 joiners become captains, everyone else lands in the pool.
-	const joinDraftPool = () => withPending('POOL', () => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }), 'Could not join', () => mutateDraft());
+	const joinDraftPool = () =>
+		withPending(
+			'POOL',
+			() => fetch(`/api/matches/${matchId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) }),
+			'Could not join',
+			() => mutateDraft(),
+		);
 	const leaveMatch = () => withPending('LEAVE', () => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }), 'Could not leave match');
 
 	const deleteMatch = async () => {
@@ -161,7 +179,8 @@ export default function MatchPage() {
 
 	// "Your turn" beacon on the Overview tab while the viewer is elsewhere in the room.
 	const vetoNeedsMe = !!veto && veto.phase !== 'COMPLETE' && getVetoTurn(match, veto, currentUserId).isSideTurn;
-	const draftNeedsMe = draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
+	const draftNeedsMe =
+		draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
 	const needsMe = vetoNeedsMe || draftNeedsMe;
 
 	const rosterFor = (side: Side): RosterPlayer[] => {
@@ -169,10 +188,26 @@ export default function MatchPage() {
 			// Participants arrive ordered by joinedAt, so an open pickup side's first entry is its captain.
 			return match.participants
 				.filter((p) => p.side === side)
-				.map((p, i) => ({ id: p.user.id, name: p.user.name || 'Unknown player', image: p.user.image, faceitLevel: p.user.faceitLevel, verified: p.user.verified ?? null, isCaptain: p.isCaptain || (!isDraftMode && i === 0), isMe: p.user.id === currentUserId }));
+				.map((p, i) => ({
+					id: p.user.id,
+					name: p.user.name || 'Unknown player',
+					image: p.user.image,
+					faceitLevel: p.user.faceitLevel,
+					verified: p.user.verified ?? null,
+					isCaptain: p.isCaptain || (!isDraftMode && i === 0),
+					isMe: p.user.id === currentUserId,
+				}));
 		}
 		const team = side === 'TEAM_A' ? match.teamA : match.teamB;
-		return (team?.members ?? []).map((m) => ({ id: m.id, name: m.name || 'Unknown player', image: m.image, faceitLevel: m.faceitLevel, verified: m.verified ?? null, isCaptain: team?.capitanId === m.id, isMe: m.id === currentUserId }));
+		return (team?.members ?? []).map((m) => ({
+			id: m.id,
+			name: m.name || 'Unknown player',
+			image: m.image,
+			faceitLevel: m.faceitLevel,
+			verified: m.verified ?? null,
+			isCaptain: team?.capitanId === m.id,
+			isMe: m.id === currentUserId,
+		}));
 	};
 
 	const column = (side: Side) => {
@@ -201,7 +236,12 @@ export default function MatchPage() {
 					canJoinPickup && isDraftMode ? (
 						<span className='text-muted-foreground'>Awaiting draft pick</span>
 					) : canJoinPickup && currentUserId && !alreadyIn ? (
-						<button type='button' onClick={() => joinSide(side)} disabled={pendingSide !== null} className='max-w-full truncate font-medium text-white underline-offset-4 hover:underline disabled:opacity-50'>
+						<button
+							type='button'
+							onClick={() => joinSide(side)}
+							disabled={pendingSide !== null}
+							className='max-w-full truncate font-medium text-white underline-offset-4 hover:underline disabled:opacity-50'
+						>
 							{pendingSide === side ? 'Joining…' : `Join ${label}`}
 						</button>
 					) : (
@@ -246,7 +286,9 @@ export default function MatchPage() {
 	);
 
 	return (
-		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-16 text-white'>
+		// Zoomed out slightly, and the footer is hidden on this route (ConditionalFooter), so the room
+		// comes closer to fitting one screen on typical viewports instead of needing a page scroll.
+		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-8 text-white' style={{ zoom: 0.9 }}>
 			<RoomHeader match={match} quickBar={canManage ? <AdminQuickBar match={match} admin={admin} vetoComplete={vetoComplete} /> : undefined} tabs={tabs} />
 
 			<div className='mx-auto max-w-7xl px-4 pt-6'>
@@ -254,6 +296,10 @@ export default function MatchPage() {
 					<div className='grid gap-4 md:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)]'>
 						<div className='order-2 lg:order-1'>{column('TEAM_A')}</div>
 						<div className='order-1 space-y-4 md:col-span-2 lg:order-2 lg:col-span-1'>
+							{/* Draft/veto load in a second request; reserve their space so the rosters below
+							    (first on mobile) don't jump when they arrive (Lighthouse CLS 0.37). */}
+							{showDraft && !draft && <Skeleton aria-hidden className='h-[420px] rounded-md bg-neutral-900' />}
+							{!showDraft && showVeto && !veto && <Skeleton aria-hidden className='h-[611px] rounded-md bg-neutral-900 md:h-[480px] lg:h-[438px]' />}
 							{showDraft && draft && (
 								<DraftPanel
 									matchId={matchId}
@@ -283,7 +329,7 @@ export default function MatchPage() {
 									}}
 								/>
 							)}
-							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : isLol ? <LolMatchPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
 							<MatchInfoPanel match={match} />
 						</div>
 						<div className='order-3'>{column('TEAM_B')}</div>

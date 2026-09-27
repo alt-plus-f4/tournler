@@ -87,7 +87,10 @@ export default function Notifications({ userId }: NotificationsProps) {
 				<Button variant='ghost' size='icon' className='relative' aria-label={triggerLabel}>
 					<Bell aria-hidden className='h-4 w-4' />
 					{hasNewNotifications && (
-						<span aria-hidden className='absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 font-mono text-xs leading-none tabular-nums text-background'>
+						<span
+							aria-hidden
+							className='absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 font-mono text-xs leading-none tabular-nums text-background'
+						>
 							{countLabel}
 						</span>
 					)}

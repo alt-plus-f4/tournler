@@ -4,6 +4,7 @@ import type EditorJS from '@editorjs/editorjs';
 import type { OutputData } from '@editorjs/editorjs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -16,6 +17,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { isOptimizable } from '@/lib/image-hosts';
 import { escapeHtml, hasEditorContent, htmlToPlainText } from './text';
 
 import './editor.css';
@@ -275,9 +277,8 @@ export const Editor: React.FC<EditorProps> = ({ post }) => {
 				<div className='space-y-2'>
 					<Label htmlFor='news-cover'>Cover image</Label>
 					{imageUrl && (
-						<div className='aspect-[16/9] w-full max-w-sm overflow-hidden rounded-md border border-border'>
-							{/* eslint-disable-next-line @next/next/no-img-element */}
-							<img src={imageUrl} alt='' className='h-full w-full object-cover' />
+						<div className='relative aspect-[16/9] w-full max-w-sm overflow-hidden rounded-md border border-border'>
+							<Image src={imageUrl} alt='' fill sizes='384px' unoptimized={!isOptimizable(imageUrl)} className='object-cover' />
 						</div>
 					)}
 					<div className='flex flex-wrap items-center gap-3'>

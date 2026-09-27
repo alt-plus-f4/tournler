@@ -1,7 +1,10 @@
 import type { Metadata } from 'next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { CircleCheck, CircleX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Reports the server's runtime environment; must not be frozen at build time.
+export const dynamic = 'force-dynamic';
 
 interface StatusGroup {
 	title: string;
@@ -95,7 +98,7 @@ export default function AdminSettingsPage() {
 								<div key={check.label} className='flex items-center justify-between text-sm'>
 									<span className='font-mono'>{check.label}</span>
 									<span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', check.configured ? 'text-signal-ready-text' : 'text-signal-live')}>
-										{check.configured ? <FaCheckCircle aria-hidden /> : <FaTimesCircle aria-hidden />}
+										{check.configured ? <CircleCheck aria-hidden size='1em' /> : <CircleX aria-hidden size='1em' />}
 										{check.configured ? 'Set' : 'Missing'}
 									</span>
 								</div>

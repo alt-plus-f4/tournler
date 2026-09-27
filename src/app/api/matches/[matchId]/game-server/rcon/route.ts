@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { withRcon } from '@/lib/cs2/rcon-client';
 import { findServerByConnect } from '@/lib/cs2/server-pool';
+import { HostedServerUnsupportedError, hostsGameServers } from '@/lib/tournaments/game-rules';
 
 const MAX_COMMAND_LENGTH = 512;
 
@@ -26,12 +27,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		const id = Number.parseInt(matchId, 10);
 		if (Number.isNaN(id)) return NextResponse.json({ error: 'Invalid match ID' }, { status: 400 });
 
-		const match = await db.matches.findUnique({ where: { id }, include: { tournament: { select: { organizerId: true } } } });
+		const match = await db.matches.findUnique({ where: { id }, include: { tournament: { select: { organizerId: true, game: true } } } });
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
 
 		const canManageServers = await userHasPermission(session.user.id, 'servers:manage');
 		if (match.tournament.organizerId !== session.user.id && !canManageServers) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+		}
+		if (!hostsGameServers(match.tournament.game)) {
+			return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'send RCON commands to').message }, { status: 409 });
 		}
 
 		const body = await request.json().catch(() => null);

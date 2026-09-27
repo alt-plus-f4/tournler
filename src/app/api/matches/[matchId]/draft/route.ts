@@ -4,12 +4,13 @@ import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { getDraftState, recordDraftPick, DraftError } from '@/lib/tournaments/draft';
 import { Prisma } from '@prisma/client';
+import { HostedServerUnsupportedError, hostsGameServers } from '@/lib/tournaments/game-rules';
 
 function loadMatchForDraft(matchId: number) {
 	return db.matches.findUnique({
 		where: { id: matchId },
 		include: {
-			tournament: { select: { organizerId: true } },
+			tournament: { select: { organizerId: true, game: true } },
 			participants: { orderBy: { joinedAt: 'asc' } },
 			draftPicks: { orderBy: { order: 'asc' } },
 		},
@@ -23,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 
 	const match = await loadMatchForDraft(id);
 	if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+	if (!hostsGameServers(match.tournament.game)) return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'draft players for').message }, { status: 409 });
 	if (!match.isPickup || match.pickupMode !== 'CAPTAIN_DRAFT') return NextResponse.json({ error: 'This match has no captain draft' }, { status: 400 });
 
 	const state = getDraftState(match.participants, match.draftPicks);
@@ -46,6 +48,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 
 		const match = await loadMatchForDraft(id);
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+		if (!hostsGameServers(match.tournament.game)) return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'draft players for').message }, { status: 409 });
 		if (!match.isPickup || match.pickupMode !== 'CAPTAIN_DRAFT') {
 			return NextResponse.json({ error: 'This match has no captain draft' }, { status: 400 });
 		}

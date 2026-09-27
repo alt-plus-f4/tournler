@@ -12,11 +12,7 @@ describe('Timer', () => {
 
 	it('displays the correct time format', () => {
 		// 1 day, 2 hours, 3 minutes, 4 seconds in milliseconds
-		const timeLeft =
-			1 * 24 * 60 * 60 * 1000 +
-			2 * 60 * 60 * 1000 +
-			3 * 60 * 1000 +
-			4 * 1000;
+		const timeLeft = 1 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000 + 3 * 60 * 1000 + 4 * 1000;
 
 		render(<Timer timeLeft={timeLeft} />);
 
@@ -24,7 +20,7 @@ describe('Timer', () => {
 		const timerDisplay = screen.getByText(/Time left to join:/);
 		// Check if the timer displays the correct format including days
 		expect(timerDisplay.textContent).toMatch(
-			/Time left to join:\s*1d\s*02h\s*03m\s*04\s*s/ // Changed 01d to 1d
+			/Time left to join:\s*1d\s*02h\s*03m\s*04\s*s/, // Changed 01d to 1d
 		);
 	});
 
@@ -36,9 +32,7 @@ describe('Timer', () => {
 		const timerDisplay = screen.getByText(/Time left to join:/);
 
 		// Initial time - should not include "00d"
-		expect(timerDisplay.textContent).toMatch(
-			/Time left to join:\s*00h\s*00m\s*10\s*s/
-		);
+		expect(timerDisplay.textContent).toMatch(/Time left to join:\s*00h\s*00m\s*10\s*s/);
 
 		// Advance timer by 1 second
 		act(() => {
@@ -46,9 +40,7 @@ describe('Timer', () => {
 		});
 
 		// Time should be updated
-		expect(timerDisplay.textContent).toMatch(
-			/Time left to join:\s*00h\s*00m\s*09\s*s/
-		);
+		expect(timerDisplay.textContent).toMatch(/Time left to join:\s*00h\s*00m\s*09\s*s/);
 
 		// Advance timer by 9 more seconds
 		act(() => {
@@ -56,9 +48,7 @@ describe('Timer', () => {
 		});
 
 		// Time should be zero
-		expect(timerDisplay.textContent).toMatch(
-			/Time left to join:\s*00h\s*00m\s*00\s*s/
-		);
+		expect(timerDisplay.textContent).toMatch(/Time left to join:\s*00h\s*00m\s*00\s*s/);
 	});
 
 	it('stops at zero and does not go negative', () => {
@@ -77,8 +67,6 @@ describe('Timer', () => {
 		});
 
 		// Time should be zero, not negative, and not include "00d"
-		expect(timerDisplay.textContent).toMatch(
-			/Time left to join:\s*00h\s*00m\s*00\s*s/
-		);
+		expect(timerDisplay.textContent).toMatch(/Time left to join:\s*00h\s*00m\s*00\s*s/);
 	});
 });

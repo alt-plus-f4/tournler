@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { BadgeIcon } from '@/lib/badge-icons';
 import { cn } from '@/lib/utils';
+import { isOptimizable } from '@/lib/image-hosts';
 
 /** The subset of a Badge row needed to draw it. Public-safe: no timestamps or award counts. */
 export interface TrophyVisual {
@@ -8,24 +9,6 @@ export interface TrophyVisual {
 	icon: string;
 	color: string;
 	imageUrl?: string | null;
-}
-
-/**
- * The Blob host whitelisted in next.config `images.remotePatterns`. Only this host can go through
- * next/image; anything else would throw at runtime, so it falls back to a plain lazy <img>.
- */
-const OPTIMIZABLE_HOST = '6q0iedxcfemxlbr8.public.blob.vercel-storage.com';
-
-function imageMode(url: string): 'next' | 'img' {
-	try {
-		const parsed = new URL(url);
-		// SVG is never sent through the optimizer (Next refuses it without dangerouslyAllowSVG), and is only
-		// ever drawn through <img>, where embedded script can't run.
-		if (parsed.pathname.toLowerCase().endsWith('.svg')) return 'img';
-		return parsed.protocol === 'https:' && parsed.hostname === OPTIMIZABLE_HOST ? 'next' : 'img';
-	} catch {
-		return 'img';
-	}
 }
 
 interface TrophyIconProps {
@@ -49,15 +32,20 @@ export function TrophyIcon({ badge, size, fallback = 'disc', decorative = false,
 	const alt = decorative ? '' : badge.name;
 
 	if (badge.imageUrl) {
-		const mode = imageMode(badge.imageUrl);
 		return (
 			<span className={cn('relative inline-flex shrink-0 items-center justify-center', className)} style={{ width: size, height: size }}>
-				{mode === 'next' ? (
-					<Image src={badge.imageUrl} alt={alt} width={size} height={size} sizes={`${size}px`} priority={priority} className='h-full w-full object-contain' />
-				) : (
-					// eslint-disable-next-line @next/next/no-img-element -- SVG / non-whitelisted hosts can't use next/image
-					<img src={badge.imageUrl} alt={alt} width={size} height={size} loading={priority ? 'eager' : 'lazy'} decoding='async' className='h-full w-full object-contain' />
-				)}
+				{/* SVG trophy art (and any host outside remotePatterns) is served as-is via `unoptimized`: the
+				    optimizer refuses SVG, and it's still only ever drawn as an <img>, where embedded script can't run. */}
+				<Image
+					src={badge.imageUrl}
+					alt={alt}
+					width={size}
+					height={size}
+					unoptimized={!isOptimizable(badge.imageUrl)}
+					loading={priority ? 'eager' : 'lazy'}
+					fetchPriority={priority ? 'high' : undefined}
+					className='h-full w-full object-contain'
+				/>
 			</span>
 		);
 	}

@@ -1,3 +1,4 @@
+import type { DbTx } from '@/lib/db';
 import { db } from '@/lib/db';
 import { generateBracket, GeneratedMatch } from './bracket-generator';
 import { Prisma, TournamentStatus } from '@prisma/client';
@@ -77,22 +78,41 @@ export async function startTournament(tournamentId: number) {
 			return row.id;
 		};
 
-		for (const m of generatedMatches) {
-			if (m.nextMatchLocalIndex === null && m.nextLoserMatchLocalIndex === null) continue;
+		// Batched as a single multi-row UPDATE instead of one `tx.matches.update` per match
+		// (docs/SCALING_AT_1000_USERS.md #4): for a large bracket, N sequential round-trips inside one
+		// open transaction holds a Postgres connection + row locks far longer than necessary,
+		// which matters most exactly when connections are already scarce (#1).
+		const feederUpdates = generatedMatches
+			.filter((m) => m.nextMatchLocalIndex !== null || m.nextLoserMatchLocalIndex !== null)
+			.map((m) => {
+				const nextMatchTarget = m.nextMatchLocalIndex !== null ? generatedMatches[m.nextMatchLocalIndex] : null;
+				const nextLoserMatchTarget = m.nextLoserMatchLocalIndex !== null ? generatedMatches[m.nextLoserMatchLocalIndex] : null;
 
-			const data: Prisma.MatchesUpdateInput = {};
-			if (m.nextMatchLocalIndex !== null) {
-				const target = generatedMatches[m.nextMatchLocalIndex];
-				data.nextMatchId = idFor(target.round, target.position, target.bracketSlot);
-				data.nextMatchSlot = m.nextMatchSlot;
-			}
-			if (m.nextLoserMatchLocalIndex !== null) {
-				const target = generatedMatches[m.nextLoserMatchLocalIndex];
-				data.nextLoserMatchId = idFor(target.round, target.position, target.bracketSlot);
-				data.nextLoserMatchSlot = m.nextLoserMatchSlot;
-			}
+				return {
+					id: idFor(m.round, m.position, m.bracketSlot),
+					nextMatchId: nextMatchTarget ? idFor(nextMatchTarget.round, nextMatchTarget.position, nextMatchTarget.bracketSlot) : null,
+					nextMatchSlot: nextMatchTarget ? m.nextMatchSlot : null,
+					nextLoserMatchId: nextLoserMatchTarget ? idFor(nextLoserMatchTarget.round, nextLoserMatchTarget.position, nextLoserMatchTarget.bracketSlot) : null,
+					nextLoserMatchSlot: nextLoserMatchTarget ? m.nextLoserMatchSlot : null,
+				};
+			});
 
-			await tx.matches.update({ where: { id: idFor(m.round, m.position, m.bracketSlot) }, data });
+		if (feederUpdates.length > 0) {
+			const rows = Prisma.join(
+				feederUpdates.map(
+					(u) =>
+						Prisma.sql`(${u.id}::int, ${u.nextMatchId}::int, ${u.nextMatchSlot}::match_slot, ${u.nextLoserMatchId}::int, ${u.nextLoserMatchSlot}::match_slot)`,
+				),
+			);
+			await tx.$executeRaw`
+				UPDATE matches AS m
+				SET next_match_id = v.next_match_id,
+					next_match_slot = v.next_match_slot,
+					next_loser_match_id = v.next_loser_match_id,
+					next_loser_match_slot = v.next_loser_match_slot
+				FROM (VALUES ${rows}) AS v(id, next_match_id, next_match_slot, next_loser_match_id, next_loser_match_slot)
+				WHERE m.id = v.id
+			`;
 		}
 
 		return generatedMatches.length;
@@ -104,6 +124,27 @@ export async function startTournament(tournamentId: number) {
 		tournament: updatedTournament,
 		matchesCreated,
 	};
+}
+
+/**
+ * Bounded parallelism: cap must stay well under db.ts's per-instance Prisma pool size
+ * (`connection_limit`), since each concurrent `startTournament` holds its own connection for the
+ * duration of its transaction — unbounded concurrency here would exhaust that pool by itself.
+ */
+const MAX_CONCURRENT_TOURNAMENT_STARTS = 3;
+
+async function mapWithConcurrencyLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+	const results: R[] = new Array(items.length);
+	let next = 0;
+
+	async function worker() {
+		for (let index = next++; index < items.length; index = next++) {
+			results[index] = await fn(items[index]);
+		}
+	}
+
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+	return results;
 }
 
 /**
@@ -120,15 +161,17 @@ export async function checkAndStartTournaments() {
 		},
 	});
 
-	const results = [];
-	for (const tournament of tournamentsToStart) {
+	// Independent tournaments start concurrently, bounded, instead of strictly sequentially
+	// (docs/SCALING_AT_1000_USERS.md #5) — several tournaments due in the same cron window no longer
+	// make the whole run's wall-clock time scale linearly with how many are due at once.
+	const results = await mapWithConcurrencyLimit(tournamentsToStart, MAX_CONCURRENT_TOURNAMENT_STARTS, async (tournament) => {
 		try {
 			const result = await startTournament(tournament.id);
-			results.push({ tournamentId: tournament.id, success: true, matchesCreated: result.matchesCreated });
+			return { tournamentId: tournament.id, success: true, matchesCreated: result.matchesCreated };
 		} catch (error) {
-			results.push({ tournamentId: tournament.id, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+			return { tournamentId: tournament.id, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
 		}
-	}
+	});
 
 	return {
 		tournamentsProcessed: results.length,
@@ -143,7 +186,7 @@ export async function checkAndStartTournaments() {
  * check called after every match result via `recordMatchResult`, so it must
  * be safe to call speculatively on every single match completion.
  */
-export async function finalizeTournamentIfComplete(tx: Prisma.TransactionClient, tournamentId: number): Promise<void> {
+export async function finalizeTournamentIfComplete(tx: DbTx, tournamentId: number): Promise<void> {
 	const incompleteCount = await tx.matches.count({ where: { tournamentId, status: { not: 'COMPLETED' } } });
 	if (incompleteCount > 0) return;
 

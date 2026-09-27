@@ -5,6 +5,7 @@ import { withRcon } from './rcon-client';
 import { findServerByConnect, Cs2ServerConfig } from './server-pool';
 import { gameServerCallbackUrl } from './callback-url';
 import { buildMatchConfig } from './match-config';
+import { assertMatchHostsGameServer } from '@/lib/tournaments/game-rules';
 
 const POOL_CONTROLLER_RESTART_TIMEOUT_MS = 120_000;
 const POOL_CONTROLLER_POLL_INTERVAL_MS = 3_000;
@@ -28,7 +29,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 			(error) => {
 				clearTimeout(timer);
 				reject(error);
-			}
+			},
 		);
 	});
 }
@@ -52,7 +53,9 @@ async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): 
 	const controllerUrl = process.env.POOL_CONTROLLER_URL;
 	const controllerToken = process.env.POOL_CONTROLLER_TOKEN;
 	if (!controllerUrl || !controllerToken) {
-		throw new Error('POOL_CONTROLLER_URL and POOL_CONTROLLER_TOKEN must both be configured to start a match (see cs-docker/pool-controller/index.js) — a live in-process map change is not safe on this stack.');
+		throw new Error(
+			'POOL_CONTROLLER_URL and POOL_CONTROLLER_TOKEN must both be configured to start a match (see cs-docker/pool-controller/index.js) — a live in-process map change is not safe on this stack.',
+		);
 	}
 
 	// docker-controller's own `docker compose up -d --force-recreate` normally returns in seconds
@@ -81,12 +84,14 @@ async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): 
 			await withTimeout(
 				withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute('status')),
 				POOL_CONTROLLER_POLL_ATTEMPT_TIMEOUT_MS,
-				`RCON attempt to ${server.containerName} took too long`
+				`RCON attempt to ${server.containerName} took too long`,
 			);
 			return;
 		} catch (error) {
 			if (Date.now() >= deadline) {
-				throw new Error(`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`);
+				throw new Error(
+					`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`,
+				);
 			}
 			await new Promise((resolve) => setTimeout(resolve, POOL_CONTROLLER_POLL_INTERVAL_MS));
 		}
@@ -137,6 +142,7 @@ async function resolveMatchServer(matchId: number): Promise<Cs2ServerConfig> {
  * transaction commits and treat failures as non-fatal, same as `pushMatchConfigToServer`.
  */
 export async function pushRconCommand(matchId: number, command: string): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'send RCON commands to');
 	const server = await resolveMatchServer(matchId);
 	await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute(command));
 }
@@ -155,6 +161,7 @@ export async function pushRconCommand(matchId: number, command: string): Promise
  * an organizer retries manually).
  */
 export async function pushMatchConfigToServer(matchId: number, options: { bots?: boolean } = {}): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'load a MatchZy config onto');
 	const appBaseUrl = gameServerCallbackUrl();
 	const gameServerToken = process.env.GAME_SERVER_TOKEN;
 	if (!appBaseUrl || !gameServerToken) {
@@ -214,6 +221,7 @@ export async function pushMatchConfigToServer(matchId: number, options: { bots?:
  * non-fatal — same convention as `pushMatchConfigToServer`.
  */
 export async function releaseGameServerAfterMatch(matchId: number): Promise<void> {
+	await assertMatchHostsGameServer(db, matchId, 'release');
 	const server = await resolveMatchServer(matchId);
 	const throwawayPassword = randomBytes(9).toString('base64url');
 

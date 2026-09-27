@@ -1,10 +1,11 @@
 import { formatMoney } from '@/lib/helpers/format-money';
 import { ReducedTournament } from '@/types/types';
+import { GameTag } from '@/components/games/GameMark';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, location, teamCapacity, status }: ReducedTournament & { status?: string }) {
+export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, location, teamCapacity, status, game = 'CS2' }: ReducedTournament & { status?: string }) {
 	const hasPrize = prizePool !== null && prizePool !== undefined;
 	const start = getStartLabel(startDate, status);
 
@@ -23,8 +24,11 @@ export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, 
 						</span>
 					)}
 				</div>
-				<div className='ml-4 flex min-w-0 flex-col items-start'>
-					<h3 className='truncate text-lg font-black uppercase tracking-wide text-white'>{name}</h3>
+				<div className='ml-4 flex min-w-0 flex-1 flex-col items-stretch'>
+					<div className='flex min-w-0 items-center gap-2'>
+						<GameTag game={game} />
+						<h3 className='min-w-0 truncate text-lg font-black uppercase tracking-wide text-white'>{name}</h3>
+					</div>
 					<p className='truncate text-sm text-muted-foreground'>{location}</p>
 				</div>
 			</div>

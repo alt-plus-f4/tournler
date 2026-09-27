@@ -1,107 +1,56 @@
 import { render, screen } from '@testing-library/react';
+import type { Game } from '@prisma/client';
 import Page from '../teams/page';
-import { getAuthSession } from '@/lib/auth';
-import { ExtendedCs2Team } from '@/lib/models/team-model';
-// Removed the import of jest as it is available globally in the test environment
 
-// Mock the auth session
-jest.mock('@/lib/auth', () => ({ getAuthSession: jest.fn() }));
+// The page reads the game filter cookie (next/headers), which only works inside a request scope.
+const cookiesGet = jest.fn<{ value: string } | undefined, []>(() => undefined);
+jest.mock('next/headers', () => ({ cookies: () => Promise.resolve({ get: cookiesGet }) }));
 
-// Mock the components used in the page
-jest.mock('@/components/TeamDrawer', () => ({
-	__esModule: true,
-	default: () => <div data-testid='team-drawer'>Team Drawer</div>,
+// Page itself only resolves the active game and renders the static shell plus three async server
+// components, each in its own Suspense boundary — the jsdom renderer can't render those directly.
+// See TeamsBanner.test.tsx and TeamsCreateSlot.test.tsx for their own (real-implementation) coverage.
+jest.mock('../teams/_components/TeamsBanner', () => ({
+	TeamsBanner: ({ game }: { game: Game }) => <div>Teams Banner ({game})</div>,
+	TeamsBannerSkeleton: () => null,
 }));
-
-jest.mock('@/components/TeamCard', () => ({
-	TeamCard: ({ team }: { team: ExtendedCs2Team }) => (
-		<div data-testid={`team-card-${team.id}`}>Team Card: {team.name}</div>
-	),
+jest.mock('../teams/_components/TeamsCreateSlot', () => ({
+	TeamsCreateSlot: ({ game }: { game: Game }) => <div>Teams Create Slot ({game})</div>,
 }));
-
-jest.mock('@/components/LoginButtons', () => ({
-	__esModule: true,
-	default: ({ className }: { className?: string }) => (
-		<div data-testid='login-buttons' className={className}>
-			Login Buttons
-		</div>
-	),
+jest.mock('../teams/_components/TeamsCards', () => ({
+	TeamsCards: ({ game }: { game: Game }) => <div>Teams Cards ({game})</div>,
+	TeamsCardsSkeleton: () => null,
 }));
-
-jest.mock('@/components/FallbackCards', () => ({
-	FallbackCards: () => <div data-testid='fallback-cards'>Fallback Cards</div>,
-}));
-
-// Mock fetch
-global.fetch = jest.fn();
 
 describe('Teams Page', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
+		cookiesGet.mockReturnValue(undefined);
 	});
 
 	it('renders the page title correctly', async () => {
-		// Mock session as null (not logged in)
-		(getAuthSession as jest.Mock).mockResolvedValue(null);
-
-		// Mock fetch to return empty teams array
-		(global.fetch as jest.Mock).mockResolvedValue({
-			ok: true,
-			json: async () => ({ teams: [] }),
-		});
-
-		// Render the page component
-		const page = await Page();
+		const page = await Page({});
 		render(page);
 
-		// Check if the page title is rendered
 		expect(screen.getByRole('heading', { level: 1, name: 'Teams' })).toBeInTheDocument();
 	});
 
-	it('shows login alert when user is not logged in', async () => {
-		// Mock session as null (not logged in)
-		(getAuthSession as jest.Mock).mockResolvedValue(null);
-
-		// Mock fetch to return empty teams array
-		(global.fetch as jest.Mock).mockResolvedValue({
-			ok: true,
-			json: async () => ({ teams: [] }),
-		});
-
-		// Render the page component
-		const page = await Page();
+	it('streams the banner, create-slot and card grid, defaulting to CS2', async () => {
+		const page = await Page({});
 		render(page);
 
-		// Check if the login alert is shown
-		expect(screen.getByText('Sign in to create a team or accept an invite to one.')).toBeInTheDocument();
-		expect(screen.getByTestId('login-buttons')).toBeInTheDocument();
+		expect(screen.getByText('Teams Banner (CS2)')).toBeInTheDocument();
+		expect(screen.getByText('Teams Create Slot (CS2)')).toBeInTheDocument();
+		expect(screen.getByText('Teams Cards (CS2)')).toBeInTheDocument();
 	});
 
-	it('shows team creation option when user is logged in but has no team', async () => {
-		// Mock session with logged in user
-		(getAuthSession as jest.Mock).mockResolvedValue({
-			user: { email: 'test@example.com', id: '123' },
-		});
+	it('re-scopes every tile to the LoL channel remembered in the game filter cookie', async () => {
+		cookiesGet.mockReturnValue({ value: 'lol' });
 
-		// Mock getUserTeam to return null (no team)
-		(global.fetch as jest.Mock).mockImplementation((url: string) => {
-			if (url.includes('/api/user/team')) {
-				return Promise.resolve({
-					ok: true,
-					json: async () => ({ team: null }),
-				});
-			}
-			return Promise.resolve({
-				ok: true,
-				json: async () => ({ teams: [] }),
-			});
-		});
-
-		// Render the page component
-		const page = await Page();
+		const page = await Page({});
 		render(page);
 
-		// Check if team creation option is shown
-		expect(screen.getByTestId('team-drawer')).toBeInTheDocument();
+		expect(screen.getByText('Teams Banner (LOL)')).toBeInTheDocument();
+		expect(screen.getByText('Teams Create Slot (LOL)')).toBeInTheDocument();
+		expect(screen.getByText('Teams Cards (LOL)')).toBeInTheDocument();
 	});
 });

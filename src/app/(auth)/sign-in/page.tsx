@@ -4,17 +4,13 @@ import { buttonVariants } from '@/components/ui/button';
 import Link from 'next/link';
 import SignIn from '@/components/SignIn';
 import { ChevronLeft } from 'lucide-react';
-import { getAuthSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
 	title: 'Sign in',
 };
 
-export default async function Page() {
-	const session = await getAuthSession();
-	if (session) redirect('/');
-
+// Signed-in visitors are redirected away in src/proxy.ts, so this page renders statically.
+export default function Page() {
 	return (
 		<div className='flex min-h-[80vh] items-center justify-center px-4 py-12'>
 			<div className='flex w-full max-w-md flex-col gap-10'>

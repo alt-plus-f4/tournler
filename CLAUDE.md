@@ -26,7 +26,7 @@ There is no separate typecheck script; `next build` / editor TS server surfaces 
 - **Only push to `development`.** Commit and push day-to-day work directly to `development` — never push to `main`, and don't push to other branches unless explicitly asked.
 - **`main` only changes through pull requests.** To ship, open a PR from `development` into `main` (`gh pr create --base main --head development`); `main` is what Vercel deploys to production.
 - **Never merge into `main` yourself.** Open the PR and stop — the user reviews and merges it. No `gh pr merge`, auto-merge, or direct merges/pushes into `main`, even when a PR is green.
-- Use Conventional Commits messages (`feat:`, `fix:`, `docs:`, `chore:`, ...). Don't add Claude as a co-author or contributor.
+- Write "caveman" commit messages, not Conventional Commits: short, plain, present-tense fragments — no `feat:`/`fix:`/`chore:` type prefixes, no punctuation-heavy scopes, no body paragraphs. E.g. `add team logo plate`, `fix tournament dl markup`, `move docs to docs folder`. Don't add Claude as a co-author or contributor.
 
 ## Architecture
 
@@ -45,21 +45,21 @@ Tournler is a CS2 esports tournament management platform built on Next.js 15 (Ap
 
 - Five roles in the Prisma `UserRole` enum: `USER`, `MODERATOR`, `TOURNAMENT_ADMIN`, `CONTENT_ADMIN`, `ADMIN`.
 - Centralized permission checks live in `src/lib/helpers/permissions.ts` (`hasPermission`, `isAdminRole`, `userHasPermission`) against a `Permission` union (`admin:access`, `users:manage`, `teams:manage`, `tournaments:manage`, `matches:manage`, `servers:manage`, `content:manage`). Route handlers call these instead of checking `role` strings directly.
-- Full permission matrix and per-endpoint auth requirements are documented in `ROLE_AND_API_GUIDE.md` — check it before adding/changing an API route's authorization.
+- Full permission matrix and per-endpoint auth requirements are documented in `docs/ROLE_AND_API_GUIDE.md` — check it before adding/changing an API route's authorization.
 
 ### Tournament lifecycle
 
 - `src/lib/tournaments/bracket-generator.ts` and `src/lib/tournaments/tournament-service.ts` implement bracket generation (single elimination, round-robin, double elimination) and match creation when a tournament starts.
-- `POST /api/tournaments/start` manually starts a tournament (requires `tournaments:manage`); `GET /api/tournaments/check-start` is meant to be hit by an external cron (authenticated via `x-api-key` == `CRON_API_KEY`, or an admin session) to auto-start tournaments whose scheduled time has passed. There is no in-process scheduler — the cron trigger is external (see `TOURNAMENT_GUIDE.md`).
+- `POST /api/tournaments/start` manually starts a tournament (requires `tournaments:manage`); `GET /api/tournaments/check-start` is meant to be hit by an external cron (authenticated via `x-api-key` == `CRON_API_KEY`, or an admin session) to auto-start tournaments whose scheduled time has passed. There is no in-process scheduler — the cron trigger is external (see `docs/TOURNAMENT_GUIDE.md`).
 - Game servers are modeled by the `GameServer` Prisma model (1:1 with `Matches`) and are meant to be provisioned as CS2 dedicated server Docker containers (see `cs-docker/docker-compose.yml`, using the `joedwards32/cs2` image). The game server posts live score updates back to `POST /api/matches/game-state`, authenticated via an `x-game-server-token` header checked against `GAME_SERVER_TOKEN`, distinct from user/session auth.
-- Full endpoint contracts, request/response shapes, and the game-server integration flow are documented in `TOURNAMENT_GUIDE.md`.
+- Full endpoint contracts, request/response shapes, and the game-server integration flow are documented in `docs/TOURNAMENT_GUIDE.md`.
 
 ### Frontend
 
 - App Router pages under `src/app/**`; parallel/intercepting routes are used for auth modals (`src/app/@authModal/(.)sign-in`, `(.)sign-up`) layered over `src/app/(auth)/sign-in`, `(auth)/sign-up`.
 - UI is shadcn/ui-style components over Radix primitives (`src/components/ui/`), Tailwind CSS, `class-variance-authority` for variants.
 - Client-global state: Redux Toolkit (`src/app/redux`, `src/lib/onboarding-slice.ts`) for onboarding flow state; SWR for server-state fetching/caching elsewhere. Forms use `react-hook-form` + `zod` via `@hookform/resolvers`.
-- Radix-based Dialog/Drawer/DropdownMenu/Select components currently lack `suppressHydrationWarning` on their animated `data-state` elements — `DIALOG_USAGE_REPORT.md` has the full inventory of affected components if hydration warnings need addressing.
+- Radix-based Dialog/Drawer/DropdownMenu/Select components all have `suppressHydrationWarning` on their animated `data-state` elements — see `docs/DIALOG_USAGE_REPORT.md` for the component inventory (kept for historical context; the issue itself is resolved).
 
 ### Data-fetching helpers
 
@@ -68,7 +68,7 @@ Tournler is a CS2 esports tournament management platform built on Next.js 15 (Ap
 
 ## Environment
 
-Copy `.examplenv` to `.env` and fill in real values. Required groups: `DATABASE_URL` (Postgres), `NEXTAUTH_URL`/`NEXTAUTH_SECRET`, `EMAIL_SERVER_*`/`EMAIL_FROM` (magic-link auth), `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET`/`DISCORD_BOT_TOKEN`/`DISCORD_GUILD_ID`, `STEAM_API_KEY`/`STEAM_REDIRECT_URI`, `BLOB_READ_WRITE_TOKEN` (Vercel Blob, used for avatar/logo uploads). `TOURNAMENT_GUIDE.md` additionally references `GAME_SERVER_IP`, `GAME_SERVER_TOKEN`, and `CRON_API_KEY` for the game-server/cron integration.
+Copy `.examplenv` to `.env` and fill in real values. Required groups: `DATABASE_URL` (Postgres), `NEXTAUTH_URL`/`NEXTAUTH_SECRET`, `EMAIL_SERVER_*`/`EMAIL_FROM` (magic-link auth), `DISCORD_CLIENT_ID`/`DISCORD_CLIENT_SECRET`/`DISCORD_BOT_TOKEN`/`DISCORD_GUILD_ID`, `STEAM_API_KEY`/`STEAM_REDIRECT_URI`, `BLOB_READ_WRITE_TOKEN` (Vercel Blob, used for avatar/logo uploads). `docs/TOURNAMENT_GUIDE.md` additionally references `GAME_SERVER_IP`, `GAME_SERVER_TOKEN`, and `CRON_API_KEY` for the game-server/cron integration.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

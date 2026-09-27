@@ -1,10 +1,7 @@
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { getAuthSession } from '@/lib/auth';
-import { isAdmin } from '@/lib/helpers/is-admin';
 import { ReactNode } from 'react';
 import type { Metadata } from 'next';
-import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
 	title: {
@@ -13,13 +10,9 @@ export const metadata: Metadata = {
 	},
 };
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
-	const session = await getAuthSession();
-	const isAdminStatus = session ? await isAdmin(session.user.id) : false;
-
-	// Redirect if not authenticated or not an admin
-	if (!session || !isAdminStatus) redirect('/');
-
+// Staff-only access is enforced once in src/proxy.ts; each admin page then checks its own
+// permission server-side, so the layout itself doesn't block rendering on a session lookup.
+export default function AdminLayout({ children }: { children: ReactNode }) {
 	return (
 		<SidebarProvider>
 			<AdminSidebar />

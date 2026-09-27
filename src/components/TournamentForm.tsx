@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor } from '@/components/LazyRichTextEditor';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { cn } from '@/lib/utils';
+import { GAME_META, GAMES } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
 
 const FORMAT_OPTIONS = [
 	{ value: '0', label: 'Single elimination' },
@@ -29,10 +31,14 @@ const optionalNumber = z.preprocess((v) => (v === '' || v === null || v === unde
 const schema = z
 	.object({
 		name: z.string().trim().min(1, 'Give the tournament a name'),
+		game: z.enum(GAMES, { required_error: 'Pick a game' }),
 		format: z.enum(['0', '1', '2']),
 		type: z.enum(['0', '1']),
 		location: z.string().trim().min(1, 'Add a location (a city, venue or region)'),
-		teamCapacity: z.preprocess((v) => (v === '' || Number.isNaN(v) ? undefined : Number(v)), z.number({ required_error: 'Set how many teams can join', invalid_type_error: 'Set how many teams can join' }).int().min(2, 'At least 2 teams').max(256, 'At most 256 teams')),
+		teamCapacity: z.preprocess(
+			(v) => (v === '' || Number.isNaN(v) ? undefined : Number(v)),
+			z.number({ required_error: 'Set how many teams can join', invalid_type_error: 'Set how many teams can join' }).int().min(2, 'At least 2 teams').max(256, 'At most 256 teams'),
+		),
 		startDate: z.string().min(1, 'Pick a start time'),
 		endDate: z.string().min(1, 'Pick an end time'),
 		description: z.string().optional(),
@@ -46,13 +52,14 @@ type FormValues = z.input<typeof schema>;
 type ParsedValues = z.output<typeof schema>;
 
 const STEPS: { title: string; fields: FieldPath<FormValues>[] }[] = [
-	{ title: 'Basics', fields: ['name', 'format', 'type', 'location', 'teamCapacity'] },
+	{ title: 'Basics', fields: ['game', 'name', 'format', 'type', 'location', 'teamCapacity'] },
 	{ title: 'Schedule', fields: ['startDate', 'endDate', 'description', 'prizePool'] },
 	{ title: 'Media & review', fields: ['bannerFile', 'logoFile'] },
 ];
 
 const DEFAULTS: FormValues = {
 	name: '',
+	game: 'CS2',
 	format: '0',
 	type: '0',
 	location: '',
@@ -123,6 +130,7 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 	const submit = handleSubmit(async (values) => {
 		const formData = new FormData();
 		formData.append('name', values.name);
+		formData.append('game', values.game);
 		formData.append('format', values.format);
 		formData.append('type', values.type);
 		formData.append('location', values.location);
@@ -163,7 +171,10 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						<li
 							key={s.title}
 							aria-current={i === step ? 'step' : undefined}
-							className={cn('border-t-2 pt-2 text-xs font-medium', i === step ? 'border-foreground text-foreground' : i < step ? 'border-neutral-400 text-neutral-300' : 'border-border text-muted-foreground')}
+							className={cn(
+								'border-t-2 pt-2 text-xs font-medium',
+								i === step ? 'border-foreground text-foreground' : i < step ? 'border-neutral-400 text-neutral-300' : 'border-border text-muted-foreground',
+							)}
 						>
 							<span className='font-mono tabular-nums'>{i + 1}</span> {s.title}
 						</li>
@@ -181,6 +192,35 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 				>
 					{step === 0 && (
 						<>
+							<fieldset className='space-y-2'>
+								<legend className='text-sm font-medium leading-none'>Game</legend>
+								<Controller
+									control={control}
+									name='game'
+									render={({ field }) => (
+										<div role='radiogroup' aria-label='Game' className='grid grid-cols-2 gap-2 pt-2'>
+											{GAMES.map((g) => (
+												<label
+													key={g}
+													className={cn(
+														'flex cursor-pointer items-center gap-2 rounded-sm border px-3 py-2 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background',
+														field.value === g ? 'border-white bg-white/10 font-bold text-white' : 'border-border text-neutral-300 hover:border-neutral-500',
+													)}
+												>
+													<input type='radio' name={field.name} value={g} checked={field.value === g} onChange={() => field.onChange(g)} className='sr-only' />
+													<GameGlyph game={g} />
+													{GAME_META[g].label}
+												</label>
+											))}
+										</div>
+									)}
+								/>
+								<p className='text-xs text-muted-foreground'>
+									{v.game === 'LOL'
+										? 'Players need a verified Riot ID. Matches are played in the League client; staff record each result.'
+										: 'Players need Steam linked. Tournler hosts a CS2 server for every match.'}
+								</p>
+							</fieldset>
 							<div className='space-y-2'>
 								<Label htmlFor='create-name'>Tournament name</Label>
 								<Input id='create-name' autoFocus {...register('name')} {...invalid('name')} />
@@ -261,7 +301,13 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 							</div>
 							<div className='space-y-2'>
 								<Label id='create-description-label'>Description</Label>
-								<Controller control={control} name='description' render={({ field }) => <RichTextEditor labelId='create-description-label' value={field.value ?? ''} onChange={field.onChange} placeholder='Tell players what this tournament is about' />} />
+								<Controller
+									control={control}
+									name='description'
+									render={({ field }) => (
+										<RichTextEditor labelId='create-description-label' value={field.value ?? ''} onChange={field.onChange} placeholder='Tell players what this tournament is about' />
+									)}
+								/>
 							</div>
 							<div className='space-y-2'>
 								<Label htmlFor='create-prizePool'>Prize pool (USD, optional)</Label>
@@ -297,6 +343,11 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									Review
 								</h3>
 								<dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 px-3 py-2 text-sm'>
+									<dt className='text-muted-foreground'>Game</dt>
+									<dd className='flex items-center gap-1.5'>
+										<GameGlyph game={v.game} className='h-3.5 w-3.5' />
+										{GAME_META[v.game].label}
+									</dd>
 									<dt className='text-muted-foreground'>Name</dt>
 									<dd className='truncate'>{v.name || '—'}</dd>
 									<dt className='text-muted-foreground'>Format</dt>
@@ -322,11 +373,19 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 								<h3 id='create-auto-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
 									What Tournler does for you
 								</h3>
-								<ul className='mt-2 list-disc space-y-1 pl-4 text-sm text-neutral-300'>
-									<li>Provisions a CS2 server for each match about 5 minutes before it starts.</li>
-									<li>Takes scores straight from the game server, so nobody types them in.</li>
-									<li>Advances the bracket automatically as matches finish.</li>
-								</ul>
+								{v.game === 'LOL' ? (
+									<ul className='mt-2 list-disc space-y-1 pl-4 text-sm text-neutral-300'>
+										<li>Checks every rostered player has a verified Riot ID before a team can register.</li>
+										<li>Generates the bracket. Tournler doesn&apos;t host League servers: teams play in the League client and staff record each result.</li>
+										<li>Advances the bracket automatically as results are recorded.</li>
+									</ul>
+								) : (
+									<ul className='mt-2 list-disc space-y-1 pl-4 text-sm text-neutral-300'>
+										<li>Provisions a CS2 server for each match about 5 minutes before it starts.</li>
+										<li>Takes scores straight from the game server, so nobody types them in.</li>
+										<li>Advances the bracket automatically as matches finish.</li>
+									</ul>
+								)}
 							</section>
 						</>
 					)}

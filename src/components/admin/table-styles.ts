@@ -10,8 +10,7 @@ export const adminTable = {
 	num: 'font-mono tabular-nums',
 	empty: 'px-4 py-8 text-center text-muted-foreground',
 	/** The name cell's real button/link that opens the row's editor. */
-	rowAction:
-		'max-w-[28ch] truncate rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+	rowAction: 'max-w-[28ch] truncate rounded-sm text-left font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
 } as const;
 
 export function formatAdminDate(value: Date | string | null | undefined, withTime = false): string {

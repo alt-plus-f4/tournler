@@ -73,6 +73,15 @@ html {
 		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 42px);
 }
 
+/* The same 42px grid texture, without the pointer-tracked glow: for panels that sit above
+   InteractiveBackground (a modal, a loading shell) and need the stage's texture on their own. */
+.stage-grid {
+	background-color: black;
+	background-image:
+		repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 42px),
+		repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 42px);
+}
+
 /* Reduced motion keeps the state (a solid dot) and drops only the pulse. */
 @media (prefers-reduced-motion: reduce) {
 	.animate-pulse {
@@ -98,4 +107,51 @@ html {
 html {
 	color-scheme: dark;
 	scrollbar-color: hsl(240 3.7% 25%) transparent;
+}
+
+/* Parallax footer: a scroll-driven effect with no JavaScript. The footer defines a view timeline;
+   as it scrolls into view, the outlined wordmark (back) rises from further down than the content
+   (front), so the two layers move at different rates. Browsers without scroll-driven animations,
+   and anyone who prefers reduced motion, get the plain static footer. */
+.footer-parallax {
+	view-timeline-name: --footer;
+	view-timeline-axis: block;
+}
+
+@supports (animation-timeline: view()) {
+	@media (prefers-reduced-motion: no-preference) {
+		.footer-parallax .fp-back,
+		.footer-parallax .fp-front {
+			animation-timing-function: linear;
+			animation-fill-mode: both;
+			animation-timeline: --footer;
+			animation-range: entry 0% entry 100%;
+		}
+		.footer-parallax .fp-back {
+			animation-name: footer-parallax-back;
+		}
+		.footer-parallax .fp-front {
+			animation-name: footer-parallax-front;
+		}
+	}
+}
+
+@keyframes footer-parallax-back {
+	from {
+		transform: translateY(70%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+
+@keyframes footer-parallax-front {
+	from {
+		transform: translateY(30%);
+		opacity: 0.35;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
 }

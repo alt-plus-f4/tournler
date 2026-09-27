@@ -1,22 +1,61 @@
 import { PrismaClient } from '@prisma/client';
 import 'server-only';
+import { MODEL_TAGS, invalidateTags } from '@/lib/cache/tags';
 
-declare global {
-	// eslint-disable-next-line no-var
-	var cachedPrisma: PrismaClient;
-}
+const WRITE_OPERATIONS = new Set(['create', 'createMany', 'createManyAndReturn', 'update', 'updateMany', 'updateManyAndReturn', 'upsert', 'delete', 'deleteMany']);
 
-const prismaClientSingleton = () => {
-	return new PrismaClient();
+/**
+ * Caps Prisma's own connection pool per client instance. Without this, each serverless function
+ * instance defaults to a large pool sized off CPU count, and at scale (many warm instances under
+ * load) that adds up fast against Postgres's max_connections — hence the conservative default here
+ * even when DATABASE_URL already points at a pooler (see .examplenv). Only fills in what's missing,
+ * so an explicit connection_limit/pool_timeout in DATABASE_URL always wins.
+ */
+const withPoolDefaults = (url: string) => {
+	const parsed = new URL(url);
+	if (!parsed.searchParams.has('connection_limit')) parsed.searchParams.set('connection_limit', '5');
+	if (!parsed.searchParams.has('pool_timeout')) parsed.searchParams.set('pool_timeout', '10');
+	return parsed.toString();
 };
 
+const createBaseClient = () => new PrismaClient({ datasourceUrl: withPoolDefaults(process.env.DATABASE_URL ?? '') });
+
+/**
+ * Every write through `db` invalidates the cache domains of the model it touched (MODEL_TAGS), so
+ * cached page queries (src/lib/cache/cached-query.ts) can't go stale because some route or
+ * library function forgot to call revalidateTag. Applies inside $transaction too.
+ */
+const withCacheInvalidation = (client: PrismaClient) =>
+	client.$extends({
+		name: 'cache-invalidation',
+		query: {
+			$allModels: {
+				async $allOperations({ model, operation, args, query }) {
+					const result = await query(args);
+					if (WRITE_OPERATIONS.has(operation)) invalidateTags(MODEL_TAGS[model] ?? []);
+					return result;
+				},
+			},
+		},
+	});
+
 declare global {
 	// eslint-disable-next-line no-var
-	var prisma: ReturnType<typeof prismaClientSingleton>;
+	var prismaBase: PrismaClient | undefined;
+	// eslint-disable-next-line no-var
+	var prisma: ReturnType<typeof withCacheInvalidation> | undefined;
 }
 
-const db = globalThis.prisma ?? prismaClientSingleton();
+/** Unextended client, only for libraries that require a plain PrismaClient (the NextAuth adapter). */
+const baseDb = globalThis.prismaBase ?? createBaseClient();
+const db = globalThis.prisma ?? withCacheInvalidation(baseDb);
 
-if (process.env.NODE_ENV !== 'production') globalThis.prisma = db;
+if (process.env.NODE_ENV !== 'production') {
+	globalThis.prismaBase = baseDb;
+	globalThis.prisma = db;
+}
 
-export { db };
+/** The transaction client handed to `db.$transaction(async (tx) => ...)`; use instead of Prisma.TransactionClient. */
+export type DbTx = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+export { db, baseDb };

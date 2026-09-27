@@ -9,10 +9,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Match } from '@/types/types';
+import type { Game } from '@prisma/client';
+import { GameGlyph } from '@/components/games/GameMark';
 
 interface Option {
 	id: number;
 	name: string;
+	game: Game;
 }
 
 interface CreateMatchDialogProps {
@@ -52,14 +55,25 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 
 		fetch('/api/tournaments?limit=100')
 			.then((r) => r.json())
-			.then((data) => setTournaments(Array.isArray(data) ? data.map((t: { id: number; name: string }) => ({ id: t.id, name: t.name })) : []))
+			.then((data) => setTournaments(Array.isArray(data) ? data.map((t: { id: number; name: string; game?: Game }) => ({ id: t.id, name: t.name, game: t.game ?? 'CS2' })) : []))
 			.catch((e) => console.error('Failed to load tournaments', e));
 
 		fetch('/api/teams?limit=100')
 			.then((r) => r.json())
-			.then((data) => setTeams(Array.isArray(data.teams) ? data.teams.map((t: { id: number; name: string }) => ({ id: t.id, name: t.name })) : []))
+			.then((data) => setTeams(Array.isArray(data.teams) ? data.teams.map((t: { id: number; name: string; game?: Game }) => ({ id: t.id, name: t.name, game: t.game ?? 'CS2' })) : []))
 			.catch((e) => console.error('Failed to load teams', e));
 	}, [isOpen]);
+
+	// Only teams of the chosen tournament's game can play in it (the API enforces the same).
+	const selectedGame = tournaments.find((t) => String(t.id) === tournamentId)?.game;
+	const teamOptions = selectedGame ? teams.filter((t) => t.game === selectedGame) : teams;
+	const pickTournament = (id: string) => {
+		setTournamentId(id);
+		const game = tournaments.find((t) => String(t.id) === id)?.game;
+		const fits = (teamId: string) => !teamId || teams.find((t) => String(t.id) === teamId)?.game === game;
+		if (!fits(teamAId)) setTeamAId('');
+		if (!fits(teamBId)) setTeamBId('');
+	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -153,14 +167,18 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 						<>
 							<div className='space-y-2'>
 								<Label htmlFor='create-match-tournament'>Tournament</Label>
-								<Select value={tournamentId} onValueChange={setTournamentId}>
+								<Select value={tournamentId} onValueChange={pickTournament}>
 									<SelectTrigger id='create-match-tournament'>
 										<SelectValue placeholder='Select a tournament' />
 									</SelectTrigger>
 									<SelectContent>
 										{tournaments.map((t) => (
 											<SelectItem key={t.id} value={String(t.id)}>
-												{t.name}
+												<span className='inline-flex items-center gap-2'>
+													<GameGlyph game={t.game} className='h-3.5 w-3.5' />
+													<span className='sr-only'>{t.game === 'LOL' ? 'LoL: ' : 'CS2: '}</span>
+													{t.name}
+												</span>
 											</SelectItem>
 										))}
 									</SelectContent>
@@ -175,7 +193,7 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 											<SelectValue placeholder='Select a team' />
 										</SelectTrigger>
 										<SelectContent>
-											{teams.map((t) => (
+											{teamOptions.map((t) => (
 												<SelectItem key={t.id} value={String(t.id)}>
 													{t.name}
 												</SelectItem>
@@ -190,7 +208,7 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 											<SelectValue placeholder='Select a team' />
 										</SelectTrigger>
 										<SelectContent>
-											{teams.map((t) => (
+											{teamOptions.map((t) => (
 												<SelectItem key={t.id} value={String(t.id)}>
 													{t.name}
 												</SelectItem>

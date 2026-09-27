@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
+import { activeBanWhere, toActiveBan } from '@/lib/bans';
 
 export async function GET(req: NextRequest) {
 	try {
@@ -36,13 +37,13 @@ export async function GET(req: NextRequest) {
 				where,
 				skip: (page - 1) * limit,
 				take: limit,
-				include: { badges: { include: { badge: true } } },
+				include: { badges: { include: { badge: true } }, bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1 } },
 			}),
 			db.user.count({ where }),
 		]);
 
 		return NextResponse.json({
-			users,
+			users: users.map(({ bans, ...user }) => ({ ...user, ban: toActiveBan(bans[0]) })),
 			totalPages: Math.ceil(totalUsers / limit),
 		});
 	} catch (error) {

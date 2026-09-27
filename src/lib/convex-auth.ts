@@ -25,7 +25,9 @@ function privateKey() {
 /** RFC 7638 thumbprint, so the token's `kid` matches the JWKS entry the key script prints. */
 export function keyId(key: KeyObject) {
 	const jwk = createPublicKey(key).export({ format: 'jwk' });
-	return createHash('sha256').update(JSON.stringify({ e: jwk.e, kty: jwk.kty, n: jwk.n })).digest('base64url');
+	return createHash('sha256')
+		.update(JSON.stringify({ e: jwk.e, kty: jwk.kty, n: jwk.n }))
+		.digest('base64url');
 }
 
 const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');

@@ -91,7 +91,14 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 									<NewsAuthor author={comment.author} />
 									<NewsDate date={comment.createdAt} className='shrink-0 text-xs' />
 									{canDelete && (
-										<Button type='button' variant='ghost' size='icon' className='ml-auto h-8 w-8 text-muted-foreground hover:text-foreground' onClick={() => setPendingDelete(comment)} aria-label='Delete comment'>
+										<Button
+											type='button'
+											variant='ghost'
+											size='icon'
+											className='ml-auto h-8 w-8 text-muted-foreground hover:text-foreground'
+											onClick={() => setPendingDelete(comment)}
+											aria-label='Delete comment'
+										>
 											<Trash2 aria-hidden className='h-4 w-4' />
 										</Button>
 									)}

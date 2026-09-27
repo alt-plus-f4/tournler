@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 
-// The matches list is a client component, so its title lives here. Detail routes under
-// /matches/[matchId] can override it with their own metadata.
+// Section title for /matches. Detail routes under /matches/[matchId] override it with their own metadata.
 export const metadata: Metadata = {
 	title: 'Matches',
 };

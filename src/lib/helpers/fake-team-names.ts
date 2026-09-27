@@ -1,5 +1,47 @@
-const ADJECTIVES = ['Crimson', 'Shadow', 'Phantom', 'Silent', 'Frozen', 'Rogue', 'Savage', 'Iron', 'Toxic', 'Radiant', 'Feral', 'Ghost', 'Rapid', 'Golden', 'Void', 'Blazing', 'Grim', 'Wild', 'Arctic', 'Vicious'];
-const NOUNS = ['Wolves', 'Ravens', 'Titans', 'Vipers', 'Falcons', 'Reapers', 'Panthers', 'Hydras', 'Scorpions', 'Sentinels', 'Marauders', 'Cobras', 'Griffins', 'Outlaws', 'Nomads', 'Warlords', 'Specters', 'Jaguars', 'Vandals', 'Renegades'];
+const ADJECTIVES = [
+	'Crimson',
+	'Shadow',
+	'Phantom',
+	'Silent',
+	'Frozen',
+	'Rogue',
+	'Savage',
+	'Iron',
+	'Toxic',
+	'Radiant',
+	'Feral',
+	'Ghost',
+	'Rapid',
+	'Golden',
+	'Void',
+	'Blazing',
+	'Grim',
+	'Wild',
+	'Arctic',
+	'Vicious',
+];
+const NOUNS = [
+	'Wolves',
+	'Ravens',
+	'Titans',
+	'Vipers',
+	'Falcons',
+	'Reapers',
+	'Panthers',
+	'Hydras',
+	'Scorpions',
+	'Sentinels',
+	'Marauders',
+	'Cobras',
+	'Griffins',
+	'Outlaws',
+	'Nomads',
+	'Warlords',
+	'Specters',
+	'Jaguars',
+	'Vandals',
+	'Renegades',
+];
 
 function shuffled<T>(items: T[]): T[] {
 	const copy = [...items];

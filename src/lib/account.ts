@@ -8,7 +8,7 @@ export class AccountDeletionBlockedError extends Error {}
 /**
  * Deletes a user and everything that is only theirs, used by self-service deletion and the admin
  * route. Prisma emulates the cascades (relationMode = "prisma"), except where the schema says
- * Restrict: a captained team and organised tournaments, handled here first.
+ * Restrict: captained teams (one per game) and organised tournaments, handled here first.
  */
 export async function deleteUserAccount(userId: string) {
 	const user = await db.user.findUnique({
@@ -17,7 +17,8 @@ export async function deleteUserAccount(userId: string) {
 			id: true,
 			image: true,
 			_count: { select: { organizedTournaments: true, newsPosts: true } },
-			cs2TeamCaptain: {
+			// One captaincy per game, so possibly one team per game to hand over.
+			captainOf: {
 				select: {
 					id: true,
 					logo: true,
@@ -40,10 +41,9 @@ export async function deleteUserAccount(userId: string) {
 	}
 
 	const blobsToDelete: Array<string | null> = [user.image];
-	const team = user.cs2TeamCaptain;
 
 	await db.$transaction(async (tx) => {
-		if (team) {
+		for (const team of user.captainOf) {
 			const successor = team.members[0];
 			const hasHistory = team._count.matchesAsTeamA + team._count.matchesAsTeamB > 0 || team.cs2TournamentId !== null;
 			if (successor) {
@@ -84,8 +84,8 @@ export async function exportUserData(userId: string) {
 			accounts: { select: { provider: true, providerAccountId: true, type: true, scope: true } },
 			discord: { select: { discordId: true } },
 			steam: { select: { steamId: true, createdAt: true } },
-			cs2Team: { select: { id: true, name: true, logo: true } },
-			cs2TeamCaptain: { select: { id: true, name: true } },
+			teams: { select: { id: true, name: true, game: true, logo: true } },
+			captainOf: { select: { id: true, name: true, game: true } },
 			cs2TeamInvitations: { select: { teamId: true, team: { select: { name: true } } } },
 			organizedTournaments: { select: { id: true, name: true, startDate: true } },
 			matchParticipations: { select: { matchId: true, side: true, isCaptain: true, joinedAt: true } },

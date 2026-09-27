@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { cn } from '@/lib/utils';
 import type { Tournament } from '@/types/types';
+import { GameTag } from '@/components/games/GameMark';
 
 interface TournamentTableProps {
 	tournaments: Tournament[];
@@ -17,7 +18,7 @@ const FORMAT_LABELS: Record<string, string> = {
 	ROUND_ROBIN: 'Round robin',
 };
 
-const COLUMN_COUNT = 7;
+const COLUMN_COUNT = 8;
 
 const th = 'px-3 py-2 text-left text-xs font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap';
 const td = 'px-3 py-2 align-middle';
@@ -46,6 +47,9 @@ export function TournamentTable({ isLoading, tournaments, onEdit, emptyMessage =
 			<table className='w-full text-sm'>
 				<thead className='border-b border-border'>
 					<tr>
+						<th scope='col' className={th}>
+							Game
+						</th>
 						<th scope='col' className={th}>
 							Name
 						</th>
@@ -83,6 +87,9 @@ export function TournamentTable({ isLoading, tournaments, onEdit, emptyMessage =
 					<tbody className='divide-y divide-border'>
 						{tournaments.map((tour) => (
 							<tr key={tour.id} className='hover:bg-muted/50'>
+								<td className={cn(td, 'w-0')}>
+									<GameTag game={tour.game ?? 'CS2'} />
+								</td>
 								<td className={td}>
 									<button
 										type='button'
@@ -103,7 +110,10 @@ export function TournamentTable({ isLoading, tournaments, onEdit, emptyMessage =
 								</td>
 								<td className={cn(td, 'whitespace-nowrap text-right font-mono tabular-nums')}>{tour.prizePool ? formatMoney(tour.prizePool) : <span className='text-muted-foreground'>—</span>}</td>
 								<td className={cn(td, 'whitespace-nowrap text-right')}>
-									<Link href={`/tournaments/${tour.id}`} className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+									<Link
+										href={`/tournaments/${tour.id}`}
+										className='rounded-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+									>
 										View<span className='sr-only'> {tour.name} public page</span>
 									</Link>
 								</td>

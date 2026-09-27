@@ -32,6 +32,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 			status: true,
 			type: true,
 			format: true,
+			game: true,
 			bestOf: true,
 			mapPool: true,
 			description: true,
@@ -76,7 +77,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		const session = await getAuthSession();
 		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-		const existingTournament = await db.cs2Tournament.findUnique({ where: { id: numericId }, select: { organizerId: true } });
+		const existingTournament = await db.cs2Tournament.findUnique({ where: { id: numericId }, select: { organizerId: true, game: true, _count: { select: { teams: true, matches: true } } } });
 		if (!existingTournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
 
 		const canManage = existingTournament.organizerId === session.user.id || (await userHasPermission(session.user.id, 'tournaments:manage'));
@@ -88,7 +89,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			return NextResponse.json({ error: 'No fields to update provided' }, { status: 400 });
 		}
 
-		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl', 'description', 'isFeatured', 'featuredOrder'];
+		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl', 'description', 'isFeatured', 'featuredOrder', 'game'];
 
 		const dataToUpdate: Record<string, any> = {};
 		for (const key of allowedFields) {
@@ -99,6 +100,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 
 		if (Object.keys(dataToUpdate).length === 0) {
 			return NextResponse.json({ error: 'No valid fields to update provided' }, { status: 400 });
+		}
+
+		if (dataToUpdate.game !== undefined) {
+			if (dataToUpdate.game !== 'CS2' && dataToUpdate.game !== 'LOL') {
+				return NextResponse.json({ error: 'game must be CS2 or LOL' }, { status: 400 });
+			}
+			// Registered teams were checked against the old game's accounts (and a team only plays one
+			// game), so switching games under them would leave an ineligible field.
+			const { teams, matches } = existingTournament._count;
+			if (dataToUpdate.game !== existingTournament.game && (teams > 0 || matches > 0)) {
+				return NextResponse.json({ error: 'The game can’t change once teams have registered. Remove every team first.' }, { status: 409 });
+			}
 		}
 
 		// Coerce/validate certain field types for Prisma

@@ -57,7 +57,14 @@ function MatchCard({ match }: { match: BracketMatch }) {
 				const isWinner = done && !!team && match.winner!.id === team.id;
 				const isLoser = done && !!team && !isWinner;
 				return (
-					<div key={i} className={cn('flex items-center justify-between gap-3 px-3 py-2 text-sm', i === 0 && 'border-b border-border', isWinner ? 'font-black text-white' : isLoser ? 'text-muted-foreground' : team ? 'font-bold text-white' : 'text-muted-foreground')}>
+					<div
+						key={i}
+						className={cn(
+							'flex items-center justify-between gap-3 px-3 py-2 text-sm',
+							i === 0 && 'border-b border-border',
+							isWinner ? 'font-black text-white' : isLoser ? 'text-muted-foreground' : team ? 'font-bold text-white' : 'text-muted-foreground',
+						)}
+					>
 						<span className='min-w-0 truncate uppercase tracking-wide'>{team?.name ?? 'TBD'}</span>
 						<span className='shrink-0 font-mono tabular-nums'>{score ?? '–'}</span>
 					</div>
@@ -123,11 +130,21 @@ function StandingsTable({ tournamentId }: { tournamentId: number }) {
 				<caption className='sr-only'>Round-robin standings</caption>
 				<thead>
 					<tr className='border-b border-border text-xs uppercase tracking-wide text-muted-foreground'>
-						<th scope='col' className='px-3 py-2'>#</th>
-						<th scope='col' className='px-3 py-2'>Team</th>
-						<th scope='col' className='px-3 py-2 text-right'>Played</th>
-						<th scope='col' className='px-3 py-2 text-right'>Wins</th>
-						<th scope='col' className='px-3 py-2 text-right'>Losses</th>
+						<th scope='col' className='px-3 py-2'>
+							#
+						</th>
+						<th scope='col' className='px-3 py-2'>
+							Team
+						</th>
+						<th scope='col' className='px-3 py-2 text-right'>
+							Played
+						</th>
+						<th scope='col' className='px-3 py-2 text-right'>
+							Wins
+						</th>
+						<th scope='col' className='px-3 py-2 text-right'>
+							Losses
+						</th>
 					</tr>
 				</thead>
 				<tbody>

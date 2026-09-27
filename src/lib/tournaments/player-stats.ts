@@ -41,7 +41,9 @@ export interface PlayerStatSummary {
 	kd: number;
 }
 
-function summarize(rows: { userId: string; kills: number; deaths: number; assists: number; user: { name: string | null; image: string | null }; team: { id: number; name: string } | null }[]): PlayerStatSummary[] {
+function summarize(
+	rows: { userId: string; kills: number; deaths: number; assists: number; user: { name: string | null; image: string | null }; team: { id: number; name: string } | null }[],
+): PlayerStatSummary[] {
 	const byUser = new Map<string, PlayerStatSummary>();
 
 	for (const row of rows) {
@@ -100,10 +102,7 @@ export async function computePlayerCareerStats(userId: string): Promise<PlayerCa
 	});
 	if (rows.length === 0) return null;
 
-	const totals = rows.reduce(
-		(acc, r) => ({ kills: acc.kills + r.kills, deaths: acc.deaths + r.deaths, assists: acc.assists + r.assists }),
-		{ kills: 0, deaths: 0, assists: 0 },
-	);
+	const totals = rows.reduce((acc, r) => ({ kills: acc.kills + r.kills, deaths: acc.deaths + r.deaths, assists: acc.assists + r.assists }), { kills: 0, deaths: 0, assists: 0 });
 
 	let wins = 0;
 	let losses = 0;

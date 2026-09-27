@@ -6,6 +6,7 @@ import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 import { parseStatusFilter } from '@/lib/helpers/tournament-status-filter';
+import { parseGameParam } from '@/lib/games';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -70,6 +71,8 @@ export async function GET(request: Request) {
 	const { searchParams } = new URL(request.url);
 	const status = searchParams.get('status');
 	const search = searchParams.get('search')?.trim();
+	// ?game=cs2|lol narrows the one feed to a game; absent (or anything else) = every game.
+	const game = parseGameParam(searchParams.get('game'));
 	const page = parseInt(searchParams.get('page') || '1', 10);
 	const limit = parseInt(searchParams.get('limit') || '10', 10);
 
@@ -85,6 +88,7 @@ export async function GET(request: Request) {
 	const where = {
 		isSystem: false,
 		...(statusFilter ? { status: { in: statusFilter } } : {}),
+		...(game ? { game } : {}),
 		...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
 	};
 
@@ -131,6 +135,12 @@ export async function POST(req: Request) {
 		const statusValue = formData.get('status')?.toString();
 		const typeValue = formData.get('type')?.toString();
 		const formatValue = formData.get('format')?.toString();
+		// Required choice in the create wizard; older clients that don't send it get CS2 (the schema default).
+		const gameValue = formData.get('game')?.toString();
+		const game = gameValue === undefined ? 'CS2' : gameValue === 'CS2' || gameValue === 'LOL' ? gameValue : null;
+		if (!game) {
+			return NextResponse.json({ error: 'game must be CS2 or LOL' }, { status: 400 });
+		}
 
 		let bannerUrl: string | null = null;
 		let logoUrl: string | null = null;
@@ -185,6 +195,7 @@ export async function POST(req: Request) {
 				status: parsedStatus,
 				type: parsedType,
 				format: parsedFormat,
+				game,
 				organizerId: session.user.id,
 			},
 		});

@@ -143,9 +143,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 				<DialogContent className='sm:max-w-[440px]'>
 					<DialogHeader>
 						<DialogTitle>Delete &quot;{badge.name}&quot;?</DialogTitle>
-						<DialogDescription>
-							This revokes it from every player who currently holds it ({badge._count?.awards ?? 0}). This can&apos;t be undone.
-						</DialogDescription>
+						<DialogDescription>This revokes it from every player who currently holds it ({badge._count?.awards ?? 0}). This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-end gap-2'>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
@@ -208,7 +206,8 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 							)}
 						</div>
 						<p id='badge-image-hint' className='text-xs text-muted-foreground'>
-							PNG, JPEG, WebP or SVG, up to 2 MB. Square artwork on a transparent background works best. {imageUrl ? 'The icon below is only used if you remove the image.' : 'Without an image, the icon and color below are used.'}
+							PNG, JPEG, WebP or SVG, up to 2 MB. Square artwork on a transparent background works best.{' '}
+							{imageUrl ? 'The icon below is only used if you remove the image.' : 'Without an image, the icon and color below are used.'}
 						</p>
 						{uploadError && (
 							<p role='alert' className='text-xs text-signal-live'>

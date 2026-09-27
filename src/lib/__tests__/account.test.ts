@@ -26,7 +26,7 @@ const AVATAR = 'https://x.public.blob.vercel-storage.com/avatars/u1-abc.svg';
 const LOGO = 'https://x.public.blob.vercel-storage.com/logos/team-7.png';
 
 function user(overrides: Record<string, unknown> = {}) {
-	return { id: 'u1', image: AVATAR, _count: { organizedTournaments: 0, newsPosts: 0 }, cs2TeamCaptain: null, ...overrides };
+	return { id: 'u1', image: AVATAR, _count: { organizedTournaments: 0, newsPosts: 0 }, captainOf: [], ...overrides };
 }
 
 function team(overrides: Record<string, unknown> = {}) {
@@ -61,7 +61,7 @@ test('blocks organisers and news authors', async () => {
 });
 
 test('hands captaincy to the longest-standing remaining member', async () => {
-	findUnique.mockResolvedValue(user({ cs2TeamCaptain: team({ members: [{ id: 'u2' }] }) }));
+	findUnique.mockResolvedValue(user({ captainOf: [team({ members: [{ id: 'u2' }] })] }));
 	await deleteUserAccount('u1');
 	expect(teamUpdate).toHaveBeenCalledWith({ where: { id: 7 }, data: { capitanId: 'u2' } });
 	expect(teamDelete).not.toHaveBeenCalled();
@@ -69,14 +69,14 @@ test('hands captaincy to the longest-standing remaining member', async () => {
 });
 
 test('deletes a solo team with no history, including its logo', async () => {
-	findUnique.mockResolvedValue(user({ cs2TeamCaptain: team() }));
+	findUnique.mockResolvedValue(user({ captainOf: [team()] }));
 	await deleteUserAccount('u1');
 	expect(teamDelete).toHaveBeenCalledWith({ where: { id: 7 } });
 	expect(deleteBlobsQuietly).toHaveBeenCalledWith([AVATAR, LOGO]);
 });
 
 test('keeps a solo team that has played, without a captain', async () => {
-	findUnique.mockResolvedValue(user({ cs2TeamCaptain: team({ _count: { matchesAsTeamA: 3, matchesAsTeamB: 0 } }) }));
+	findUnique.mockResolvedValue(user({ captainOf: [team({ _count: { matchesAsTeamA: 3, matchesAsTeamB: 0 } })] }));
 	await deleteUserAccount('u1');
 	expect(teamDelete).not.toHaveBeenCalled();
 	expect(teamUpdate).toHaveBeenCalledWith({ where: { id: 7 }, data: { capitanId: null } });

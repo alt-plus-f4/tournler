@@ -27,6 +27,8 @@ export interface User {
 	cs2TeamId?: number;
 	cs2Team?: Cs2Team;
 	cs2TeamCaptain?: Cs2Team;
+	/** Active suspension, if any (admin users list only). */
+	ban?: { id: number; reason: string; expiresAt: string | null; createdAt: string } | null;
 	cs2TeamInvitations: Cs2TeamInvitation[];
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];
@@ -74,6 +76,8 @@ export interface ReducedTournament {
 	teams: [];
 	location: string;
 	teamCapacity: number;
+	/** Optional: older payloads (or narrow selects) omit it (= CS2). */
+	game?: 'CS2' | 'LOL';
 }
 
 export interface Cs2Tournament {
@@ -91,6 +95,8 @@ export interface Cs2Tournament {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	/** CS2 (hosted servers) or LOL (results recorded by staff). Optional: older payloads omit it (= CS2). */
+	game?: 'CS2' | 'LOL';
 	isFeatured: boolean;
 	featuredOrder?: number | null;
 	isSystem: boolean;

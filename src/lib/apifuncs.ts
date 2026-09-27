@@ -13,10 +13,10 @@ export async function completeOnboarding() {
 		}
 
 		const data = await response.json();
-		
-    sessionStorage.setItem('isOnboardingCompleted', 'true');
 
-    return data;
+		sessionStorage.setItem('isOnboardingCompleted', 'true');
+
+		return data;
 	} catch (error) {
 		if (error instanceof Error) {
 			return { error: error.message };

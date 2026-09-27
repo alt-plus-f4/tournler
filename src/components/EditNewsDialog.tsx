@@ -5,9 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor } from '@/components/LazyRichTextEditor';
 import { useToast } from '@/lib/hooks/use-toast';
 import Link from 'next/link';
+import Image from 'next/image';
+import { isOptimizable } from '@/lib/image-hosts';
 import { PenLine } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -152,7 +154,9 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 				</DialogHeader>
 
 				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5'>
-					<p className='text-sm text-muted-foreground'>{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}</p>
+					<p className='text-sm text-muted-foreground'>
+						{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}
+					</p>
 					<Link href={isCreating ? '/news/new' : `/news/${post.id}/edit`} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'shrink-0')}>
 						<PenLine aria-hidden className='mr-2 h-4 w-4' />
 						{isCreating ? 'Open editor' : 'Edit body'}
@@ -173,9 +177,9 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					<div className='space-y-2'>
 						<Label htmlFor='news-image-file'>Image</Label>
 						{(imagePreview ?? imageUrl) && (
-							<div className='h-32 w-full max-w-xs overflow-hidden rounded-md border border-border'>
-								{/* eslint-disable-next-line @next/next/no-img-element */}
-								<img src={imagePreview ?? imageUrl} alt='' className='h-full w-full object-cover' />
+							<div className='relative h-32 w-full max-w-xs overflow-hidden rounded-md border border-border'>
+								{/* A freshly picked file is a local blob: preview, which the optimizer can't fetch. */}
+								<Image src={imagePreview ?? imageUrl} alt='' fill sizes='320px' unoptimized={!isOptimizable(imagePreview ?? imageUrl)} className='object-cover' />
 							</div>
 						)}
 						<Input id='news-image-file' type='file' accept='image/*' onChange={(e) => setImageFile(e.target.files?.[0] || null)} />

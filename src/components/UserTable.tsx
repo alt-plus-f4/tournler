@@ -2,13 +2,15 @@ import { User } from '@/types/types';
 import { BadgeCheck } from 'lucide-react';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
+import { BanStatus, BanUserDialog } from '@/components/admin/BanUserDialog';
 
-const HEADERS = ['Name', 'Email', 'Role', 'Team', 'Onboarded', 'Verified', 'Joined'];
+const HEADERS = ['Name', 'Email', 'Role', 'Team', 'Onboarded', 'Verified', 'Joined', 'Status'];
 
 export default function UserTable({
 	users,
 	onEdit,
 	onToggleVerify,
+	onBanChanged,
 	verifyingUserIds,
 	isLoading,
 	emptyMessage = 'No users found.',
@@ -19,6 +21,7 @@ export default function UserTable({
 	onPageChange?: (page: number) => void;
 	onEdit: (user: User) => void;
 	onToggleVerify: (user: User, verified: boolean) => void;
+	onBanChanged?: () => void;
 	verifyingUserIds: Set<string>;
 	isLoading: boolean;
 	emptyMessage?: string;
@@ -79,6 +82,19 @@ export default function UserTable({
 										</button>
 									</td>
 									<td className={cn(t.td, t.num, 'whitespace-nowrap text-neutral-300')}>{formatAdminDate(user.createdAt)}</td>
+									<td className={cn(t.td, 'whitespace-nowrap')}>
+										<div className='flex items-center gap-3'>
+											<BanStatus active={!!user.ban} expiresAt={user.ban?.expiresAt ?? null} />
+											{user.role !== 'ADMIN' && (
+												<BanUserDialog
+													user={{ id: user.id, name: user.name ?? null }}
+													ban={user.ban ?? null}
+													onChanged={onBanChanged}
+													triggerProps={{ className: 'h-8', 'aria-label': `${user.ban ? 'Lift ban on' : 'Ban'} ${displayName}` }}
+												/>
+											)}
+										</div>
+									</td>
 								</tr>
 							);
 						})}

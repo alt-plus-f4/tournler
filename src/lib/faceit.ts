@@ -1,26 +1,49 @@
+import 'server-only';
+import { cachedQuery } from '@/lib/cache/cached-query';
+
+export { faceitLevelProgress, type FaceitLevelProgress } from './faceit-level';
+
 export interface FaceitInfo {
 	level: number; // 1-10, FACEIT's own CS2 skill level
 	elo: number;
 	faceitUrl: string | null;
 }
 
-// FACEIT's publicly documented Elo floor for each level (index = level; index 0 unused).
-// Level 10 has no ceiling. Used to show "Elo progress toward next level" on the profile.
-const LEVEL_ELO_FLOORS = [0, 100, 501, 751, 901, 1051, 1201, 1351, 1531, 1751, 2001];
+/** A failure worth retrying (rate limit, 5xx, network): thrown so the data cache doesn't store it. */
+class FaceitLookupError extends Error {}
 
-export interface FaceitLevelProgress {
-	floor: number;
-	ceiling: number | null; // null once at level 10 — no next level to progress toward
-	percent: number; // 0-100 progress through the current level's Elo band
-}
+/**
+ * The FACEIT request itself, in Next's data cache (shared across serverless instances) for an hour
+ * per Steam ID. Only definitive answers are cached: a level, or null for "no FACEIT CS2 account"
+ * (404 / no cs2 game). Anything transient throws, so nothing is stored and the next call retries.
+ */
+const lookupFaceitInfo = cachedQuery(
+	async (steamId64: string): Promise<FaceitInfo | null> => {
+		const url = `https://open.faceit.com/data/v4/players?game=cs2&game_player_id=${encodeURIComponent(steamId64)}`;
+		let response: Response;
+		try {
+			// no-store: the surrounding cachedQuery is the cache (and decides what gets stored).
+			response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.FACEIT_API_KEY}` }, cache: 'no-store' });
+		} catch (error) {
+			throw new FaceitLookupError(`FACEIT request failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
 
-export function faceitLevelProgress(level: number, elo: number): FaceitLevelProgress {
-	const floor = LEVEL_ELO_FLOORS[level] ?? 0;
-	if (level >= 10) return { floor, ceiling: null, percent: 100 };
-	const ceiling = LEVEL_ELO_FLOORS[level + 1] - 1;
-	const percent = Math.max(0, Math.min(100, Math.round(((elo - floor) / (ceiling - floor + 1)) * 100)));
-	return { floor, ceiling, percent };
-}
+		if (response.status === 404) return null; // no FACEIT account linked to this Steam ID for CS2
+		if (!response.ok) throw new FaceitLookupError(`FACEIT responded ${response.status}`);
+
+		const data = await response.json();
+		const cs2 = data?.games?.cs2;
+		if (!cs2 || typeof cs2.skill_level !== 'number') return null;
+
+		return {
+			level: cs2.skill_level,
+			elo: typeof cs2.faceit_elo === 'number' ? cs2.faceit_elo : 0,
+			faceitUrl: typeof data.nickname === 'string' ? `https://www.faceit.com/en/players/${data.nickname}` : null,
+		};
+	},
+	['faceit'],
+	{ tags: ['faceit'], revalidate: 3600 },
+);
 
 /**
  * Looks up a player's real FACEIT CS2 level/Elo by their Steam ID, via FACEIT's official Data API
@@ -35,27 +58,9 @@ export function faceitLevelProgress(level: number, elo: number): FaceitLevelProg
  * player has no linked FACEIT account for CS2 (404), or the request fails for any other reason.
  */
 export async function getFaceitInfo(steamId64: string): Promise<FaceitInfo | null> {
-	const apiKey = process.env.FACEIT_API_KEY;
-	if (!apiKey) return null;
-
+	if (!process.env.FACEIT_API_KEY) return null;
 	try {
-		const url = `https://open.faceit.com/data/v4/players?game=cs2&game_player_id=${encodeURIComponent(steamId64)}`;
-		const response = await fetch(url, {
-			headers: { Authorization: `Bearer ${apiKey}` },
-			next: { revalidate: 3600 }, // FACEIT level/Elo don't need to be fetched fresh on every profile view
-		});
-
-		if (!response.ok) return null; // 404 = no FACEIT account linked to this Steam ID for CS2
-
-		const data = await response.json();
-		const cs2 = data?.games?.cs2;
-		if (!cs2 || typeof cs2.skill_level !== 'number') return null;
-
-		return {
-			level: cs2.skill_level,
-			elo: typeof cs2.faceit_elo === 'number' ? cs2.faceit_elo : 0,
-			faceitUrl: typeof data.nickname === 'string' ? `https://www.faceit.com/en/players/${data.nickname}` : null,
-		};
+		return await lookupFaceitInfo(steamId64);
 	} catch (error) {
 		console.error('Failed to fetch FACEIT info:', error);
 		return null;

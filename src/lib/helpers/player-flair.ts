@@ -25,7 +25,7 @@ type FlairSource = {
 	badges: { badge: VerifiedMark }[];
 };
 
-/** One FACEIT lookup per unique Steam ID (getFaceitInfo caches each for an hour). */
+/** One FACEIT lookup per unique Steam ID (getFaceitInfo is in the shared data cache for an hour per Steam ID). */
 export async function faceitLevelsBySteamId(steamIds: (string | null | undefined)[]): Promise<Map<string, number | null>> {
 	const unique = [...new Set(steamIds.filter((id): id is string => !!id))];
 	return new Map(await Promise.all(unique.map(async (id) => [id, (await getFaceitInfo(id))?.level ?? null] as const)));
@@ -53,8 +53,10 @@ export async function flairByUserId(userIds: string[]): Promise<Map<string, Play
 	if (userIds.length === 0) return new Map();
 	const users = await db.user.findMany({ where: { id: { in: [...new Set(userIds)] } }, select: { id: true, ...playerFlairSelect } });
 	const toFlair = await flairMapper(users);
-	return new Map(users.map((u) => {
-		const { verified, faceitLevel } = toFlair(u);
-		return [u.id, { verified, faceitLevel }];
-	}));
+	return new Map(
+		users.map((u) => {
+			const { verified, faceitLevel } = toFlair(u);
+			return [u.id, { verified, faceitLevel }];
+		}),
+	);
 }

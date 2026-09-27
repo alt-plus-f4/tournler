@@ -12,6 +12,8 @@ import { Checkbox } from './ui/checkbox';
 import { BadgeIcon } from '@/lib/badge-icons';
 import { BadgeDefinition } from './EditBadgeDialog';
 import { X } from 'lucide-react';
+import Image from 'next/image';
+import { isOptimizable } from '@/lib/image-hosts';
 
 const userRoles: UserRole[] = ['USER', 'MODERATOR', 'TOURNAMENT_ADMIN', 'CONTENT_ADMIN', 'ADMIN'];
 
@@ -158,7 +160,8 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					<DialogHeader>
 						<DialogTitle>Delete this user?</DialogTitle>
 						<DialogDescription>
-							{editingUser?.name || 'This user'}{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
+							{editingUser?.name || 'This user'}
+							{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter className='flex justify-end gap-2'>
@@ -186,8 +189,8 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 					<div className='flex items-center gap-4'>
 						<div className='h-16 w-16 shrink-0 rounded-full overflow-hidden border border-border bg-neutral-900 flex items-center justify-center'>
 							{editingUser?.image ? (
-								// eslint-disable-next-line @next/next/no-img-element
-								<img src={editingUser.image} alt={editingUser.name ?? ''} className='h-full w-full object-cover' />
+								// SVG avatars (DiceBear uploads) skip the optimizer via `unoptimized`.
+								<Image src={editingUser.image} alt={editingUser.name ?? ''} width={64} height={64} unoptimized={!isOptimizable(editingUser.image)} className='h-full w-full object-cover' />
 							) : (
 								<span className='text-lg font-bold text-muted-foreground'>{(editingUser?.name || '?').charAt(0).toUpperCase()}</span>
 							)}
@@ -254,7 +257,12 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 									<span key={badge.id} className='inline-flex items-center gap-1.5 rounded-full border border-border py-1 pl-2 pr-1 text-xs' style={{ backgroundColor: `${badge.color}15` }}>
 										<BadgeIcon name={badge.icon} className='h-3.5 w-3.5' style={{ color: badge.color }} />
 										{badge.name}
-										<button type='button' onClick={() => handleRevokeBadge(badge.id)} className='flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' aria-label={`Revoke ${badge.name} badge`}>
+										<button
+											type='button'
+											onClick={() => handleRevokeBadge(badge.id)}
+											className='flex h-6 w-6 items-center justify-center rounded-full hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+											aria-label={`Revoke ${badge.name} badge`}
+										>
 											<X className='h-3 w-3' aria-hidden />
 										</button>
 									</span>

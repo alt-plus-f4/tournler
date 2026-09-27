@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { FaArrowLeft } from 'react-icons/fa6';
+import { ArrowLeft } from 'lucide-react';
 
 export default function TeamNotFound() {
 	return (
@@ -10,7 +10,7 @@ export default function TeamNotFound() {
 				<p className='mt-2 text-sm text-muted-foreground'>This team may have been deleted, or the link is wrong.</p>
 				<Button asChild className='mt-6 gap-2'>
 					<Link href='/teams'>
-						<FaArrowLeft aria-hidden className='h-4 w-4' />
+						<ArrowLeft aria-hidden className='h-4 w-4' />
 						Back to Teams
 					</Link>
 				</Button>

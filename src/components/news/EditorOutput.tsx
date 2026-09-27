@@ -30,9 +30,7 @@ const style = {
 };
 
 const EditorOutput: FC<EditorOutputProps> = ({ content }) => {
-	return (
-		<Output style={style} renderers={renderers as any} data={content as any} />
-	);
+	return <Output style={style} renderers={renderers as any} data={content as any} />;
 };
 
 export default EditorOutput;

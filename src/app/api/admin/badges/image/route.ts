@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 		if (!sniff(bytes, type)) {
 			return NextResponse.json(
 				{ error: type === 'image/svg+xml' ? 'This SVG contains scripts, event handlers or external references. Export a plain SVG and try again.' : 'That file isn’t a valid image of its type' },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 

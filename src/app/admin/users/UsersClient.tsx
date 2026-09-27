@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import EditUserDialog from '@/components/EditUserDialog';
+import dynamic from 'next/dynamic';
+
+// Only fetched once an admin first opens a user.
+const EditUserDialog = dynamic(() => import('@/components/EditUserDialog'));
 import { Pagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -121,6 +124,7 @@ export default function UsersClient() {
 				onPageChange={handlePageChange}
 				onEdit={handleEdit}
 				onToggleVerify={handleToggleVerify}
+				onBanChanged={() => fetchUsers(currentPage, search)}
 				verifyingUserIds={verifyingUserIds}
 				emptyMessage={search ? `No users match “${search}”.` : 'No users yet.'}
 			/>

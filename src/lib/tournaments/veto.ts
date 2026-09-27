@@ -1,7 +1,8 @@
-import { Prisma, MapActionType, MatchSlot } from '@prisma/client';
+import type { DbTx } from '@/lib/db';
+import { MapActionType, MatchSlot } from '@prisma/client';
 import { ACTIVE_DUTY_MAPS } from './maps';
 
-type Tx = Prisma.TransactionClient;
+type Tx = DbTx;
 
 export type VetoAction = 'BAN' | 'PICK';
 export type VetoPhase = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETE';
@@ -80,9 +81,7 @@ export function getVetoState(match: VetoMatchLike, tournamentMapPool: string[], 
 	const currentTurnTeamId = !isActing || match.isPickup ? null : nextIndex % 2 === 0 ? match.teamAId : match.teamBId;
 	const currentTurnSide: MatchSlot | null = !isActing || !match.isPickup ? null : nextIndex % 2 === 0 ? 'TEAM_A' : 'TEAM_B';
 
-	const confirmedMaps = actions
-		.filter((a) => a.action === 'PICK' || a.action === 'DECIDER')
-		.map((a) => a.mapName);
+	const confirmedMaps = actions.filter((a) => a.action === 'PICK' || a.action === 'DECIDER').map((a) => a.mapName);
 
 	return { phase, bestOf, sequenceLength: sequence.length, mapPool, availableMaps, actions, currentTurnTeamId, currentTurnSide, nextActionType, confirmedMaps };
 }

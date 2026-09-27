@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { normalizeBestOf, getConfirmedMaps } from '@/lib/tournaments/veto';
 import { gameServerCallbackUrl } from './callback-url';
+import { assertHostsGameServers } from '@/lib/tournaments/game-rules';
 
 interface RosterUser {
 	id: string;
@@ -48,6 +49,8 @@ export async function buildMatchConfig(matchId: number, options: BuildMatchConfi
 			mapActions: true,
 		},
 	});
+
+	assertHostsGameServers(match.tournament.game, 'build a MatchZy config for');
 
 	if (!match.gameServer) {
 		throw new Error(`Match ${matchId} has no game server provisioned yet`);

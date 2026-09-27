@@ -8,7 +8,7 @@ import { jsonError, validationError } from '@/components/forum/forum-api';
 
 type Ctx = { params: Promise<{ threadId: string }> };
 
-/** GET /api/forum/threads/[threadId] — public thread with replies, oldest first. */
+/** GET /api/forum/threads/[threadId] — public thread with its flat reply list (oldest first, with parentId for the chain; deleted replies redacted). */
 export async function GET(_request: Request, { params }: Ctx) {
 	try {
 		const id = parseId((await params).threadId);

@@ -42,7 +42,9 @@ function TeamSide({ team, score, isWinner, isLoser, side }: { team: MatchTeam | 
 	return (
 		<div className={cn('flex min-w-0 flex-1 items-center gap-3', a ? 'sm:justify-end' : 'sm:justify-start')}>
 			{team && <TeamLogo src={team.logo} name={team.name} decorative className='sm:order-2' />}
-			<span className={cn('min-w-0 flex-1 truncate text-sm uppercase tracking-wide sm:flex-none', a ? 'sm:order-1 sm:text-right' : 'sm:order-3', team ? tone : 'text-muted-foreground font-bold')}>{team?.name ?? 'TBD'}</span>
+			<span className={cn('min-w-0 flex-1 truncate text-sm uppercase tracking-wide sm:flex-none', a ? 'sm:order-1 sm:text-right' : 'sm:order-3', team ? tone : 'text-muted-foreground font-bold')}>
+				{team?.name ?? 'TBD'}
+			</span>
 			<span className={cn('w-8 shrink-0 text-center font-mono text-2xl tabular-nums', a ? 'sm:order-3' : 'sm:order-1', tone)}>{score ?? '–'}</span>
 		</div>
 	);

@@ -32,34 +32,25 @@ export async function GET() {
 export async function PATCH(request: Request) {
 	try {
 		const session = await getAuthSession();
-		if (!session)
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+		if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
 		const user = await db.user.findUnique({
 			where: { email: session?.user?.email || '' },
 			select: { id: true },
 		});
 
-		if (!user)
-			return NextResponse.json({ error: 'User not found' }, { status: 404 });
+		if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
 		const { name } = await request.json();
 
-		if (!name || typeof name !== 'string')
-			return NextResponse.json(
-				{ error: 'Invalid name' },
-				{ status: 400 }
-			);
+		if (!name || typeof name !== 'string') return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
 
 		await db.user.update({
 			where: { email: session.user.email || '' },
 			data: { name },
 		});
 
-		return NextResponse.json(
-			{ message: 'name updated successfully' },
-			{ status: 200 }
-		);
+		return NextResponse.json({ message: 'name updated successfully' }, { status: 200 });
 	} catch (error) {
 		console.error('Error updating nickname:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

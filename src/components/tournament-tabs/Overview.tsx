@@ -4,17 +4,24 @@ import { Button } from '../ui/button';
 import { formatDate } from '@/lib/helpers/format-date';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { FORMAT_LABEL, STATUS_LABEL, TYPE_LABEL, type Champion, type TournamentDetail } from './types';
+import { GAME_META } from '@/lib/games';
+import { GameGlyph } from '@/components/games/GameMark';
 
+/**
+ * Plain divs, not dl/dt/dd: this is a stat card grid (icon + label + value), not a glossary-style
+ * definition list, and axe's dlitem/definition-list rules only recognize dt/dd whose *direct*
+ * parent is a dl — the per-card wrapper this needs for the grid/hover-highlight layout would fail
+ * that check even though the markup is otherwise valid HTML5.1 (a well-known axe-core gap, not a
+ * real assistive-tech problem, but there's no upside to keeping semantics these rules can't verify).
+ */
 function Detail({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) {
 	return (
-		<div className='flex w-full items-center p-2 sm:w-1/2 lg:w-1/3'>
-			<span className='mr-4 shrink-0 text-white' aria-hidden>
+		<div className='grid w-full grid-cols-[auto_1fr] items-center gap-x-4 rounded-md p-2 transition-colors hover:bg-white/5 sm:w-1/2 lg:w-1/3'>
+			<span className='row-span-2 shrink-0 text-white' aria-hidden>
 				{icon}
 			</span>
-			<div className='min-w-0'>
-				<dt className='text-xs uppercase text-muted-foreground'>{label}</dt>
-				<dd className='text-white'>{children}</dd>
-			</div>
+			<span className='min-w-0 text-xs uppercase text-muted-foreground'>{label}</span>
+			<span className='col-start-2 min-w-0 text-white'>{children}</span>
 		</div>
 	);
 }
@@ -61,15 +68,15 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 						<h2 id='details-heading' className='mb-2 ml-1 mt-6 text-2xl font-bold'>
 							Details
 						</h2>
-						<dl className='flex flex-wrap gap-y-4'>
+						<div className='flex flex-wrap gap-y-4'>
 							<Detail icon={<Calendar className={ICON} />} label='Date'>
 								<time dateTime={tournament.startDate}>{formatDate(tournament.startDate)}</time>
 							</Detail>
 							<Detail icon={<MapPin className={ICON} />} label='Location'>
 								{tournament.location}
 							</Detail>
-							<Detail icon={<Gamepad2 className={ICON} />} label='Game'>
-								CS2
+							<Detail icon={<GameGlyph game={tournament.game} className={ICON} />} label='Game'>
+								{GAME_META[tournament.game].label}
 							</Detail>
 							<Detail icon={<Wifi className={ICON} />} label='Type'>
 								{TYPE_LABEL[tournament.type]}
@@ -88,7 +95,7 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 									{tournament.mapPool.join(', ')}
 								</Detail>
 							)}
-						</dl>
+						</div>
 					</section>
 
 					<button

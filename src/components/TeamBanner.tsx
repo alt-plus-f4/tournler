@@ -12,9 +12,11 @@ interface TeamBannerProps {
 }
 
 /**
- * Team banner on the black stage. The team's chosen colour is only a faint tint under a black
- * scrim, so a light team colour (e.g. white) never turns the banner into the brightest thing on
- * the page.
+ * Team banner on the black stage. The team's chosen colour is a tint under a black scrim — darkest
+ * where the logo/name sit (top/middle) for legibility, fading out toward the bottom, so a light
+ * team colour (e.g. white) never turns the banner into the brightest thing on the page but still
+ * actually reads as that colour (a flat low-opacity tint under a near-solid scrim washed out to
+ * nothing).
  */
 export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId, interactive = true }: TeamBannerProps) {
 	const members = team.members || [];
@@ -22,8 +24,8 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId,
 
 	return (
 		<div className='absolute inset-0 bg-black'>
-			{team.background && <div aria-hidden className='absolute inset-0 opacity-20' style={{ backgroundColor: team.background }} />}
-			<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-black/20' />
+			{team.background && <div aria-hidden className='absolute inset-0 opacity-40' style={{ backgroundColor: team.background }} />}
+			<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent' />
 			<div className='absolute inset-0 flex flex-col items-center justify-center px-4'>
 				{team.logo ? (
 					<TeamLogo src={team.logo} name={teamName} size={interactive ? 'xl' : 'lg'} />
@@ -41,15 +43,7 @@ export function TeamBanner({ team, enableTeamCapitanControls, capitanId, userId,
 				}}
 			>
 				{members.map((member) => (
-					<TeamMemberAvatar
-						key={member.id}
-						team={team}
-						member={member}
-						userId={userId}
-						capitanId={capitanId}
-						enableTeamCapitanControls={enableTeamCapitanControls}
-						interactive={interactive}
-					/>
+					<TeamMemberAvatar key={member.id} team={team} member={member} userId={userId} capitanId={capitanId} enableTeamCapitanControls={enableTeamCapitanControls} interactive={interactive} />
 				))}
 			</div>
 		</div>

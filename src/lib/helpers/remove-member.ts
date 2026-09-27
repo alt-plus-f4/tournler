@@ -1,11 +1,11 @@
-export async function removeMember(teamId : number, userId: string) {
-    try {
+export async function removeMember(teamId: number, userId: string) {
+	try {
 		const response = await fetch(`/api/teams/${teamId}/`, {
 			method: 'DELETE',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-            body: JSON.stringify({ userId: userId })
+			body: JSON.stringify({ userId: userId }),
 		});
 
 		if (!response.ok) {
@@ -15,6 +15,6 @@ export async function removeMember(teamId : number, userId: string) {
 
 		return { success: true };
 	} catch (error) {
-		return { error: 'An unexpected error occurred' + error};
+		return { error: 'An unexpected error occurred' + error };
 	}
 }

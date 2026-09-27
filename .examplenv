@@ -1,4 +1,14 @@
-DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
+# In production this app runs as Vercel serverless functions (see CLAUDE.md), so a burst of
+# concurrent requests can each open their own direct Postgres connection — Postgres has a hard
+# max_connections cap, and at real load (hundreds to low-thousands of concurrent users) direct
+# connections exhaust it and every route hitting `db` starts failing. DATABASE_URL should point at
+# a pooled endpoint instead (PgBouncer in transaction mode, or a managed pooler — Neon's `-pooler`
+# host suffix, Supabase's port 6543, etc.) with `pgbouncer=true&connection_limit=1` appended, which
+# multiplexes many app-side connections onto a handful of real Postgres ones:
+DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public&pgbouncer=true&connection_limit=1"
+# `prisma migrate`/`db push` can't run through a transaction-mode pooler, so they use this instead —
+# the same database, direct (non-pooled) connection, no pgbouncer params:
+DIRECT_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
 NEXTAUTH_URL="https://example.com"
 STEAM_REDIRECT_URI='http://localhost:3000/api/auth/steam/callback'
 NEXTAUTH_SECRET="example-secret"
@@ -22,6 +32,13 @@ STEAM_API_KEY=your_steam_api_key
 # https://developers.faceit.com (create an app, use its "Server-side" API key — not "Client-side").
 # Profiles just show no FACEIT level if this is unset.
 FACEIT_API_KEY=your_faceit_server_side_api_key
+
+# Optional — links a player's Riot ID (League of Legends) on their profile (src/lib/riot/client.ts),
+# resolved via Riot's account-v1/summoner-v4 APIs and proven with a profile-icon ownership check.
+# Get a key from https://developer.riotgames.com: a dev key expires every 24h (fine for local dev,
+# re-issue as needed); a production key needs a Riot-reviewed app. Without this set, Riot ID linking
+# returns a clear "not set up on this server yet" response instead of faking success.
+RIOT_API_KEY=your_riot_api_key
 
 # Tournament automation / game-server integration (see TOURNAMENT_GUIDE.md)
 GAME_SERVER_IP=your-game-server-ip.com

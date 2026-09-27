@@ -12,10 +12,7 @@ export async function POST(request: Request) {
 		const { teamId } = body;
 
 		if (!teamId) {
-			return NextResponse.json(
-				{ message: 'Missing teamId' },
-				{ status: 400 }
-			);
+			return NextResponse.json({ message: 'Missing teamId' }, { status: 400 });
 		}
 
 		const invitation = await db.cs2TeamInvitation.findFirst({
@@ -23,10 +20,7 @@ export async function POST(request: Request) {
 		});
 
 		if (!invitation) {
-			return NextResponse.json(
-				{ message: 'Invitation not found' },
-				{ status: 404 }
-			);
+			return NextResponse.json({ message: 'Invitation not found' }, { status: 404 });
 		}
 
 		await db.cs2TeamInvitation.delete({
@@ -38,9 +32,6 @@ export async function POST(request: Request) {
 		});
 	} catch (error) {
 		console.error('Error denying team invite:', error);
-		return NextResponse.json(
-			{ message: 'Failed to deny team invite', error: error },
-			{ status: 500 }
-		);
+		return NextResponse.json({ message: 'Failed to deny team invite', error: error }, { status: 500 });
 	}
 }

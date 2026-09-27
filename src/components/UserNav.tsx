@@ -58,7 +58,9 @@ export function UserNav() {
 									className={imageLoaded ? 'opacity-100 transition-opacity' : 'opacity-0'}
 								/>
 							) : null}
-							<AvatarFallback aria-hidden className='bg-muted text-xs font-semibold text-foreground'>{fallbackLabel}</AvatarFallback>
+							<AvatarFallback aria-hidden className='bg-muted text-xs font-semibold text-foreground'>
+								{fallbackLabel}
+							</AvatarFallback>
 						</Avatar>
 						{user.image && !imageLoaded && !imageErrored && <Skeleton className='absolute inset-0 rounded-full bg-neutral-800 ring-1 ring-border' />}
 					</div>
