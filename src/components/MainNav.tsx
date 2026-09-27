@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { HUB_LINKS, NAV_LINKS } from '@/lib/nav-links';
 import { HubNavLink } from '@/components/shell/HubNavLink';
+import { NavLink } from '@/components/shell/NavLink';
 
 export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElement>) {
 	const linkClass = cn(buttonVariants({ variant: 'ghost' }), 'gap-2 text-sm px-5 2xl:px-8 border-x');
@@ -13,9 +13,9 @@ export function MainNav({ className, ...props }: React.HTMLAttributes<HTMLElemen
 					<HubNavLink key={game} game={game} href={href} className={linkClass} />
 				))}
 				{NAV_LINKS.map(({ href, label }) => (
-					<Link key={href} href={href} className={cn(buttonVariants({ variant: 'ghost' }), 'text-sm px-5 2xl:px-8 border-x')}>
+					<NavLink key={href} href={href} className={linkClass}>
 						{label}
-					</Link>
+					</NavLink>
 				))}
 			</div>
 		</nav>

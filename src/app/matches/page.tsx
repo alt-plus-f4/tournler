@@ -75,6 +75,16 @@ const getTournamentOptions = cachedQuery(
 	{ tags: ['tournaments'], revalidate: REVALIDATE.standard },
 );
 
+/**
+ * Own Suspense boundary so the permission check (a real DB round trip — see userHasPermission)
+ * never blocks the page shell or the match list from streaming; it only gates one button.
+ */
+async function CreateMatchButtonGate() {
+	const session = await getAuthSession();
+	const canCreate = session ? await userHasPermission(session.user.id, 'matches:manage') : false;
+	return canCreate ? <CreateMatchButton /> : null;
+}
+
 async function MatchesSection({ status, tournamentId, page, game }: { status: StatusFilter; tournamentId: string; page: number; game: Game }) {
 	const [tournaments, { matches, totalPages }] = await Promise.all([
 		getTournamentOptions(game),
@@ -118,9 +128,6 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
 	const rawGame = first(query.game) ?? cookieStore.get(GAME_FILTER_COOKIE)?.value;
 	const game = parseGameParam(rawGame) ?? 'CS2';
 
-	const session = await getAuthSession();
-	const canCreateMatch = session ? await userHasPermission(session.user.id, 'matches:manage') : false;
-
 	return (
 		<>
 			<HubPageGlow game={game} />
@@ -128,7 +135,9 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
 			<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
 				<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
 					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
-					{canCreateMatch && <CreateMatchButton />}
+					<Suspense fallback={null}>
+						<CreateMatchButtonGate />
+					</Suspense>
 				</div>
 
 				<Suspense fallback={<MatchesSkeleton />} key={game}>

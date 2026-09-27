@@ -4,7 +4,21 @@ import { MODEL_TAGS, invalidateTags } from '@/lib/cache/tags';
 
 const WRITE_OPERATIONS = new Set(['create', 'createMany', 'createManyAndReturn', 'update', 'updateMany', 'updateManyAndReturn', 'upsert', 'delete', 'deleteMany']);
 
-const createBaseClient = () => new PrismaClient();
+/**
+ * Caps Prisma's own connection pool per client instance. Without this, each serverless function
+ * instance defaults to a large pool sized off CPU count, and at scale (many warm instances under
+ * load) that adds up fast against Postgres's max_connections — hence the conservative default here
+ * even when DATABASE_URL already points at a pooler (see .examplenv). Only fills in what's missing,
+ * so an explicit connection_limit/pool_timeout in DATABASE_URL always wins.
+ */
+const withPoolDefaults = (url: string) => {
+	const parsed = new URL(url);
+	if (!parsed.searchParams.has('connection_limit')) parsed.searchParams.set('connection_limit', '5');
+	if (!parsed.searchParams.has('pool_timeout')) parsed.searchParams.set('pool_timeout', '10');
+	return parsed.toString();
+};
+
+const createBaseClient = () => new PrismaClient({ datasourceUrl: withPoolDefaults(process.env.DATABASE_URL ?? '') });
 
 /**
  * Every write through `db` invalidates the cache domains of the model it touched (MODEL_TAGS), so

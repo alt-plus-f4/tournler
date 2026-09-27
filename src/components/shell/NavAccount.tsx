@@ -35,7 +35,7 @@ export function NavAccount() {
 				<Link
 					href='/admin'
 					aria-label='Admin'
-					className='flex min-h-8 min-w-8 items-center justify-center gap-2 rounded-md bg-red-600 px-2 py-1 text-white transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+					className='flex min-h-8 min-w-8 items-center justify-center gap-2 rounded-md bg-red-600 px-2 py-1 text-white transition-all duration-100 hover:bg-red-700 active:scale-[0.97] active:bg-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 				>
 					<Wrench aria-hidden className='h-4 w-4' />
 					<span aria-hidden className='hidden text-xs font-bold uppercase tracking-widest md:block'>

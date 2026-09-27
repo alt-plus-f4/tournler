@@ -1,4 +1,14 @@
-DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
+# In production this app runs as Vercel serverless functions (see CLAUDE.md), so a burst of
+# concurrent requests can each open their own direct Postgres connection — Postgres has a hard
+# max_connections cap, and at real load (hundreds to low-thousands of concurrent users) direct
+# connections exhaust it and every route hitting `db` starts failing. DATABASE_URL should point at
+# a pooled endpoint instead (PgBouncer in transaction mode, or a managed pooler — Neon's `-pooler`
+# host suffix, Supabase's port 6543, etc.) with `pgbouncer=true&connection_limit=1` appended, which
+# multiplexes many app-side connections onto a handful of real Postgres ones:
+DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public&pgbouncer=true&connection_limit=1"
+# `prisma migrate`/`db push` can't run through a transaction-mode pooler, so they use this instead —
+# the same database, direct (non-pooled) connection, no pgbouncer params:
+DIRECT_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
 NEXTAUTH_URL="https://example.com"
 STEAM_REDIRECT_URI='http://localhost:3000/api/auth/steam/callback'
 NEXTAUTH_SECRET="example-secret"

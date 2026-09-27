@@ -43,7 +43,7 @@ export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
 								href={`${t.path}?game=${q}`}
 								aria-current={isActive ? 'page' : undefined}
 								className={cn(
-									'flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium transition-colors',
+									'flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium transition-all duration-100 active:scale-[0.97] active:opacity-70',
 									isActive ? 'border-white text-white' : 'text-neutral-400 hover:text-white',
 								)}
 							>
@@ -72,19 +72,13 @@ export function HubSubnavSkeleton({ active }: { active: HubTab }) {
 					<span className='hidden text-neutral-500 sm:inline'>Tournler</span>
 					<span className='hidden text-neutral-600 sm:inline'>/</span>
 					<span className='flex items-center gap-1.5 font-bold text-neutral-400'>
-						<span className='h-4 w-4 animate-pulse rounded-full bg-neutral-800' />
-						<span className='h-3.5 w-24 animate-pulse rounded bg-neutral-800' />
+						<span className='h-4 w-5 animate-pulse rounded-full bg-neutral-800' />
+						<span className='h-3.5 w-32 animate-pulse rounded bg-neutral-800' />
 					</span>
 				</span>
 				<nav className='flex h-full items-center gap-1 overflow-x-auto text-sm'>
 					{TABS.map((t) => (
-						<span
-							key={t.key}
-							className={cn(
-								'flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium',
-								t.key === active ? 'text-white' : 'text-neutral-400',
-							)}
-						>
+						<span key={t.key} className={cn('flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium', t.key === active ? 'text-white' : 'text-neutral-400')}>
 							{t.label}
 						</span>
 					))}
