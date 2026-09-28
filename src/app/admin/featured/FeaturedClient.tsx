@@ -264,7 +264,9 @@ export default function FeaturedClient() {
 			<section className='space-y-4 rounded-md border border-border p-5'>
 				<div>
 					<h2 className='text-lg font-semibold'>Homepage watch</h2>
-					<p className='text-sm text-muted-foreground'>The player that leads the homepage when no match is live — a YouTube rewatch or a live Twitch channel. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).</p>
+					<p className='text-sm text-muted-foreground'>
+						The player that leads the homepage when no match is live — a YouTube rewatch or a live Twitch channel. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).
+					</p>
 				</div>
 				<form
 					className='space-y-4'
@@ -325,7 +327,9 @@ export default function FeaturedClient() {
 					<div className='flex flex-wrap gap-2'>
 						<Button
 							type='submit'
-							disabled={isSavingRewatch || (rewatchDraft.rewatchVideoId.trim() !== '' && !parseRewatchSource(rewatchDraft.rewatchProvider === 'TWITCH' ? 'twitch' : 'youtube', rewatchDraft.rewatchVideoId))}
+							disabled={
+								isSavingRewatch || (rewatchDraft.rewatchVideoId.trim() !== '' && !parseRewatchSource(rewatchDraft.rewatchProvider === 'TWITCH' ? 'twitch' : 'youtube', rewatchDraft.rewatchVideoId))
+							}
 						>
 							{isSavingRewatch ? 'Saving…' : 'Save watch'}
 						</Button>

@@ -68,7 +68,7 @@ see `src/lib/cs2/`. It does not edit any container's static `.cfg` files per mat
 
 ## MatchZy / CounterStrikeSharp: use the KHook-ported forks, not the official releases
 
-The *official* `roflmuffin/CounterStrikeSharp` and `shobhit-pathak/MatchZy` releases cannot run
+The _official_ `roflmuffin/CounterStrikeSharp` and `shobhit-pathak/MatchZy` releases cannot run
 against a current CS2 engine build at all — this isn't a config problem, it's a real, open
 upstream gap. `pre.sh` installs community forks that fix it instead
 (`mrc4tt/CounterStrikeSharp`, `mrc4tt/MatchZy`); the sections below are the compatibility history
@@ -86,9 +86,9 @@ own unmerged `#1314` fix ("Hook_StartupServer firing twice") by building it from
 patch applied — it loaded fine but crashed identically on the next round reset regardless.
 
 **What actually works:** `mrc4tt/CounterStrikeSharp` is a maintained fork already ported to KHook
-(its `v1.0.399` release notes: *"METAMOD v1461 or later REQUIRED!"*, *"KHook"* support) — paired
+(its `v1.0.399` release notes: _"METAMOD v1461 or later REQUIRED!"_, _"KHook"_ support) — paired
 with Metamod `git1468` (interface 18, `pre.sh`'s current pin), it loads cleanly
-(`meta list` shows no `<ERROR>` tag). The *official* MatchZy release still crashed the server on
+(`meta list` shows no `<ERROR>` tag). The _official_ MatchZy release still crashed the server on
 a round reset when loaded on top of this CSS fork (caught as a diagnostic crash dump by the fork's
 own handler rather than a hard kill, but still fatal) — swapping in the matching
 `mrc4tt/MatchZy` fork resolved that too. Confirmed stable for 2+ minutes of real play (bot warmup,
@@ -96,7 +96,7 @@ round resets) with `mrc4tt/CounterStrikeSharp` + `mrc4tt/MatchZy` + `git1468` �
 combination crashed within about 15 seconds of the map loading.
 
 Every other CS2 match-management plugin checked (MatchUp, ServerStats, cs2-admin-plus,
-dreamleague, PugSharp, MatchZy-Enhanced, etc.) is also built on the *official* CounterStrikeSharp,
+dreamleague, PugSharp, MatchZy-Enhanced, etc.) is also built on the _official_ CounterStrikeSharp,
 so none of them sidestep this on their own — swap in `mrc4tt/CounterStrikeSharp` underneath
 whichever plugin you actually want to run.
 
@@ -136,7 +136,7 @@ when it's present):
 
 1. Clone with submodules: `git clone --recursive https://github.com/roflmuffin/CounterStrikeSharp.git`
    — do this on a case-sensitive filesystem with long-path support enabled (`git config --global
-   core.longpaths true` on Windows still isn't enough on its own; building inside a Linux
+core.longpaths true` on Windows still isn't enough on its own; building inside a Linux
    container's own filesystem, as below, sidesteps the whole problem).
 2. Apply `roflmuffin/CounterStrikeSharp#1314`'s diff (`src/core/timer_system.{cpp,h}`,
    `src/mm_plugin.cpp` — small, ~40 lines; it doesn't apply cleanly with a plain `git apply`
@@ -149,7 +149,7 @@ when it's present):
    cmake --build . --config Release -- -j$(nproc)
    ```
    If `FetchContent` for `distorm` (a `libraries/funchook` dependency) fails with `could not read
-   Username for 'https://github.com'` / `expected flush after ref listing`, that's GitHub
+Username for 'https://github.com'` / `expected flush after ref listing`, that's GitHub
    rate-limiting anonymous git-protocol clones, not a real error — fetch
    `https://codeload.github.com/gdabah/distorm/tar.gz/refs/tags/3.5.2b` as a plain tarball instead
    and pass `-DFETCHCONTENT_SOURCE_DIR_DISTORM=<path to it>` to cmake.
@@ -159,7 +159,7 @@ when it's present):
    since the solution also references sibling `examples/`/`tooling/` projects you likely didn't
    fetch). If it fails on `git describe` (used for version metadata) because the copy isn't a git
    checkout, `git init && git add -A && git commit -m x` in that copy first — the actual commit
-   contents don't matter, `git describe` just needs *a* commit to describe.
+   contents don't matter, `git describe` just needs _a_ commit to describe.
 5. Assemble `addons/counterstrikesharp/{bin,api,dotnet,...}` and `addons/metamod/counterstrikesharp.vdf`
    from the two build outputs, plus the ASP.NET Core runtime the official CI bundles into its
    "with-runtime" package (currently `aspnetcore-runtime-10.0.3-linux-x64.tar.gz` from

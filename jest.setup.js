@@ -9,16 +9,7 @@ process.env.NEXTAUTH_URL = 'http://localhost:3000'; // Or any other appropriate 
 jest.mock('next/image', () => ({
 	__esModule: true,
 	default: (props) => {
-		const {
-			fill,
-			priority,
-			quality,
-			layout,
-			loader,
-			blurDataURL,
-			unoptimized,
-			...rest
-		} = props;
+		const { fill, priority, quality, layout, loader, blurDataURL, unoptimized, ...rest } = props;
 		// eslint-disable-next-line @next/next/no-img-element
 		return <img {...rest} />; // Pass only the remaining standard img attributes
 	},
@@ -49,12 +40,7 @@ jest.mock('next/link', () => {
 // Suppress console errors during tests
 const originalConsoleError = console.error;
 console.error = (...args) => {
-	if (
-		typeof args[0] === 'string' &&
-		(args[0].includes('Warning: ReactDOM.render') ||
-			args[0].includes('Warning: React.createElement') ||
-			args[0].includes('Error: Uncaught [Error: expected'))
-	) {
+	if (typeof args[0] === 'string' && (args[0].includes('Warning: ReactDOM.render') || args[0].includes('Warning: React.createElement') || args[0].includes('Error: Uncaught [Error: expected'))) {
 		return;
 	}
 	originalConsoleError(...args);

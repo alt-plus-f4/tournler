@@ -10,6 +10,7 @@ on:
 # DB, localhost URL) — none of it touches anything real, so none of it needs to be a GitHub secret.
 env:
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tournler_ci?schema=public
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tournler_ci?schema=public
   NEXTAUTH_URL: http://localhost:3000
   NEXTAUTH_SECRET: ci-only-placeholder-secret-not-used-anywhere-real
   DISCORD_CLIENT_ID: ci-placeholder

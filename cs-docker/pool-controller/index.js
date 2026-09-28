@@ -74,7 +74,7 @@ function restartContainer(containerName, startMapEnvVar, startMap) {
 			(error, stdout, stderr) => {
 				if (error) return reject(new Error(stderr || error.message));
 				resolve(stdout);
-			}
+			},
 		);
 	});
 }

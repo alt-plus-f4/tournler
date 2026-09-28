@@ -49,7 +49,21 @@ function StatusMark({ status }: { status: RosterAccountStatus }) {
  * the same way by `POST /api/tournaments/[slug]/teams`). Opens a dialog naming each player's
  * status instead of silently disabling Register, since "why can't we register" has a real answer.
  */
-export function RegistrationGate({ game, teamName, viewerId, viewerNeedsLink, missingCount, roster }: { game: Game; teamName: string; viewerId: string; viewerNeedsLink: boolean; missingCount: number; roster: GateRosterEntry[] }) {
+export function RegistrationGate({
+	game,
+	teamName,
+	viewerId,
+	viewerNeedsLink,
+	missingCount,
+	roster,
+}: {
+	game: Game;
+	teamName: string;
+	viewerId: string;
+	viewerNeedsLink: boolean;
+	missingCount: number;
+	roster: GateRosterEntry[];
+}) {
 	const [open, setOpen] = useState(false);
 	const meta = GAME_META[game];
 

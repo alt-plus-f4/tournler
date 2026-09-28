@@ -122,7 +122,8 @@ export function TrophySlider({ trophies, events = [], className }: { trophies: T
 	);
 }
 
-const TILE = 'group flex flex-col items-center gap-2 rounded-md px-1 py-2 text-center outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
+const TILE =
+	'group flex flex-col items-center gap-2 rounded-md px-1 py-2 text-center outline-none transition-colors hover:bg-white/[0.04] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring';
 const TOOLTIP = 'max-w-[240px] border-border bg-neutral-950 text-white';
 
 function BadgeTile({ award: { badge, awardedAt } }: { award: TrophyAward }) {
@@ -163,7 +164,15 @@ function EventArt({ event }: { event: EventTrophyItem }) {
 	const logo = event.imageKind === 'logo';
 	return (
 		<span aria-hidden className={cn(box, logo ? 'bg-neutral-100 p-2' : 'border border-border bg-neutral-900')}>
-			<Image src={event.imageUrl} alt='' width={64} height={64} unoptimized={!isOptimizable(event.imageUrl)} onError={() => setFailed(true)} className={cn('h-full w-full', logo ? 'object-contain' : 'object-cover')} />
+			<Image
+				src={event.imageUrl}
+				alt=''
+				width={64}
+				height={64}
+				unoptimized={!isOptimizable(event.imageUrl)}
+				onError={() => setFailed(true)}
+				className={cn('h-full w-full', logo ? 'object-contain' : 'object-cover')}
+			/>
 		</span>
 	);
 }
