@@ -75,7 +75,14 @@ export function FriendButton({ profileUserId, initialStatus, className }: Friend
 				<Button type='button' size='sm' disabled={pending} onClick={run(() => acceptFriendRequest(profileUserId), 'FRIENDS', 'Friend added')}>
 					<UserCheck className='mr-2 h-3.5 w-3.5' aria-hidden /> Accept
 				</Button>
-				<Button type='button' variant='outline' size='sm' disabled={pending} onClick={run(() => declineFriendRequest(profileUserId), 'NONE', 'Request declined')} className='border-white/15 bg-black/50 backdrop-blur-sm'>
+				<Button
+					type='button'
+					variant='outline'
+					size='sm'
+					disabled={pending}
+					onClick={run(() => declineFriendRequest(profileUserId), 'NONE', 'Request declined')}
+					className='border-white/15 bg-black/50 backdrop-blur-sm'
+				>
 					<UserX className='mr-2 h-3.5 w-3.5' aria-hidden /> Decline
 				</Button>
 			</div>
