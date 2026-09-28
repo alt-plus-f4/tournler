@@ -163,7 +163,9 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 	return (
 		<Card className='mx-auto mt-8 mb-12 w-[calc(100%-2rem)] overflow-hidden border-none bg-transparent sm:w-5/6'>
 			<CardHeader className='relative min-h-[300px] w-full justify-end space-y-0 overflow-hidden rounded-t-xl bg-neutral-900 p-0'>
-				{tournament.bannerUrl && <Image src={tournament.bannerUrl} alt='' fill priority sizes='(max-width: 640px) 100vw, 84vw' unoptimized={!isOptimizable(tournament.bannerUrl)} className='object-cover' />}
+				{tournament.bannerUrl && (
+					<Image src={tournament.bannerUrl} alt='' fill priority sizes='(max-width: 640px) 100vw, 84vw' unoptimized={!isOptimizable(tournament.bannerUrl)} className='object-cover' />
+				)}
 				<div aria-hidden className='absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent' />
 
 				<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'absolute left-2 top-2 z-10 bg-black/60')}>

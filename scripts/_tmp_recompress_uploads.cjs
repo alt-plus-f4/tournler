@@ -38,12 +38,26 @@ async function processField({ kind, id, label, url, basePath, dims }) {
 
 	for (const t of tournaments) {
 		if (t.bannerUrl) {
-			const r = await processField({ kind: 'tournament-banner', id: t.id, label: t.name, url: t.bannerUrl, basePath: `banners/tournament-${t.id}-recompressed-${Date.now()}`, dims: { maxWidth: 1600, maxHeight: 900 } });
+			const r = await processField({
+				kind: 'tournament-banner',
+				id: t.id,
+				label: t.name,
+				url: t.bannerUrl,
+				basePath: `banners/tournament-${t.id}-recompressed-${Date.now()}`,
+				dims: { maxWidth: 1600, maxHeight: 900 },
+			});
 			if (r && !r.skipped) changes.push({ ...r, apply: async (newUrl) => p.cs2Tournament.update({ where: { id: t.id }, data: { bannerUrl: newUrl } }) });
 			else if (r?.skipped) changes.push(r);
 		}
 		if (t.logoUrl) {
-			const r = await processField({ kind: 'tournament-logo', id: t.id, label: t.name, url: t.logoUrl, basePath: `logos/tournament-${t.id}-recompressed-${Date.now()}`, dims: { maxWidth: 512, maxHeight: 512 } });
+			const r = await processField({
+				kind: 'tournament-logo',
+				id: t.id,
+				label: t.name,
+				url: t.logoUrl,
+				basePath: `logos/tournament-${t.id}-recompressed-${Date.now()}`,
+				dims: { maxWidth: 512, maxHeight: 512 },
+			});
 			if (r && !r.skipped) changes.push({ ...r, apply: async (newUrl) => p.cs2Tournament.update({ where: { id: t.id }, data: { logoUrl: newUrl } }) });
 			else if (r?.skipped) changes.push(r);
 		}
@@ -72,7 +86,9 @@ async function processField({ kind, id, label, url, basePath, dims }) {
 		}
 	}
 
-	console.log(`\nTotal: ${(totalOld / 1024).toFixed(0)}KB -> ${(totalNew / 1024).toFixed(0)}KB across ${changes.filter((c) => !c.skipped).length} files${DRY_RUN ? ' (dry run, nothing written)' : ''}`);
+	console.log(
+		`\nTotal: ${(totalOld / 1024).toFixed(0)}KB -> ${(totalNew / 1024).toFixed(0)}KB across ${changes.filter((c) => !c.skipped).length} files${DRY_RUN ? ' (dry run, nothing written)' : ''}`,
+	);
 
 	await p.$disconnect();
 })().catch((e) => {
