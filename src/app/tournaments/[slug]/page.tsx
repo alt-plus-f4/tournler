@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
 import type { Champion, TournamentDetail } from '@/components/tournament-tabs/types';
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
+import { ShareButton } from '@/components/ShareButton';
 import { StartTournamentButton } from '@/components/StartTournamentButton';
 import Timer from '@/components/Timer';
 import { getTournamentChampion, getTournamentDetail } from '../queries';
@@ -171,7 +172,10 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
 				<Link href='/tournaments' aria-label='Back to tournaments' className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'absolute left-2 top-2 z-10 bg-black/60')}>
 					<ArrowLeft className='h-4 w-4' aria-hidden />
 				</Link>
-				<GameTag game={tournament.game} className='absolute right-2 top-2 z-10 bg-black/70' />
+				<div className='absolute right-2 top-2 z-10 flex items-center gap-2'>
+					<ShareButton label='Share tournament' compact variant='outline' className='bg-black/60' />
+					<GameTag game={tournament.game} className='bg-black/70' />
+				</div>
 
 				{/* In flow (not absolutely stacked) so a long name and the register block never overlap. */}
 				<div className='relative z-10 flex flex-col gap-4 p-4 pt-16 sm:flex-row sm:items-end sm:justify-between sm:p-10 sm:pt-20'>

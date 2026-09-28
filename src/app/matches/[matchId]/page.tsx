@@ -9,6 +9,7 @@ import { ShieldCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareButton } from '@/components/ShareButton';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
@@ -289,7 +290,18 @@ export default function MatchPage() {
 		// Zoomed out slightly, and the footer is hidden on this route (ConditionalFooter), so the room
 		// comes closer to fitting one screen on typical viewports instead of needing a page scroll.
 		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-8 text-white' style={{ zoom: 0.9 }}>
-			<RoomHeader match={match} quickBar={canManage ? <AdminQuickBar match={match} admin={admin} vetoComplete={vetoComplete} /> : undefined} tabs={tabs} />
+			<RoomHeader
+				match={match}
+				quickBar={
+					canJoinPickup || canManage ? (
+						<div className='flex items-center gap-2'>
+							{canJoinPickup && <ShareButton label='Invite players' compact path={`/matches/${match.id}`} />}
+							{canManage && <AdminQuickBar match={match} admin={admin} vetoComplete={vetoComplete} />}
+						</div>
+					) : undefined
+				}
+				tabs={tabs}
+			/>
 
 			<div className='mx-auto max-w-7xl px-4 pt-6'>
 				<TabsContent value='overview' className='mt-0'>

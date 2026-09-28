@@ -18,6 +18,7 @@ import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { TeamMatchList } from '@/components/teams/TeamMatchList';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ShareButton } from '@/components/ShareButton';
 // The team payload is the public projection (like the old JSON response); the banner/actions
 // components are typed against the full row but only read these fields.
 import type { ExtendedCs2Team } from '@/lib/models/team-model';
@@ -141,6 +142,8 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 					</p>
 				</div>
 				<div className='ml-auto flex flex-row gap-2'>
+					<ShareButton label='Share team' compact />
+
 					{isUserMember && user && (
 						<LeaveTeamDialog teamId={team.id} userId={user.id}>
 							<Button variant='outline' aria-label='Leave team'>

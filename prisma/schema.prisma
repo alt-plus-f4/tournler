@@ -165,6 +165,11 @@ model User {
   riot               RiotAccount?
   cs2TeamInvitations Cs2TeamInvitation[]
 
+  sentFriendRequests     FriendRequest[] @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestReceiver")
+  friendshipsAsUser      Friendship[]    @relation("FriendshipUser")
+  friendshipsAsFriend    Friendship[]    @relation("FriendshipFriend")
+
   organizedTournaments Cs2Tournament[]    @relation("TournamentOrganizers")
   playerMatchStats     PlayerMatchStat[]
   badges               UserBadge[]
@@ -278,6 +283,47 @@ model Cs2TeamInvitation {
   @@index([teamId])
   @@index([userId])
   @@map("cs2_team_invitations")
+}
+
+/**
+ * A pending friend request. Consumed (deleted) on accept or decline — mirrors Cs2TeamInvitation.
+ */
+model FriendRequest {
+  id String @id @default(uuid()) @map("id")
+
+  senderId String @map("sender_id")
+  sender   User   @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiverId String @map("receiver_id")
+  receiver   User   @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@map("friend_requests")
+}
+
+/**
+ * An accepted friendship, stored as a row per direction (userId -> friendId and the mirrored
+ * friendId -> userId row) so "list my friends" is a plain indexed lookup on userId with no OR.
+ */
+model Friendship {
+  id String @id @default(uuid()) @map("id")
+
+  userId String @map("user_id")
+  user   User   @relation("FriendshipUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  friendId String @map("friend_id")
+  friend   User   @relation("FriendshipFriend", fields: [friendId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
+  @@map("friendships")
 }
 
 model SteamAccount {

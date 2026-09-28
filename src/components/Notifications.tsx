@@ -10,6 +10,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { timeAgo } from '@/lib/utils';
 import { acceptTeamInvite } from '@/lib/helpers/accept-team-invite';
 import { denyTeamInvite } from '@/lib/helpers/deny-team-invitation';
+import { acceptFriendRequest, declineFriendRequest } from '@/lib/helpers/friends';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useEffect, useState } from 'react';
 
@@ -68,6 +69,29 @@ export default function Notifications({ userId }: NotificationsProps) {
 		}
 	}
 
+	async function handleAcceptFriendRequest(id: any, fromUserId: string) {
+		try {
+			await acceptFriendRequest(fromUserId);
+			await markAsRead({ id: id });
+			toast({ variant: 'default', title: 'Friend added' });
+			window.location.reload();
+		} catch (error) {
+			toast({ variant: 'destructive', title: 'Error', description: 'Failed to accept friend request.' });
+			console.error('Failed to accept friend request:', error);
+		}
+	}
+
+	async function handleDeclineFriendRequest(id: any, fromUserId: string) {
+		try {
+			await declineFriendRequest(fromUserId);
+			await markAsRead({ id: id });
+			toast({ variant: 'default', title: 'Request declined' });
+		} catch (error) {
+			toast({ variant: 'destructive', title: 'Error', description: 'Failed to decline friend request.' });
+			console.error('Failed to decline friend request:', error);
+		}
+	}
+
 	const count = notifications?.length ?? 0;
 	// Convex caps the query at 10 unread; say "10+" rather than implying an exact count.
 	const countLabel = count >= 10 ? '10+' : String(count);
@@ -106,7 +130,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 					<ul className='divide-y divide-border'>
 						{!hasNewNotifications && <li className='px-4 py-6 text-sm text-muted-foreground'>You&apos;re all caught up.</li>}
 						{hasNewNotifications &&
-							notifications?.map(({ _id, text, _creationTime, type, teamId }) => {
+							notifications?.map(({ _id, text, _creationTime, type, teamId, fromUserId }) => {
 								const teamName = teamNameFromText(text);
 								const textId = `notification-${_id}`;
 								return (
@@ -124,6 +148,15 @@ export default function Notifications({ userId }: NotificationsProps) {
 														<CheckIcon aria-hidden className='h-5 w-5' />
 													</Button>
 													<Button size='icon' variant='outline' onClick={() => handleDenyInvite(_id, teamId || -1)} aria-label={`Decline invite to ${teamName}`}>
+														<X aria-hidden className='h-5 w-5' />
+													</Button>
+												</>
+											) : type === 2 && fromUserId ? (
+												<>
+													<Button size='icon' onClick={() => handleAcceptFriendRequest(_id, fromUserId)} aria-label='Accept friend request'>
+														<CheckIcon aria-hidden className='h-5 w-5' />
+													</Button>
+													<Button size='icon' variant='outline' onClick={() => handleDeclineFriendRequest(_id, fromUserId)} aria-label='Decline friend request'>
 														<X aria-hidden className='h-5 w-5' />
 													</Button>
 												</>
