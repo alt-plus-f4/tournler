@@ -34,7 +34,7 @@ export function RemoveMemberButton({ teamId, memberId, memberName }: RemoveMembe
 
 	return (
 		<>
-			<div className='absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity opacity-0 group-hover:opacity-100 focus-within:opacity-100'>
+			<div className='absolute top-0 left-0 w-full h-full flex justify-center items-center transition-opacity opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100'>
 				<div className='flex space-x-2'>
 					<TooltipProvider>
 						<Tooltip>

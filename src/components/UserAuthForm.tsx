@@ -8,11 +8,9 @@ import { usePathname } from 'next/navigation';
 import { useToast } from '@/lib/hooks/use-toast';
 import { DiscordIcon } from '@/components/Icons';
 
-type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement> & {
-	mode?: 'sign-in' | 'sign-up';
-};
+type UserAuthFormProps = React.HTMLAttributes<HTMLDivElement>;
 
-const UserAuthForm: FC<UserAuthFormProps> = ({ className, mode = 'sign-in', ...props }) => {
+const UserAuthForm: FC<UserAuthFormProps> = ({ className, ...props }) => {
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const { toast } = useToast();
 
@@ -34,17 +32,13 @@ const UserAuthForm: FC<UserAuthFormProps> = ({ className, mode = 'sign-in', ...p
 		}
 	};
 
-	// Email login removed — only Discord OAuth is supported now.
-
 	return (
-		<div className={cn('flex justify-center flex-col', className)} {...props}>
-			<Button onClick={loginWithDiscord} isLoading={isLoading} size='sm' className='w-full flex-row mb-3 bg-[#5865F2] hover:bg-[#4752C4] text-white gap-2'>
+		<div className={cn('flex w-full flex-col justify-center', className)} {...props}>
+			<Button onClick={loginWithDiscord} isLoading={isLoading} size='lg' className='w-full flex-row gap-2 bg-[#5865F2] text-white hover:bg-[#4752C4]'>
 				{!isLoading && <DiscordIcon aria-hidden className='h-4 w-4' />}
-				{isLoading ? 'Redirecting to Discord…' : mode === 'sign-up' ? 'Sign up with Discord' : 'Sign in with Discord'}
+				{isLoading ? 'Redirecting to Discord…' : 'Continue with Discord'}
 			</Button>
-			<p className='text-center text-xs text-muted-foreground'>
-				{mode === 'sign-up' ? 'Already signed in with Discord before? This takes you to the same account.' : 'First time? Signing in with Discord creates your account.'}
-			</p>
+			<p className='mt-3 text-center text-xs text-neutral-500'>First time here? Signing in with Discord creates your account.</p>
 		</div>
 	);
 };

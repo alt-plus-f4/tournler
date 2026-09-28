@@ -24,7 +24,7 @@ export function AuthModal({ title, children }: { title: string; children: React.
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && router.back()}>
-			<DialogContent className='max-w-md bg-black px-6 py-8'>
+			<DialogContent className='stage-grid max-w-md px-6 py-10 shadow-2xl sm:px-10'>
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				{children}
 			</DialogContent>

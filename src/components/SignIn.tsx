@@ -10,32 +10,30 @@ interface SignInProps {
 
 const SignIn = ({ headingAs: Heading = 'h1' }: SignInProps) => {
 	return (
-		<div className='container mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[400px]'>
-			<div className='flex flex-col space-y-3 text-center'>
-				<Icons.logo aria-hidden className='mx-auto h-6 w-6' />
-				<Heading className='text-2xl font-semibold tracking-tight'>Sign in to Tournler</Heading>
-				<p className='mx-auto max-w-xs text-sm text-muted-foreground'>You&apos;ll link your Steam account after signing in. It&apos;s required to join match servers.</p>
-				<p className='mx-auto max-w-xs text-xs text-muted-foreground'>
-					By continuing, you agree to our{' '}
-					<Link href='/terms' className='text-white underline underline-offset-4 hover:text-neutral-300'>
-						Terms of Service
-					</Link>{' '}
-					and{' '}
-					<Link href='/privacy' className='text-white underline underline-offset-4 hover:text-neutral-300'>
-						Privacy Policy
-					</Link>
-					.
-				</p>
+		<div className='mx-auto flex w-full max-w-sm flex-col items-center gap-8 text-center'>
+			<span className='flex h-16 w-16 items-center justify-center rounded-full border border-border bg-white/5'>
+				<Icons.logo size={36} aria-hidden />
+			</span>
 
-				<UserAuthForm />
-
-				<p className='px-8 text-center text-sm text-muted-foreground'>
-					New to Tournler?{' '}
-					<Link href='/sign-up' className='text-sm text-white underline underline-offset-4 hover:text-neutral-300'>
-						Create an account
-					</Link>
-				</p>
+			<div className='flex flex-col items-center gap-2'>
+				<span className='text-xs font-bold uppercase tracking-[0.2em] text-neutral-400'>Access</span>
+				<Heading className='text-3xl font-black uppercase tracking-wide text-white'>Sign in to Tournler</Heading>
+				<p className='max-w-xs text-sm text-neutral-400'>You&apos;ll link your Steam account after signing in. It&apos;s required to join match servers.</p>
 			</div>
+
+			<UserAuthForm />
+
+			<p className='max-w-xs text-xs text-neutral-500'>
+				By continuing, you agree to our{' '}
+				<Link href='/terms' className='text-neutral-300 underline underline-offset-4 hover:text-white'>
+					Terms of Service
+				</Link>{' '}
+				and{' '}
+				<Link href='/privacy' className='text-neutral-300 underline underline-offset-4 hover:text-white'>
+					Privacy Policy
+				</Link>
+				.
+			</p>
 		</div>
 	);
 };

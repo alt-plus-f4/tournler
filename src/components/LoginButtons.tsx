@@ -19,11 +19,8 @@ const LoginButtons = ({ className = '' }: LoginButtonsProps) => {
 
 	return (
 		<div className={cn('', className)}>
-			<Link prefetch={false} href='/sign-in' onClick={savePrevPath} className={cn(buttonVariants({ variant: 'default' }), 'px-2 mr-2 sm:py-3 sm:px-6 sm:mr-2')}>
+			<Link prefetch={false} href='/sign-in' onClick={savePrevPath} className={cn(buttonVariants({ variant: 'default' }), 'px-3 sm:px-6 sm:py-3')}>
 				Sign In
-			</Link>
-			<Link prefetch={false} href='/sign-up' onClick={savePrevPath} className={cn(buttonVariants({ variant: 'outline' }), 'px-2 sm:py-3 sm:px-6')}>
-				Sign Up
 			</Link>
 		</div>
 	);
