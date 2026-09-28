@@ -4,8 +4,9 @@ How to stand up the real CS2 dedicated server pool this app controls, wire it up
 app, and verify the whole match flow (map veto → server provisioning → RCON push → live match →
 result reporting) end to end.
 
-This deployment runs a **fixed-size pool of persistent CS2 servers** (two, out of the box —
-`cs2-dedicated-01`/`02` in `cs-docker/docker-compose.yml`), not one container per match — see
+This deployment runs a **fixed-size pool of persistent CS2 servers** (one, out of the box —
+`cs2-dedicated-01` in `cs-docker/docker-compose.yml`, with a commented-out `cs2-dedicated-02`
+block left as a copy-paste template for adding more), not one container per match — see
 `cs-docker/README.md` for why. Each match claims one free server from the pool for its whole
 duration; once every server is busy, `startMatch()` rejects starting another match until one
 frees up.
@@ -16,7 +17,7 @@ frees up.
 - A Steam Game Server Login Token for CS2: https://steamcommunity.com/dev/managegameservers
   (create an app-specific token for App ID 730) — shared by every server in the pool. This goes
   in `SRCDS_TOKEN`.
-- Several GB of free disk *per server* — first boot downloads the CS2 dedicated server files,
+- Several GB of free disk _per server_ — first boot downloads the CS2 dedicated server files,
   Metamod, CounterStrikeSharp, and MatchZy via `cs-docker/settings/pre.sh`.
 - The Next.js app already running (or ready to run) with a working `DATABASE_URL`.
 
@@ -98,7 +99,7 @@ Each pool entry's `port`/`rconPort`/`rconPassword` must exactly match that serve
 and use the older `CS2_SERVER_IP`/`CS2_SERVER_PORT`/`CS2_RCON_HOST`/`CS2_RCON_PORT`/
 `CS2_RCON_PASSWORD` vars instead — see `.examplenv`.)
 
-`NEXTAUTH_URL` (already required for auth) doubles as the *default* base URL every CS2 server
+`NEXTAUTH_URL` (already required for auth) doubles as the _default_ base URL every CS2 server
 calls back to for match config and result reporting — it must be a URL the CS2 host(s) can
 actually reach, not just `localhost`, if they're on a different machine than the app (see §6). If
 it isn't (see §4 for the common local-dev case), set `GAME_SERVER_CALLBACK_URL` instead —
@@ -109,7 +110,7 @@ Restart the Next.js dev server after editing `.env` so it picks up the new value
 ## 4. Local network wrinkle
 
 If you run the Next.js app directly with `npm run dev` on your host machine (not in Docker),
-`localhost`/`127.0.0.1` reaches the CS2 containers' published ports fine *from the app's side* —
+`localhost`/`127.0.0.1` reaches the CS2 containers' published ports fine _from the app's side_ —
 but the reverse direction (the CS2 container fetching `matchzy_loadmatch_url` back into the app)
 does **not** just work with `NEXTAUTH_URL=http://localhost:3000`: `localhost` inside a container
 is the container itself, not the host, on every platform (confirmed directly — `curl
@@ -122,13 +123,13 @@ Desktop's fixed DNS name for the host machine; on Linux, use your host's LAN IP 
 `host.docker.internal` isn't available). Getting this wrong doesn't throw anywhere visible: the
 container's own fetch just fails silently (`[MatchZy] [LoadMatchFromURL - FATAL] Async fetch
 error: Connection refused`), no match config ever loads, and
-`matchzy_kick_when_no_match_loaded` then kicks *every* connecting player — including ones who
+`matchzy_kick_when_no_match_loaded` then kicks _every_ connecting player — including ones who
 did join a side through the match page — because MatchZy never actually has a match loaded to
 check them against. The same broken URL also silently breaks the `matchzy_remote_log_url` score
 webhook, so scores drift and never show live on the match page. If you're seeing either symptom,
 check this first — `docker logs <container> | grep -i "connection refused"` confirms it.
 
-If you *also* run the app in Docker, put both compose stacks on one shared network so they can
+If you _also_ run the app in Docker, put both compose stacks on one shared network so they can
 address each other by service name:
 
 ```bash
@@ -166,8 +167,8 @@ doesn't match that server's `CS2_SERVER_<N>_RCONPW` in `cs-docker/.env`.
    - opens RCON to that specific server and runs `matchzy_loadmatch_url` (pointing back at
      `GET /api/matches/[matchId]/game-server/match-config`) plus `sv_password`,
    - sets `GameServer.matchConfigLoadedAt` on success.
-   Check `docker compose logs -f` on the CS2 side — you should see the assigned server (and only
-   that one) load the match.
+     Check `docker compose logs -f` on the CS2 side — you should see the assigned server (and only
+     that one) load the match.
 4. **Connect in-game** using the connect string shown on the match page (now a real, working
    password since RCON just set it).
 5. **Play/finish a map.** Two ways the result gets back to Tournler:
@@ -180,7 +181,7 @@ doesn't match that server's `CS2_SERVER_<N>_RCONPW` in `cs-docker/.env`.
    match between both semifinal losers) should fire automatically once a team clinches it, and
    the server it used becomes free again for the next match.
 7. **Start two matches at once** (needs ≥2 teams-worth of extra matches ready to go) — each
-   should get a *different* server from the pool. Then try starting one more than you have
+   should get a _different_ server from the pool. Then try starting one more than you have
    servers for — it should be rejected with an "All N CS2 server(s) in the pool are currently in
    use" error, confirming the pool-exhaustion guard.
 
@@ -206,10 +207,10 @@ in production.
   `CS2_SERVER_<N>_RCONPW` (cs-docker), or the RCON port isn't reachable (firewall, wrong `ip`).
 - **Match config never loads on the server, or you're kicked despite having joined a side**:
   check the CS2 server can reach `GAME_SERVER_CALLBACK_URL`/`NEXTAUTH_URL` (§4) —
-  `matchzy_loadmatch_url` is an HTTP GET *from the game server*, so `localhost` only works if
+  `matchzy_loadmatch_url` is an HTTP GET _from the game server_, so `localhost` only works if
   they're genuinely on the same machine/network namespace (never true for a Dockerized CS2
   server — see §4). When this fetch fails, MatchZy never actually loads a match, so
-  `matchzy_kick_when_no_match_loaded` kicks *everyone*, including players who did join a side —
+  `matchzy_kick_when_no_match_loaded` kicks _everyone_, including players who did join a side —
   it isn't whitelist logic being wrong. `docker logs <container> | grep -i "connection refused"`
   confirms it.
 - **Starting a match fails, or the server crashes/disappears right as a match starts**: check

@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { put } from '@vercel/blob';
 import { TournamentFormat, TournamentStatus, TournamentType } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { sanitizeRichText } from '@/lib/helpers/sanitize-html';
 import { parseStatusFilter } from '@/lib/helpers/tournament-status-filter';
 import { parseGameParam } from '@/lib/games';
+import { processAndUploadImage } from '@/lib/helpers/upload-image';
 
 const statusMap: { [key: number]: TournamentStatus } = {
 	0: TournamentStatus.UPCOMING,
@@ -151,22 +151,12 @@ export async function POST(req: Request) {
 
 		const bannerFile = formData.get('bannerFile');
 		if (bannerFile instanceof Blob && name) {
-			const arrayBuffer = await bannerFile.arrayBuffer();
-			const blob = await put(`banners/${name}-banner.png`, arrayBuffer, {
-				access: 'public',
-				token: process.env.BLOB_READ_WRITE_TOKEN,
-			});
-			bannerUrl = blob.url;
+			bannerUrl = await processAndUploadImage(bannerFile, `banners/${name}-banner-${Date.now()}`, { maxWidth: 1600, maxHeight: 900 });
 		}
 
 		const logoFile = formData.get('logoFile');
 		if (logoFile instanceof Blob && name) {
-			const arrayBuffer = await logoFile.arrayBuffer();
-			const blob = await put(`logos/${name}-logo.png`, arrayBuffer, {
-				access: 'public',
-				token: process.env.BLOB_READ_WRITE_TOKEN,
-			});
-			logoUrl = blob.url;
+			logoUrl = await processAndUploadImage(logoFile, `logos/${name}-logo-${Date.now()}`, { maxWidth: 512, maxHeight: 512 });
 		}
 
 		const parsedStatus = parseTournamentStatus(statusValue || 'UPCOMING');
@@ -203,6 +193,10 @@ export async function POST(req: Request) {
 		return NextResponse.json(newTournament, { status: 201 });
 	} catch (error) {
 		console.error('Error creating tournament:', error);
+		// processAndUploadImage throws plain, user-facing messages (bad type, over the size cap) — anything
+		// else is an unexpected failure and stays a generic 500.
+		const isImageValidationError = error instanceof Error && (error.message.includes('must be images') || error.message.includes('smaller than'));
+		if (isImageValidationError) return NextResponse.json({ error: error.message }, { status: 400 });
 		return NextResponse.json({ error: 'Failed to create tournament' }, { status: 500 });
 	}
 }

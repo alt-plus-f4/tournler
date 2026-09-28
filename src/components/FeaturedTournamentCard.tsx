@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { GameTag } from '@/components/games/GameMark';
+import { isOptimizable } from '@/lib/image-hosts';
 
 interface FeaturedTournamentCardProps {
 	id: number;
@@ -30,6 +31,7 @@ export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePo
 					alt=''
 					fill
 					sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+					unoptimized={!isOptimizable(bannerUrl)}
 					className='object-cover'
 					placeholder='blur'
 					blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='

@@ -94,6 +94,7 @@ Linking proves ownership with a profile-icon challenge (Riot doesn't offer OAuth
 - `/admin/forum` moderation page: `forum:moderate`.
 
 ## Bans
+
 A ban is a site-wide suspension (`UserBan`, with full history). While it's active, `getAuthSession()` returns `null` for that user, so every route and page that requires a signed-in user refuses them without its own check. They can still browse. The root layout reads the raw session with `getSessionIncludingBanned()` to show the suspension notice and a sign-out button. Never use that for authorization.
 
 Rules: you can't ban yourself, admins can't be banned, and staff (any non-USER role) can only be banned by an ADMIN. One active ban at a time: a new ban lifts the previous one, which stays in the history.

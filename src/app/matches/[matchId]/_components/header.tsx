@@ -97,7 +97,7 @@ export function RoomHeader({ match, quickBar, tabs }: { match: Match; quickBar?:
 					src={mapImage}
 					alt=''
 					fill
-					preload
+					priority
 					sizes='100vw'
 					className={cn('-z-20 object-cover transition-[filter,opacity] duration-500', isFinal ? 'opacity-20 grayscale' : match.status === 'SCHEDULED' ? 'opacity-25' : 'opacity-40')}
 				/>

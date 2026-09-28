@@ -1,13 +1,23 @@
 # In production this app runs as Vercel serverless functions (see CLAUDE.md), so a burst of
+
 # concurrent requests can each open their own direct Postgres connection — Postgres has a hard
+
 # max_connections cap, and at real load (hundreds to low-thousands of concurrent users) direct
+
 # connections exhaust it and every route hitting `db` starts failing. DATABASE_URL should point at
+
 # a pooled endpoint instead (PgBouncer in transaction mode, or a managed pooler — Neon's `-pooler`
+
 # host suffix, Supabase's port 6543, etc.) with `pgbouncer=true&connection_limit=1` appended, which
+
 # multiplexes many app-side connections onto a handful of real Postgres ones:
+
 DATABASE_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public&pgbouncer=true&connection_limit=1"
+
 # `prisma migrate`/`db push` can't run through a transaction-mode pooler, so they use this instead —
+
 # the same database, direct (non-pooled) connection, no pgbouncer params:
+
 DIRECT_URL="postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
 NEXTAUTH_URL="https://example.com"
 STEAM_REDIRECT_URI='http://localhost:3000/api/auth/steam/callback'
@@ -28,62 +38,102 @@ BLOB_READ_WRITE_TOKEN=your_blob_read_write_token
 STEAM_API_KEY=your_steam_api_key
 
 # Optional — shows a player's real FACEIT CS2 level/Elo on their profile (src/lib/faceit.ts),
+
 # looked up by their linked Steam account via FACEIT's official Data API. Free key from
+
 # https://developers.faceit.com (create an app, use its "Server-side" API key — not "Client-side").
+
 # Profiles just show no FACEIT level if this is unset.
+
 FACEIT_API_KEY=your_faceit_server_side_api_key
 
 # Optional — links a player's Riot ID (League of Legends) on their profile (src/lib/riot/client.ts),
+
 # resolved via Riot's account-v1/summoner-v4 APIs and proven with a profile-icon ownership check.
+
 # Get a key from https://developer.riotgames.com: a dev key expires every 24h (fine for local dev,
+
 # re-issue as needed); a production key needs a Riot-reviewed app. Without this set, Riot ID linking
+
 # returns a clear "not set up on this server yet" response instead of faking success.
+
 RIOT_API_KEY=your_riot_api_key
 
 # Tournament automation / game-server integration (see TOURNAMENT_GUIDE.md)
+
 GAME_SERVER_IP=your-game-server-ip.com
 GAME_SERVER_TOKEN=your_game_server_shared_secret
 
-# Optional — base URL the *real CS2 server* calls back to (matchzy_loadmatch_url,
+# Optional — base URL the _real CS2 server_ calls back to (matchzy_loadmatch_url,
+
 # matchzy_remote_log_url, matchzy_demo_upload_url), if different from NEXTAUTH_URL. Needed
+
 # whenever the CS2 server can't reach NEXTAUTH_URL's host directly — e.g. local dev, where the
+
 # app runs on the host at http://localhost:3000 but the CS2 server runs in a Docker container
+
 # ("localhost" there means the container itself, not the host). Falls back to NEXTAUTH_URL if
+
 # unset, which is fine when the app and CS2 server pool share one public hostname in production.
+
 # GAME_SERVER_CALLBACK_URL=http://host.docker.internal:3000
 
 # Required to start a match — see cs-docker/pool-controller/index.js. A live RCON changelevel/map
+
 # command segfaults the CS2 dedicated server unconditionally on this Metamod build (a long-standing
+
 # upstream bug, not something fixable from plugin config — see cs-docker/README.md), so starting a
+
 # match works by recreating its assigned server's container booted directly onto the right map
+
 # instead. POOL_CONTROLLER_TOKEN must match the value pool-controller is run with. Unlike
+
 # GAME_SERVER_CALLBACK_URL above, this is host-to-host: pool-controller runs directly on the CS2
+
 # host (not inside a container), same as wherever this app runs — in local dev, where both run on
+
 # the same machine, that's plain http://localhost:9800, not host.docker.internal.
+
 POOL_CONTROLLER_URL=http://your-cs2-host:9800
 POOL_CONTROLLER_TOKEN=your_pool_controller_shared_secret
 
 # CS2 dedicated server pool (see cs-docker/README.md and CS2_SERVER_GUIDE.md) — a fixed set of
+
 # persistent servers, one match at a time each; NOT one container per match. Prefer
+
 # CS2_SERVER_POOL (a JSON array, one entry per server in cs-docker/docker-compose.yml) for more
+
 # than one server. Each entry's ip/port/rconPort/rconPassword must match that server's
-# CS2_SERVER_<N>_PORT/CS2_SERVER_<N>_RCON_PORT/CS2_SERVER_<N>_RCONPW in cs-docker/.env.
+
+# CS2*SERVER*<N>_PORT/CS2_SERVER_<N>_RCON_PORT/CS2_SERVER_<N>\_RCONPW in cs-docker/.env.
+
 CS2_SERVER_POOL=[{"id":"01","ip":"your-cs2-server-ip.com","port":27015,"rconPort":27016,"rconPassword":"your_rcon_password_1"},{"id":"02","ip":"your-cs2-server-ip.com","port":27025,"rconPort":27026,"rconPassword":"your_rcon_password_2"}]
 
 # Alternative to CS2_SERVER_POOL: if unset, these define a single-server pool (kept for
+
 # backwards compatibility with earlier single-server setups).
+
 # CS2_SERVER_IP=your-cs2-server-ip.com
+
 # CS2_SERVER_PORT=27015
+
 # CS2_RCON_HOST=your-cs2-server-ip.com
+
 # CS2_RCON_PORT=27016
+
 # CS2_RCON_PASSWORD=your_rcon_password
 
 CS2_DEFAULT_MAP=de_dust2
 
 # Auth for GET /api/tournaments/check-start (the tournament auto-start cron).
+
 # Set CRON_API_KEY if triggering via the x-api-key header (e.g. the
+
 # .github/workflows/check-tournaments.yml GitHub Actions cron). Set CRON_SECRET
+
 # instead (or as well) if using Vercel's native Cron Jobs (see vercel.json),
+
 # which authenticates via `Authorization: Bearer <CRON_SECRET>` automatically.
+
 CRON_API_KEY=your_cron_shared_secret
 CRON_SECRET=your_vercel_cron_secret

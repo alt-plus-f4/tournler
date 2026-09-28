@@ -3,6 +3,7 @@ import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
 import { GameTag } from '@/components/games/GameMark';
+import { isOptimizable } from '@/lib/image-hosts';
 
 interface UpcomingTournamentProps {
 	id: number;
@@ -39,6 +40,7 @@ export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, 
 						alt=''
 						fill
 						sizes='(max-width: 640px) 100vw, 440px'
+						unoptimized={!isOptimizable(bannerUrl)}
 						className='object-cover'
 						placeholder='blur'
 						blurDataURL='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
