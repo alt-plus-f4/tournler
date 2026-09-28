@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify';
+import sanitizeHtml from 'sanitize-html';
 import { z } from 'zod';
 import { isBlobUrl } from '@/lib/blob';
 import { escapeHtml } from '@/components/news/text';
@@ -18,13 +18,13 @@ const INLINE_TAGS = ['b', 'strong', 'i', 'em', 'a', 'code', 'br', 'mark', 'u', '
 
 function inline(value: unknown): string {
 	if (typeof value !== 'string') return '';
-	return DOMPurify.sanitize(value, { ALLOWED_TAGS: INLINE_TAGS, ALLOWED_ATTR: ['href', 'class'] });
+	return sanitizeHtml(value, { allowedTags: INLINE_TAGS, allowedAttributes: { '*': ['href', 'class'] } });
 }
 
 /** Plain text for fields the renderer still runs through an HTML parser (captions, link meta). */
 function plain(value: unknown, max = 500): string {
 	if (typeof value !== 'string') return '';
-	return DOMPurify.sanitize(value.slice(0, max * 2), { ALLOWED_TAGS: [] }).slice(0, max);
+	return sanitizeHtml(value.slice(0, max * 2), { allowedTags: [], allowedAttributes: {} }).slice(0, max);
 }
 
 function httpUrl(value: unknown): string | null {
@@ -154,7 +154,7 @@ export function parseContent(raw: unknown): NewsContent {
 export function deriveBlurb(content: NewsContent): string {
 	const first = content.blocks.find((b) => b.type === 'paragraph' && typeof b.data.text === 'string' && b.data.text.trim());
 	if (!first) return '';
-	const text = DOMPurify.sanitize(String(first.data.text), { ALLOWED_TAGS: [] })
+	const text = sanitizeHtml(String(first.data.text), { allowedTags: [], allowedAttributes: {} })
 		.replace(/&nbsp;/g, ' ')
 		.replace(/&amp;/g, '&')
 		.replace(/&lt;/g, '<')
