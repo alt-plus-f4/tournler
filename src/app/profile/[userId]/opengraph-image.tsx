@@ -38,7 +38,6 @@ export default async function Image({ params }: { params: Promise<{ userId: stri
 
 				<div style={{ display: 'flex', flex: 1, alignItems: 'center', gap: 48, padding: '0 72px' }}>
 					{avatarSrc ? (
-						// eslint-disable-next-line @next/next/no-img-element
 						<img src={avatarSrc} width={220} height={220} alt='' style={{ display: 'flex', borderRadius: 999, objectFit: 'cover', border: `3px solid ${OG.hairline}`, flexShrink: 0 }} />
 					) : (
 						<div style={{ display: 'flex', width: 220, height: 220, borderRadius: 999, backgroundColor: OG.panel, border: `3px solid ${OG.hairline}`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

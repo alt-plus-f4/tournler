@@ -40,9 +40,7 @@ const withCacheInvalidation = (client: PrismaClient) =>
 	});
 
 declare global {
-	// eslint-disable-next-line no-var
 	var prismaBase: PrismaClient | undefined;
-	// eslint-disable-next-line no-var
 	var prisma: ReturnType<typeof withCacheInvalidation> | undefined;
 }
 

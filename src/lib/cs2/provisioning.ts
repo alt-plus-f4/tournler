@@ -91,6 +91,7 @@ async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): 
 			if (Date.now() >= deadline) {
 				throw new Error(
 					`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`,
+					{ cause: error },
 				);
 			}
 			await new Promise((resolve) => setTimeout(resolve, POOL_CONTROLLER_POLL_INTERVAL_MS));
