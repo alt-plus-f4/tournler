@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertTriangle, ClipboardCheck, Flag, Loader2, Pause, Play, RefreshCw, RotateCcw, ShieldCheck, Terminal, Trash2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { ConfirmAction } from '@/components/ConfirmAction';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -52,40 +52,6 @@ export function useMatchAdmin(matchId: string, onChanged: () => void) {
 }
 
 export type MatchAdmin = ReturnType<typeof useMatchAdmin>;
-
-/**
- * Confirmation for the irreversible levers (restart, force end, delete). The trigger opens it; the
- * destructive button runs `onConfirm` and closes. Replaces window.confirm so the consequence copy is
- * readable and the confirm button carries the destructive style.
- */
-function ConfirmAction({ trigger, title, description, confirmLabel, onConfirm }: { trigger: ReactNode; title: string; description: ReactNode; confirmLabel: string; onConfirm: () => void }) {
-	const [open, setOpen] = useState(false);
-	return (
-		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogTrigger asChild>{trigger}</DialogTrigger>
-			<DialogContent className='max-w-md rounded-md'>
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					<DialogDescription className='leading-relaxed'>{description}</DialogDescription>
-				</DialogHeader>
-				<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
-					<Button variant='outline' onClick={() => setOpen(false)}>
-						Cancel
-					</Button>
-					<Button
-						variant='destructive'
-						onClick={() => {
-							setOpen(false);
-							onConfirm();
-						}}
-					>
-						{confirmLabel}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
-	);
-}
 
 function canStart(match: Match, vetoComplete: boolean) {
 	return vetoComplete && (match.isPickup || (match.teamA !== null && match.teamB !== null));

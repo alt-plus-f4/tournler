@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { ACTIVE_DUTY_MAPS, getMapDisplayName } from '@/lib/tournaments/maps';
-import { PlayerAvatar, RoomPanel, SectionLabel, SignalDot, TeamMark } from './room-ui';
+import { PlayerAvatar, RoomPanel, SectionLabel, TeamMark } from './room-ui';
 import type { DraftState, Match, Participant, VetoActionRow, VetoState } from './types';
 
 /** Whose turn it is, and whether the viewer is on that side. Shared with the page so the Overview tab can flag "your turn". */
@@ -63,8 +63,10 @@ function SideTurnHeader({
 				<div className='min-w-0'>
 					<p className='line-clamp-2 break-words text-sm font-black uppercase leading-tight tracking-wide text-white'>{label}</p>
 					{active && (
-						<span className={cn('inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-signal-ready-text', key === 'TEAM_A' && 'flex-row-reverse')}>
-							<SignalDot tone='ready' pulse /> {activeText}
+						// A tally card, not a status dot — the one moment in the room that's genuinely worth
+						// the room's attention, so it earns a considered mark instead of the generic blinking circle.
+						<span className='mt-1 inline-block rounded-sm border border-signal-ready/40 bg-signal-ready/10 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-signal-ready-text motion-safe:animate-pulse'>
+							{activeText}
 						</span>
 					)}
 				</div>

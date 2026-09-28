@@ -43,11 +43,9 @@ export function ServerPanel({ match }: { match: Match }) {
 
 	let statusLine: ReactNode;
 	if (address) {
-		statusLine = (
-			<span className='flex items-center gap-2 text-sm font-medium text-white'>
-				<SignalDot tone='ready' pulse /> {match.status === 'SCHEDULED' ? 'Warming up — join early to practice' : 'Server is live'}
-			</span>
-		);
+		// The header's StatusReadout already carries the pulsing "server ready" signal for this same
+		// fact — repeating the dot here would just be a second thing blinking for one piece of news.
+		statusLine = <span className='text-sm font-bold text-signal-ready-text'>{match.status === 'SCHEDULED' ? 'Warming up — join early to practice' : 'Server is live'}</span>;
 	} else if (server) {
 		statusLine = (
 			<span className='flex items-center gap-2 text-sm text-neutral-300'>

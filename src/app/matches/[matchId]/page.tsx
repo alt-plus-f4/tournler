@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShareButton } from '@/components/ShareButton';
+import { ConfirmAction } from '@/components/ConfirmAction';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
@@ -251,9 +252,17 @@ export default function MatchPage() {
 				}
 				playerAction={(player) =>
 					player.isMe && canJoinPickup ? (
-						<Button variant='ghost' size='sm' onClick={leaveMatch} disabled={pendingSide !== null} className='h-10 px-3 text-xs text-muted-foreground hover:text-white'>
-							{pendingSide === 'LEAVE' ? 'Leaving…' : 'Leave'}
-						</Button>
+						<ConfirmAction
+							title='Leave this match?'
+							description='Your slot opens up for someone else to join. If this side has already picked its maps or draft order, you keep no claim on it.'
+							confirmLabel='Leave match'
+							onConfirm={leaveMatch}
+							trigger={
+								<Button variant='ghost' size='sm' disabled={pendingSide !== null} className='h-10 px-3 text-xs text-muted-foreground hover:text-white'>
+									{pendingSide === 'LEAVE' ? 'Leaving…' : 'Leave'}
+								</Button>
+							}
+						/>
 					) : null
 				}
 			/>
@@ -266,7 +275,8 @@ export default function MatchPage() {
 				Overview
 				{needsMe && tab !== 'overview' && (
 					<>
-						<SignalDot tone='ready' pulse />
+						{/* A wayfinding nudge, not the on-air signal — static, not pulsing, so the room doesn't blink from every corner at once. */}
+						<SignalDot tone='ready' />
 						<span className='sr-only'>(your turn)</span>
 					</>
 				)}
@@ -289,7 +299,7 @@ export default function MatchPage() {
 	return (
 		// Zoomed out slightly, and the footer is hidden on this route (ConditionalFooter), so the room
 		// comes closer to fitting one screen on typical viewports instead of needing a page scroll.
-		<Tabs value={tab} onValueChange={setTab} className='min-h-screen bg-black pb-8 text-white' style={{ zoom: 0.9 }}>
+		<Tabs value={tab} onValueChange={setTab} className='min-h-screen pb-8 text-white' style={{ zoom: 0.9 }}>
 			<RoomHeader
 				match={match}
 				quickBar={
@@ -368,7 +378,7 @@ export default function MatchPage() {
 
 function RoomSkeleton() {
 	return (
-		<div className='min-h-screen bg-black' aria-busy='true' aria-label='Loading match'>
+		<div className='min-h-screen' aria-busy='true' aria-label='Loading match'>
 			<div className='border-b border-border'>
 				<div className='mx-auto max-w-7xl px-4'>
 					<Skeleton className='mt-5 h-5 w-64 bg-neutral-900' />
