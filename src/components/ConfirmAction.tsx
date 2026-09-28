@@ -48,7 +48,7 @@ export function ConfirmAction({ trigger, title, description, confirmLabel = 'Con
 					<DialogTitle>{title}</DialogTitle>
 					{description && <DialogDescription className='leading-relaxed'>{description}</DialogDescription>}
 				</DialogHeader>
-				<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
+				<DialogFooter className='flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:space-x-0'>
 					<DialogClose asChild>
 						<Button variant='outline' disabled={pending}>
 							{cancelLabel}
