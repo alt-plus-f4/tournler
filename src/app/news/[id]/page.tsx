@@ -134,7 +134,7 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 
 			{post.imageUrl && (
 				<div className='relative mt-6 aspect-[16/9] w-full overflow-hidden rounded-md border border-border bg-neutral-900'>
-					<Image src={post.imageUrl} alt='' fill preload sizes='(max-width: 768px) 100vw, 768px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
+					<Image src={post.imageUrl} alt='' fill priority sizes='(max-width: 768px) 100vw, 768px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
 				</div>
 			)}
 

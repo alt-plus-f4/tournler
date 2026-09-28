@@ -1,16 +1,8 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
-
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-
-async function uploadImage(file: Blob, path: string): Promise<string> {
-	const arrayBuffer = await file.arrayBuffer();
-	const blob = await put(path, arrayBuffer, { access: 'public', token: process.env.BLOB_READ_WRITE_TOKEN });
-	return blob.url;
-}
+import { processAndUploadImage, MAX_IMAGE_BYTES } from '@/lib/helpers/upload-image';
 
 /**
  * Uploads a new banner and/or logo for an existing tournament (the create form's own upload
@@ -47,8 +39,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
 		const now = Date.now();
 		const data: { bannerUrl?: string; logoUrl?: string } = {};
-		if (bannerFile instanceof Blob) data.bannerUrl = await uploadImage(bannerFile, `banners/tournament-${numericId}-${now}.png`);
-		if (logoFile instanceof Blob) data.logoUrl = await uploadImage(logoFile, `logos/tournament-${numericId}-${now}.png`);
+		if (bannerFile instanceof Blob) data.bannerUrl = await processAndUploadImage(bannerFile, `banners/tournament-${numericId}-${now}`, { maxWidth: 1600, maxHeight: 900 });
+		if (logoFile instanceof Blob) data.logoUrl = await processAndUploadImage(logoFile, `logos/tournament-${numericId}-${now}`, { maxWidth: 512, maxHeight: 512 });
 
 		const updated = await db.cs2Tournament.update({ where: { id: numericId }, data });
 

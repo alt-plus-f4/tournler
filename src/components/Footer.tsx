@@ -12,7 +12,7 @@ import { SteamIcon } from './Icons';
 export default function Footer() {
 	return (
 		<div className='relative h-auto md:h-44' style={{ clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)' }}>
-			<footer className='flex h-auto w-full flex-col items-center justify-center border-t bg-background p-5 text-center text-sm text-foreground md:fixed md:bottom-0 md:h-44'>
+			<footer className='flex h-auto w-full flex-col items-center justify-center border-t navbar-color p-5 text-center text-sm text-foreground md:fixed md:bottom-0 md:h-44'>
 				<div className='mb-5 flex flex-row gap-8'>
 					<Link href={'https://github.com/alt-plus-f4/tournler/'} aria-label='Tournler on GitHub'>
 						<Github aria-hidden className='h-7 w-7 transition-colors hover:text-blue-400' />

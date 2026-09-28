@@ -15,6 +15,7 @@ import { AccountDataSection } from '@/components/profile/AccountDataSection';
 import { TrophyIcon } from '@/components/trophies/TrophyIcon';
 import { TrophySlider, type EventTrophyItem } from '@/components/trophies/TrophySlider';
 import { TeamLogo } from '@/components/TeamLogo';
+import { isOptimizable } from '@/lib/image-hosts';
 import { VisibilitySwitch } from '@/components/profile/VisibilitySwitch';
 import { LevelBadge } from '@/components/LevelBadge';
 import { DiscordIcon, SteamIcon } from '@/components/Icons';
@@ -359,7 +360,8 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 			alt={`${profile.name}'s avatar`}
 			width={112}
 			height={112}
-			preload
+			priority
+			unoptimized={!isOptimizable(profile.image)}
 			className={`h-full w-full object-cover transition-opacity duration-300 ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
 			onLoad={() => setAvatarLoaded(true)}
 		/>
@@ -376,7 +378,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 				{/* Hero. There's no per-user cover image, so the player's own avatar is blown up, desaturated and
 				    pushed deep into black behind them, the same way a FACEIT profile banner sits behind the identity row. */}
 				<section className='relative isolate overflow-hidden rounded-t-md border border-border bg-neutral-950'>
-					{profile.image && <Image src={profile.image} alt='' aria-hidden fill sizes='100vw' className='-z-20 scale-125 object-cover opacity-50 blur-2xl grayscale' />}
+					{profile.image && <Image src={profile.image} alt='' aria-hidden fill sizes='100vw' priority unoptimized={!isOptimizable(profile.image)} className='-z-20 scale-125 object-cover opacity-50 blur-2xl grayscale' />}
 					<div className='absolute inset-0 -z-10 bg-gradient-to-t from-black via-black/80 to-black/40' />
 					<div aria-hidden className='absolute inset-0 -z-10 opacity-[0.07]' style={{ backgroundImage: 'repeating-linear-gradient(0deg, #fff 0 1px, transparent 1px 4px)' }} />
 

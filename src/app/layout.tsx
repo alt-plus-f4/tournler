@@ -33,6 +33,10 @@ export default function RootLayout({
 	return (
 		<html lang='en' data-scroll-behavior='smooth'>
 			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
+				{/* Every avatar, team logo/banner, tournament banner and news cover lives on this Vercel Blob
+				    host — frequently the page's LCP image. Warming the connection here (React hoists <link>
+				    into <head> from anywhere) saves the DNS/TLS handshake off the LCP critical path. */}
+				<link rel='preconnect' href='https://6q0iedxcfemxlbr8.public.blob.vercel-storage.com' />
 				<a
 					href='#content'
 					className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-black'
