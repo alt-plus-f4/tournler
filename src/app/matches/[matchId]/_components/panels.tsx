@@ -436,7 +436,7 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 					<table className='w-full min-w-[420px] text-sm'>
 						<thead>
 							<tr className='text-left text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>
-								<th scope='col' className='px-4 py-2 font-bold'>
+								<th scope='col' className='sticky left-0 z-10 bg-neutral-950 px-4 py-2 font-bold'>
 									Player
 								</th>
 								{['K', 'D', 'A', '+/−', 'K/D'].map((h) => (
@@ -451,7 +451,7 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 								const diff = s.kills - s.deaths;
 								return (
 									<tr key={s.userId} className='group/player transition-colors duration-150 hover:bg-white/5 has-[a:focus-visible]:bg-white/5'>
-										<td className='px-4 py-2.5'>
+										<td className='sticky left-0 z-10 bg-neutral-950 px-4 py-2.5 group-hover/player:bg-neutral-900 group-has-[a:focus-visible]/player:bg-neutral-900'>
 											<Link
 												href={`/profile/${s.userId}`}
 												className='-mx-1 flex min-w-0 cursor-pointer items-center gap-2.5 rounded-sm px-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
@@ -471,7 +471,7 @@ function StatTable({ label, stats, result }: { label: string; stats: PlayerStatR
 						</tbody>
 						<tfoot>
 							<tr className='border-t border-border text-muted-foreground'>
-								<td className='px-4 py-2 text-xs uppercase tracking-[0.1em]'>Team</td>
+								<td className='sticky left-0 z-10 bg-neutral-950 px-4 py-2 text-xs uppercase tracking-[0.1em]'>Team</td>
 								<td className='px-2 py-2 text-right font-mono tabular-nums'>{totals.k}</td>
 								<td className='px-2 py-2 text-right font-mono tabular-nums'>{totals.d}</td>
 								<td className='px-2 py-2 text-right font-mono tabular-nums'>{totals.a}</td>

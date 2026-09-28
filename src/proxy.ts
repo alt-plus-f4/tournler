@@ -55,8 +55,16 @@ export default async function proxy(request: NextRequest) {
 
 	const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
 
-	// Sign-in/up pages are for signed-out visitors; doing this here lets those pages be static.
-	if (pathname === '/sign-in' || pathname === '/sign-up') {
+	// Sign-up is retired: sign-in and sign-up run the same Discord OAuth flow, so there's nothing
+	// distinct to show. Send any old link or bookmark to /sign-in, preserving callbackUrl and the like.
+	if (pathname === '/sign-up') {
+		const signInUrl = new URL('/sign-in', request.url);
+		request.nextUrl.searchParams.forEach((value, key) => signInUrl.searchParams.set(key, value));
+		return NextResponse.redirect(signInUrl);
+	}
+
+	// The sign-in page is for signed-out visitors; doing this here lets it be static.
+	if (pathname === '/sign-in') {
 		return token ? NextResponse.redirect(new URL('/', request.url)) : NextResponse.next();
 	}
 
