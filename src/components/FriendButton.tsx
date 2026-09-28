@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Clock, UserCheck, UserPlus, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ConfirmAction } from '@/components/ConfirmAction';
 import { useToast } from '@/lib/hooks/use-toast';
 import { acceptFriendRequest, declineFriendRequest, removeFriend, sendFriendRequest } from '@/lib/helpers/friends';
 import type { FriendStatus } from '@/lib/helpers/friend-status';
@@ -38,9 +39,17 @@ export function FriendButton({ profileUserId, initialStatus, className }: Friend
 
 	if (status === 'FRIENDS') {
 		return (
-			<Button type='button' variant='outline' size='sm' disabled={pending} onClick={run(() => removeFriend(profileUserId), 'NONE', 'Friend removed')} className={cn('border-white/15 bg-black/50 backdrop-blur-sm', className)} title='Remove friend'>
-				<UserCheck className='mr-2 h-3.5 w-3.5' aria-hidden /> Friends
-			</Button>
+			<ConfirmAction
+				title='Remove this friend?'
+				description="You'll need to send another friend request to reconnect."
+				confirmLabel='Remove friend'
+				onConfirm={run(() => removeFriend(profileUserId), 'NONE', 'Friend removed')}
+				trigger={
+					<Button type='button' variant='outline' size='sm' disabled={pending} className={cn('border-white/15 bg-black/50 backdrop-blur-sm', className)}>
+						<UserCheck className='mr-2 h-3.5 w-3.5' aria-hidden /> Friends
+					</Button>
+				}
+			/>
 		);
 	}
 
