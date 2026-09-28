@@ -15,7 +15,7 @@ function decode(text?: string) {
 
 function CustomLinkRenderer({ data }: CustomLinkRendererProps) {
 	if (!data.link || !/^https?:\/\//.test(data.link)) return null;
-	let host = '';
+	let host: string;
 	try {
 		host = new URL(data.link).hostname.replace(/^www\./, '');
 	} catch {
