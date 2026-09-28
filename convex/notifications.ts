@@ -45,7 +45,7 @@ export const markNotificationAsRead = mutation({
 	},
 });
 
-/** Marks everything read except team invites (type 1), which need an accept/deny answer. */
+/** Marks everything read except team invites (type 1) and friend requests (type 2), which need an accept/deny answer. */
 export const markAllMyNotificationsAsRead = mutation({
 	args: {},
 	handler: async (ctx) => {
@@ -53,7 +53,7 @@ export const markAllMyNotificationsAsRead = mutation({
 		const unread = await ctx.db
 			.query('notifications')
 			.withIndex('by_user', (q) => q.eq('userId', userId))
-			.filter((q) => q.and(q.eq(q.field('isRead'), false), q.neq(q.field('type'), 1)))
+			.filter((q) => q.and(q.eq(q.field('isRead'), false), q.neq(q.field('type'), 1), q.neq(q.field('type'), 2)))
 			.collect();
 		for (const notification of unread) {
 			await ctx.db.patch(notification._id, { isRead: true });
@@ -74,6 +74,14 @@ export const createTeamInviteNotification = mutation({
 	handler: async (ctx, { text, userId, teamId }) => {
 		await requireServer(ctx);
 		await ctx.db.insert('notifications', { text, userId, teamId, isRead: false, type: 1 });
+	},
+});
+
+export const createFriendRequestNotification = mutation({
+	args: { text: v.string(), userId: v.string(), fromUserId: v.string() },
+	handler: async (ctx, { text, userId, fromUserId }) => {
+		await requireServer(ctx);
+		await ctx.db.insert('notifications', { text, userId, fromUserId, isRead: false, type: 2 });
 	},
 });
 

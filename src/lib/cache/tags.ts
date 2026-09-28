@@ -39,6 +39,8 @@ export const MODEL_TAGS: Record<string, readonly CacheTag[]> = {
 	Cs2Team: [T.teams, T.tournaments, T.matches],
 	Cs2TeamInvitation: [T.teams],
 	User: [T.users, T.teams],
+	FriendRequest: [T.users],
+	Friendship: [T.users],
 	UserBadge: [T.users],
 	Badge: [T.users],
 	SteamAccount: [T.users],

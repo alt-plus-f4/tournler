@@ -17,6 +17,18 @@ export async function notifyTeamInvite(userId: string, teamId: number, teamName:
 	});
 }
 
+export async function notifyFriendRequest(userId: string, fromUserId: string, fromName: string) {
+	await serverClient().mutation(api.notifications.createFriendRequestNotification, {
+		text: `${fromName} sent you a friend request.`,
+		userId,
+		fromUserId,
+	});
+}
+
+export async function notifyInfo(userId: string, text: string) {
+	await serverClient().mutation(api.notifications.createInfoNotification, { text, userId });
+}
+
 export async function deleteUserNotifications(userId: string) {
 	return await serverClient().mutation(api.notifications.deleteUserNotifications, { userId });
 }

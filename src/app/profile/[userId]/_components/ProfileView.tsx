@@ -30,6 +30,9 @@ import { GameAccountsSection } from '@/components/profile/GameAccountsSection';
 import { AccountStatusLabel } from '@/components/profile/AccountStatus';
 import { GameRow, GameSection, GameTeam, type ProfileTeamRef } from '@/components/profile/GameSection';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
+import { FriendButton } from '@/components/FriendButton';
+import { ShareButton } from '@/components/ShareButton';
+import type { FriendStatus } from '@/lib/helpers/friend-status';
 
 export interface SteamData {
 	steamId: string;
@@ -260,13 +263,18 @@ interface ProfileViewProps {
 	visibility?: ProfileVisibility;
 	/** The owner's Riot ID state, including an open verification challenge. Owner only. */
 	riotStatus?: RiotStatusResponse;
+	/** Whether the viewer has a session at all (distinct from isOwner). */
+	viewerSignedIn: boolean;
+	/** The viewer's relationship to this profile. Always 'NONE' for the owner or a signed-out viewer. */
+	friendStatus: FriendStatus;
+	friendCount: number;
 }
 
 /**
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus }: ProfileViewProps) {
+export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus, viewerSignedIn, friendStatus, friendCount }: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -396,9 +404,12 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 					{isOwner && (
 						<div className='absolute right-4 top-4 flex gap-2'>
 							{!isEditing ? (
-								<Button variant='outline' size='sm' onClick={startEdit} className='border-white/15 bg-black/50 backdrop-blur-sm'>
-									<Pencil className='mr-2 h-3.5 w-3.5' /> Edit profile
-								</Button>
+								<>
+									<ShareButton className='border-white/15 bg-black/50 backdrop-blur-sm' />
+									<Button variant='outline' size='sm' onClick={startEdit} className='border-white/15 bg-black/50 backdrop-blur-sm'>
+										<Pencil className='mr-2 h-3.5 w-3.5' /> Edit profile
+									</Button>
+								</>
 							) : (
 								<>
 									<Button variant='outline' size='sm' onClick={() => setIsEditing(false)} disabled={isSaving || isRefreshing} className='border-white/15 bg-black/50 backdrop-blur-sm'>
@@ -409,6 +420,13 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 									</Button>
 								</>
 							)}
+						</div>
+					)}
+
+					{!isOwner && (
+						<div className='absolute right-4 top-4 flex gap-2'>
+							<ShareButton className='border-white/15 bg-black/50 backdrop-blur-sm' />
+							{viewerSignedIn && <FriendButton profileUserId={profile.id} initialStatus={friendStatus} />}
 						</div>
 					)}
 
@@ -469,6 +487,11 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 										);
 									})}
 									<span>Joined {formatMonthYear(profile.createdAt, fmt)}</span>
+									{friendCount > 0 && (
+										<span>
+											<span className='font-bold text-white'>{num(friendCount)}</span> {friendCount === 1 ? 'friend' : 'friends'}
+										</span>
+									)}
 									{profile.steam && (
 										<a
 											href={`https://steamcommunity.com/profiles/${profile.steam.steamId}`}
