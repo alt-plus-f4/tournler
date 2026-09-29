@@ -3,12 +3,14 @@
 import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { Check, Copy, Download, ExternalLink, Loader2, Server, Swords } from 'lucide-react';
 import { GameGlyph } from '@/components/games/GameMark';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
+import type { HeadToHead } from '@/lib/helpers/head-to-head';
 import { RoomPanel, SectionLabel, SignalDot } from './room-ui';
 import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, isLolMatch, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
 
@@ -279,6 +281,69 @@ export function MatchInfoPanel({ match }: { match: Match }) {
 					<MapStrip match={match} />
 				</div>
 			)}
+		</RoomPanel>
+	);
+}
+
+const headToHeadFetcher = async (url: string) => {
+	const response = await fetch(url);
+	if (!response.ok) throw new Error('Failed to fetch head-to-head');
+	const data = await response.json();
+	return data.headToHead as HeadToHead | null;
+};
+
+/**
+ * Past results between this match's two teams (issue #119) — real teams only, hidden entirely for
+ * pickups or matches without both sides decided yet, and hidden while there's simply no shared
+ * history (a brand-new matchup isn't a "0-0" worth showing).
+ */
+export function HeadToHeadPanel({ match }: { match: Match }) {
+	const { data: h2h } = useSWR(match.isPickup || !match.teamA || !match.teamB ? null : `/api/matches/${match.id}/head-to-head`, headToHeadFetcher);
+
+	if (!h2h || h2h.matches.length === 0) return null;
+
+	return (
+		<RoomPanel
+			label={
+				<>
+					<Swords className='h-3.5 w-3.5' aria-hidden /> Head-to-head
+				</>
+			}
+			bodyClassName='space-y-3'
+		>
+			<div className='flex items-center justify-between text-sm'>
+				<span className='truncate font-bold text-white'>{h2h.teamA.name}</span>
+				<span className='shrink-0 px-3 font-mono text-base font-black tabular-nums text-white'>
+					{h2h.winsA}–{h2h.winsB}
+				</span>
+				<span className='truncate text-right font-bold text-white'>{h2h.teamB.name}</span>
+			</div>
+
+			{h2h.perMap.length > 0 && (
+				<div className='space-y-1 border-t border-border pt-3'>
+					{h2h.perMap.map((m) => (
+						<div key={m.mapName} className='flex items-center justify-between text-xs text-neutral-300'>
+							<span className='truncate'>{getMapDisplayName(m.mapName)}</span>
+							<span className='font-mono tabular-nums'>
+								{m.winsA}–{m.winsB}
+							</span>
+						</div>
+					))}
+				</div>
+			)}
+
+			<ul className='space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground'>
+				{h2h.matches.slice(0, 5).map((m) => (
+					<li key={m.id}>
+						<Link href={`/matches/${m.id}`} className='flex items-center justify-between gap-2 underline-offset-4 hover:text-white hover:underline'>
+							<span className='truncate'>{m.tournamentName}</span>
+							<span className='shrink-0 font-mono tabular-nums'>
+								{m.scoreA}–{m.scoreB}
+							</span>
+						</Link>
+					</li>
+				))}
+			</ul>
 		</RoomPanel>
 	);
 }
