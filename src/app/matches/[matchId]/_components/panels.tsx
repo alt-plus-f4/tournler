@@ -156,6 +156,32 @@ function DemoLink({ match }: { match: Match }) {
 	);
 }
 
+/**
+ * Caster's stream, shown only while the server has actually reported this match LIVE — same
+ * "server is the source of truth" principle as StatusReadout's LIVE badge (room-ui.tsx).
+ */
+export function StreamPanel({ match }: { match: Match }) {
+	if (match.status !== 'LIVE' || !match.streamUrl) return null;
+	return (
+		<RoomPanel
+			label={
+				<>
+					<SignalDot tone='live' pulse /> Watch live
+				</>
+			}
+		>
+			<a
+				href={match.streamUrl}
+				target='_blank'
+				rel='noopener noreferrer'
+				className='inline-flex items-center gap-2 text-sm font-bold text-white underline-offset-4 hover:underline'
+			>
+				<ExternalLink className='h-4 w-4' aria-hidden /> Watch the broadcast
+			</a>
+		</RoomPanel>
+	);
+}
+
 /** Replaces the Server panel once a match is final: who won, and by what margin. */
 export function ResultPanel({ match }: { match: Match }) {
 	const { teamALabel, teamBLabel } = getSideLabels(match);

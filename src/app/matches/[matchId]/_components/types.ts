@@ -127,6 +127,8 @@ export interface Match {
 	// Fallback demo for matches with no MatchMap rows (pickups/legacy) — series matches store one
 	// demo per map on maps[].demoUrl instead.
 	demoUrl: string | null;
+	// Optional caster/broadcast link, admin-settable — see StreamPanel in panels.tsx.
+	streamUrl: string | null;
 }
 
 export function formatDuration(ms: number) {

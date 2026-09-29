@@ -405,6 +405,10 @@ model Matches {
   // demo per-map on MatchMap.demoUrl instead, since each map in a bo3 gets its own demo.
   demoUrl String? @map("demo_url")
 
+  // Optional caster/broadcast link (Twitch/YouTube/etc), admin-settable. Shown on the match page
+  // only while the match is LIVE (see docs/TOURNAMENT_GUIDE.md, "Update Match").
+  streamUrl String? @map("stream_url")
+
   // Plain (non-relational) self-pointers: explicit bracket-feeder wiring computed once at
   // generation time. Deliberately NOT modeled as Prisma @relation fields — self-relation
   // cascade cycles require onUpdate/onDelete: NoAction, which relationMode="prisma" (emulated
@@ -429,6 +433,8 @@ model Matches {
   @@index([tournamentId])
   @@index([teamAId])
   @@index([teamBId])
+  // Head-to-head lookups (matches between two specific teams) filter on both columns together.
+  @@index([teamAId, teamBId])
   @@index([winnerId])
   @@index([tournamentId, bracketSlot, round])
   @@index([nextMatchId])

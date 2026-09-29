@@ -6,6 +6,14 @@ import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
 import { HostedServerUnsupportedError } from '@/lib/tournaments/game-rules';
 import { NextResponse } from 'next/server';
 
+function isHttpsUrl(value: string) {
+	try {
+		return new URL(value).protocol === 'https:';
+	} catch {
+		return false;
+	}
+}
+
 /**
  * GET /api/matches/[matchId]
  * Fetch match details including teams, scores, and game server info
@@ -190,6 +198,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 
 		if (data.matchDate !== undefined) {
 			await db.matches.update({ where: { id: parsedMatchId }, data: { matchDate: new Date(data.matchDate) } });
+		}
+
+		if (data.streamUrl !== undefined) {
+			if (data.streamUrl === null || (typeof data.streamUrl === 'string' && data.streamUrl.trim() === '')) {
+				await db.matches.update({ where: { id: parsedMatchId }, data: { streamUrl: null } });
+			} else if (typeof data.streamUrl === 'string' && data.streamUrl.length <= 2048 && isHttpsUrl(data.streamUrl.trim())) {
+				await db.matches.update({ where: { id: parsedMatchId }, data: { streamUrl: data.streamUrl.trim() } });
+			} else {
+				return NextResponse.json({ error: 'streamUrl must be an https URL' }, { status: 400 });
+			}
 		}
 
 		if (data.winnerSide !== undefined && data.winnerSide !== 'TEAM_A' && data.winnerSide !== 'TEAM_B') {

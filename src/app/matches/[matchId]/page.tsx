@@ -15,7 +15,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
 import { RoomHeader } from './_components/header';
-import { LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
+import { LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel, StreamPanel } from './_components/panels';
 import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
 import { SignalDot } from './_components/room-ui';
 import { getSideLabels, getStatsBySide, getWinningSide, isLolMatch, type DraftState, type Match, type Side, type VetoState } from './_components/types';
@@ -352,6 +352,7 @@ export default function MatchPage() {
 								/>
 							)}
 							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : isLol ? <LolMatchPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							<StreamPanel match={match} />
 							<MatchInfoPanel match={match} />
 						</div>
 						<div className='order-3'>{column('TEAM_B')}</div>

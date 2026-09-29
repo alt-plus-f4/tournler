@@ -189,6 +189,7 @@ export interface Match {
 	isPickup: boolean;
 	teamAName?: string | null;
 	teamBName?: string | null;
+	streamUrl?: string | null;
 	participants?: MatchParticipant[];
 	gameServer?: GameServer;
 	createdAt: string;
