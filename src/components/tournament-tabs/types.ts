@@ -44,6 +44,12 @@ export interface Champion {
 	name: string;
 }
 
+export interface Podium {
+	champion: Champion;
+	/** null for a decided final where the losing side has no team (shouldn't happen for a real, non-pickup bracket final, but the type stays honest). */
+	runnerUp: Champion | null;
+}
+
 export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL' | 'THIRD_PLACE';
 
