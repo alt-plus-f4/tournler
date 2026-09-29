@@ -24,7 +24,7 @@
 	],
 	"dependencies": {
 		"@dicebear/avataaars": "^9.4.3",
-		"@dicebear/core": "^9.4.3",
+		"@dicebear/core": "^10.7.0",
 		"@editorjs/code": "^2.9.4",
 		"@editorjs/editorjs": "^2.31.7",
 		"@editorjs/embed": "^2.8.0",
