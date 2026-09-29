@@ -16,7 +16,7 @@ export function GameGlyph({ game, className }: { game: Game; className?: string 
 export function GameTag({ game, className, showLabel = true }: { game: Game; className?: string; showLabel?: boolean }) {
 	return (
 		<span
-			className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-widest text-neutral-200', className)}
+			className={cn('inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-border pl-1 pr-4 py-0.5 text-xs font-bold uppercase tracking-widest text-neutral-200', className)}
 			title={GAME_META[game].label}
 		>
 			<GameGlyph game={game} className='h-3.5 w-3.5' />
