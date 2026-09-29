@@ -1,7 +1,7 @@
 import type { Game } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { getRiotStatus } from '@/lib/riot/service';
-import { getFriendCount, getFriendStatus } from '@/lib/helpers/friend-status';
+import { getFriendCount, getFriendsList, getFriendStatus } from '@/lib/helpers/friend-status';
 import { getProfileUser, loadProfileExtras, type ProfileUser } from './_lib/load-profile';
 import { ProfileNotFound, ProfileView, type PublicProfileData } from './_components/ProfileView';
 
@@ -21,11 +21,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 	if (!user) return <ProfileNotFound />;
 
 	const isOwner = session?.user.id === user.id;
-	const [[stats, recentMatches, faceit, lolRank, eventTrophies], riotStatus, friendStatus, friendCount] = await Promise.all([
+	const [[stats, recentMatches, faceit, lolRank, eventTrophies], riotStatus, friendStatus, friendCount, friends] = await Promise.all([
 		loadProfileExtras(user),
 		isOwner ? getRiotStatus(user.id) : Promise.resolve(undefined),
 		session && !isOwner ? getFriendStatus(session.user.id, user.id) : Promise.resolve<'NONE'>('NONE'),
 		getFriendCount(user.id),
+		getFriendsList(user.id),
 	]);
 
 	// Hidden linked accounts never reach a visitor's payload; the owner still sees them (flagged as hidden).
@@ -72,6 +73,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 			viewerSignedIn={!!session}
 			friendStatus={friendStatus}
 			friendCount={friendCount}
+			friends={friends}
 		/>
 	);
 }

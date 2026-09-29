@@ -22,6 +22,8 @@ export interface RosterPlayer {
 	verified: VerifiedMarkData | null;
 	isCaptain: boolean;
 	isMe: boolean;
+	/** The viewer's own friend, per /api/friends — false while signed out or for the viewer's own row. */
+	isFriend: boolean;
 }
 
 /**
@@ -109,6 +111,12 @@ export function TeamColumn({
 										{player.name}
 									</span>
 									{player.verified && <VerifiedMark badge={player.verified} />}
+									{player.isFriend && !player.isMe && (
+										<span title='Friend' className='inline-flex shrink-0 items-center'>
+											<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-emerald-400' />
+											<span className='sr-only'>Friend</span>
+										</span>
+									)}
 									{player.isCaptain && (
 										<span title='Captain' className='shrink-0 text-muted-foreground'>
 											<Crown className='h-3.5 w-3.5' aria-hidden />

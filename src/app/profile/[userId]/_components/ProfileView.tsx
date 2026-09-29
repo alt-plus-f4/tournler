@@ -31,8 +31,9 @@ import { AccountStatusLabel } from '@/components/profile/AccountStatus';
 import { GameRow, GameSection, GameTeam, type ProfileTeamRef } from '@/components/profile/GameSection';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { FriendButton } from '@/components/FriendButton';
+import { PlayerAvatar } from '@/components/PlayerAvatar';
 import { ShareButton } from '@/components/ShareButton';
-import type { FriendStatus } from '@/lib/helpers/friend-status';
+import type { FriendListEntry, FriendStatus } from '@/lib/helpers/friend-status';
 
 export interface SteamData {
 	steamId: string;
@@ -268,13 +269,14 @@ interface ProfileViewProps {
 	/** The viewer's relationship to this profile. Always 'NONE' for the owner or a signed-out viewer. */
 	friendStatus: FriendStatus;
 	friendCount: number;
+	friends: FriendListEntry[];
 }
 
 /**
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus, viewerSignedIn, friendStatus, friendCount }: ProfileViewProps) {
+export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus, viewerSignedIn, friendStatus, friendCount, friends }: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -746,6 +748,22 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 							</div>
 
 							<aside className='space-y-8'>
+								{friends.length > 0 && (
+									<section>
+										<SectionLabel>{friendCount === friends.length ? 'Friends' : `Friends (${num(friendCount)})`}</SectionLabel>
+										<ul className='divide-y divide-border rounded-md border border-border bg-neutral-950'>
+											{friends.map((friend) => (
+												<li key={friend.id}>
+													<Link href={`/profile/${friend.id}`} className='flex items-center gap-3 p-3 transition-colors hover:bg-white/5'>
+														<PlayerAvatar src={friend.image} name={friend.name} size={32} />
+														<span className='min-w-0 flex-1 truncate text-sm font-medium text-white'>{friend.name || 'Unknown player'}</span>
+													</Link>
+												</li>
+											))}
+										</ul>
+									</section>
+								)}
+
 								<section>
 									<SectionLabel>Connected accounts</SectionLabel>
 									<div className='divide-y divide-border rounded-md border border-border bg-neutral-950'>
