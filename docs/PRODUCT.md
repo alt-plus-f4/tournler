@@ -40,7 +40,7 @@ Success means an organizer can run a full event without touching a game server, 
 - FACEIT level/Elo comes from the official FACEIT Data API through the user's linked Steam ID. **FACEIT's own icon assets must not be hotlinked or redistributed.** The level badge is Tournler's own SVG crest in FACEIT's color bands. If there's no API key or no linked account, no level is shown; there is no fake fallback.
 - The account-age "level" on match-page rosters is a separate homegrown fallback and is not a FACEIT level.
 - Permissions are enforced per route through `src/lib/helpers/permissions.ts`. UI shouldn't expose actions a role can't perform.
-- Open decision: Convex notifications have no identity checks yet, so don't design features that assume notification privacy.
+- Convex notifications are scoped to a verified identity: the app signs a short-lived RS256 JWT (`src/lib/convex-auth.ts`, `sub` = NextAuth user id) that `convex/auth.config.ts` verifies, and every query/mutation in `convex/notifications.ts` checks the caller's verified subject against the target user id before reading or writing. Only the app's own server (a separate `tournler-server` subject) may create or bulk-delete notifications.
 
 ## Brand Commitments
 

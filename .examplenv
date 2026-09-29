@@ -137,3 +137,20 @@ CS2_DEFAULT_MAP=de_dust2
 
 CRON_API_KEY=your_cron_shared_secret
 CRON_SECRET=your_vercel_cron_secret
+
+# Convex (real-time notifications only — see convex/schema.ts, convex/notifications.ts).
+
+# CONVEX_DEPLOYMENT/NEXT_PUBLIC_CONVEX_URL/CONVEX_DEPLOY_KEY come from `npx convex dev` /
+
+# the Convex dashboard. CONVEX_AUTH_PRIVATE_KEY signs short-lived identity tokens so Convex
+
+# functions know which Tournler user is calling (src/lib/convex-auth.ts); generate a pair with
+
+# `node scripts/generate-convex-auth-key.mjs` and set the printed public JWKS as CONVEX_AUTH_JWKS
+
+# in the Convex dashboard's environment variables (not this app's env).
+
+CONVEX_DEPLOYMENT=dev:your-deployment-name
+NEXT_PUBLIC_CONVEX_URL=https://your-deployment-name.convex.cloud
+CONVEX_DEPLOY_KEY=your_convex_deploy_key
+CONVEX_AUTH_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_key_here\n-----END PRIVATE KEY-----"
