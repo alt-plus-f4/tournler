@@ -23,6 +23,7 @@ const formatMap: { [key: number]: TournamentFormat } = {
 	0: TournamentFormat.SINGLE_ELIMINATION,
 	1: TournamentFormat.ROUND_ROBIN,
 	2: TournamentFormat.DOUBLE_ELIMINATION,
+	3: TournamentFormat.SWISS,
 };
 
 function parseTournamentStatus(rawStatus: string): TournamentStatus | null {
@@ -135,6 +136,7 @@ export async function POST(req: Request) {
 		const statusValue = formData.get('status')?.toString();
 		const typeValue = formData.get('type')?.toString();
 		const formatValue = formData.get('format')?.toString();
+		const swissRoundsValue = formData.get('swissRounds')?.toString();
 		// Required choice in the create wizard; older clients that don't send it get CS2 (the schema default).
 		const gameValue = formData.get('game')?.toString();
 		const game = gameValue === undefined ? 'CS2' : gameValue === 'CS2' || gameValue === 'LOL' ? gameValue : null;
@@ -171,6 +173,15 @@ export async function POST(req: Request) {
 			return NextResponse.json({ error: 'Invalid format value' }, { status: 400 });
 		}
 
+		let swissRounds: number | null = null;
+		if (parsedFormat === TournamentFormat.SWISS) {
+			const parsed = swissRoundsValue ? Number.parseInt(swissRoundsValue, 10) : NaN;
+			if (!Number.isFinite(parsed) || parsed < 1) {
+				return NextResponse.json({ error: 'swissRounds must be a positive integer for a Swiss tournament' }, { status: 400 });
+			}
+			swissRounds = parsed;
+		}
+
 		const newTournament = await db.cs2Tournament.create({
 			data: {
 				name,
@@ -185,6 +196,7 @@ export async function POST(req: Request) {
 				status: parsedStatus,
 				type: parsedType,
 				format: parsedFormat,
+				swissRounds,
 				game,
 				organizerId: session.user.id,
 			},

@@ -153,7 +153,7 @@ export default function Overview({ tournament, podium, setActiveTab }: { tournam
 							<rect x='45' y='25' width='10' height='10' className='fill-neutral-900' stroke='currentColor' />
 						</svg>
 						<span className='flex min-w-0 flex-col'>
-							<span className='mb-1 text-lg font-bold'>{tournament.format === 'ROUND_ROBIN' ? 'Tournament Standings' : 'Tournament Bracket'}</span>
+							<span className='mb-1 text-lg font-bold'>{tournament.format === 'ROUND_ROBIN' || tournament.format === 'SWISS' ? 'Tournament Standings' : 'Tournament Bracket'}</span>
 							<span className='text-sm text-muted-foreground'>
 								{tournament.status === 'UPCOMING' ? 'Generated from the registered teams when the tournament starts' : 'View the full bracket and results'}
 							</span>

@@ -1,7 +1,7 @@
 export type UserRole = 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN';
 export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
 export type TournamentType = 'ONLINE' | 'OFFLINE';
-export type TournamentFormat = 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION';
+export type TournamentFormat = 'SINGLE_ELIMINATION' | 'ROUND_ROBIN' | 'DOUBLE_ELIMINATION' | 'SWISS';
 export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
 export type MatchSlot = 'TEAM_A' | 'TEAM_B';
@@ -95,6 +95,8 @@ export interface Cs2Tournament {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	/** Set only for format === 'SWISS' — the admin-configured round count. */
+	swissRounds?: number | null;
 	/** CS2 (hosted servers) or LOL (results recorded by staff). Optional: older payloads omit it (= CS2). */
 	game?: 'CS2' | 'LOL';
 	isFeatured: boolean;

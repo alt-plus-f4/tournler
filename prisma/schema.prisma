@@ -47,6 +47,7 @@ enum TournamentFormat {
   SINGLE_ELIMINATION
   ROUND_ROBIN
   DOUBLE_ELIMINATION
+  SWISS
 
   @@map("tournament_format")
 }
@@ -216,6 +217,12 @@ model Cs2Tournament {
 
   bestOf  Int      @default(1) @map("best_of")
   mapPool String[] @default([]) @map("map_pool")
+
+  // Admin-chosen round count for SWISS tournaments only (null for every other format) — Swiss
+  // can't precompute its whole schedule at start like the other formats (round N+1's pairings
+  // depend on round N's results), so this is what tells the round-advance trigger when to stop
+  // generating rounds instead of generating forever. See src/lib/tournaments/swiss.ts.
+  swissRounds Int? @map("swiss_rounds")
 
   isFeatured    Boolean @default(false) @map("is_featured")
   featuredOrder Int?    @map("featured_order")

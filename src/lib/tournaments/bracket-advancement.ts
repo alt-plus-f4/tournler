@@ -7,6 +7,7 @@ import { getVetoState } from './veto';
 import { getDraftState } from './draft';
 import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
 import { getMatchGame, hostsGameServers } from './game-rules';
+import { maybeAdvanceSwissRound } from './swiss';
 
 type Tx = DbTx;
 
@@ -85,7 +86,7 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 	let justCompleted = false;
 
 	const result = await db.$transaction(async (tx) => {
-		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId } });
+		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: { select: { format: true, swissRounds: true } } } });
 
 		// Pickup matches never have real teamAId/teamBId (sides are MatchParticipant rows, not
 		// Cs2Teams), so score writes must be allowed without slots filled — and their winner is
@@ -154,6 +155,9 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 
 		if (updated.status === 'COMPLETED') {
 			await propagateWinner(tx, updated);
+			if (match.tournament.format === 'SWISS') {
+				await maybeAdvanceSwissRound(tx, updated.tournamentId, match.tournament.swissRounds, updated.round);
+			}
 			await finalizeTournamentIfComplete(tx, updated.tournamentId);
 			// The DB's own record of the assigned server's state — distinct from
 			// releaseGameServerAfterMatch below, which acts on the *real* CS2 server over RCON.

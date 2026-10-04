@@ -16,6 +16,7 @@ const FORMAT_LABELS: Record<string, string> = {
 	SINGLE_ELIMINATION: 'Single elim',
 	DOUBLE_ELIMINATION: 'Double elim',
 	ROUND_ROBIN: 'Round robin',
+	SWISS: 'Swiss',
 };
 
 const COLUMN_COUNT = 8;

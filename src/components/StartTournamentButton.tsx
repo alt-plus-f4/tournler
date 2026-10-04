@@ -12,6 +12,7 @@ const FORMAT_LABEL: Record<TournamentFormat, string> = {
 	SINGLE_ELIMINATION: 'Single elimination',
 	DOUBLE_ELIMINATION: 'Double elimination',
 	ROUND_ROBIN: 'Round robin',
+	SWISS: 'Swiss',
 };
 
 // Mirrors the guards in startTournament() (src/lib/tournaments/tournament-service.ts) so the
@@ -20,6 +21,7 @@ const MIN_TEAMS: Record<TournamentFormat, number> = {
 	SINGLE_ELIMINATION: 2,
 	ROUND_ROBIN: 2,
 	DOUBLE_ELIMINATION: 4,
+	SWISS: 4,
 };
 
 interface StartTournamentButtonProps {

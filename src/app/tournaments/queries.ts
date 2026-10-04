@@ -47,6 +47,7 @@ export const getTournamentDetail = cachedQuery(
 				status: true,
 				type: true,
 				format: true,
+				swissRounds: true,
 				game: true,
 				bestOf: true,
 				mapPool: true,
@@ -69,7 +70,8 @@ export const getTournamentDetail = cachedQuery(
 
 /** The bracket slot whose last round is the final; null for formats without a final (round robin). */
 export function finalBracketSlot(format: TournamentFormat): 'WINNERS' | 'GRAND_FINAL' | null {
-	if (format === 'ROUND_ROBIN') return null;
+	// Neither has a bracket final — round robin and Swiss both crown nobody, standings rank everyone.
+	if (format === 'ROUND_ROBIN' || format === 'SWISS') return null;
 	return format === 'DOUBLE_ELIMINATION' ? 'GRAND_FINAL' : 'WINNERS';
 }
 

@@ -28,6 +28,8 @@ interface Standing {
 	wins: number;
 	losses: number;
 	played: number;
+	/** Swiss only — sum of opponents' win totals, the tiebreak below wins. */
+	buchholz?: number;
 	team: { id: number; name: string; logo: string | null } | null;
 }
 
@@ -116,7 +118,7 @@ function BracketSection({ matches, title, isSingleElim }: { matches: BracketMatc
 	);
 }
 
-function StandingsTable({ tournamentId }: { tournamentId: number }) {
+function StandingsTable({ tournamentId, isSwiss }: { tournamentId: number; isSwiss: boolean }) {
 	const { data, error, isLoading } = useSWR(`/api/tournaments/${tournamentId}/standings`, fetcher, { refreshInterval: 5000 });
 	const standings: Standing[] = data?.standings ?? [];
 
@@ -125,41 +127,54 @@ function StandingsTable({ tournamentId }: { tournamentId: number }) {
 	if (standings.length === 0) return <p className='py-8 text-center text-muted-foreground'>No results reported yet.</p>;
 
 	return (
-		<div className='overflow-x-auto'>
-			<table className='w-full border-collapse text-left text-sm'>
-				<caption className='sr-only'>Round-robin standings</caption>
-				<thead>
-					<tr className='border-b border-border text-xs uppercase tracking-wide text-muted-foreground'>
-						<th scope='col' className='px-3 py-2'>
-							#
-						</th>
-						<th scope='col' className='px-3 py-2'>
-							Team
-						</th>
-						<th scope='col' className='px-3 py-2 text-right'>
-							Played
-						</th>
-						<th scope='col' className='px-3 py-2 text-right'>
-							Wins
-						</th>
-						<th scope='col' className='px-3 py-2 text-right'>
-							Losses
-						</th>
-					</tr>
-				</thead>
-				<tbody>
-					{standings.map((s, i) => (
-						<tr key={s.teamId} className='border-b border-border'>
-							<td className='px-3 py-2 font-mono tabular-nums text-muted-foreground'>{i + 1}</td>
-							<td className='px-3 py-2 font-bold uppercase tracking-wide text-white'>{s.team?.name ?? `Team ${s.teamId}`}</td>
-							<td className='px-3 py-2 text-right font-mono tabular-nums text-neutral-300'>{s.played}</td>
-							<td className='px-3 py-2 text-right font-mono tabular-nums text-white'>{s.wins}</td>
-							<td className='px-3 py-2 text-right font-mono tabular-nums text-neutral-300'>{s.losses}</td>
+		<>
+			{isSwiss && typeof data?.totalRounds === 'number' && (
+				<p className='mb-3 text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+					Round {Math.min(data.currentRound ?? 0, data.totalRounds)} of {data.totalRounds}
+				</p>
+			)}
+			<div className='overflow-x-auto'>
+				<table className='w-full border-collapse text-left text-sm'>
+					<caption className='sr-only'>{isSwiss ? 'Swiss standings' : 'Round-robin standings'}</caption>
+					<thead>
+						<tr className='border-b border-border text-xs uppercase tracking-wide text-muted-foreground'>
+							<th scope='col' className='px-3 py-2'>
+								#
+							</th>
+							<th scope='col' className='px-3 py-2'>
+								Team
+							</th>
+							<th scope='col' className='px-3 py-2 text-right'>
+								Played
+							</th>
+							<th scope='col' className='px-3 py-2 text-right'>
+								Wins
+							</th>
+							<th scope='col' className='px-3 py-2 text-right'>
+								Losses
+							</th>
+							{isSwiss && (
+								<th scope='col' className='px-3 py-2 text-right' title="Buchholz — sum of this team's opponents' win totals, the Swiss tiebreak">
+									Buchholz
+								</th>
+							)}
 						</tr>
-					))}
-				</tbody>
-			</table>
-		</div>
+					</thead>
+					<tbody>
+						{standings.map((s, i) => (
+							<tr key={s.teamId} className='border-b border-border'>
+								<td className='px-3 py-2 font-mono tabular-nums text-muted-foreground'>{i + 1}</td>
+								<td className='px-3 py-2 font-bold uppercase tracking-wide text-white'>{s.team?.name ?? `Team ${s.teamId}`}</td>
+								<td className='px-3 py-2 text-right font-mono tabular-nums text-neutral-300'>{s.played}</td>
+								<td className='px-3 py-2 text-right font-mono tabular-nums text-white'>{s.wins}</td>
+								<td className='px-3 py-2 text-right font-mono tabular-nums text-neutral-300'>{s.losses}</td>
+								{isSwiss && <td className='px-3 py-2 text-right font-mono tabular-nums text-neutral-300'>{s.buchholz ?? 0}</td>}
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
+		</>
 	);
 }
 
@@ -170,17 +185,19 @@ function StandingsTable({ tournamentId }: { tournamentId: number }) {
 export default function Bracket({ tournament }: { tournament: TournamentDetail }) {
 	const isUpcoming = tournament.status === 'UPCOMING';
 	const isRoundRobin = tournament.format === 'ROUND_ROBIN';
-	const { data, error, isLoading } = useSWR(!isUpcoming && !isRoundRobin ? `/api/tournaments/${tournament.id}/matches` : null, fetcher, { refreshInterval: 5000 });
+	const isSwiss = tournament.format === 'SWISS';
+	const isStandingsOnly = isRoundRobin || isSwiss;
+	const { data, error, isLoading } = useSWR(!isUpcoming && !isStandingsOnly ? `/api/tournaments/${tournament.id}/matches` : null, fetcher, { refreshInterval: 5000 });
 	const matches: BracketMatch[] = data?.matches ?? [];
 
 	if (isUpcoming) {
 		return <p className='p-8 text-center text-muted-foreground'>The bracket is generated from the registered teams when the tournament starts.</p>;
 	}
 
-	if (isRoundRobin) {
+	if (isStandingsOnly) {
 		return (
 			<div className='p-4 sm:p-6'>
-				<StandingsTable tournamentId={tournament.id} />
+				<StandingsTable tournamentId={tournament.id} isSwiss={isSwiss} />
 			</div>
 		);
 	}

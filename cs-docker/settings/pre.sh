@@ -34,12 +34,12 @@ extract_content() {
 ServerFilesPath=$STEAMAPPDIR
 
 # Step 1: Download and Install Metamod
-# git1468 (2026-09-15, SourceHook interface 18, includes upstream commit 399ccf3 "Tentative fix
-# for shutdown crash"): the newest build confirmed to boot the current CS2 engine cleanly, under
-# real play, with no crash. The *official* CounterStrikeSharp/MatchZy releases can't load against
-# an interface-18 Metamod at all (they're still on SourceHook/interface 17) — see Step 2/3 for the
-# forks that actually work here, and cs-docker/README.md for the full compatibility history this
-# pin comes out of.
+# Pinned to git1468 (production). git1469 was tested at the mrc4tt fork maintainer's request
+# (2026-09-17) to see if it fixed the changelevel/map-load segfault (see cs-docker/README.md's
+# compatibility section — traced via a parsed core dump to a fault inside glibc, not
+# CS2/MatchZy/CSS/Metamod code directly). It did not: changelevel de_mirage crashed identically
+# on git1469 with CounterStrikeSharp v1.0.404 + MatchZy v0.8.83, same "Using spawn points
+# configuration" -> segfault signature, reproduced twice. Reverted back to git1468.
 wget -q -O /tmp/mmsource.tar.gz https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1468-linux.tar.gz
 ensure_directory "${ServerFilesPath}/game/csgo"
 extract_content "/tmp/mmsource.tar.gz" "${ServerFilesPath}/game/csgo"
