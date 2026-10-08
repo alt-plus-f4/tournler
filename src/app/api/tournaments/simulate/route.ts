@@ -13,6 +13,7 @@ import { GAMES } from '@/lib/games';
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 64;
 const DOUBLE_ELIMINATION_MIN_TEAMS = 4;
+const SWISS_MIN_TEAMS = 4;
 const PLAYERS_PER_TEAM = 5;
 const SIMULATED_TOURNAMENT_NAME_PREFIX = 'Simulated Tournament ';
 const SIMULATED_EMAIL_DOMAIN = '@simulated.tournler.local';
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
 		const teamCount = Number.parseInt(body.teamCount, 10);
 		const format = parseFormat(body.format);
 		const game = parseGame(body.game);
+		const swissRounds = format === TournamentFormat.SWISS ? Number.parseInt(body.swissRounds, 10) : null;
 
 		if (!format) {
 			return NextResponse.json({ error: 'Invalid format value' }, { status: 400 });
@@ -71,6 +73,14 @@ export async function POST(request: Request) {
 		if (format === TournamentFormat.DOUBLE_ELIMINATION && teamCount < DOUBLE_ELIMINATION_MIN_TEAMS) {
 			return NextResponse.json({ error: `Double-elimination needs at least ${DOUBLE_ELIMINATION_MIN_TEAMS} teams` }, { status: 400 });
 		}
+		if (format === TournamentFormat.SWISS) {
+			if (teamCount < SWISS_MIN_TEAMS) {
+				return NextResponse.json({ error: `Swiss needs at least ${SWISS_MIN_TEAMS} teams` }, { status: 400 });
+			}
+			if (!swissRounds || swissRounds < 1) {
+				return NextResponse.json({ error: 'swissRounds must be a positive integer for Swiss' }, { status: 400 });
+			}
+		}
 
 		const tournament = await db.cs2Tournament.create({
 			data: {
@@ -82,6 +92,7 @@ export async function POST(request: Request) {
 				type: 'ONLINE',
 				status: 'UPCOMING',
 				format,
+				swissRounds,
 				game,
 				organizerId: session.user.id,
 			},

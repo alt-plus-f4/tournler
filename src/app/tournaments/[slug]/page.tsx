@@ -19,12 +19,12 @@ import { RegistrationGate, WrongGameNotice, type GateRosterEntry } from './_comp
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import TabMenu from '@/components/tournament-tabs/TabMenu';
-import type { Champion, TournamentDetail } from '@/components/tournament-tabs/types';
+import type { Podium, TournamentDetail } from '@/components/tournament-tabs/types';
 import { JoinLeaveButton } from '@/components/JoinLeaveButton';
 import { ShareButton } from '@/components/ShareButton';
 import { StartTournamentButton } from '@/components/StartTournamentButton';
 import Timer from '@/components/Timer';
-import { getTournamentChampion, getTournamentDetail } from '../queries';
+import { getTournamentDetail, getTournamentPodium } from '../queries';
 
 // Registration, brackets and results change constantly (and JoinLeaveButton revalidates this path);
 // always render per request.
@@ -74,12 +74,12 @@ type LoadedTournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;
 
 /**
  * Everything the tabs need that the hero doesn't: per-player flair (FACEIT levels are an external
- * API call) and the champion lookup. Started before the hero's auth queries and awaited inside a
- * Suspense boundary, so the hero paints without waiting on FACEIT.
+ * API call) and the champion/runner-up lookup. Started before the hero's auth queries and awaited
+ * inside a Suspense boundary, so the hero paints without waiting on FACEIT.
  */
-async function loadTabs(tournament: LoadedTournament): Promise<{ detail: TournamentDetail; champion: Champion | null }> {
-	const [champion, withFlair] = await Promise.all([
-		tournament.status === 'COMPLETED' ? getTournamentChampion(tournament.id, tournament.format) : Promise.resolve(null),
+async function loadTabs(tournament: LoadedTournament): Promise<{ detail: TournamentDetail; podium: Podium | null }> {
+	const [podium, withFlair] = await Promise.all([
+		tournament.status === 'COMPLETED' ? getTournamentPodium(tournament.id, tournament.format) : Promise.resolve(null),
 		// Verified badge + real FACEIT level per rostered player; Steam IDs/badge rows are stripped here.
 		flairMapper(tournament.teams.flatMap((t) => t.members)),
 	]);
@@ -89,12 +89,12 @@ async function loadTabs(tournament: LoadedTournament): Promise<{ detail: Tournam
 		endDate: tournament.endDate.toISOString(),
 		teams: tournament.teams.map((t) => ({ ...t, members: t.members.map(withFlair) })),
 	};
-	return { detail, champion };
+	return { detail, podium };
 }
 
 async function TournamentTabs({ data }: { data: ReturnType<typeof loadTabs> }) {
-	const { detail, champion } = await data;
-	return <TabMenu tournament={detail} champion={champion} />;
+	const { detail, podium } = await data;
+	return <TabMenu tournament={detail} podium={podium} />;
 }
 
 /** Matches TabMenu's tab bar + first panel footprint so the page doesn't jump when it streams in. */

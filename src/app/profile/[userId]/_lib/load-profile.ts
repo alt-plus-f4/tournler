@@ -91,7 +91,7 @@ export interface EventTrophy {
  */
 async function computeEventTrophies(userId: string, currentTeamIds: number[]): Promise<EventTrophy[]> {
 	const tournaments = await db.cs2Tournament.findMany({
-		where: { status: TournamentStatus.COMPLETED, isSystem: false, format: { not: 'ROUND_ROBIN' } },
+		where: { status: TournamentStatus.COMPLETED, isSystem: false, format: { notIn: ['ROUND_ROBIN', 'SWISS'] } },
 		select: { id: true, name: true, logoUrl: true, bannerUrl: true, endDate: true, format: true },
 	});
 	if (tournaments.length === 0) return [];

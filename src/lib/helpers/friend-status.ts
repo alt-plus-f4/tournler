@@ -27,3 +27,20 @@ export async function getFriendStatus(viewerId: string, profileUserId: string): 
 export function getFriendCount(userId: string): Promise<number> {
 	return db.friendship.count({ where: { userId } });
 }
+
+export interface FriendListEntry {
+	id: string;
+	name: string | null;
+	image: string | null;
+}
+
+/** userId's friends, most recently befriended first. Public — same visibility as the friend count already shown on any profile. */
+export async function getFriendsList(userId: string, limit = 24): Promise<FriendListEntry[]> {
+	const rows = await db.friendship.findMany({
+		where: { userId },
+		orderBy: { createdAt: 'desc' },
+		take: limit,
+		select: { friend: { select: { id: true, name: true, image: true } } },
+	});
+	return rows.map((r) => r.friend);
+}

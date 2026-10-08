@@ -38,6 +38,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		if (match.tournament.organizerId !== session.user.id && !canManageServers) {
 			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
+		if (match.status === 'COMPLETED') {
+			return NextResponse.json({ error: 'This match is completed — its server may already be reserved for another match' }, { status: 409 });
+		}
 		if (!hostsGameServers(match.tournament.game)) {
 			return NextResponse.json({ error: new HostedServerUnsupportedError(match.tournament.game, 'sync').message }, { status: 409 });
 		}

@@ -36,10 +36,12 @@ jest.mock('@/lib/db', () => {
 	}
 
 	const matchesApi = {
-		findUniqueOrThrow: async ({ where }: any) => {
+		findUniqueOrThrow: async ({ where, include }: any) => {
 			const m = state.matches.find((x) => x.id === where.id);
 			if (!m) throw notFoundError();
-			return { ...m };
+			const result = { ...m };
+			if (include?.tournament) result.tournament = { format: state.tournament.format, swissRounds: state.tournament.swissRounds ?? null, game: state.tournament.game ?? 'CS2' };
+			return result;
 		},
 		findMany: async ({ where }: any = {}) => state.matches.filter((m) => (where?.tournamentId === undefined ? true : m.tournamentId === where.tournamentId)).map((m) => ({ ...m })),
 		updateMany: async ({ where, data }: any) => {
@@ -74,6 +76,25 @@ jest.mock('@/lib/db', () => {
 			};
 			state.matches.push(m);
 			return { ...m };
+		},
+		createMany: async ({ data }: any) => {
+			for (const row of data) {
+				state.matches.push({
+					id: ++state.tournament.__nextId,
+					scoreTeamA: null,
+					scoreTeamB: null,
+					winnerId: null,
+					startedAt: null,
+					completedAt: null,
+					nextMatchId: null,
+					nextMatchSlot: null,
+					nextLoserMatchId: null,
+					nextLoserMatchSlot: null,
+					status: 'SCHEDULED',
+					...row,
+				});
+			}
+			return { count: data.length };
 		},
 		count: async ({ where }: any = {}) =>
 			state.matches.filter((m) => {
@@ -125,16 +146,17 @@ jest.mock('@/lib/db', () => {
 
 import { db } from '@/lib/db';
 import { recordMatchResult, MatchResultConflictError, computeRoundRobinStandings } from '../bracket-advancement';
-import { generateSingleEliminationBracket, generateDoubleEliminationBracket, generateRoundRobinBracket, GeneratedMatch } from '../bracket-generator';
+import { generateSingleEliminationBracket, generateDoubleEliminationBracket, generateRoundRobinBracket, generateSwissRound1, GeneratedMatch } from '../bracket-generator';
+import { computeSwissStandings } from '../swiss';
 
 function makeTeams(n: number): Cs2Team[] {
 	return Array.from({ length: n }, (_, i) => ({ id: i + 1, name: `Team ${i + 1}` }) as Cs2Team);
 }
 
-function resetState(teams: Cs2Team[]) {
+function resetState(teams: Cs2Team[], overrides: { format?: string; swissRounds?: number | null } = {}) {
 	const state = (db as any).__state;
 	state.matches = [];
-	state.tournament = { id: 1, status: 'ONGOING', format: 'SINGLE_ELIMINATION', teams, __nextId: 1000 } as any;
+	state.tournament = { id: 1, status: 'ONGOING', format: 'SINGLE_ELIMINATION', swissRounds: null, teams, __nextId: 1000, ...overrides } as any;
 }
 
 /** Inserts generator output into the fake db, remapping localIndex -> fake row id (localIndex + 1). */
@@ -318,5 +340,81 @@ describe('computeRoundRobinStandings', () => {
 		expect(standings[1].wins).toBe(2);
 		expect(standings[2].wins).toBe(1);
 		expect(standings[3].wins).toBe(1);
+	});
+});
+
+describe('recordMatchResult — Swiss round advancement', () => {
+	it('generates the next round from standings once every match in the current round completes', async () => {
+		const teams = makeTeams(4);
+		resetState(teams, { format: 'SWISS', swissRounds: 3 });
+		seed(generateSwissRound1(teams), 1);
+
+		const r1m0 = findMatch(1, 'WINNERS', 0); // 1 v 2
+		const r1m1 = findMatch(1, 'WINNERS', 1); // 3 v 4
+		expect([r1m0.teamAId, r1m0.teamBId].sort()).toEqual([1, 2]);
+		expect([r1m1.teamAId, r1m1.teamBId].sort()).toEqual([3, 4]);
+
+		await recordMatchResult(r1m0.id, { winnerId: 1 });
+		// Tournament must not look "complete" just because round 1 alone is all COMPLETED.
+		expect((db as any).__state.tournament.status).toBe('ONGOING');
+		expect((db as any).__state.matches.filter((m: any) => m.round === 2)).toHaveLength(0);
+
+		await recordMatchResult(r1m1.id, { winnerId: 3 });
+
+		const round2 = (db as any).__state.matches.filter((m: any) => m.round === 2);
+		expect(round2).toHaveLength(2);
+		// The two round-1 winners (undefeated, tied on Buchholz) face off; same for the two losers.
+		const pairs = round2.map((m: any) => [m.teamAId, m.teamBId].sort((a: number, b: number) => a - b).join('-'));
+		expect(pairs.sort()).toEqual(['1-3', '2-4']);
+		expect((db as any).__state.tournament.status).toBe('ONGOING');
+	});
+
+	it('completes the tournament once the configured round count is reached, without generating another round', async () => {
+		const teams = makeTeams(4);
+		resetState(teams, { format: 'SWISS', swissRounds: 1 });
+		seed(generateSwissRound1(teams), 1);
+
+		const r1m0 = findMatch(1, 'WINNERS', 0);
+		const r1m1 = findMatch(1, 'WINNERS', 1);
+		await recordMatchResult(r1m0.id, { winnerId: r1m0.teamAId });
+		await recordMatchResult(r1m1.id, { winnerId: r1m1.teamAId });
+
+		expect((db as any).__state.matches.filter((m: any) => m.round === 2)).toHaveLength(0);
+		expect((db as any).__state.tournament.status).toBe('COMPLETED');
+	});
+
+	it('gives the lowest-standing team without a prior bye the bye each round for an odd count', async () => {
+		const teams = makeTeams(5);
+		resetState(teams, { format: 'SWISS', swissRounds: 2 });
+		seed(generateSwissRound1(teams), 1);
+
+		const round1 = (db as any).__state.matches.filter((m: any) => m.round === 1);
+		const bye1 = round1.find((m: any) => m.status === 'COMPLETED');
+		expect(bye1).toBeTruthy();
+
+		for (const m of round1.filter((m: any) => m.status !== 'COMPLETED')) {
+			await recordMatchResult(m.id, { winnerId: m.teamAId });
+		}
+
+		const round2 = (db as any).__state.matches.filter((m: any) => m.round === 2);
+		const bye2 = round2.find((m: any) => m.teamBId === null);
+		expect(bye2).toBeTruthy();
+		expect(bye2.teamAId).not.toBe(bye1.teamAId); // no repeat bye while an eligible team remains
+	});
+});
+
+describe('computeSwissStandings', () => {
+	it('ranks by wins then Buchholz then team id, crediting a bye as a win with no Buchholz contribution', async () => {
+		const teams = makeTeams(4);
+		resetState(teams, { format: 'SWISS', swissRounds: 2 });
+		seed(generateSwissRound1(teams), 1); // 1v2, 3v4
+
+		await recordMatchResult(findMatch(1, 'WINNERS', 0).id, { winnerId: 1 });
+		await recordMatchResult(findMatch(1, 'WINNERS', 1).id, { winnerId: 3 });
+
+		const { standings } = await computeSwissStandings(db as any, 1);
+		expect(standings.map((s) => s.teamId)).toEqual([1, 3, 2, 4]);
+		expect(standings[0].wins).toBe(1);
+		expect(standings[0].buchholz).toBe(0); // beat team 2, which has 0 wins so far
 	});
 });

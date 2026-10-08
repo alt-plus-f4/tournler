@@ -28,6 +28,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 	const [scoreTeamB, setScoreTeamB] = useState('');
 	const [winnerId, setWinnerId] = useState('');
 	const [matchDate, setMatchDate] = useState('');
+	const [streamUrl, setStreamUrl] = useState('');
 	const [isSaving, setIsSaving] = useState(false);
 	const { toast } = useToast();
 
@@ -37,6 +38,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 			setScoreTeamB(match.scoreTeamB?.toString() ?? '');
 			setWinnerId(match.winnerId?.toString() ?? '');
 			setMatchDate(match.matchDate ? toLocalInput(match.matchDate) : '');
+			setStreamUrl(match.streamUrl ?? '');
 		}
 	}, [match]);
 
@@ -50,7 +52,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 		e.preventDefault();
 		setIsSaving(true);
 		try {
-			const body: Record<string, unknown> = { matchDate: new Date(matchDate).toISOString() };
+			const body: Record<string, unknown> = { matchDate: new Date(matchDate).toISOString(), streamUrl: streamUrl.trim() || null };
 			if (canEditResult) {
 				if (scoreTeamA !== '') body.scoreTeamA = Number(scoreTeamA);
 				if (scoreTeamB !== '') body.scoreTeamB = Number(scoreTeamB);
@@ -97,6 +99,12 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 					<div className='space-y-2'>
 						<Label htmlFor='edit-match-date'>Match date</Label>
 						<Input id='edit-match-date' type='datetime-local' className='font-mono tabular-nums' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
+					</div>
+
+					<div className='space-y-2'>
+						<Label htmlFor='edit-stream-url'>Stream link</Label>
+						<Input id='edit-stream-url' type='url' placeholder='https://twitch.tv/yourchannel' value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} />
+						<p className='text-xs text-muted-foreground'>Shown on the match page as a &quot;Watch live&quot; link while the match is LIVE. Leave blank to remove.</p>
 					</div>
 
 					{canEditResult ? (

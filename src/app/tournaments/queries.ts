@@ -3,7 +3,7 @@ import { TournamentStatus, type Game, type TournamentFormat } from '@prisma/clie
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { playerFlairSelect } from '@/lib/helpers/player-flair';
-import type { Champion } from '@/components/tournament-tabs/types';
+import type { Champion, Podium } from '@/components/tournament-tabs/types';
 
 /**
  * Shared (non-viewer-specific) reads for the /tournaments pages, served from Next's data cache.
@@ -47,6 +47,7 @@ export const getTournamentDetail = cachedQuery(
 				status: true,
 				type: true,
 				format: true,
+				swissRounds: true,
 				game: true,
 				bestOf: true,
 				mapPool: true,
@@ -69,7 +70,8 @@ export const getTournamentDetail = cachedQuery(
 
 /** The bracket slot whose last round is the final; null for formats without a final (round robin). */
 export function finalBracketSlot(format: TournamentFormat): 'WINNERS' | 'GRAND_FINAL' | null {
-	if (format === 'ROUND_ROBIN') return null;
+	// Neither has a bracket final — round robin and Swiss both crown nobody, standings rank everyone.
+	if (format === 'ROUND_ROBIN' || format === 'SWISS') return null;
 	return format === 'DOUBLE_ELIMINATION' ? 'GRAND_FINAL' : 'WINNERS';
 }
 
@@ -85,22 +87,36 @@ export function pickDecidedFinal<M extends { round: number; status: string }>(fi
 }
 
 /**
- * The champion is only named when the bracket itself decided one: the completed last-round match
- * of the winners bracket (single elimination) or of the grand final (double elimination, where a
- * bracket reset adds a round 2). Round robin has no final match, so nothing is claimed.
+ * Champion + runner-up are only named when the bracket itself decided a winner: the completed
+ * last-round match of the winners bracket (single elimination) or of the grand final (double
+ * elimination, where a bracket reset adds a round 2). Round robin has no final match, so nothing
+ * is claimed — its standings are a separate read (computeRoundRobinStandings).
  */
-export const getTournamentChampion = cachedQuery(
-	async (tournamentId: number, format: TournamentFormat): Promise<Champion | null> => {
+export const getTournamentPodium = cachedQuery(
+	async (tournamentId: number, format: TournamentFormat): Promise<Podium | null> => {
 		const slot = finalBracketSlot(format);
 		if (!slot) return null;
 		const finals = await db.matches.findMany({
 			where: { tournamentId, bracketSlot: slot },
 			orderBy: { round: 'desc' },
 			take: 2,
-			select: { round: true, status: true, winner: { select: { id: true, name: true } } },
+			select: {
+				round: true,
+				status: true,
+				winnerId: true,
+				teamA: { select: { id: true, name: true } },
+				teamB: { select: { id: true, name: true } },
+			},
 		});
-		return pickDecidedFinal(finals)?.winner ?? null;
+		const decided = pickDecidedFinal(finals);
+		if (!decided || decided.winnerId === null) return null;
+
+		const champion: Champion | null = decided.teamA?.id === decided.winnerId ? decided.teamA : decided.teamB?.id === decided.winnerId ? decided.teamB : null;
+		if (!champion) return null;
+		const runnerUp: Champion | null = decided.teamA?.id === champion.id ? decided.teamB : decided.teamA;
+
+		return { champion, runnerUp: runnerUp ?? null };
 	},
-	['tournament-champion'],
+	['tournament-podium'],
 	{ tags: ['matches', 'tournaments', 'teams'], revalidate: REVALIDATE.standard },
 );

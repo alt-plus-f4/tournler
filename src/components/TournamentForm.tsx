@@ -19,6 +19,7 @@ const FORMAT_OPTIONS = [
 	{ value: '0', label: 'Single elimination' },
 	{ value: '1', label: 'Round robin' },
 	{ value: '2', label: 'Double elimination' },
+	{ value: '3', label: 'Swiss' },
 ] as const;
 
 const TYPE_OPTIONS = [
@@ -28,16 +29,24 @@ const TYPE_OPTIONS = [
 
 const optionalNumber = z.preprocess((v) => (v === '' || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)), z.number().int().min(0, 'Must be 0 or more').optional());
 
+const SWISS_FORMAT_VALUE = '3';
+
 const schema = z
 	.object({
 		name: z.string().trim().min(1, 'Give the tournament a name'),
 		game: z.enum(GAMES, { required_error: 'Pick a game' }),
-		format: z.enum(['0', '1', '2']),
+		format: z.enum(['0', '1', '2', '3']),
 		type: z.enum(['0', '1']),
 		location: z.string().trim().min(1, 'Add a location (a city, venue or region)'),
 		teamCapacity: z.preprocess(
 			(v) => (v === '' || Number.isNaN(v) ? undefined : Number(v)),
 			z.number({ required_error: 'Set how many teams can join', invalid_type_error: 'Set how many teams can join' }).int().min(2, 'At least 2 teams').max(256, 'At most 256 teams'),
+		),
+		// Swiss-only: how many rounds to play. Preprocessed like teamCapacity/prizePool since the
+		// underlying <input type=number> always hands back a string (or '' when empty).
+		swissRounds: z.preprocess(
+			(v) => (v === '' || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+			z.number().int().min(1, 'At least 1 round').max(20, 'At most 20 rounds').optional(),
 		),
 		startDate: z.string().min(1, 'Pick a start time'),
 		endDate: z.string().min(1, 'Pick an end time'),
@@ -46,13 +55,14 @@ const schema = z
 		bannerFile: z.custom<File | null>().optional(),
 		logoFile: z.custom<File | null>().optional(),
 	})
-	.refine((v) => !v.startDate || !v.endDate || new Date(v.endDate) >= new Date(v.startDate), { path: ['endDate'], message: 'End must be after the start' });
+	.refine((v) => !v.startDate || !v.endDate || new Date(v.endDate) >= new Date(v.startDate), { path: ['endDate'], message: 'End must be after the start' })
+	.refine((v) => v.format !== SWISS_FORMAT_VALUE || v.swissRounds !== undefined, { path: ['swissRounds'], message: 'Set how many rounds this Swiss tournament plays' });
 
 type FormValues = z.input<typeof schema>;
 type ParsedValues = z.output<typeof schema>;
 
 const STEPS: { title: string; fields: FieldPath<FormValues>[] }[] = [
-	{ title: 'Basics', fields: ['game', 'name', 'format', 'type', 'location', 'teamCapacity'] },
+	{ title: 'Basics', fields: ['game', 'name', 'format', 'swissRounds', 'type', 'location', 'teamCapacity'] },
 	{ title: 'Schedule', fields: ['startDate', 'endDate', 'description', 'prizePool'] },
 	{ title: 'Media & review', fields: ['bannerFile', 'logoFile'] },
 ];
@@ -61,6 +71,7 @@ const DEFAULTS: FormValues = {
 	name: '',
 	game: 'CS2',
 	format: '0',
+	swissRounds: '' as unknown as number,
 	type: '0',
 	location: '',
 	teamCapacity: '' as unknown as number,
@@ -132,6 +143,7 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 		formData.append('name', values.name);
 		formData.append('game', values.game);
 		formData.append('format', values.format);
+		if (values.format === SWISS_FORMAT_VALUE && values.swissRounds !== undefined) formData.append('swissRounds', String(values.swissRounds));
 		formData.append('type', values.type);
 		formData.append('location', values.location);
 		formData.append('teamCapacity', String(values.teamCapacity));
@@ -247,6 +259,13 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 											</Select>
 										)}
 									/>
+									{v.format === SWISS_FORMAT_VALUE && (
+										<div className='mt-2 space-y-2'>
+											<Label htmlFor='create-swissRounds'>Number of rounds</Label>
+											<Input id='create-swissRounds' type='number' inputMode='numeric' min={1} max={20} className='font-mono tabular-nums' {...register('swissRounds')} {...invalid('swissRounds')} />
+											<FieldError id={errId('swissRounds')} message={errors.swissRounds?.message} />
+										</div>
+									)}
 								</div>
 								<div className='space-y-2'>
 									<Label htmlFor='create-type'>Online or LAN</Label>
@@ -351,7 +370,10 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									<dt className='text-muted-foreground'>Name</dt>
 									<dd className='truncate'>{v.name || '—'}</dd>
 									<dt className='text-muted-foreground'>Format</dt>
-									<dd>{FORMAT_OPTIONS.find((o) => o.value === v.format)?.label}</dd>
+									<dd>
+										{FORMAT_OPTIONS.find((o) => o.value === v.format)?.label}
+										{v.format === SWISS_FORMAT_VALUE && v.swissRounds !== undefined && ` · ${v.swissRounds} rounds`}
+									</dd>
 									<dt className='text-muted-foreground'>Type</dt>
 									<dd>
 										{TYPE_OPTIONS.find((o) => o.value === v.type)?.label} · {v.location || '—'}

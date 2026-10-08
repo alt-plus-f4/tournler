@@ -81,7 +81,7 @@ export default function Matches({ tournament }: { tournament: TournamentDetail }
 				const aWon = winnerId !== undefined && winnerId === match.teamA?.id;
 				const bWon = winnerId !== undefined && winnerId === match.teamB?.id;
 				const date = new Date(match.matchDate);
-				const stage = tournament.format === 'ROUND_ROBIN' ? `Round ${match.round}` : `${SLOT_LABEL[match.bracketSlot]} · Round ${match.round}`;
+				const stage = tournament.format === 'ROUND_ROBIN' || tournament.format === 'SWISS' ? `Round ${match.round}` : `${SLOT_LABEL[match.bracketSlot]} · Round ${match.round}`;
 
 				return (
 					<li key={match.id}>

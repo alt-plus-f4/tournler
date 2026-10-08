@@ -28,7 +28,7 @@ Success means an organizer can run a full event without touching a game server, 
 
 - **Tournament lifecycle:** create → registration → start (manual, or automatic via an external cron hitting `/api/tournaments/check-start`) → matches pre-warm 5 minutes before start → MatchZy `series_start` flips the match to LIVE → live scoreboard and game timer → `series_end` advances the bracket.
 - **Formats:** single elimination, double elimination, and round robin. There are also pickup matches, which have no team entity: sides are `TEAM_A`/`TEAM_B` and there is no map veto.
-- **Match page** is the live surface: map veto, rosters, live score, and a timer. Admins can pause, resume, restart, or end the match.
+- **Match page** is the live surface: map veto, rosters, live score, a timer, and an optional caster stream link (shown only while the match is LIVE). Admins can pause, resume, restart, or end the match.
 - **Identity:** Steam OpenID (required for connecting to servers and for the FACEIT lookup), Discord OAuth, and email magic link.
 - **Content:** news posts and featured tournaments/news curated from the admin area onto the homepage.
 - **Real-time notifications** go through Convex. Everything else is Prisma/Postgres.
@@ -40,7 +40,7 @@ Success means an organizer can run a full event without touching a game server, 
 - FACEIT level/Elo comes from the official FACEIT Data API through the user's linked Steam ID. **FACEIT's own icon assets must not be hotlinked or redistributed.** The level badge is Tournler's own SVG crest in FACEIT's color bands. If there's no API key or no linked account, no level is shown; there is no fake fallback.
 - The account-age "level" on match-page rosters is a separate homegrown fallback and is not a FACEIT level.
 - Permissions are enforced per route through `src/lib/helpers/permissions.ts`. UI shouldn't expose actions a role can't perform.
-- Open decision: Convex notifications have no identity checks yet, so don't design features that assume notification privacy.
+- Convex notifications are scoped to a verified identity: the app signs a short-lived RS256 JWT (`src/lib/convex-auth.ts`, `sub` = NextAuth user id) that `convex/auth.config.ts` verifies, and every query/mutation in `convex/notifications.ts` checks the caller's verified subject against the target user id before reading or writing. Only the app's own server (a separate `tournler-server` subject) may create or bulk-delete notifications.
 
 ## Brand Commitments
 

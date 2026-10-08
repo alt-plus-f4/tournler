@@ -47,6 +47,7 @@ enum TournamentFormat {
   SINGLE_ELIMINATION
   ROUND_ROBIN
   DOUBLE_ELIMINATION
+  SWISS
 
   @@map("tournament_format")
 }
@@ -216,6 +217,12 @@ model Cs2Tournament {
 
   bestOf  Int      @default(1) @map("best_of")
   mapPool String[] @default([]) @map("map_pool")
+
+  // Admin-chosen round count for SWISS tournaments only (null for every other format) — Swiss
+  // can't precompute its whole schedule at start like the other formats (round N+1's pairings
+  // depend on round N's results), so this is what tells the round-advance trigger when to stop
+  // generating rounds instead of generating forever. See src/lib/tournaments/swiss.ts.
+  swissRounds Int? @map("swiss_rounds")
 
   isFeatured    Boolean @default(false) @map("is_featured")
   featuredOrder Int?    @map("featured_order")
@@ -405,6 +412,10 @@ model Matches {
   // demo per-map on MatchMap.demoUrl instead, since each map in a bo3 gets its own demo.
   demoUrl String? @map("demo_url")
 
+  // Optional caster/broadcast link (Twitch/YouTube/etc), admin-settable. Shown on the match page
+  // only while the match is LIVE (see docs/TOURNAMENT_GUIDE.md, "Update Match").
+  streamUrl String? @map("stream_url")
+
   // Plain (non-relational) self-pointers: explicit bracket-feeder wiring computed once at
   // generation time. Deliberately NOT modeled as Prisma @relation fields — self-relation
   // cascade cycles require onUpdate/onDelete: NoAction, which relationMode="prisma" (emulated
@@ -429,6 +440,8 @@ model Matches {
   @@index([tournamentId])
   @@index([teamAId])
   @@index([teamBId])
+  // Head-to-head lookups (matches between two specific teams) filter on both columns together.
+  @@index([teamAId, teamBId])
   @@index([winnerId])
   @@index([tournamentId, bracketSlot, round])
   @@index([nextMatchId])
@@ -653,6 +666,10 @@ model HomepageSettings {
 
   // HLTV-style "recent forum posts" block on the homepage sidebar.
   showForumPosts Boolean @default(true) @map("show_forum_posts")
+
+  // The "live now" scoreboard that leads the homepage while a match is in progress. Off hides it
+  // (and its stream) entirely; the rewatch player leads instead.
+  showLiveMatches Boolean @default(true) @map("show_live_matches")
 
   updatedAt DateTime @updatedAt @map("updated_at")
 

@@ -26,6 +26,21 @@ export class NoAvailableGameServerError extends Error {
  * right after this.
  */
 export async function ensureGameServer(tx: Db, matchId: number): Promise<{ gameServer: GameServer; created: boolean }> {
+	// The slot pick below is read-then-insert, so it must run in a transaction holding the pool lock;
+	// callers passing the bare client (prewarm cron, manual route) get one made for them.
+	if ('$transaction' in tx) {
+		return tx.$transaction((inner) => ensureGameServerLocked(inner, matchId));
+	}
+	return ensureGameServerLocked(tx, matchId);
+}
+
+const POOL_ALLOCATION_LOCK_KEY = 727001;
+
+async function ensureGameServerLocked(tx: DbTx, matchId: number): Promise<{ gameServer: GameServer; created: boolean }> {
+	// Serialises slot allocation across concurrent starts (admin Start racing the prewarm cron),
+	// released automatically at commit.
+	await tx.$executeRaw`SELECT pg_advisory_xact_lock(${POOL_ALLOCATION_LOCK_KEY})`;
+
 	// Never claim a CS2 pool slot for a game Tournler doesn't host (LoL): throws HostedServerUnsupportedError.
 	await assertMatchHostsGameServer(tx, matchId, 'provision');
 

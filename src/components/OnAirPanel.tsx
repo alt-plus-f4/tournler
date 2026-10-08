@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
 import { GameTag } from '@/components/games/GameMark';
+import { LiveStream } from '@/components/home/LiveStream';
+import { Radio } from 'lucide-react';
 
 const teamSelect = { select: { name: true, logo: true } } as const;
 
@@ -117,13 +119,14 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 					</p>
 				)}
 			</Link>
+			{featured.streamUrl && <LiveStream streamUrl={featured.streamUrl} label={`${sideA.name} vs ${sideB.name}`} />}
 			{others.length > 0 && (
 				<ul className='divide-y divide-border border-t border-border'>
 					{others.map((match) => {
 						const [a, b] = sideLabels(match);
 						return (
-							<li key={match.id}>
-								<Link href={`/matches/${match.id}`} className='flex items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.03] sm:px-8'>
+							<li key={match.id} className='flex items-center'>
+								<Link href={`/matches/${match.id}`} className='flex min-w-0 flex-1 items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.03] sm:px-8'>
 									<span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', match.status === 'PAUSED' ? 'bg-signal-hold' : 'bg-signal-live motion-safe:animate-pulse')} aria-hidden />
 									<span className='sr-only'>{match.status === 'PAUSED' ? 'Paused' : 'Live'}:</span>
 									<GameTag game={match.tournament.game} showLabel={false} className='shrink-0' />
@@ -134,6 +137,20 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 										{match.scoreTeamA ?? 0} : {match.scoreTeamB ?? 0}
 									</span>
 								</Link>
+								{match.streamUrl && (
+									<a
+										href={match.streamUrl}
+										target='_blank'
+										rel='noopener noreferrer'
+										className='mr-5 inline-flex shrink-0 items-center gap-1.5 rounded-sm px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-white sm:mr-8'
+									>
+										<Radio className='h-3.5 w-3.5' aria-hidden />
+										<span className='sr-only sm:not-sr-only'>Stream</span>
+										<span className='sr-only'>
+											for {a.name} vs {b.name}
+										</span>
+									</a>
+								)}
 							</li>
 						);
 					})}

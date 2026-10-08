@@ -191,11 +191,12 @@ Body: {
   "scoreTeamA": number,
   "scoreTeamB": number,
   "winnerId": number,
-  "matchDate": ISO8601Date
+  "matchDate": ISO8601Date,
+  "streamUrl": string | null
 }
 ```
 
-`action`, score/winner fields, and `matchDate` can each be sent independently (or combined in one request; `action` is applied first).
+`action`, score/winner fields, `matchDate`, and `streamUrl` can each be sent independently (or combined in one request; `action` is applied first).
 
 - `action: "START"` — `SCHEDULED` → `LIVE`, sets `startedAt`. Requires both `teamAId`/`teamBId` to be filled (skipped for pickup matches). Also provisions the match's `GameServer` (or reuses one that already exists) in the same transaction via `ensureGameServer()`, so connect IP/port/password — the data the game-state pipeline is keyed on — exist immediately, without a separate manual "create game server" step.
 - `action: "PAUSE"` — `LIVE` → `PAUSED`, sets `pausedAt`.
@@ -203,6 +204,7 @@ Body: {
 - Sending `scoreTeamA`/`scoreTeamB` without `winnerId` updates the score and moves the match to `LIVE` (via `recordMatchResult`, the same write path the game server uses).
 - Sending `winnerId` completes the match (`COMPLETED`), triggering bracket advancement — rejected with `409` if the match is already completed with a _different_ winner.
 - Invalid action / wrong-status transitions (e.g. pausing a non-live match) return `409`.
+- `streamUrl` — an optional caster/broadcast link (must be `https://` or `null` to clear it, rejected with `400` otherwise). Rendered on the public match page as a "Watch live" link only while `status` is `LIVE`, consistent with the "server is the source of truth" principle — it never implies a match is live on its own.
 
 These are also exposed as an "Admin Controls" panel directly on the public match page (`/matches/[matchId]`) for `ADMIN`/`TOURNAMENT_ADMIN` users — Start/Pause/Resume buttons, live score editing, and an End Match (pick winner) action.
 

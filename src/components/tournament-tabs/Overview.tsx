@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Calendar, CircleDot, Gamepad2, Layers, Map as MapIcon, MapPin, Swords, Trophy, Wifi } from 'lucide-react';
 import { Button } from '../ui/button';
+import { TeamLogo } from '@/components/TeamLogo';
+import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/helpers/format-date';
 import { formatMoney } from '@/lib/helpers/format-money';
-import { FORMAT_LABEL, STATUS_LABEL, TYPE_LABEL, type Champion, type TournamentDetail } from './types';
+import { FORMAT_LABEL, STATUS_LABEL, TYPE_LABEL, type Podium, type TournamentDetail, type TournamentTeam } from './types';
 import { GAME_META } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
 
@@ -28,6 +31,49 @@ function Detail({ icon, label, children }: { icon: ReactNode; label: string; chi
 
 const ICON = 'h-8 w-8';
 
+/**
+ * One podium spot's card. The champion gets the bigger logo and a filled gold plate; the
+ * runner-up a smaller logo and an outline plate — same shapes, just less emphasis.
+ */
+function PodiumCard({ place, team }: { place: 'champion' | 'runner-up'; team: TournamentTeam }) {
+	const isChampion = place === 'champion';
+	return (
+		<Link
+			href={`/teams/${team.id}`}
+			className={cn(
+				'group flex min-w-0 flex-1 items-center gap-3 rounded-md border p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+				isChampion ? 'border-amber-400/40 bg-amber-400/5 hover:bg-amber-400/10' : 'border-border hover:bg-white/5',
+			)}
+		>
+			<TeamLogo src={team.logo} name={team.name} size={isChampion ? 'lg' : 'md'} className='shrink-0' />
+			<div className='min-w-0'>
+				<p className={cn('flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest', isChampion ? 'text-amber-400' : 'text-muted-foreground')}>
+					{isChampion && <Trophy className='h-3.5 w-3.5' aria-hidden />}
+					{isChampion ? 'Champion' : 'Runner-up'}
+				</p>
+				<p className={cn('truncate font-black uppercase tracking-wide text-white underline-offset-4 group-hover:underline', isChampion ? 'text-xl' : 'text-base')}>{team.name}</p>
+			</div>
+		</Link>
+	);
+}
+
+/** Champion + runner-up (issue #115) — hidden entirely for a decided-final-less bracket (round robin, or a final not yet played). */
+function PodiumSection({ podium, teams }: { podium: Podium; teams: TournamentTeam[] }) {
+	const champion = teams.find((t) => t.id === podium.champion.id);
+	const runnerUp = podium.runnerUp ? teams.find((t) => t.id === podium.runnerUp!.id) : undefined;
+	if (!champion) return null;
+
+	return (
+		<section aria-labelledby='champion-heading' className='mt-6 flex flex-col gap-3 sm:flex-row'>
+			<h2 id='champion-heading' className='sr-only'>
+				Tournament results
+			</h2>
+			<PodiumCard place='champion' team={champion} />
+			{runnerUp && <PodiumCard place='runner-up' team={runnerUp} />}
+		</section>
+	);
+}
+
 /** The original circular fill gauge for registered teams. */
 function CapacityRing({ count, capacity }: { count: number; capacity: number }) {
 	const pct = capacity > 0 ? Math.min((count / capacity) * 100, 100) : 0;
@@ -49,7 +95,7 @@ function CapacityRing({ count, capacity }: { count: number; capacity: number }) 
 	);
 }
 
-export default function Overview({ tournament, champion, setActiveTab }: { tournament: TournamentDetail; champion: Champion | null; setActiveTab: (tab: string) => void }) {
+export default function Overview({ tournament, podium, setActiveTab }: { tournament: TournamentDetail; podium: Podium | null; setActiveTab: (tab: string) => void }) {
 	const { teams, teamCapacity, prizePool } = tournament;
 	const hasPrize = prizePool !== null && prizePool !== undefined;
 
@@ -57,17 +103,7 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 		<div className='p-4'>
 			<div className='grid grid-cols-1 gap-4 md:grid-cols-5'>
 				<div className='min-w-0 md:col-span-3'>
-					{champion && (
-						<section aria-labelledby='champion-heading' className='mt-6 flex items-center gap-4 rounded-md border border-border p-4'>
-							<Trophy className='h-8 w-8 shrink-0 text-white' aria-hidden />
-							<div className='min-w-0'>
-								<h2 id='champion-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
-									Champion
-								</h2>
-								<p className='truncate text-2xl font-black uppercase tracking-wide text-white'>{champion.name}</p>
-							</div>
-						</section>
-					)}
+					{podium && <PodiumSection podium={podium} teams={teams} />}
 
 					{tournament.description && <div className='prose prose-sm prose-invert ml-1 mt-6 max-w-none' dangerouslySetInnerHTML={{ __html: tournament.description }} />}
 
@@ -117,7 +153,7 @@ export default function Overview({ tournament, champion, setActiveTab }: { tourn
 							<rect x='45' y='25' width='10' height='10' className='fill-neutral-900' stroke='currentColor' />
 						</svg>
 						<span className='flex min-w-0 flex-col'>
-							<span className='mb-1 text-lg font-bold'>{tournament.format === 'ROUND_ROBIN' ? 'Tournament Standings' : 'Tournament Bracket'}</span>
+							<span className='mb-1 text-lg font-bold'>{tournament.format === 'ROUND_ROBIN' || tournament.format === 'SWISS' ? 'Tournament Standings' : 'Tournament Bracket'}</span>
 							<span className='text-sm text-muted-foreground'>
 								{tournament.status === 'UPCOMING' ? 'Generated from the registered teams when the tournament starts' : 'View the full bracket and results'}
 							</span>

@@ -34,6 +34,15 @@ export async function startTournament(tournamentId: number) {
 		throw new Error('Double-elimination tournaments need at least 4 teams to start');
 	}
 
+	if (tournament.format === 'SWISS') {
+		if (tournament.teams.length < 4) {
+			throw new Error('Swiss tournaments need at least 4 teams to start');
+		}
+		if (!tournament.swissRounds || tournament.swissRounds < 1) {
+			throw new Error('Swiss tournaments need a configured round count to start');
+		}
+	}
+
 	const generatedMatches = generateBracket(tournament.teams, tournament.format);
 
 	const matchesCreated = await db.$transaction(async (tx) => {

@@ -11,7 +11,7 @@ export const contentType = 'image/png';
 // Live data (score, roster, registration state); never serve a stale cached card.
 export const dynamic = 'force-dynamic';
 
-const FORMAT_LABEL: Record<string, string> = { SINGLE_ELIMINATION: 'Single elimination', DOUBLE_ELIMINATION: 'Double elimination', ROUND_ROBIN: 'Round robin' };
+const FORMAT_LABEL: Record<string, string> = { SINGLE_ELIMINATION: 'Single elimination', DOUBLE_ELIMINATION: 'Double elimination', ROUND_ROBIN: 'Round robin', SWISS: 'Swiss' };
 
 function registrationLabel(t: { status: string; startDate: Date; teamCapacity: number; teams: unknown[] }): string {
 	const count = t.teams.length;

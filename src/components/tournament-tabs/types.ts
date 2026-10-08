@@ -31,6 +31,8 @@ export interface TournamentDetail {
 	type: TournamentType;
 	status: TournamentStatus;
 	format: TournamentFormat;
+	/** Set only for format === 'SWISS' — the admin-configured round count. */
+	swissRounds: number | null;
 	/** CS2 (hosted servers) or LOL (results recorded by staff). */
 	game: 'CS2' | 'LOL';
 	bestOf: number;
@@ -44,6 +46,12 @@ export interface Champion {
 	name: string;
 }
 
+export interface Podium {
+	champion: Champion;
+	/** null for a decided final where the losing side has no team (shouldn't happen for a real, non-pickup bracket final, but the type stays honest). */
+	runnerUp: Champion | null;
+}
+
 export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL' | 'THIRD_PLACE';
 
@@ -51,6 +59,7 @@ export const FORMAT_LABEL: Record<TournamentFormat, string> = {
 	SINGLE_ELIMINATION: 'Single elimination',
 	DOUBLE_ELIMINATION: 'Double elimination',
 	ROUND_ROBIN: 'Round robin',
+	SWISS: 'Swiss',
 };
 
 export const STATUS_LABEL: Record<TournamentStatus, string> = {

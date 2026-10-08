@@ -80,7 +80,8 @@ async function parseRewatch(body: Record<string, unknown>): Promise<{ data: Rewa
  * GET /api/admin/homepage-settings — read the singleton homepage config, creating the
  * default row on first access.
  * PATCH /api/admin/homepage-settings — update featuredSource/featuredLayout, showForumPosts
- * (homepage "Forum" block) and the rewatch (homepage VOD) fields.
+ * (homepage "Forum" block), showLiveMatches (homepage "Live now" panel) and the rewatch
+ * (homepage VOD) fields.
  * Gated on `content:manage`.
  */
 export async function GET() {
@@ -114,7 +115,7 @@ export async function PATCH(request: Request) {
 
 		const body = await request.json().catch(() => null);
 		if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-		const { featuredSource, featuredLayout, showForumPosts } = body;
+		const { featuredSource, featuredLayout, showForumPosts, showLiveMatches } = body;
 
 		if (featuredSource !== undefined && !Object.values(FeaturedSource).includes(featuredSource)) {
 			return NextResponse.json({ error: 'Invalid featuredSource' }, { status: 400 });
@@ -127,6 +128,10 @@ export async function PATCH(request: Request) {
 			return NextResponse.json({ error: 'showForumPosts must be a boolean' }, { status: 400 });
 		}
 
+		if (showLiveMatches !== undefined && typeof showLiveMatches !== 'boolean') {
+			return NextResponse.json({ error: 'showLiveMatches must be a boolean' }, { status: 400 });
+		}
+
 		const rewatch = await parseRewatch(body);
 		if ('error' in rewatch) return NextResponse.json({ error: rewatch.error }, { status: 400 });
 
@@ -134,6 +139,7 @@ export async function PATCH(request: Request) {
 			...(featuredSource !== undefined ? { featuredSource } : {}),
 			...(featuredLayout !== undefined ? { featuredLayout } : {}),
 			...(showForumPosts !== undefined ? { showForumPosts } : {}),
+			...(showLiveMatches !== undefined ? { showLiveMatches } : {}),
 			...rewatch.data,
 		};
 

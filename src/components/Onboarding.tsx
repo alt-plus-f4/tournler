@@ -15,6 +15,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { completeOnboarding } from '@/lib/apifuncs';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentStep } from '@/lib/onboarding-slice';
+import type { RootState } from '@/app/redux/store';
 import { OnboardingShell } from './onboarding/OnboardingShell';
 
 interface OnboardingDialogProps {
@@ -64,7 +65,7 @@ function visibleSteps(games: Game[]) {
 
 export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 	const [open, setOpen] = useState(false);
-	const currentStep = useSelector((store: any) => store.onboarding.currentStep);
+	const currentStep = useSelector((store: RootState) => store.onboarding.currentStep);
 	const dispatch = useDispatch();
 	const { toast } = useToast();
 	const [completedSteps, setCompletedSteps] = useState<number[]>([]);

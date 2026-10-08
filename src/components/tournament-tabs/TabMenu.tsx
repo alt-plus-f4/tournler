@@ -14,7 +14,7 @@ const tabLoading = () => <Skeleton className='mx-4 mt-6 h-64 rounded-md md:mx-8'
 const Matches = dynamic(() => import('./Matches'), { loading: tabLoading });
 const Bracket = dynamic(() => import('./Bracket'), { loading: tabLoading });
 const PlayerStats = dynamic(() => import('./PlayerStats'), { loading: tabLoading });
-import type { Champion, TournamentDetail } from './types';
+import type { Podium, TournamentDetail } from './types';
 
 const TABS = [
 	{ value: 'overview', label: 'Overview' },
@@ -33,7 +33,7 @@ function isTab(value: string | null): value is TabValue {
 
 interface TabMenuProps {
 	tournament: TournamentDetail;
-	champion: Champion | null;
+	podium: Podium | null;
 }
 
 /**
@@ -41,7 +41,7 @@ interface TabMenuProps {
  * `?tab=`, so deep links and coming back from a match page land on the same tab. Uses the native
  * History API, which Next syncs into useSearchParams without a server round trip.
  */
-export default function TabMenu({ tournament, champion }: TabMenuProps) {
+export default function TabMenu({ tournament, podium }: TabMenuProps) {
 	const searchParams = useSearchParams();
 	const param = searchParams.get('tab');
 	const activeTab: TabValue = isTab(param) ? param : 'overview';
@@ -76,7 +76,7 @@ export default function TabMenu({ tournament, champion }: TabMenuProps) {
 				</TabsList>
 			</div>
 			<TabsContent value='overview' className='mt-0'>
-				<Overview tournament={tournament} champion={champion} setActiveTab={setActiveTab} />
+				<Overview tournament={tournament} podium={podium} setActiveTab={setActiveTab} />
 			</TabsContent>
 			<TabsContent value='participants' className='mt-0'>
 				<Participants tournament={tournament} />

@@ -24,8 +24,6 @@ describe('getServerPool', () => {
 			rconHost: '1.2.3.4',
 			rconPort: 27016,
 			rconPassword: 'pw1',
-			containerName: 'cs2-dedicated-01',
-			startMapEnvVar: 'CS2_SERVER_1_STARTMAP',
 		});
 		expect(pool[1].id).toBe('02');
 	});
@@ -59,8 +57,6 @@ describe('getServerPool', () => {
 				rconHost: 'example.com',
 				rconPort: 27016,
 				rconPassword: 'secret',
-				containerName: 'cs2-dedicated-01',
-				startMapEnvVar: 'CS2_SERVER_1_STARTMAP',
 			},
 		]);
 	});

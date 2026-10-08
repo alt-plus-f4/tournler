@@ -1,4 +1,5 @@
 import { Cs2Team, TournamentFormat } from '@prisma/client';
+import { pairSwissRound, type SwissStanding } from './swiss';
 
 export type GeneratedBracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL' | 'THIRD_PLACE';
 export type GeneratedMatchSlot = 'TEAM_A' | 'TEAM_B';
@@ -320,6 +321,29 @@ export function generateDoubleEliminationBracket(teams: Cs2Team[]): GeneratedMat
 	return builder.matches;
 }
 
+/**
+ * Round 1 of a Swiss tournament — the only round that can be generated up front (every later
+ * round's pairings depend on standings after the previous one finishes, see swiss.ts). Seeded by
+ * id ascending, same registration-order proxy every other format uses, with no match history yet
+ * to avoid rematches against. An odd team count gets a real bye match, same convention as a
+ * single-elimination round-1 bye: `teamBId: null`, immediately `COMPLETED`, winner pre-set.
+ */
+export function generateSwissRound1(teams: Cs2Team[]): GeneratedMatch[] {
+	const builder = new MatchBuilder();
+	const sortedTeams = [...teams].sort((a, b) => a.id - b.id);
+	const standings: SwissStanding[] = sortedTeams.map((t) => ({ teamId: t.id, wins: 0, losses: 0, played: 0, buchholz: 0, hadBye: false }));
+	const { pairs, byeTeamId } = pairSwissRound(standings, new Set());
+
+	for (const pair of pairs) {
+		builder.create({ round: 1, position: builder.matches.length, bracketSlot: 'WINNERS', teamAId: pair.teamAId, teamBId: pair.teamBId });
+	}
+	if (byeTeamId !== null) {
+		builder.create({ round: 1, position: builder.matches.length, bracketSlot: 'WINNERS', teamAId: byeTeamId, teamBId: null, status: 'COMPLETED', winnerId: byeTeamId });
+	}
+
+	return builder.matches;
+}
+
 /** Dispatch to the format-specific generator. */
 export function generateBracket(teams: Cs2Team[], format: TournamentFormat = TournamentFormat.SINGLE_ELIMINATION): GeneratedMatch[] {
 	switch (format) {
@@ -327,6 +351,8 @@ export function generateBracket(teams: Cs2Team[], format: TournamentFormat = Tou
 			return generateRoundRobinBracket(teams);
 		case TournamentFormat.DOUBLE_ELIMINATION:
 			return generateDoubleEliminationBracket(teams);
+		case TournamentFormat.SWISS:
+			return generateSwissRound1(teams);
 		case TournamentFormat.SINGLE_ELIMINATION:
 		default:
 			return generateSingleEliminationBracket(teams);

@@ -38,8 +38,8 @@ export async function PATCH(request: Request) {
 		});
 
 		return NextResponse.json({ message: 'User updated successfully', updatedUser }, { status: 200 });
-	} catch (error: any) {
+	} catch (error) {
 		console.error('Error updating profile:', error);
-		return NextResponse.json({ error: error.message || 'Error updating profile' }, { status: 500 });
+		return NextResponse.json({ error: (error instanceof Error && error.message) || 'Error updating profile' }, { status: 500 });
 	}
 }

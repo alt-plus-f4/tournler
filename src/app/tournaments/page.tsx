@@ -62,9 +62,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ g
 		<>
 			<HubPageGlow game={game} />
 			<HubSubnav game={game} active='tournaments' />
-			<div className='container mx-auto max-w-[1400px] px-4 py-8 lg:px-8'>
-				<div className='mb-6 flex flex-wrap items-center justify-between gap-4'>
-					<h1 className='text-3xl font-black uppercase tracking-wide text-white sm:text-4xl'>Tournaments</h1>
+			<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
+				<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
+					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Tournaments</h1>
 					<Suspense fallback={null}>
 						<CreateTournamentButton />
 					</Suspense>

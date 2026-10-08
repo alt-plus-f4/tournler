@@ -59,18 +59,6 @@ Wait until the logs show both servers have fully started (map loaded, listening)
 kicked immediately on connect until the app loads a real match onto that specific server —
 that's expected, not a bug; don't try to join before starting a match from the app.
 
-Also start `pool-controller` (still from `cs-docker/`) — the app needs it to start any match at
-all, since it's what boots a server directly onto a match's map instead of a live RCON map change
-(which segfaults this Metamod build unconditionally — see `cs-docker/README.md`'s compatibility
-section):
-
-```bash
-node pool-controller/index.js
-```
-
-Set `POOL_CONTROLLER_TOKEN` in `cs-docker/.env` and the app's own `.env` (same value in both),
-and `POOL_CONTROLLER_URL` in the app's `.env` pointing at wherever this ends up running.
-
 ### Want more than two servers?
 
 Copy the `cs2-dedicated-02` block in `docker-compose.yml`, rename it (`cs2-dedicated-03`), bump
@@ -213,12 +201,11 @@ in production.
   `matchzy_kick_when_no_match_loaded` kicks _everyone_, including players who did join a side —
   it isn't whitelist logic being wrong. `docker logs <container> | grep -i "connection refused"`
   confirms it.
-- **Starting a match fails, or the server crashes/disappears right as a match starts**: check
-  `pool-controller` is actually running and reachable (`POOL_CONTROLLER_URL`/`POOL_CONTROLLER_TOKEN`
-  — see §2). Without it, starting a match falls back to a live RCON map change, which segfaults
-  this Metamod build unconditionally (`cs-docker/README.md`'s compatibility section) — the
-  container will show `Exited (0)` shortly after `docker ps -a` and its logs end with
-  `Segmentation fault (core dumped)` right after a `Host activate: Changelevel` line.
+- **Starting a match fails with "did not reach <map>"**: the config was pushed but the server never
+  reported the match's first map within 40s. Check `docker logs <container>` for a crash
+  (`Segmentation fault (core dumped)` — first look for `sv_coaching_enabled` in the mounted
+  `cs-docker/settings/game/csgo/cfg/MatchZy/*.cfg`, see `cs-docker/README.md`) or a `matchzy_loadmatch_url`
+  fetch failure, then use "Re-sync match config".
 - **Score never updates in the app**: MatchZy's remote-log webhook may not be firing (see §6
   step 5) — use the manual sync endpoint as a stopgap and enter the score by hand.
 - **"All N CS2 server(s) in the pool are currently in use"**: expected once every server is

@@ -12,8 +12,6 @@ interface TeamActionsProps {
 	team: Cs2Team;
 	userId?: string | null;
 	isUserTeamCaptain: boolean;
-	allUsers?: any[];
-	invitedPlayers?: any[];
 }
 
 export default function TeamActions({ team, isUserTeamCaptain }: TeamActionsProps) {

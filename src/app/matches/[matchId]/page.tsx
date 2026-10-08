@@ -15,7 +15,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
 import { RoomHeader } from './_components/header';
-import { LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel } from './_components/panels';
+import { HeadToHeadPanel, LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel, StreamPanel } from './_components/panels';
 import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
 import { SignalDot } from './_components/room-ui';
 import { getSideLabels, getStatsBySide, getWinningSide, isLolMatch, type DraftState, type Match, type Side, type VetoState } from './_components/types';
@@ -104,6 +104,10 @@ export default function MatchPage() {
 	const canManage = userData?.user?.role === 'ADMIN' || userData?.user?.role === 'TOURNAMENT_ADMIN';
 	const currentUserId = userData?.user?.id ?? null;
 
+	// So the roster can flag a friend already in the lobby (issue #114) — signed-out visitors just see none.
+	const { data: friendsData } = useSWR<{ friendIds: string[] }>(sessionStatus === 'authenticated' ? '/api/friends' : null, jsonFetcher, { revalidateOnFocus: false });
+	const friendIds = friendsData?.friendIds;
+
 	useEffect(() => {
 		if (error) toast({ variant: 'destructive', title: 'Error loading match' });
 	}, [error, toast]);
@@ -185,6 +189,8 @@ export default function MatchPage() {
 		draftActive && !!draft && ((draft.currentTurnSide === 'TEAM_A' && draft.captainAUserId === currentUserId) || (draft.currentTurnSide === 'TEAM_B' && draft.captainBUserId === currentUserId));
 	const needsMe = vetoNeedsMe || draftNeedsMe;
 
+	const isFriend = (userId: string) => !!friendIds?.includes(userId);
+
 	const rosterFor = (side: Side): RosterPlayer[] => {
 		if (match.isPickup) {
 			// Participants arrive ordered by joinedAt, so an open pickup side's first entry is its captain.
@@ -198,6 +204,7 @@ export default function MatchPage() {
 					verified: p.user.verified ?? null,
 					isCaptain: p.isCaptain || (!isDraftMode && i === 0),
 					isMe: p.user.id === currentUserId,
+					isFriend: isFriend(p.user.id),
 				}));
 		}
 		const team = side === 'TEAM_A' ? match.teamA : match.teamB;
@@ -209,6 +216,7 @@ export default function MatchPage() {
 			verified: m.verified ?? null,
 			isCaptain: team?.capitanId === m.id,
 			isMe: m.id === currentUserId,
+			isFriend: isFriend(m.id),
 		}));
 	};
 
@@ -352,7 +360,9 @@ export default function MatchPage() {
 								/>
 							)}
 							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : isLol ? <LolMatchPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							<StreamPanel match={match} />
 							<MatchInfoPanel match={match} />
+							<HeadToHeadPanel match={match} />
 						</div>
 						<div className='order-3'>{column('TEAM_B')}</div>
 					</div>

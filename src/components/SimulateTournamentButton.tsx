@@ -16,6 +16,7 @@ const FORMAT_OPTIONS = [
 	{ value: 'SINGLE_ELIMINATION', label: 'Single Elimination' },
 	{ value: 'ROUND_ROBIN', label: 'Round Robin' },
 	{ value: 'DOUBLE_ELIMINATION', label: 'Double Elimination' },
+	{ value: 'SWISS', label: 'Swiss' },
 ];
 
 interface DevToolDialogProps {
@@ -37,6 +38,7 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 	const [isSimulating, setIsSimulating] = useState(false);
 	const [teamCount, setTeamCount] = useState(8);
 	const [format, setFormat] = useState('SINGLE_ELIMINATION');
+	const [swissRounds, setSwissRounds] = useState(3);
 	const [game, setGame] = useState<Game>('CS2');
 
 	const handleSimulate = async () => {
@@ -46,7 +48,7 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 			const response = await fetch('/api/tournaments/simulate', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ teamCount, format, game }),
+				body: JSON.stringify({ teamCount, format, game, swissRounds: format === 'SWISS' ? swissRounds : undefined }),
 			});
 
 			const payload = await response.json().catch(() => null);
@@ -119,6 +121,13 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 							))}
 						</SelectContent>
 					</Select>
+
+					{format === 'SWISS' && (
+						<>
+							<Label htmlFor='sim-swiss-rounds'>Number of rounds</Label>
+							<Input id='sim-swiss-rounds' type='number' min={1} className='font-mono tabular-nums' value={swissRounds} onChange={(e) => setSwissRounds(Number(e.target.value))} />
+						</>
+					)}
 				</div>
 				<div className='flex justify-end gap-2 pt-2'>
 					<DialogClose asChild>
