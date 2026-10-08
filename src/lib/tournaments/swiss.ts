@@ -19,10 +19,7 @@ type Client = DbTx | typeof db;
  * every pair that has already played (bye included, keyed by both team ids) so the pairing step
  * can avoid rematches, and which teams have already had a bye so it doesn't repeat one.
  */
-export async function computeSwissStandings(
-	client: Client,
-	tournamentId: number,
-): Promise<{ standings: SwissStanding[]; playedPairs: Set<string>; byeTeamIds: Set<number> }> {
+export async function computeSwissStandings(client: Client, tournamentId: number): Promise<{ standings: SwissStanding[]; playedPairs: Set<string>; byeTeamIds: Set<number> }> {
 	const tournament = await client.cs2Tournament.findUniqueOrThrow({
 		where: { id: tournamentId },
 		include: { teams: { select: { id: true } }, matches: true },

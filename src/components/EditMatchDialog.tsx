@@ -103,13 +103,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 
 					<div className='space-y-2'>
 						<Label htmlFor='edit-stream-url'>Stream link</Label>
-						<Input
-							id='edit-stream-url'
-							type='url'
-							placeholder='https://twitch.tv/yourchannel'
-							value={streamUrl}
-							onChange={(e) => setStreamUrl(e.target.value)}
-						/>
+						<Input id='edit-stream-url' type='url' placeholder='https://twitch.tv/yourchannel' value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} />
 						<p className='text-xs text-muted-foreground'>Shown on the match page as a &quot;Watch live&quot; link while the match is LIVE. Leave blank to remove.</p>
 					</div>
 

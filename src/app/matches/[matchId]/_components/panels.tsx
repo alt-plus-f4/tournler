@@ -172,12 +172,7 @@ export function StreamPanel({ match }: { match: Match }) {
 				</>
 			}
 		>
-			<a
-				href={match.streamUrl}
-				target='_blank'
-				rel='noopener noreferrer'
-				className='inline-flex items-center gap-2 text-sm font-bold text-white underline-offset-4 hover:underline'
-			>
+			<a href={match.streamUrl} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-2 text-sm font-bold text-white underline-offset-4 hover:underline'>
 				<ExternalLink className='h-4 w-4' aria-hidden /> Watch the broadcast
 			</a>
 		</RoomPanel>

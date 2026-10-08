@@ -1,7 +1,7 @@
 ---
 version: 1
-slug: "src-app-tournaments-slug"
-primary_target: "src/app/tournaments/[slug]"
+slug: 'src-app-tournaments-slug'
+primary_target: 'src/app/tournaments/[slug]'
 related_targets: []
 ---
 

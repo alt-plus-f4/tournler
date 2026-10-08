@@ -44,7 +44,10 @@ const schema = z
 		),
 		// Swiss-only: how many rounds to play. Preprocessed like teamCapacity/prizePool since the
 		// underlying <input type=number> always hands back a string (or '' when empty).
-		swissRounds: z.preprocess((v) => (v === '' || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)), z.number().int().min(1, 'At least 1 round').max(20, 'At most 20 rounds').optional()),
+		swissRounds: z.preprocess(
+			(v) => (v === '' || v === null || v === undefined || Number.isNaN(v) ? undefined : Number(v)),
+			z.number().int().min(1, 'At least 1 round').max(20, 'At most 20 rounds').optional(),
+		),
 		startDate: z.string().min(1, 'Pick a start time'),
 		endDate: z.string().min(1, 'Pick an end time'),
 		description: z.string().optional(),
@@ -259,16 +262,7 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									{v.format === SWISS_FORMAT_VALUE && (
 										<div className='mt-2 space-y-2'>
 											<Label htmlFor='create-swissRounds'>Number of rounds</Label>
-											<Input
-												id='create-swissRounds'
-												type='number'
-												inputMode='numeric'
-												min={1}
-												max={20}
-												className='font-mono tabular-nums'
-												{...register('swissRounds')}
-												{...invalid('swissRounds')}
-											/>
+											<Input id='create-swissRounds' type='number' inputMode='numeric' min={1} max={20} className='font-mono tabular-nums' {...register('swissRounds')} {...invalid('swissRounds')} />
 											<FieldError id={errId('swissRounds')} message={errors.swissRounds?.message} />
 										</div>
 									)}
