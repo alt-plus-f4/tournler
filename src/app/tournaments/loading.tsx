@@ -5,9 +5,9 @@ export default function Loading() {
 	return (
 		<>
 			<HubSubnavSkeleton active='tournaments' />
-			<div className='container mx-auto max-w-[1400px] px-4 py-8 lg:px-8'>
+			<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
 				{/* Real heading, not a skeleton: it's always "Tournaments" — only the list below is loading. */}
-				<h1 className='mb-6 text-3xl font-black uppercase tracking-wide text-white sm:text-4xl'>Tournaments</h1>
+				<h1 className='mb-6 text-3xl font-black uppercase tracking-wide md:text-5xl'>Tournaments</h1>
 				{/* Upcoming & live / Completed toggle placeholder (bordered p-1 group of two small buttons). */}
 				<div className='mb-8 h-[46px] w-64 rounded-md border border-border' aria-hidden />
 				<TournamentsSkeleton />
