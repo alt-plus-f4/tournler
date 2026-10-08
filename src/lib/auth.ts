@@ -110,6 +110,9 @@ export const authOptions: NextAuthOptions = {
 		DiscordProvider({
 			clientId: process.env.DISCORD_CLIENT_ID!,
 			clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+			// Discord appends `iss` (RFC 9207) to some authorization callbacks; without a configured
+			// issuer openid-client rejects those with "issuer must be configured on the issuer".
+			issuer: 'https://discord.com',
 			allowDangerousEmailAccountLinking: false,
 		}),
 	],
