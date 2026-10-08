@@ -14,8 +14,9 @@ function isHttpsUrl(value: string) {
 	}
 }
 
-// START loads the match onto its server and waits for the map change (up to ~90s).
-export const maxDuration = 120;
+// START loads the match onto its server and waits for the map change (capped at 40s in
+// provisioning.ts). 60s is the most Vercel's Hobby plan allows.
+export const maxDuration = 60;
 
 /**
  * GET /api/matches/[matchId]

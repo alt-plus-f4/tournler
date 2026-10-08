@@ -16,7 +16,7 @@ busy, starting another match is rejected until one frees up (see
 
 Servers stay up between matches and maps. Starting a match is one RCON push of
 `matchzy_loadmatch_url` (the server then fetches the config from the app); MatchZy itself changes
-the map if the server isn't already on the match's first map, and the app waits (up to 90s) until
+the map if the server isn't already on the match's first map, and the app waits (up to 40s) until
 `status` reports that map before marking the config loaded. When a match completes, the app kicks
 everyone, rotates `sv_password` and tells MatchZy to drop the match, so the server sits locked and
 free until the next match loads. Nothing recreates a container. (This used to go through a

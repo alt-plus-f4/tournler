@@ -202,7 +202,7 @@ in production.
   it isn't whitelist logic being wrong. `docker logs <container> | grep -i "connection refused"`
   confirms it.
 - **Starting a match fails with "did not reach <map>"**: the config was pushed but the server never
-  reported the match's first map within 90s. Check `docker logs <container>` for a crash
+  reported the match's first map within 40s. Check `docker logs <container>` for a crash
   (`Segmentation fault (core dumped)` — first look for `sv_coaching_enabled` in the mounted
   `cs-docker/settings/game/csgo/cfg/MatchZy/*.cfg`, see `cs-docker/README.md`) or a `matchzy_loadmatch_url`
   fetch failure, then use "Re-sync match config".

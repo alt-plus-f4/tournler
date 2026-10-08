@@ -10,7 +10,7 @@ import { assertMatchHostsGameServer } from '@/lib/tournaments/game-rules';
 
 // How long a loaded match gets to bring its server onto the match's first map (MatchZy runs the
 // changelevel itself once the config is fetched), and how often/how patiently to ask.
-const MAP_CHANGE_TIMEOUT_MS = 90_000;
+const MAP_CHANGE_TIMEOUT_MS = 40_000;
 const MAP_POLL_INTERVAL_MS = 2_000;
 // Each probe has its own ceiling: a TCP connect to a server mid-changelevel can hang far past the
 // overall deadline, which is only ever checked between attempts.
@@ -52,7 +52,10 @@ async function waitForServerOnMap(server: Cs2ServerConfig, map: string): Promise
 			lastError = error;
 		}
 		if (Date.now() >= deadline) {
-			throw new Error(`Server ${server.id} did not reach ${map} within ${MAP_CHANGE_TIMEOUT_MS / 1000}s${lastError instanceof Error ? ` (last error: ${lastError.message})` : ''}`);
+			throw new Error(
+				`Server ${server.id} did not reach ${map} within ${MAP_CHANGE_TIMEOUT_MS / 1000}s${lastError instanceof Error ? ` (last error: ${lastError.message})` : ''}. ` +
+					`If the server log says "Connection refused" fetching the match config, the server cannot reach this app at GAME_SERVER_CALLBACK_URL (inside Docker, localhost is the container itself — use http://host.docker.internal:3000).`,
+			);
 		}
 		await new Promise((resolve) => setTimeout(resolve, MAP_POLL_INTERVAL_MS));
 	}
