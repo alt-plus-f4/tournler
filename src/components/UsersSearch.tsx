@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { Slot } from '@radix-ui/react-slot';
 import type { Game } from '@prisma/client';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
+import type { InvitedPlayers } from '@/types/types';
 
 interface UsersSearchProps {
 	children: ReactNode;
@@ -12,7 +13,7 @@ interface UsersSearchProps {
 	teamName: string;
 	/** The team's game: only players without a team of this game can be invited. */
 	game: Game;
-	invitedPlayers: any;
+	invitedPlayers: InvitedPlayers | null;
 }
 
 const loadPalette = () => import('./UsersSearchPalette');

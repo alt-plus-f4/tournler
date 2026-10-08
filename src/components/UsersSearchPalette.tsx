@@ -4,7 +4,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@radix-ui/react-avatar';
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { useEffect, useState } from 'react';
 import { InviteConfirmationDialog } from './InviteConfirmationDialog';
-import { ReducedUser } from '@/types/types';
+import type { InvitedPlayers, ReducedUser } from '@/types/types';
 import type { Game } from '@prisma/client';
 import { GAME_META } from '@/lib/games';
 
@@ -14,7 +14,7 @@ interface UsersSearchPaletteProps {
 	teamId: number;
 	teamName: string;
 	game: Game;
-	invitedPlayers: any;
+	invitedPlayers: InvitedPlayers | null;
 }
 
 /**
@@ -61,8 +61,7 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 	const [query, setQuery] = useState('');
 	const { users: allUsers, loading } = useInvitableUsers(teamId, query, isOpen);
 
-	const invitedPlayersData = invitedPlayers?.teamInvitations || [];
-	const invitedUserIds = [...invitedPlayersData.map((invitation: { userId: number }) => invitation.userId), ...localInvitedUserIds];
+	const invitedUserIds = [...(invitedPlayers?.teamInvitations ?? []).map((invitation) => invitation.userId), ...localInvitedUserIds];
 
 	function completeSuccessfulInviteConfirmation(userId: string) {
 		// The invite API route sends the Convex notification server-side.

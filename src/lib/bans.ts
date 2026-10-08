@@ -1,5 +1,4 @@
 import type { Prisma, UserRole } from '@prisma/client';
-import { db } from '@/lib/db';
 
 /** Prisma filter for a ban that is currently in force. */
 export function activeBanWhere(now = new Date()): Prisma.UserBanWhereInput {
@@ -11,11 +10,6 @@ export type ActiveBan = { id: number; reason: string; expiresAt: string | null; 
 export function toActiveBan(ban: { id: number; reason: string; expiresAt: Date | null; createdAt: Date } | null | undefined): ActiveBan | null {
 	if (!ban) return null;
 	return { id: ban.id, reason: ban.reason, expiresAt: ban.expiresAt?.toISOString() ?? null, createdAt: ban.createdAt.toISOString() };
-}
-
-export async function getActiveBan(userId: string): Promise<ActiveBan | null> {
-	const ban = await db.userBan.findFirst({ where: { userId, ...activeBanWhere() }, orderBy: { createdAt: 'desc' } });
-	return toActiveBan(ban);
 }
 
 const RANK: Record<UserRole, number> = { USER: 0, MODERATOR: 1, TOURNAMENT_ADMIN: 1, CONTENT_ADMIN: 1, ADMIN: 2 };

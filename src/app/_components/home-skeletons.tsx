@@ -3,24 +3,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Homepage Suspense fallbacks. Each one reserves the footprint of the section it stands in for
 // (same borders, paddings and fixed heights), so streaming a section in doesn't shove the page.
 
-/** RewatchPlayer: header row, 16:9 poster, footer row. */
-export function HeroSkeleton() {
-	return (
-		<div role='status' aria-busy='true' className='overflow-hidden rounded-md border border-border bg-black'>
-			<span className='sr-only'>Loading broadcast…</span>
-			<div className='flex items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-6 sm:py-4'>
-				<Skeleton className='h-6 w-40 rounded-sm bg-neutral-900 sm:h-8 sm:w-64' />
-				<Skeleton className='h-3 w-16 rounded-sm bg-neutral-900' />
-			</div>
-			<div className='aspect-video w-full bg-neutral-950' />
-			<div className='flex items-center justify-between gap-4 px-4 py-2.5 sm:px-6'>
-				<Skeleton className='h-4 w-28 rounded-sm bg-neutral-900' />
-				<Skeleton className='h-4 w-24 rounded-sm bg-neutral-900' />
-			</div>
-		</div>
-	);
-}
-
 /** UpNext: heading row + a few 56px rows. */
 export function UpNextSkeleton() {
 	return (
