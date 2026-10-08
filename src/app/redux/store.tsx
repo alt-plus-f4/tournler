@@ -6,3 +6,5 @@ export const store = configureStore({
 		onboarding: onboardingStudentsSlice,
 	},
 });
+
+export type RootState = ReturnType<typeof store.getState>;

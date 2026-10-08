@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
+import type { Id } from '../../convex/_generated/dataModel';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { Bell, CheckIcon, X } from 'lucide-react';
@@ -31,10 +32,10 @@ export default function Notifications({ userId }: NotificationsProps) {
 		setMounted(true);
 	}, []);
 
-	async function handleAcceptInvite(id: any, teamId: number) {
+	async function handleAcceptInvite(id: Id<'notifications'>, teamId: number) {
 		try {
 			await acceptTeamInvite({ userId, teamId });
-			await markAsRead({ id: id });
+			await markAsRead({ id });
 			toast({
 				variant: 'default',
 				title: 'Invite accepted',
@@ -50,10 +51,10 @@ export default function Notifications({ userId }: NotificationsProps) {
 		}
 	}
 
-	async function handleDenyInvite(id: any, teamId: number) {
+	async function handleDenyInvite(id: Id<'notifications'>, teamId: number) {
 		try {
 			await denyTeamInvite({ userId, teamId });
-			await markAsRead({ id: id });
+			await markAsRead({ id });
 			toast({
 				variant: 'default',
 				title: 'Invite declined',
@@ -69,10 +70,10 @@ export default function Notifications({ userId }: NotificationsProps) {
 		}
 	}
 
-	async function handleAcceptFriendRequest(id: any, fromUserId: string) {
+	async function handleAcceptFriendRequest(id: Id<'notifications'>, fromUserId: string) {
 		try {
 			await acceptFriendRequest(fromUserId);
-			await markAsRead({ id: id });
+			await markAsRead({ id });
 			toast({ variant: 'default', title: 'Friend added' });
 			window.location.reload();
 		} catch (error) {
@@ -81,10 +82,10 @@ export default function Notifications({ userId }: NotificationsProps) {
 		}
 	}
 
-	async function handleDeclineFriendRequest(id: any, fromUserId: string) {
+	async function handleDeclineFriendRequest(id: Id<'notifications'>, fromUserId: string) {
 		try {
 			await declineFriendRequest(fromUserId);
-			await markAsRead({ id: id });
+			await markAsRead({ id });
 			toast({ variant: 'default', title: 'Request declined' });
 		} catch (error) {
 			toast({ variant: 'destructive', title: 'Error', description: 'Failed to decline friend request.' });

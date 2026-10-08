@@ -6,6 +6,11 @@ export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 export type BracketSlot = 'WINNERS' | 'LOSERS' | 'GRAND_FINAL';
 export type MatchSlot = 'TEAM_A' | 'TEAM_B';
 
+/** Pending invitations for a team, as returned by `fetchInvitedPlayers`. */
+export interface InvitedPlayers {
+	teamInvitations: { userId: string }[];
+}
+
 export interface ReducedUser {
 	id: string;
 	name?: string | null;

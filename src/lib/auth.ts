@@ -1,9 +1,8 @@
 import { cache } from 'react';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
-import EmailProvider from 'next-auth/providers/email';
+import EmailProvider, { type SendVerificationRequestParams } from 'next-auth/providers/email';
 import DiscordProvider from 'next-auth/providers/discord';
-// import nodemailer, { createTransport } from 'nodemailer';
 import { createTransport } from 'nodemailer';
 import { db, baseDb } from '@/lib/db';
 import { activeBanWhere, toActiveBan } from '@/lib/bans';
@@ -23,16 +22,7 @@ const getCachedUserRole = cachedQuery(async (userId: string) => (await db.user.f
 	revalidate: REVALIDATE.standard,
 });
 
-// const transporter = createTransport({
-//   host: process.env.EMAIL_SERVER_HOST!,
-//   port: parseInt(process.env.EMAIL_SERVER_PORT!),
-//   auth: {
-//     user: process.env.EMAIL_SERVER_USER!,
-//     pass: process.env.EMAIL_SERVER_PASSWORD!,
-//   },
-// });
-
-const sendVerificationRequest = async ({ identifier, url, provider, theme }: { identifier: string; url: string; provider: { from: string; server: any }; theme: any }) => {
+const sendVerificationRequest = async ({ identifier, url, provider, theme }: SendVerificationRequestParams) => {
 	const { host } = new URL(url);
 	const transport = createTransport(provider.server);
 	const result = await transport.sendMail({
@@ -48,10 +38,7 @@ const sendVerificationRequest = async ({ identifier, url, provider, theme }: { i
 	}
 };
 
-// function html({ url, host, theme }: { url: string; host: string; theme: any }) {
-function html({ url, theme }: { url: string; theme: any }) {
-	// const escapedHost = host.replace(/\./g, "&#8203;.");
-
+function html({ url, theme }: Pick<SendVerificationRequestParams, 'url' | 'theme'>) {
 	const brandColor = theme.brandColor || '#2f3136';
 	const color = {
 		background: '#f9f9f9',
