@@ -5,18 +5,16 @@ import { withRcon } from './rcon-client';
 import { findServerByConnect, Cs2ServerConfig } from './server-pool';
 import { gameServerCallbackUrl } from './callback-url';
 import { buildMatchConfig } from './match-config';
+import { statusShowsMap } from './server-status';
 import { assertMatchHostsGameServer } from '@/lib/tournaments/game-rules';
 
-const POOL_CONTROLLER_RESTART_TIMEOUT_MS = 120_000;
-const POOL_CONTROLLER_POLL_INTERVAL_MS = 3_000;
-// Each individual poll attempt's own ceiling — separate from the overall deadline above. Without
-// this, a single attempt that hangs (rather than cleanly failing) — e.g. a TCP connect stuck
-// waiting on the OS's own multi-minute default connection timeout, observed directly: a restart
-// that should have failed at the 120s deadline instead returned success after 5+ minutes because
-// the very first poll attempt's connection just never resolved either way until the container
-// happened to become reachable — silently defeats the deadline above, since the deadline is only
-// ever checked in between attempts, never during one.
-const POOL_CONTROLLER_POLL_ATTEMPT_TIMEOUT_MS = 4_000;
+// How long a loaded match gets to bring its server onto the match's first map (MatchZy runs the
+// changelevel itself once the config is fetched), and how often/how patiently to ask.
+const MAP_CHANGE_TIMEOUT_MS = 90_000;
+const MAP_POLL_INTERVAL_MS = 2_000;
+// Each probe has its own ceiling: a TCP connect to a server mid-changelevel can hang far past the
+// overall deadline, which is only ever checked between attempts.
+const MAP_POLL_ATTEMPT_TIMEOUT_MS = 4_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
 	return new Promise((resolve, reject) => {
@@ -35,66 +33,28 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 }
 
 /**
- * Recreates `server`'s CS2 container booted directly onto `startMap` (via `pool-controller`) and
- * waits for RCON to answer again before returning — the only reliable way to get a match onto its
- * first map, since a live RCON `changelevel`/`map` command segfaults this Metamod build 100% of
- * the time regardless of plugins loaded (confirmed directly: bare `changelevel <map>` over RCON
- * with CounterStrikeSharp fully unloaded still crashes it). A server that *boots* already on the
- * target map never goes through that code path — MatchZy's own match-load only calls changelevel
- * when the current map doesn't already match the requested one.
- *
- * This only matters for a match's *first* map: pickups (the only kind of match currently
- * exercised end-to-end — see cs-docker/README.md) are always single-map, so this is the only
- * transition they ever need. A multi-map series' own map 2/3 transition is still MatchZy's
- * internal changelevel and would still hit this same crash — that's a separate, unresolved gap
- * for non-pickup matches, not something this function addresses.
+ * Polls `status` over RCON until `server` reports `map` as loaded, tolerating the server being
+ * briefly unreachable while it changes level. Throws if it never gets there within the deadline.
  */
-async function restartServerOntoMap(server: Cs2ServerConfig, startMap: string): Promise<void> {
-	const controllerUrl = process.env.POOL_CONTROLLER_URL;
-	const controllerToken = process.env.POOL_CONTROLLER_TOKEN;
-	if (!controllerUrl || !controllerToken) {
-		throw new Error(
-			'POOL_CONTROLLER_URL and POOL_CONTROLLER_TOKEN must both be configured to start a match (see cs-docker/pool-controller/index.js) — a live in-process map change is not safe on this stack.',
-		);
-	}
-
-	// docker-controller's own `docker compose up -d --force-recreate` normally returns in seconds
-	// (it doesn't wait for the container's own boot to finish), but abort rather than hang the
-	// whole match-start request indefinitely if it somehow doesn't.
-	const controllerAbort = new AbortController();
-	const controllerTimer = setTimeout(() => controllerAbort.abort(), POOL_CONTROLLER_RESTART_TIMEOUT_MS);
-	let response: Response;
-	try {
-		response = await fetch(`${controllerUrl}/restart`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json', 'x-pool-controller-token': controllerToken },
-			body: JSON.stringify({ containerName: server.containerName, startMapEnvVar: server.startMapEnvVar, startMap }),
-			signal: controllerAbort.signal,
-		});
-	} finally {
-		clearTimeout(controllerTimer);
-	}
-	if (!response.ok) {
-		throw new Error(`pool-controller restart of ${server.containerName} onto ${startMap} failed: ${response.status} ${await response.text().catch(() => '')}`);
-	}
-
-	const deadline = Date.now() + POOL_CONTROLLER_RESTART_TIMEOUT_MS;
+async function waitForServerOnMap(server: Cs2ServerConfig, map: string): Promise<void> {
+	const deadline = Date.now() + MAP_CHANGE_TIMEOUT_MS;
+	let lastError: unknown = null;
 	for (;;) {
 		try {
-			await withTimeout(
+			const status = await withTimeout(
 				withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute('status')),
-				POOL_CONTROLLER_POLL_ATTEMPT_TIMEOUT_MS,
-				`RCON attempt to ${server.containerName} took too long`,
+				MAP_POLL_ATTEMPT_TIMEOUT_MS,
+				`RCON status probe to ${server.id} took too long`,
 			);
-			return;
+			if (typeof status === 'string' && statusShowsMap(status, map)) return;
+			lastError = null;
 		} catch (error) {
-			if (Date.now() >= deadline) {
-				throw new Error(
-					`${server.containerName} never came back up on RCON after restarting onto ${startMap} (waited ${POOL_CONTROLLER_RESTART_TIMEOUT_MS}ms): ${error instanceof Error ? error.message : error}`,
-				);
-			}
-			await new Promise((resolve) => setTimeout(resolve, POOL_CONTROLLER_POLL_INTERVAL_MS));
+			lastError = error;
 		}
+		if (Date.now() >= deadline) {
+			throw new Error(`Server ${server.id} did not reach ${map} within ${MAP_CHANGE_TIMEOUT_MS / 1000}s${lastError instanceof Error ? ` (last error: ${lastError.message})` : ''}`);
+		}
+		await new Promise((resolve) => setTimeout(resolve, MAP_POLL_INTERVAL_MS));
 	}
 }
 
@@ -168,7 +128,12 @@ export async function pushMatchConfigToServer(matchId: number, options: { bots?:
 		throw new Error('GAME_SERVER_CALLBACK_URL (or NEXTAUTH_URL) and GAME_SERVER_TOKEN must both be configured to push match config to the game server');
 	}
 
-	const gameServer = await db.gameServer.findUniqueOrThrow({ where: { matchId } });
+	const gameServer = await db.gameServer.findUniqueOrThrow({ where: { matchId }, include: { match: { select: { status: true } } } });
+	// A COMPLETED match's slot is free for the pool to hand to the next match; pushing the old
+	// match's config (and sv_password) onto it now would hijack that match's server.
+	if (gameServer.match.status === 'COMPLETED') {
+		throw new Error(`Match ${matchId} is completed — its server is no longer reserved for it`);
+	}
 	const server = findServerByConnect(gameServer.connectIp, gameServer.port);
 	if (!server) {
 		throw new Error(`No CS2_SERVER_POOL entry matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was the pool config changed after the match started?`);
@@ -178,28 +143,17 @@ export async function pushMatchConfigToServer(matchId: number, options: { bots?:
 	// not the RCON command itself — the server calls this URL asynchronously after the RCON push.
 	const configUrl = `${appBaseUrl}/api/matches/${matchId}/game-server/match-config${options.bots ? '?bots=1' : ''}`;
 
-	// This pool is fixed-size and reused across matches (see server-pool.ts) — a server freed by a
-	// COMPLETED match still has that old match loaded in MatchZy's own memory until something tells
-	// it otherwise, so simply loading a new match's config on top isn't enough of a clean slate on
-	// its own. `matchConfigLoadedAt` being unset means this is the *first* push for this match on
-	// this GameServer row — the one moment that needs a full container restart onto this match's
-	// first map (see restartServerOntoMap) rather than just an RCON push, since a server that's
-	// already mid-match (or idling on some other map) can only get onto this one via a live
-	// changelevel, which crashes. A subsequent re-push for the *same* match (the manual "Re-sync
-	// match config" retry) must not restart the container — that would kick everyone and wipe the
-	// match's own live progress instead of just refreshing its config — and doesn't need to, since
-	// the server is already sitting on this match's map.
-	const isFirstPushForThisMatch = gameServer.matchConfigLoadedAt === null;
-
-	if (isFirstPushForThisMatch) {
-		const { maplist } = await buildMatchConfig(matchId, options);
-		await restartServerOntoMap(server, maplist[0]);
-	}
+	// Every map change goes through MatchZy's own changelevel — the server stays up between matches
+	// and maps; only its loaded config and map change. The first map has to be confirmed (a veto
+	// still in progress would otherwise send the server to a default map).
+	const { maplist } = await buildMatchConfig(matchId, { ...options, requireConfirmedMaps: true });
 
 	await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, async (rcon) => {
 		await rcon.execute(`matchzy_loadmatch_url "${configUrl}" x-game-server-token ${gameServerToken}`);
 		await rcon.execute(`sv_password ${gameServer.password}`);
 	});
+
+	await waitForServerOnMap(server, maplist[0]);
 
 	await db.gameServer.update({ where: { matchId }, data: { matchConfigLoadedAt: new Date() } });
 }

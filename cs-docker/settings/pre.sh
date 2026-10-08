@@ -33,6 +33,26 @@ extract_content() {
 # Step 0: Parameters
 ServerFilesPath=$STEAMAPPDIR
 
+# Optional per-server overrides (METAMOD_BUILD, CSS_REPO, MATCHZY_REPO), read from pre.env in the
+# data volume, so a stack can be trialled without editing this file.
+[ -f "${ServerFilesPath}/pre.env" ] && . "${ServerFilesPath}/pre.env"
+METAMOD_BUILD="${METAMOD_BUILD:-1468}"
+CSS_REPO="${CSS_REPO:-mrc4tt/CounterStrikeSharp}"
+MATCHZY_REPO="${MATCHZY_REPO:-mrc4tt/MatchZy}"
+# "latest", or "tags/<tag>" to pin a specific release.
+CSS_RELEASE="${CSS_RELEASE:-latest}"
+MATCHZY_RELEASE="${MATCHZY_RELEASE:-latest}"
+
+# Diagnostic switches for isolating engine crashes (set in pre.env, never in production):
+#   SKIP_ADDONS=all       -> boot vanilla CS2, no Metamod / CounterStrikeSharp / MatchZy
+#   SKIP_ADDONS=plugins   -> Metamod only
+#   SKIP_ADDONS=matchzy   -> Metamod + CounterStrikeSharp, no MatchZy
+if [ "${SKIP_ADDONS:-}" = "all" ]; then
+  rm -rf "${ServerFilesPath}/game/csgo/addons/metamod" "${ServerFilesPath}/game/csgo/addons/counterstrikesharp"
+  echo "pre-hook: SKIP_ADDONS=all, booting vanilla"
+  return 0 2>/dev/null || exit 0
+fi
+
 # Step 1: Download and Install Metamod
 # Pinned to git1468 (production). git1469 was tested at the mrc4tt fork maintainer's request
 # (2026-09-17) to see if it fixed the changelevel/map-load segfault (see cs-docker/README.md's
@@ -40,9 +60,15 @@ ServerFilesPath=$STEAMAPPDIR
 # CS2/MatchZy/CSS/Metamod code directly). It did not: changelevel de_mirage crashed identically
 # on git1469 with CounterStrikeSharp v1.0.404 + MatchZy v0.8.83, same "Using spawn points
 # configuration" -> segfault signature, reproduced twice. Reverted back to git1468.
-wget -q -O /tmp/mmsource.tar.gz https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git1468-linux.tar.gz
+wget -q -O /tmp/mmsource.tar.gz "https://mms.alliedmods.net/mmsdrop/2.0/mmsource-2.0.0-git${METAMOD_BUILD}-linux.tar.gz"
 ensure_directory "${ServerFilesPath}/game/csgo"
 extract_content "/tmp/mmsource.tar.gz" "${ServerFilesPath}/game/csgo"
+
+if [ "${SKIP_ADDONS:-}" = "plugins" ]; then
+  rm -rf "${ServerFilesPath}/game/csgo/addons/counterstrikesharp" "${ServerFilesPath}/game/csgo/addons/metamod/counterstrikesharp.vdf"
+  echo "pre-hook: SKIP_ADDONS=plugins, Metamod only"
+  return 0 2>/dev/null || exit 0
+fi
 
 # Step 2: Install CounterStrikeSharp Plugin
 # Prefers a locally-built package (mounted read-only at custom-counterstrikesharp — see
@@ -59,7 +85,7 @@ if [ -d "$custom_cssharp_dir" ] && [ -n "$(ls -A "$custom_cssharp_dir" 2>/dev/nu
   mkdir -p "${ServerFilesPath}/game/csgo/addons"
   cp -r "$custom_cssharp_dir"/. "${ServerFilesPath}/game/csgo/addons/"
 else
-  cssharp_url=$(curl -s https://api.github.com/repos/mrc4tt/CounterStrikeSharp/releases/latest | grep "with-runtime" | grep "linux" | grep "browser_download_url" | cut -d '"' -f 4)
+  cssharp_url=$(curl -s https://api.github.com/repos/${CSS_REPO}/releases/${CSS_RELEASE} | grep "with-runtime" | grep "linux" | grep "browser_download_url" | cut -d '"' -f 4)
   echo $cssharp_url
   if [ -z "$cssharp_url" ]; then
     echo "Error: Unable to find CounterStrikeSharp download URL."
@@ -68,6 +94,12 @@ else
 
   wget -q -O /tmp/cssharp.zip "$cssharp_url"
   extract_content "/tmp/cssharp.zip" "${ServerFilesPath}/game/csgo"
+fi
+
+if [ "${SKIP_ADDONS:-}" = "matchzy" ]; then
+  rm -rf "${ServerFilesPath}/game/csgo/addons/counterstrikesharp/plugins/MatchZy"
+  echo "pre-hook: SKIP_ADDONS=matchzy, CounterStrikeSharp without MatchZy"
+  return 0 2>/dev/null || exit 0
 fi
 
 # Step 3: Download and Install MatchZy Plugin
@@ -79,7 +111,8 @@ fi
 # resolved it — confirmed stable for 2+ minutes of real play (bot warmup, round resets), where
 # every prior combination crashed within ~15 seconds. Asset naming here is plain "MatchZy-X.Y.zip"
 # (no bracket-expression regex or with-cssharp bundle to exclude like the official release has).
-matchzy_url=$(curl -s https://api.github.com/repos/mrc4tt/MatchZy/releases/latest | grep "browser_download_url" | grep -E "MatchZy-[0-9]+\.[0-9]+(\.[0-9]+)?\.zip" | cut -d '"' -f 4)
+matchzy_url=$(curl -s https://api.github.com/repos/${MATCHZY_REPO}/releases/${MATCHZY_RELEASE} | grep "browser_download_url" | grep -E "MatchZy-[0-9]+\.[0-9]+(\.[0-9]+)?\.zip" | cut -d '"' -f 4)
+[ -n "${MATCHZY_URL:-}" ] && matchzy_url="$MATCHZY_URL"
 if [ -z "$matchzy_url" ]; then
   echo "Error: Unable to find MatchZy download URL."
   exit 1

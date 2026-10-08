@@ -29,6 +29,12 @@ export interface BuildMatchConfigOptions {
 	 * Start after a pre-warm) doesn't otherwise reset a cvar a previous load already changed.
 	 */
 	bots?: boolean;
+	/**
+	 * Throw instead of falling back to CS2_DEFAULT_MAP when the veto hasn't confirmed every map.
+	 * Used when pushing to a server: MatchZy changes level to `maplist[0]`, so a wrong guess would
+	 * send the server to the wrong map.
+	 */
+	requireConfirmedMaps?: boolean;
 }
 
 /**
@@ -60,6 +66,9 @@ export async function buildMatchConfig(matchId: number, options: BuildMatchConfi
 	// Every match (pickup or bracket) must have completed veto before this is ever called (see
 	// startMatch()) — the CS2_DEFAULT_MAP fallback below is just defensive, not the normal path.
 	const confirmedMaps = getConfirmedMaps(match);
+	if (options.requireConfirmedMaps && confirmedMaps.length === 0) {
+		throw new Error(`Match ${matchId} has no confirmed maps yet — finish the map veto before loading it onto a server`);
+	}
 	const maplist = confirmedMaps.length > 0 ? confirmedMaps : [process.env.CS2_DEFAULT_MAP || 'de_dust2'];
 
 	const team1Name = match.isPickup ? 'Side A' : (match.teamA?.name ?? 'Team A');
@@ -76,6 +85,8 @@ export async function buildMatchConfig(matchId: number, options: BuildMatchConfi
 		team2: { name: team2Name, players: team2Players },
 		num_maps: bestOf,
 		maplist,
+		// Veto happens in the app; newer MatchZy builds default skip_veto to false (Get5 behaviour).
+		skip_veto: true,
 		cvars: {
 			sv_password: match.gameServer.password,
 			// Fill with easy bots during pre-warm so the server isn't empty while players trickle

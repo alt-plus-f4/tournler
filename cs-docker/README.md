@@ -12,17 +12,16 @@ and each one can only run one `LIVE`/`PAUSED` match at a time. Once every server
 busy, starting another match is rejected until one frees up (see
 `src/lib/tournaments/game-server.ts`).
 
-## Starting matches requires `pool-controller`
+## How a match gets onto a server
 
-`pool-controller/index.js` must be running (`node pool-controller/index.js`, alongside this
-compose stack — see its own header comment) before the app can start any match. A live RCON
-`changelevel`/`map` command segfaults this Metamod build unconditionally, regardless of plugins
-loaded — see "MatchZy / CounterStrikeSharp" below — so starting a match works by having
-`pool-controller` recreate its assigned server's container booted directly onto the match's first
-map (`CS2_STARTMAP`), never by changing the map on an already-running server. Set
-`POOL_CONTROLLER_TOKEN` in both this directory's `.env` and the app's own `.env` (same value), and
-`POOL_CONTROLLER_URL` in the app's `.env` pointing at wherever this runs. Never expose its port to
-the public internet — it can trigger arbitrary container recreation on this host.
+Servers stay up between matches and maps. Starting a match is one RCON push of
+`matchzy_loadmatch_url` (the server then fetches the config from the app); MatchZy itself changes
+the map if the server isn't already on the match's first map, and the app waits (up to 90s) until
+`status` reports that map before marking the config loaded. When a match completes, the app kicks
+everyone, rotates `sv_password` and tells MatchZy to drop the match, so the server sits locked and
+free until the next match loads. Nothing recreates a container. (This used to go through a
+`pool-controller` sidecar that rebooted the container onto each map, because live map changes
+crashed the server — that was `sv_coaching_enabled 1`, see below.)
 
 ## Running locally
 
@@ -66,7 +65,31 @@ in the pool a match was assigned to, via RCON (`matchzy_loadmatch_url` pointing 
 app's own `GET /api/matches/[matchId]/game-server/match-config` endpoint) when a match starts —
 see `src/lib/cs2/`. It does not edit any container's static `.cfg` files per match.
 
-## MatchZy / CounterStrikeSharp: use the KHook-ported forks, not the official releases
+## Root cause of the round-reset / map-change crashes: `sv_coaching_enabled 1` (2026-10-07)
+
+On CS2 1.41.8.x, any server that ran MatchZy's stock mode configs crashed with a null-pointer read
+inside CS2's own `libserver.so` (`cmpb $0x1, 0x624(%rdi)` with `rdi = 0`, module offset
+`+0x1536a55`) at the second round reset and at every `changelevel`. The trigger is the
+`sv_coaching_enabled 1` line that MatchZy's stock `warmup.cfg`, `live.cfg`, `live_wingman.cfg`,
+`dryrun.cfg` and `sleep.cfg` (and so our copies in `settings/game/csgo/cfg/MatchZy/`) set. With
+that one line removed, 8/8 round resets and a live `changelevel` pass on every boot (original
+`joedwards32/cs2` image + mrc4tt forks, and also `xbird/cs2-matchzy` + official Metamod 1473 /
+CounterStrikeSharp 1.0.376 / MatchZy 0.9.1). Bisected by blanking `warmup.cfg`, then halving it
+line by line. It only appeared "MatchZy-dependent" because MatchZy is what execs those cfgs; Metamod
+alone, CounterStrikeSharp alone, and vanilla CS2 never set the cvar. Coaching (`.coach`) will not
+work without it — Tournler does not use coaches.
+
+Earlier tests in this file (Metamod git1411/1468/1469/1473, the official-vs-fork matrix, the
+`changelevel`-with-zero-plugins claim) were all run with the coaching line mounted, so their
+crash/no-crash outcomes should be read with that in mind; the history below is kept as-is.
+
+`xbird/cs2-matchzy` works as a drop-in alternative image (official plugins, versions pinned with
+`MMSOURCE_FIXED_VERSION` / `CSSHARP_FIXED_VERSION` / `MATCHZY_FIXED_VERSION`). One caution if you
+switch: its installer extracts MatchZy's stock `cfg/` over any mounted config folder on a fresh
+volume or version change, which silently overwrites our `settings/game/csgo/cfg/MatchZy` files — and
+the stock cfgs differ from ours. `pre.sh` here avoids that by excluding `cfg/*` from the extract.
+
+## (Historical) MatchZy / CounterStrikeSharp: use the KHook-ported forks, not the official releases
 
 The _official_ `roflmuffin/CounterStrikeSharp` and `shobhit-pathak/MatchZy` releases cannot run
 against a current CS2 engine build at all — this isn't a config problem, it's a real, open
@@ -113,15 +136,30 @@ stack or fixable from plugin config — see
 [CounterStrikeSharp#1139](https://github.com/roflmuffin/CounterStrikeSharp/issues/1139), none
 resolved as of this writing.
 
-Loading a match whose first map already matches whatever the server is currently sitting on does
-**not** trigger a changelevel (MatchZy skips it — confirmed directly) and does not crash. So
-instead of ever pushing a match config that might require a live map change, `pool-controller`
-recreates the assigned server's container booted directly onto the match's first map before the
-config is pushed (see "Starting matches requires `pool-controller`" above and
-`src/lib/cs2/provisioning.ts`'s `restartServerOntoMap`). This is only proven out for pickups
-(always single-map — see `src/lib/cs2/match-config.ts`). A multi-map series' own map 2/3
-transition is still MatchZy's internal changelevel and would still hit this same crash — that
-remains an open gap for non-pickup (bracket) matches.
+**Superseded:** live map changes work once `sv_coaching_enabled` is out of the mounted MatchZy
+configs (see "Root cause" above), so the app no longer restarts containers — and a multi-map
+series' own map 2/3 transition is no longer a crash risk either.
+
+### Retest on CS2 1.41.8.2 (2026-10-05): one bug, and it needs MatchZy loaded
+
+Corrects the "zero plugins running" claim above. On CS2 `1.41.8.2` (`libserver.so` SHA256
+`ACFB3787…BA329`), vanilla CS2, Metamod alone (`git1468` and `git1473`) and Metamod +
+`mrc4tt/CounterStrikeSharp` v1.0.406 all survive repeated `mp_restartgame` **and** a live
+`changelevel`. The server only crashes once **MatchZy is loaded** — mrc4tt `0.8.83`, `1.0.0`–`1.0.7`,
+and official `0.9.1` on official CounterStrikeSharp `1.0.376` alike, on both Metamod builds.
+
+Every crash (12+ core dumps, both triggers) is the identical null-pointer read inside CS2's own
+`libserver.so`: `cmpb $0x1, 0x624(%rdi)` with `rdi = 0` at module offset `+0x1536a55`, called from
+`+0x137b95b`. Round resets survive the first reset and crash on the second (≈90% of boots);
+`changelevel` crashes every time. **Superseded by the section above:** the trigger turned out to be `sv_coaching_enabled 1` in the
+mounted MatchZy mode configs, not the CS2 update or any plugin/Metamod version.
+
+`pre.sh` can swap stacks without edits via an optional `pre.env` in the server's data volume
+(`METAMOD_BUILD`, `CSS_REPO`/`CSS_RELEASE`, `MATCHZY_REPO`/`MATCHZY_RELEASE=tags/<tag>`,
+`SKIP_ADDONS=all|plugins|matchzy` for isolating crashes). Core dumps land in
+`%LOCALAPPDATA%\Temp\wsl-crashes` on Windows/WSL2 (the CounterStrikeSharp `dumps/` folder stays
+empty for this crash); `gdb-minimal` inside the `joedwards32/cs2` image, with the data volume mounted
+at the same path, gives a usable backtrace.
 
 If `pre.sh`'s current pins ever regress (a fork goes stale, or the official releases finally
 catch up and you'd rather depend on those instead), the two checks that have each been

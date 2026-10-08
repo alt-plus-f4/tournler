@@ -1,5 +1,5 @@
-import { MatchSlot } from '@prisma/client';
-import { db } from '@/lib/db';
+import { MatchSlot, Matches, Cs2Tournament } from '@prisma/client';
+import { db, type DbTx } from '@/lib/db';
 import { recordMatchResult, MatchResultConflictError } from './bracket-advancement';
 import { normalizeBestOf } from './veto';
 
@@ -49,7 +49,10 @@ export async function recordMapResult(matchId: number, mapOrder: number, input: 
 			if (incomingWinner !== undefined && incomingWinner !== currentWinner) {
 				throw new MatchResultConflictError(`Map ${mapOrder} of match ${matchId} is already completed with a different winner`);
 			}
-			return null;
+			// The map was recorded by an earlier delivery, but the series decision may not have been:
+			// if recordMatchResult threw afterwards, a retry must be able to finish the job.
+			if (match.status === 'COMPLETED') return null;
+			return decideSeries(tx, match);
 		}
 
 		const now = new Date();
@@ -70,21 +73,28 @@ export async function recordMapResult(matchId: number, mapOrder: number, input: 
 
 		if (!isCompleting) return null;
 
-		const allMaps = await tx.matchMap.findMany({ where: { matchId } });
-		const scoreTeamA = match.isPickup ? allMaps.filter((m) => m.winnerSide === 'TEAM_A').length : allMaps.filter((m) => m.winnerId === match.teamAId).length;
-		const scoreTeamB = match.isPickup ? allMaps.filter((m) => m.winnerSide === 'TEAM_B').length : allMaps.filter((m) => m.winnerId === match.teamBId).length;
-
-		await tx.matches.update({ where: { id: matchId }, data: { scoreTeamA, scoreTeamB } });
-
-		const bestOf = normalizeBestOf(match.bestOf ?? match.tournament.bestOf);
-		const winsNeeded = Math.ceil(bestOf / 2);
-
-		if (scoreTeamA >= winsNeeded) return match.isPickup ? { winnerSide: 'TEAM_A' as MatchSlot, scoreTeamA, scoreTeamB } : { winnerId: match.teamAId as number, scoreTeamA, scoreTeamB };
-		if (scoreTeamB >= winsNeeded) return match.isPickup ? { winnerSide: 'TEAM_B' as MatchSlot, scoreTeamA, scoreTeamB } : { winnerId: match.teamBId as number, scoreTeamA, scoreTeamB };
-		return null;
+		return decideSeries(tx, match);
 	});
 
 	if (seriesDecision) {
 		await recordMatchResult(matchId, seriesDecision);
 	}
+}
+
+type MatchWithTournament = Matches & { tournament: Cs2Tournament };
+
+async function decideSeries(tx: DbTx, match: MatchWithTournament): Promise<Parameters<typeof recordMatchResult>[1] | null> {
+	const matchId = match.id;
+	const allMaps = await tx.matchMap.findMany({ where: { matchId } });
+	const scoreTeamA = match.isPickup ? allMaps.filter((m) => m.winnerSide === 'TEAM_A').length : allMaps.filter((m) => m.winnerId === match.teamAId).length;
+	const scoreTeamB = match.isPickup ? allMaps.filter((m) => m.winnerSide === 'TEAM_B').length : allMaps.filter((m) => m.winnerId === match.teamBId).length;
+
+	await tx.matches.update({ where: { id: matchId }, data: { scoreTeamA, scoreTeamB } });
+
+	const bestOf = normalizeBestOf(match.bestOf ?? match.tournament.bestOf);
+	const winsNeeded = Math.ceil(bestOf / 2);
+
+	if (scoreTeamA >= winsNeeded) return match.isPickup ? { winnerSide: 'TEAM_A' as MatchSlot, scoreTeamA, scoreTeamB } : { winnerId: match.teamAId as number, scoreTeamA, scoreTeamB };
+	if (scoreTeamB >= winsNeeded) return match.isPickup ? { winnerSide: 'TEAM_B' as MatchSlot, scoreTeamA, scoreTeamB } : { winnerId: match.teamBId as number, scoreTeamA, scoreTeamB };
+	return null;
 }

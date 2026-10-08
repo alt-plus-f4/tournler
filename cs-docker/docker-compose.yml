@@ -18,11 +18,7 @@ services:
       - TV_PW=${CS2_SERVER_1_TV_PW}
       - TV_ENABLE=1
       - CS2_MAPGROUP=${CS2_MAPGROUP:-}
-      # The map this container boots directly onto (`+map ...` at launch) — see
-      # pool-controller/index.js and cs-docker/README.md's "map change crashes the server" section
-      # for why this is set via a full container recreate rather than a live RCON changelevel.
-      # pool-controller overrides this per restart; the default here only matters before the app
-      # ever assigns this server a match.
+      # Only the boot map; once the app loads a match, MatchZy changes level as needed.
       - CS2_STARTMAP=${CS2_SERVER_1_STARTMAP:-de_dust2}
     volumes:
       - ./data/cs2-dedicated-01:/home/steam/cs2-dedicated

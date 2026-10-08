@@ -14,6 +14,9 @@ function isHttpsUrl(value: string) {
 	}
 }
 
+// START loads the match onto its server and waits for the map change (up to ~90s).
+export const maxDuration = 120;
+
 /**
  * GET /api/matches/[matchId]
  * Fetch match details including teams, scores, and game server info
@@ -147,7 +150,32 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			return NextResponse.json({ error: 'Invalid match ID' }, { status: 400 });
 		}
 
-		const data = await request.json();
+		const data = await request.json().catch(() => null);
+		if (!data || typeof data !== 'object' || Array.isArray(data)) {
+			return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+		}
+
+		// Validate everything up front: the lifecycle action below has side effects (it can start a
+		// server), so a bad field must never be reported after the action already ran.
+		const isCount = (v: unknown) => v === undefined || (typeof v === 'number' && Number.isInteger(v) && v >= 0);
+		if (!isCount(data.scoreTeamA) || !isCount(data.scoreTeamB)) {
+			return NextResponse.json({ error: 'Scores must be non-negative integers' }, { status: 400 });
+		}
+		if (data.winnerId !== undefined && !(typeof data.winnerId === 'number' && Number.isInteger(data.winnerId) && data.winnerId > 0)) {
+			return NextResponse.json({ error: 'winnerId must be a positive integer' }, { status: 400 });
+		}
+		if (data.winnerSide !== undefined && data.winnerSide !== 'TEAM_A' && data.winnerSide !== 'TEAM_B') {
+			return NextResponse.json({ error: 'winnerSide must be TEAM_A or TEAM_B' }, { status: 400 });
+		}
+		if (data.matchDate !== undefined && (typeof data.matchDate !== 'string' || Number.isNaN(new Date(data.matchDate).getTime()))) {
+			return NextResponse.json({ error: 'matchDate must be a valid date' }, { status: 400 });
+		}
+		if (data.streamUrl !== undefined && data.streamUrl !== null) {
+			const clearing = typeof data.streamUrl === 'string' && data.streamUrl.trim() === '';
+			if (!clearing && !(typeof data.streamUrl === 'string' && data.streamUrl.length <= 2048 && isHttpsUrl(data.streamUrl.trim()))) {
+				return NextResponse.json({ error: 'streamUrl must be an https URL' }, { status: 400 });
+			}
+		}
 
 		const match = await db.matches.findUnique({
 			where: { id: parsedMatchId },

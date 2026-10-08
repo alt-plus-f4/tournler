@@ -384,7 +384,7 @@ export async function restartMatch(matchId: number): Promise<MatchActionResult> 
 		// recordMapResult's "already completed" idempotency doesn't block replaying it.
 		await tx.matchMap.updateMany({
 			where: { matchId },
-			data: { scoreTeamA: null, scoreTeamB: null, winnerId: null, status: 'SCHEDULED', startedAt: null, completedAt: null },
+			data: { scoreTeamA: null, scoreTeamB: null, winnerId: null, winnerSide: null, status: 'SCHEDULED', startedAt: null, completedAt: null },
 		});
 
 		await tx.playerMatchStat.deleteMany({ where: { matchId } });

@@ -85,7 +85,13 @@ export async function POST(request: Request) {
 		// confirmed map (see finalizeVeto) — pickups aren't special-cased here anymore. MatchZy's
 		// own map_number is already 0-indexed, same as MatchMap.order, for both.
 		const mapNumberRaw = data.map_number;
-		const mapOrder = typeof mapNumberRaw === 'number' ? mapNumberRaw : undefined;
+		const mapOrder = typeof mapNumberRaw === 'number' && Number.isInteger(mapNumberRaw) && mapNumberRaw >= 0 ? mapNumberRaw : undefined;
+
+		// Without a map index a map_result can't be applied to its MatchMap, and falling through to
+		// the series-level path below would crown a series winner off a single map's result.
+		if (event === 'map_result' && mapOrder === undefined) {
+			return NextResponse.json({ error: 'map_result requires a non-negative integer map_number' }, { status: 400 });
+		}
 
 		if (event === 'round_end') {
 			// Live, in-progress round score — team1/team2.score here is the same shape as
@@ -102,7 +108,9 @@ export async function POST(request: Request) {
 		// score nested under team1/team2 (see the field-mapping comment above).
 		const teamAScore = Number(event === 'series_end' ? (data.team1_series_score ?? 0) : (data.team1?.score ?? 0));
 		const teamBScore = Number(event === 'series_end' ? (data.team2_series_score ?? 0) : (data.team2?.score ?? 0));
-		const winnerTeam = data.winner?.team as 'team1' | 'team2' | undefined;
+		// A draw/forfeit-less end reports "none" (or nothing): that must not be read as a team2 win.
+		const winnerRaw = data.winner?.team;
+		const winnerTeam = winnerRaw === 'team1' || winnerRaw === 'team2' ? winnerRaw : undefined;
 		// Pickup matches have no Cs2Team to use as winnerId (see recordMatchResult) — use
 		// winnerSide instead. Non-pickup matches use winnerId, resolved via the veto-assigned teams.
 		const winnerId = !match.isPickup && winnerTeam ? ((winnerTeam === 'team1' ? match.teamAId : match.teamBId) ?? undefined) : undefined;

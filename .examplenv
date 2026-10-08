@@ -78,25 +78,6 @@ GAME_SERVER_TOKEN=your_game_server_shared_secret
 
 # GAME_SERVER_CALLBACK_URL=http://host.docker.internal:3000
 
-# Required to start a match — see cs-docker/pool-controller/index.js. A live RCON changelevel/map
-
-# command segfaults the CS2 dedicated server unconditionally on this Metamod build (a long-standing
-
-# upstream bug, not something fixable from plugin config — see cs-docker/README.md), so starting a
-
-# match works by recreating its assigned server's container booted directly onto the right map
-
-# instead. POOL_CONTROLLER_TOKEN must match the value pool-controller is run with. Unlike
-
-# GAME_SERVER_CALLBACK_URL above, this is host-to-host: pool-controller runs directly on the CS2
-
-# host (not inside a container), same as wherever this app runs — in local dev, where both run on
-
-# the same machine, that's plain http://localhost:9800, not host.docker.internal.
-
-POOL_CONTROLLER_URL=http://your-cs2-host:9800
-POOL_CONTROLLER_TOKEN=your_pool_controller_shared_secret
-
 # CS2 dedicated server pool (see cs-docker/README.md and CS2_SERVER_GUIDE.md) — a fixed set of
 
 # persistent servers, one match at a time each; NOT one container per match. Prefer
