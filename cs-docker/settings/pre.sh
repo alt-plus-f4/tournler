@@ -1,7 +1,7 @@
 #!/bin/bash
 # PRE HOOK
 #  Make your customisation here
-echo gosho
+echo start
 
 ensure_directory() {
   local dir_path="$1"
