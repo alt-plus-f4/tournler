@@ -667,6 +667,10 @@ model HomepageSettings {
   // HLTV-style "recent forum posts" block on the homepage sidebar.
   showForumPosts Boolean @default(true) @map("show_forum_posts")
 
+  // The "live now" scoreboard that leads the homepage while a match is in progress. Off hides it
+  // (and its stream) entirely; the rewatch player leads instead.
+  showLiveMatches Boolean @default(true) @map("show_live_matches")
+
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("homepage_settings")

@@ -25,6 +25,7 @@ interface HomepageSettings extends Partial<Record<RewatchKey, string | null>> {
 	featuredSource: 'TOURNAMENTS' | 'NEWS' | 'MIXED';
 	featuredLayout: 'GRID' | 'CAROUSEL';
 	showForumPosts?: boolean;
+	showLiveMatches?: boolean;
 	rewatchProvider?: 'YOUTUBE' | 'TWITCH';
 }
 
@@ -47,6 +48,7 @@ export default function FeaturedClient() {
 	const [settings, setSettings] = useState<HomepageSettings | null>(null);
 	const [isSavingSettings, setIsSavingSettings] = useState(false);
 	const [isSavingForum, setIsSavingForum] = useState(false);
+	const [isSavingLive, setIsSavingLive] = useState(false);
 	const [rewatchDraft, setRewatchDraft] = useState<RewatchDraft | null>(null);
 	const [isSavingRewatch, setIsSavingRewatch] = useState(false);
 	const [rewatchError, setRewatchError] = useState<string | null>(null);
@@ -103,6 +105,27 @@ export default function FeaturedClient() {
 			toast({ variant: 'destructive', title: 'Could not save homepage layout' });
 		} finally {
 			setIsSavingSettings(false);
+		}
+	};
+
+	const saveShowLiveMatches = async (showLiveMatches: boolean) => {
+		const previous = settings?.showLiveMatches ?? true;
+		setSettings((prev) => (prev ? { ...prev, showLiveMatches } : prev));
+		setIsSavingLive(true);
+		try {
+			const response = await fetch('/api/admin/homepage-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ showLiveMatches }),
+			});
+			if (!response.ok) throw new Error('Failed to save');
+			toast({ title: showLiveMatches ? 'Live matches shown on the homepage' : 'Live matches hidden from the homepage' });
+		} catch (error) {
+			console.error('Failed to save live matches toggle', error);
+			setSettings((prev) => (prev ? { ...prev, showLiveMatches: previous } : prev));
+			toast({ variant: 'destructive', title: 'Could not update the live matches panel' });
+		} finally {
+			setIsSavingLive(false);
 		}
 	};
 
@@ -234,6 +257,29 @@ export default function FeaturedClient() {
 							</SelectContent>
 						</Select>
 					</div>
+				</div>
+				<div className='flex items-start justify-between gap-4 border-t border-border pt-4 max-w-lg'>
+					<div className='space-y-0.5'>
+						<Label htmlFor='show-live-matches'>Show live matches on the homepage</Label>
+						<p id='show-live-matches-hint' className='text-xs text-muted-foreground'>
+							The &ldquo;Live now&rdquo; scoreboard (with the match&rsquo;s stream, if it has one) that leads the homepage while a match is in progress. Off, the rewatch player leads instead.
+						</p>
+					</div>
+					<button
+						id='show-live-matches'
+						type='button'
+						role='switch'
+						aria-checked={settings.showLiveMatches ?? true}
+						aria-describedby='show-live-matches-hint'
+						disabled={isSavingLive}
+						onClick={() => saveShowLiveMatches(!(settings.showLiveMatches ?? true))}
+						className='relative mt-0.5 inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-border bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 aria-checked:bg-foreground'
+					>
+						<span
+							aria-hidden
+							className='pointer-events-none block h-4 w-4 translate-x-1 rounded-full bg-muted-foreground transition-transform [[aria-checked=true]>&]:translate-x-6 [[aria-checked=true]>&]:bg-background'
+						/>
+					</button>
 				</div>
 				<div className='flex items-start justify-between gap-4 border-t border-border pt-4 max-w-lg'>
 					<div className='space-y-0.5'>

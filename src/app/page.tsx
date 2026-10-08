@@ -106,13 +106,15 @@ const getRecentForumThreads = cachedQuery(async (take: number) => recentForumThr
 
 /** Live scoreboard leads when a server reports a match in progress; otherwise the VOD is the hero. */
 async function Hero() {
-	const [liveMatches, settings] = await Promise.all([getLive(), getHomepageSettings()]);
+	const [allLive, settings] = await Promise.all([getLive(), getHomepageSettings()]);
+	const liveMatches = settings?.showLiveMatches === false ? [] : allLive;
 	return liveMatches.length > 0 ? <OnAirPanel matches={liveMatches} /> : <RewatchPlayer rewatch={resolveRewatch(settings)} />;
 }
 
 /** Up next, then (only while something is live) the VOD drops below it. */
 async function UpNextBlock() {
-	const [rows, liveMatches, settings] = await Promise.all([getUpNext(), getLive(), getHomepageSettings()]);
+	const [rows, allLive, settings] = await Promise.all([getUpNext(), getLive(), getHomepageSettings()]);
+	const liveMatches = settings?.showLiveMatches === false ? [] : allLive;
 	return (
 		<>
 			<UpNext rows={rows} />
