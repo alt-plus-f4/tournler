@@ -15,25 +15,7 @@ export function sanitizeRichText(html: string): string {
 // execute behavior and reach out to the network), <use> (can pull in external/remote content via href),
 // or any SMIL <animate*>/<set> element (these can mutate attributes like onclick-equivalents or toggle
 // visibility/position without any <script> tag at all, which is exactly what a denylist tends to miss).
-const SVG_ALLOWED_TAGS = [
-	'svg',
-	'g',
-	'path',
-	'circle',
-	'rect',
-	'ellipse',
-	'line',
-	'polyline',
-	'polygon',
-	'defs',
-	'clipPath',
-	'mask',
-	'linearGradient',
-	'radialGradient',
-	'stop',
-	'title',
-	'desc',
-];
+const SVG_ALLOWED_TAGS = ['svg', 'g', 'path', 'circle', 'rect', 'ellipse', 'line', 'polyline', 'polygon', 'defs', 'clipPath', 'mask', 'linearGradient', 'radialGradient', 'stop', 'title', 'desc'];
 
 const SVG_ALLOWED_ATTR = [
 	'viewBox',
