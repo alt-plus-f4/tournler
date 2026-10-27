@@ -29,7 +29,10 @@ export async function POST(request: Request) {
 
 		console.info(`[admin-servers] user=${guard.userId} test-connection id=${entry.id}`);
 		const { live } = await probeTarget({ host: check.address, port: target.port, password: entry.rconPassword });
-		return NextResponse.json({ online: live.online, reason: live.reason, map: live.map, hostname: live.hostname, humans: live.humans, bots: live.bots, maxPlayers: live.maxPlayers, latencyMs: live.latencyMs }, { headers: noStore });
+		return NextResponse.json(
+			{ online: live.online, reason: live.reason, map: live.map, hostname: live.hostname, humans: live.humans, bots: live.bots, maxPlayers: live.maxPlayers, latencyMs: live.latencyMs },
+			{ headers: noStore },
+		);
 	} catch (error) {
 		console.error('Error testing game server connection:', error instanceof Error ? error.message : 'unknown error');
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: noStore });

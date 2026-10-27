@@ -41,14 +41,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, ch
 	const busy = Boolean(isLoading) || pending;
 
 	return (
-		<Comp
-			className={cn(buttonVariants({ variant, size, className }))}
-			ref={ref}
-			disabled={busy || disabled}
-			aria-busy={busy || undefined}
-			onClick={onClick ? handleClick : undefined}
-			{...props}
-		>
+		<Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} disabled={busy || disabled} aria-busy={busy || undefined} onClick={onClick ? handleClick : undefined} {...props}>
 			{asChild ? (
 				children
 			) : (

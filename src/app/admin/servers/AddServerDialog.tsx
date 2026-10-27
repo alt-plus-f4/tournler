@@ -13,7 +13,16 @@ import { adminTable as t } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
 
 type Form = { id: string; ip: string; port: string; rconHost: string; rconPort: string; rconPassword: string };
-type TestResult = { online: boolean; reason: string | null; map: string | null; hostname: string | null; humans: number | null; bots: number | null; maxPlayers: number | null; latencyMs: number | null };
+type TestResult = {
+	online: boolean;
+	reason: string | null;
+	map: string | null;
+	hostname: string | null;
+	humans: number | null;
+	bots: number | null;
+	maxPlayers: number | null;
+	latencyMs: number | null;
+};
 type Output = { entryJson: string; poolJson: string; compose: string; env: string };
 
 function CodeBlock({ label, value }: { label: string; value: string }) {
@@ -118,7 +127,8 @@ export default function AddServerDialog({ open, onClose, suggestions }: { open: 
 					<DialogEyebrow>Game servers</DialogEyebrow>
 					<DialogTitle className={dialogPanelTitle}>Add server</DialogTitle>
 					<DialogDescription>
-						Servers are defined in the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable. Fill this in, test the connection, then copy the result into your environment. Nothing is saved here.
+						Servers are defined in the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable. Fill this in, test the connection, then copy the result into your environment. Nothing
+						is saved here.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -199,7 +209,8 @@ export default function AddServerDialog({ open, onClose, suggestions }: { open: 
 						<CodeBlock label='New entry' value={output.entryJson} />
 						<CodeBlock label='Full CS2_SERVER_POOL value' value={output.poolJson} />
 						<p className='text-sm text-muted-foreground'>
-							Existing entries show <code className='font-mono'>&lt;keep existing&gt;</code> instead of their RCON password. Before pasting, put each existing password back (or add only the new entry to the array you already have). Then set the value in the Vercel project settings under Environment Variables and redeploy.
+							Existing entries show <code className='font-mono'>&lt;keep existing&gt;</code> instead of their RCON password. Before pasting, put each existing password back (or add only the new entry
+							to the array you already have). Then set the value in the Vercel project settings under Environment Variables and redeploy.
 						</p>
 						<details className='group rounded-md border border-border'>
 							<summary className='flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
@@ -208,7 +219,8 @@ export default function AddServerDialog({ open, onClose, suggestions }: { open: 
 							</summary>
 							<div className='space-y-4 border-t border-border p-3'>
 								<p className='text-sm text-muted-foreground'>
-									Add the service block to <code className='font-mono'>cs-docker/docker-compose.yml</code> and the variables to <code className='font-mono'>cs-docker/.env</code> (see <code className='font-mono'>cs-docker/README.md</code>).
+									Add the service block to <code className='font-mono'>cs-docker/docker-compose.yml</code> and the variables to <code className='font-mono'>cs-docker/.env</code> (see{' '}
+									<code className='font-mono'>cs-docker/README.md</code>).
 								</p>
 								<CodeBlock label='docker-compose.yml service' value={output.compose} />
 								<CodeBlock label='cs-docker/.env' value={output.env} />

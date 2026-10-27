@@ -25,8 +25,12 @@ export const poolEntrySchema = z
 		port: portSchema,
 		rconHost: hostSchema.optional(),
 		rconPort: portSchema.optional(),
-		// eslint-disable-next-line no-control-regex
-		rconPassword: z.string().min(1, 'RCON password is required').max(128).regex(/^[^\u0000-\u001f\u007f]*$/, 'Password contains control characters'),
+		rconPassword: z
+			.string()
+			.min(1, 'RCON password is required')
+			.max(128)
+			// eslint-disable-next-line no-control-regex
+			.regex(/^[^\u0000-\u001f\u007f]*$/, 'Password contains control characters'),
 	})
 	.strict();
 

@@ -87,7 +87,12 @@ describe('GET /api/admin/servers', () => {
 		expect(text).not.toContain('match-pw');
 		const body = await res.json();
 		expect(body.servers).toHaveLength(2);
-		expect(body.servers[0]).toMatchObject({ id: '01', address: '1.2.3.4:27015', status: { online: true, hostname: 'Tournler #1', map: 'de_dust2', humans: 2, bots: 0 }, match: { matchId: 7, teamA: 'Alpha', teamB: 'Bravo' } });
+		expect(body.servers[0]).toMatchObject({
+			id: '01',
+			address: '1.2.3.4:27015',
+			status: { online: true, hostname: 'Tournler #1', map: 'de_dust2', humans: 2, bots: 0 },
+			match: { matchId: 7, teamA: 'Alpha', teamB: 'Bravo' },
+		});
 		expect(body.servers[1].match).toBeNull();
 		expect(body.summary).toEqual({ total: 2, online: 2, offline: 0, inUse: 1, free: 1 });
 	});
@@ -244,7 +249,15 @@ describe('POST /api/admin/servers/test and /preview', () => {
 	});
 
 	it('test: validates every field before connecting', async () => {
-		for (const bad of [{ ...entry, port: 0 }, { ...entry, port: 70000 }, { ...entry, rconPort: 99999 }, { ...entry, rconPassword: '' }, { ...entry, ip: 'http://x' }, { ...entry, id: '' }, { port: 1 }]) {
+		for (const bad of [
+			{ ...entry, port: 0 },
+			{ ...entry, port: 70000 },
+			{ ...entry, rconPort: 99999 },
+			{ ...entry, rconPassword: '' },
+			{ ...entry, ip: 'http://x' },
+			{ ...entry, id: '' },
+			{ port: 1 },
+		]) {
 			expect((await testPOST(json(bad))).status).toBe(400);
 		}
 		expect(withRcon).not.toHaveBeenCalled();

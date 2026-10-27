@@ -11,7 +11,10 @@ export default function Error404() {
 		<div className='relative flex min-h-[60vh] items-center justify-center overflow-hidden px-4 py-16 text-center'>
 			<div aria-hidden className='pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(50%_100%_at_50%_0,hsl(0_0%_100%/0.08),transparent)]' />
 			<div className='relative'>
-				<p aria-hidden className='bg-gradient-to-b from-white/15 to-white/[0.03] bg-clip-text font-mono text-[clamp(110px,22vw,230px)] font-black leading-[0.85] tabular-nums tracking-wide text-transparent'>
+				<p
+					aria-hidden
+					className='bg-gradient-to-b from-white/15 to-white/[0.03] bg-clip-text font-mono text-[clamp(110px,22vw,230px)] font-black leading-[0.85] tabular-nums tracking-wide text-transparent'
+				>
 					404
 				</p>
 				<h1 className='mt-6 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Page not found</h1>

@@ -54,9 +54,7 @@ export function ForumThreadList({ threads, showCategory }: { threads: ForumThrea
 									<LinkPendingVeil />
 								</Link>
 								{showCategory && (
-									<span className='hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground md:inline'>
-										{CATEGORY_LABELS[thread.category]}
-									</span>
+									<span className='hidden shrink-0 rounded-full border border-border px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground md:inline'>{CATEGORY_LABELS[thread.category]}</span>
 								)}
 							</div>
 							<span className='hidden truncate text-sm text-muted-foreground sm:block'>{authorName(thread.author)}</span>

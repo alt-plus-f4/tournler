@@ -115,10 +115,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 										</span>
 									</div>
 									<h2 className='text-lg font-black uppercase leading-snug tracking-wide md:text-xl'>
-										<Link
-											href={`/news/${post.id}`}
-											className='after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring'
-										>
+										<Link href={`/news/${post.id}`} className='after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring'>
 											{post.title}
 											<LinkPendingVeil />
 										</Link>

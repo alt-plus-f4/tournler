@@ -219,15 +219,17 @@ export default function ServersClient() {
 			) : data?.poolError ? (
 				<AdminEmpty>
 					<ServerIcon aria-hidden className='mx-auto mb-3 h-6 w-6' />
-					The server pool configuration could not be read. <code className='font-mono'>CS2_SERVER_POOL</code> must be a valid JSON array. See <code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3.
+					The server pool configuration could not be read. <code className='font-mono'>CS2_SERVER_POOL</code> must be a valid JSON array. See{' '}
+					<code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3.
 				</AdminEmpty>
 			) : servers.length === 0 ? (
 				<AdminEmpty>
 					<ServerIcon aria-hidden className='mx-auto mb-3 h-6 w-6' />
 					<p className='font-medium text-foreground'>No servers configured</p>
 					<p className='mx-auto mt-1 max-w-prose'>
-						Servers come from the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable, or the single-server variables <code className='font-mono'>CS2_SERVER_IP</code>, <code className='font-mono'>CS2_SERVER_PORT</code> and{' '}
-						<code className='font-mono'>CS2_RCON_PASSWORD</code>. See <code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3, for the format.
+						Servers come from the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable, or the single-server variables <code className='font-mono'>CS2_SERVER_IP</code>,{' '}
+						<code className='font-mono'>CS2_SERVER_PORT</code> and <code className='font-mono'>CS2_RCON_PASSWORD</code>. See <code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3, for
+						the format.
 					</p>
 				</AdminEmpty>
 			) : (

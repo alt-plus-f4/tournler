@@ -208,7 +208,9 @@ function ConsoleTab({ serverId }: { serverId: string }) {
 				body: JSON.stringify({ command: cmd }),
 			});
 			const body = await res.json().catch(() => null);
-			entry = res.ok ? { id: ++counter.current, command: cmd, output: typeof body?.output === 'string' ? body.output : '', error: false } : { id: ++counter.current, command: cmd, output: typeof body?.error === 'string' ? body.error : 'Command failed', error: true };
+			entry = res.ok
+				? { id: ++counter.current, command: cmd, output: typeof body?.output === 'string' ? body.output : '', error: false }
+				: { id: ++counter.current, command: cmd, output: typeof body?.error === 'string' ? body.error : 'Command failed', error: true };
 		} catch {
 			entry = { id: ++counter.current, command: cmd, output: 'Command failed: network error', error: true };
 		}
@@ -226,7 +228,12 @@ function ConsoleTab({ serverId }: { serverId: string }) {
 						<p className='text-neutral-400'>&gt; {h.command}</p>
 						<pre className={cn('whitespace-pre-wrap break-words', h.error ? 'text-signal-live' : 'text-neutral-200')}>{h.output || '(no output)'}</pre>
 						{h.error && (
-							<button type='button' onClick={() => send(h.command)} disabled={sending} className='mt-1 inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50'>
+							<button
+								type='button'
+								onClick={() => send(h.command)}
+								disabled={sending}
+								className='mt-1 inline-flex items-center gap-1 rounded border border-border px-2 py-0.5 text-[11px] text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50'
+							>
 								<RotateCw aria-hidden className='h-3 w-3' />
 								Retry
 							</button>
@@ -261,7 +268,17 @@ function ConsoleTab({ serverId }: { serverId: string }) {
 				<Label htmlFor='rcon-command' className='sr-only'>
 					RCON command
 				</Label>
-				<Input id='rcon-command' ref={inputRef} value={command} onChange={(e) => setCommand(e.target.value)} maxLength={512} placeholder='Enter a console command' autoComplete='off' spellCheck={false} className='font-mono' />
+				<Input
+					id='rcon-command'
+					ref={inputRef}
+					value={command}
+					onChange={(e) => setCommand(e.target.value)}
+					maxLength={512}
+					placeholder='Enter a console command'
+					autoComplete='off'
+					spellCheck={false}
+					className='font-mono'
+				/>
 				<Button type='submit' isLoading={sending} disabled={!command.trim()}>
 					{!sending && <Send aria-hidden className='mr-1.5 h-4 w-4' />}
 					Send

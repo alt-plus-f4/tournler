@@ -59,7 +59,9 @@ export async function probeTarget(target: RconTarget): Promise<LiveStatusResult>
 			withRcon(target, (rcon) => rcon.execute('status')),
 			STATUS_TIMEOUT_MS,
 		);
-		const raw = redactSecrets(String(output ?? '')).split(target.password).join('[redacted]');
+		const raw = redactSecrets(String(output ?? ''))
+			.split(target.password)
+			.join('[redacted]');
 		return { live: { ...parseServerStatus(raw), online: true, reason: null, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() }, raw };
 	} catch (error) {
 		return { live: { ...EMPTY_PARSED, online: false, reason: describeRconError(error), latencyMs: null, checkedAt: new Date().toISOString() }, raw: null };

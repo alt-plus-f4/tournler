@@ -15,9 +15,12 @@ beforeEach(() => lookup.mockReset());
 describe('checkTestHost in production', () => {
 	const prod = (host: string, pool = POOL) => checkTestHost(host, pool, 'production');
 
-	it.each(['127.0.0.1', '10.0.0.5', '192.168.1.1', '169.254.169.254', '172.16.0.1', '::1', 'fe80::1', '0.0.0.0', 'localhost2.localhost', 'db.internal', 'printer.local'])('rejects %s', async (host) => {
-		expect((await prod(host, [])).ok).toBe(false);
-	});
+	it.each(['127.0.0.1', '10.0.0.5', '192.168.1.1', '169.254.169.254', '172.16.0.1', '::1', 'fe80::1', '0.0.0.0', 'localhost2.localhost', 'db.internal', 'printer.local'])(
+		'rejects %s',
+		async (host) => {
+			expect((await prod(host, [])).ok).toBe(false);
+		},
+	);
 
 	it('rejects a public name that resolves to a private address (including mixed answers)', async () => {
 		lookup.mockResolvedValueOnce([{ address: '10.0.0.9', family: 4 }]);
