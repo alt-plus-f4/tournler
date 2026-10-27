@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ import { useLatched } from '@/lib/hooks/use-latched';
 // The news editor dialog is only fetched once an admin first opens it.
 const EditNewsDialog = dynamic(() => import('@/components/EditNewsDialog'));
 import { Tournament } from '@/types/types';
+import { HOME_LAYOUTS, parseHomepageLayout, type HomepageLayoutValue } from '@/lib/home/layouts';
 import { DEFAULT_REWATCH, parseRewatchSource } from '@/components/home/rewatch-config';
 
 const REWATCH_KEYS = ['rewatchVideoId', 'rewatchTitle', 'rewatchTeamA', 'rewatchTeamALogo', 'rewatchTeamB', 'rewatchTeamBLogo'] as const;
@@ -25,6 +27,7 @@ type RewatchDraft = Record<RewatchKey, string> & { rewatchProvider: 'YOUTUBE' | 
 interface HomepageSettings extends Partial<Record<RewatchKey, string | null>> {
 	featuredSource: 'TOURNAMENTS' | 'NEWS' | 'MIXED';
 	featuredLayout: 'GRID' | 'CAROUSEL';
+	pageLayout?: HomepageLayoutValue;
 	showForumPosts?: boolean;
 	showLiveMatches?: boolean;
 	rewatchProvider?: 'YOUTUBE' | 'TWITCH';
@@ -45,11 +48,91 @@ const toDraft = (settings: HomepageSettings): RewatchDraft =>
 		rewatchProvider: settings.rewatchProvider ?? 'YOUTUBE',
 	}) as RewatchDraft;
 
+const Block = ({ className }: { className: string }) => <div className={`rounded-[2px] bg-white/15 ${className}`} />;
+
+/** Abstract grayscale wireframes, one per homepage layout. */
+function LayoutThumb({ layout }: { layout: HomepageLayoutValue }) {
+	switch (layout) {
+		case 'CLASSIC':
+			return (
+				<div className='flex h-full gap-1.5'>
+					<div className='flex flex-1 flex-col gap-1.5'>
+						<Block className='h-[55%] bg-white/30' />
+						<div className='flex flex-1 gap-1.5'>
+							<Block className='flex-1' />
+							<Block className='flex-1' />
+						</div>
+					</div>
+					<div className='flex w-[28%] flex-col gap-1.5'>
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+					</div>
+				</div>
+			);
+		case 'SEASON':
+			return (
+				<div className='flex h-full flex-col gap-1.5'>
+					<Block className='h-[34%] bg-white/30' />
+					<div className='flex flex-1 gap-1.5'>
+						<Block className='w-[34%]' />
+						<div className='flex flex-1 flex-col gap-1'>
+							<Block className='flex-1' />
+							<Block className='flex-1' />
+							<Block className='flex-1' />
+						</div>
+					</div>
+				</div>
+			);
+		case 'DOORS':
+			return (
+				<div className='flex h-full flex-col gap-1.5'>
+					<Block className='h-[18%]' />
+					<div className='flex flex-1 gap-1.5'>
+						<Block className='flex-1 bg-white/30' />
+						<Block className='flex-1 bg-white/30' />
+					</div>
+				</div>
+			);
+		case 'CAMPUS':
+			return (
+				<div className='flex h-full gap-1.5'>
+					<Block className='flex-[1.4] bg-white/30' />
+					<div className='flex flex-1 flex-col gap-1'>
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+					</div>
+					<div className='flex flex-1 flex-col gap-1.5'>
+						<Block className='flex-1' />
+						<Block className='flex-1' />
+					</div>
+				</div>
+			);
+		case 'WEEK':
+			return (
+				<div className='flex h-full gap-1'>
+					{[0, 1, 2, 3, 4, 5, 6].map((day) => (
+						<div key={day} className='flex flex-1 flex-col gap-1'>
+							<Block className='h-1.5 bg-white/30' />
+							<Block className={day % 2 === 0 ? 'h-[45%]' : 'h-[25%]'} />
+							<Block className={day % 3 === 0 ? 'h-[20%]' : 'h-[35%]'} />
+						</div>
+					))}
+				</div>
+			);
+	}
+}
+
 export default function FeaturedClient() {
 	const [settings, setSettings] = useState<HomepageSettings | null>(null);
 	const [isSavingSettings, setIsSavingSettings] = useState(false);
 	const [isSavingForum, setIsSavingForum] = useState(false);
 	const [isSavingLive, setIsSavingLive] = useState(false);
+	const [pageLayoutDraft, setPageLayoutDraft] = useState<HomepageLayoutValue>('CLASSIC');
+	const [isSavingPageLayout, setIsSavingPageLayout] = useState(false);
+	const radioRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 	const [rewatchDraft, setRewatchDraft] = useState<RewatchDraft | null>(null);
 	const [isSavingRewatch, setIsSavingRewatch] = useState(false);
 	const [rewatchError, setRewatchError] = useState<string | null>(null);
@@ -74,6 +157,7 @@ export default function FeaturedClient() {
 				const loaded: HomepageSettings = data.settings ?? { featuredSource: 'TOURNAMENTS', featuredLayout: 'GRID' };
 				setSettings(loaded);
 				setRewatchDraft(toDraft(loaded));
+				setPageLayoutDraft(parseHomepageLayout(loaded.pageLayout));
 			})
 			.catch((e) => console.error('Failed to load homepage settings', e));
 
@@ -107,6 +191,34 @@ export default function FeaturedClient() {
 		} finally {
 			setIsSavingSettings(false);
 		}
+	};
+
+	const savePageLayout = async (pageLayout: HomepageLayoutValue) => {
+		setIsSavingPageLayout(true);
+		try {
+			const response = await fetch('/api/admin/homepage-settings', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ pageLayout }),
+			});
+			if (!response.ok) throw new Error('Failed to save');
+			setSettings((prev) => (prev ? { ...prev, pageLayout } : prev));
+			toast({ title: 'Homepage design updated' });
+		} catch (error) {
+			console.error('Failed to save homepage design', error);
+			toast({ variant: 'destructive', title: 'Could not save the homepage design' });
+		} finally {
+			setIsSavingPageLayout(false);
+		}
+	};
+
+	const onLayoutKeyDown = (event: React.KeyboardEvent, index: number) => {
+		const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+		if (step === 0) return;
+		event.preventDefault();
+		const next = HOME_LAYOUTS[(index + step + HOME_LAYOUTS.length) % HOME_LAYOUTS.length];
+		setPageLayoutDraft(next.value);
+		radioRefs.current[next.value]?.focus();
 	};
 
 	const saveShowLiveMatches = async (showLiveMatches: boolean) => {
@@ -225,6 +337,65 @@ export default function FeaturedClient() {
 	return (
 		<AdminPage className='space-y-10'>
 			<AdminHeader className='mb-0' title='Featured' subtitle="Control what shows in the homepage's Featured section, and how it's displayed." />
+
+			{/* Homepage design */}
+			<AdminPanel className='space-y-4'>
+				<div>
+					<h2 id='homepage-design-heading' className='text-sm font-black uppercase tracking-wide'>
+						Homepage design
+					</h2>
+					<p className='text-sm text-muted-foreground'>Pick how the whole homepage is laid out. Preview opens the design in a new tab before you save.</p>
+				</div>
+				<div role='radiogroup' aria-labelledby='homepage-design-heading' className='grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+					{HOME_LAYOUTS.map((layout, index) => {
+						const selected = pageLayoutDraft === layout.value;
+						return (
+							<div key={layout.value} className={`flex flex-col gap-3 rounded-lg border bg-card p-3 transition-colors ${selected ? 'border-white' : 'border-border hover:border-white/40'}`}>
+								<button
+									ref={(el) => {
+										radioRefs.current[layout.value] = el;
+									}}
+									type='button'
+									role='radio'
+									aria-checked={selected}
+									tabIndex={selected ? 0 : -1}
+									disabled={isSavingPageLayout}
+									onClick={() => setPageLayoutDraft(layout.value)}
+									onKeyDown={(e) => onLayoutKeyDown(e, index)}
+									className='flex flex-col gap-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:cursor-not-allowed disabled:opacity-50'
+								>
+									<div aria-hidden className='h-24 rounded-md border border-border bg-background p-2'>
+										<LayoutThumb layout={layout.value} />
+									</div>
+									<span className='flex items-start justify-between gap-2'>
+										<span className='space-y-0.5'>
+											<span className='block text-sm font-bold'>{layout.label}</span>
+											<span className='block text-xs text-muted-foreground'>{layout.description}</span>
+										</span>
+										<span aria-hidden className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${selected ? 'border-white bg-white text-black' : 'border-border'}`}>
+											{selected && <Check className='h-3 w-3' strokeWidth={3} />}
+										</span>
+									</span>
+								</button>
+								<a
+									href={`/home-preview/${layout.value.toLowerCase()}`}
+									target='_blank'
+									rel='noopener noreferrer'
+									aria-label={`Preview ${layout.label} (opens in a new tab)`}
+									className='self-start rounded text-xs font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+								>
+									Preview
+								</a>
+							</div>
+						);
+					})}
+				</div>
+				<div className='flex items-center gap-3'>
+					<Button type='button' disabled={isSavingPageLayout || pageLayoutDraft === parseHomepageLayout(settings.pageLayout)} onClick={() => savePageLayout(pageLayoutDraft)}>
+						{isSavingPageLayout ? 'Saving…' : 'Save'}
+					</Button>
+				</div>
+			</AdminPanel>
 
 			{/* Homepage layout */}
 			<AdminPanel className='space-y-4'>
