@@ -49,7 +49,7 @@ export function NewThreadForm({ defaultCategory }: { defaultCategory: ForumCateg
 	};
 
 	return (
-		<form onSubmit={submit} noValidate className='space-y-5'>
+		<form onSubmit={submit} noValidate className='space-y-6'>
 			<div className='space-y-1.5'>
 				<div className='flex items-baseline justify-between gap-2'>
 					<Label htmlFor='thread-title'>Title</Label>
@@ -119,7 +119,7 @@ export function NewThreadForm({ defaultCategory }: { defaultCategory: ForumCateg
 				</p>
 			)}
 
-			<div className='flex flex-wrap gap-2'>
+			<div className='flex flex-wrap gap-2 border-t border-border pt-5'>
 				<Button type='submit' isLoading={pending}>
 					Post thread
 				</Button>

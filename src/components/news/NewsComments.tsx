@@ -5,7 +5,7 @@ import Link from 'next/link';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Trash2 } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { NewsAuthor, NewsAuthorData, NewsDate } from './NewsMeta';
@@ -75,18 +75,18 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 
 	return (
 		<section aria-labelledby='comments-heading' className='mt-12 border-t border-border pt-8'>
-			<h2 id='comments-heading' className='text-lg font-bold'>
+			<h2 id='comments-heading' className='text-lg font-black uppercase tracking-wide'>
 				Comments <span className='font-mono text-base font-normal tabular-nums text-muted-foreground'>{comments.length}</span>
 			</h2>
 
 			{comments.length === 0 ? (
 				<p className='mt-4 text-sm text-muted-foreground'>No comments yet.{viewer ? ' Start the conversation.' : ''}</p>
 			) : (
-				<ol className='mt-4 divide-y divide-border'>
+				<ol className='mt-4 space-y-3'>
 					{comments.map((comment) => {
 						const canDelete = !!viewer && (viewer.id === comment.author.id || viewer.canModerate);
 						return (
-							<li key={comment.id} className='py-4'>
+							<li key={comment.id} className='rounded-md border border-border bg-card px-4 py-3'>
 								<div className='flex items-center gap-3 text-sm'>
 									<NewsAuthor author={comment.author} />
 									<NewsDate date={comment.createdAt} className='shrink-0 text-xs' />
@@ -136,7 +136,7 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 					</div>
 				</form>
 			) : (
-				<div className='mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-4 py-3'>
+				<div className='mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3'>
 					<p className='text-sm text-muted-foreground'>Join the conversation with your Tournler account.</p>
 					<Link href='/sign-in' className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
 						Sign in to comment
@@ -145,12 +145,13 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 			)}
 
 			<Dialog open={!!pendingDelete} onOpenChange={(open) => !open && !isDeleting && setPendingDelete(null)}>
-				<DialogContent className='sm:max-w-[420px]'>
-					<DialogHeader>
-						<DialogTitle>Delete this comment?</DialogTitle>
-						<DialogDescription>It&apos;s removed for everyone. This can&apos;t be undone.</DialogDescription>
+				<DialogContent panel className='sm:max-w-[440px]'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete this comment?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>It&apos;s removed for everyone. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setPendingDelete(null)} disabled={isDeleting}>
 							Cancel
 						</Button>

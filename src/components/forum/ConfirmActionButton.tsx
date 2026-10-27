@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 import { useToast } from '@/lib/hooks/use-toast';
 
 interface ConfirmActionButtonProps {
@@ -65,17 +65,18 @@ export function ConfirmActionButton({ endpoint, method = 'DELETE', body, title, 
 					if (!next) setError(null);
 				}}
 			>
-				<DialogContent className='max-w-sm'>
-					<DialogHeader>
-						<DialogTitle>{title}</DialogTitle>
-						<DialogDescription>{description}</DialogDescription>
+				<DialogContent panel className='max-w-md'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>{title}</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>{description}</DialogDescription>
 					</DialogHeader>
 					{error && (
 						<p role='alert' className='text-sm text-signal-live'>
 							{error}
 						</p>
 					)}
-					<DialogFooter className='gap-2 sm:gap-0'>
+					<DialogFooter bar>
 						<Button type='button' variant='outline' onClick={() => setOpen(false)} disabled={pending}>
 							Cancel
 						</Button>

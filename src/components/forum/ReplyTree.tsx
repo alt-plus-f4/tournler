@@ -96,7 +96,7 @@ function ReplyTools({ node, ctx }: { node: Node; ctx: ReplyTreeContext }) {
 /** The reply chain as nested lists; indentation (with a thread line) stops at MAX_INDENT_DEPTH. */
 export function ReplyTree({ nodes, ctx, root = true }: { nodes: Node[]; ctx: ReplyTreeContext; root?: boolean }) {
 	return (
-		<ol className={root ? 'space-y-4' : 'mt-2 space-y-3'}>
+		<ol className={root ? 'space-y-5' : 'mt-3 space-y-4'}>
 			{nodes.map((node) => {
 				const { reply } = node;
 				const deleted = !!reply.deletedAt;

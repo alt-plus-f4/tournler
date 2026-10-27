@@ -47,8 +47,9 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 		<div className='container mx-auto max-w-[1100px] px-4 py-8 lg:px-8'>
 			<div className='flex flex-wrap items-end justify-between gap-4'>
 				<div>
-					<h1 className='text-3xl font-black uppercase tracking-wide md:text-4xl'>Forum</h1>
-					<Suspense fallback={<Skeleton className='mt-2 h-4 w-24 rounded-sm bg-neutral-900' />}>
+					<p className='mb-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Community</p>
+					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Forum</h1>
+					<Suspense fallback={<Skeleton className='mt-3 h-4 w-24 rounded-sm bg-neutral-900' />}>
 						<ThreadCount category={category} page={requestedPage} />
 					</Suspense>
 				</div>
@@ -57,8 +58,8 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 				</Suspense>
 			</div>
 
-			<nav aria-label='Forum categories' className='mt-6 -mx-4 overflow-x-auto px-4'>
-				<ul className='flex min-w-max gap-1 border-b border-border'>
+			<nav aria-label='Forum categories' className='-mx-4 mt-6 overflow-x-auto px-4 pb-1'>
+				<ul className='flex min-w-max gap-2'>
 					{tabs.map((tab) => {
 						const active = tab.value === category;
 						return (
@@ -67,8 +68,8 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 									href={forumHref(tab.value)}
 									aria-current={active ? 'page' : undefined}
 									className={cn(
-										'-mb-px inline-flex h-10 items-center border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
-										active ? 'border-foreground text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+										'inline-flex h-9 items-center rounded-full border px-3.5 text-[0.8125rem] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+										active ? 'border-white bg-white text-black' : 'border-border bg-card/60 text-muted-foreground hover:border-white/30 hover:text-foreground',
 									)}
 								>
 									{tab.label}
@@ -89,7 +90,7 @@ export default async function ForumPage({ searchParams }: ForumPageProps) {
 async function ThreadCount({ category, page }: { category: ForumCategoryValue | null; page: number }) {
 	const { total } = await loadList(category, page);
 	return (
-		<p className='mt-1 text-sm text-muted-foreground'>
+		<p className='mt-3 text-sm text-muted-foreground'>
 			<span className='font-mono tabular-nums text-foreground'>{total}</span> {total === 1 ? 'thread' : 'threads'}
 			{category ? ` in ${CATEGORY_LABELS[category]}` : ''}
 		</p>
@@ -141,15 +142,15 @@ async function ThreadListSection({ category, requestedPage }: { category: ForumC
 				{threads.length > 0 ? (
 					<ForumThreadList threads={threads} showCategory={!category} />
 				) : (
-					<div className='rounded-md border border-border px-4 py-16 text-center'>
-						<p className='font-medium'>{category ? `No threads in ${CATEGORY_LABELS[category]} yet` : 'No threads yet'}</p>
+					<div className='rounded-md border border-dashed border-border px-4 py-16 text-center'>
+						<p className='font-black uppercase tracking-wide'>{category ? `No threads in ${CATEGORY_LABELS[category]} yet` : 'No threads yet'}</p>
 						<p className='mt-1 text-sm text-muted-foreground'>{session ? 'Start the first one.' : 'Sign in to start the first one.'}</p>
 					</div>
 				)}
 			</div>
 
 			{totalPages > 1 && (
-				<nav aria-label='Pagination' className='mt-4 flex items-center justify-center gap-2'>
+				<nav aria-label='Pagination' className='mt-4 flex items-center justify-between gap-2 px-1'>
 					<PagerLink href={forumHref(category, page - 1)} disabled={page <= 1} label='Previous page'>
 						<ChevronLeft aria-hidden />
 					</PagerLink>

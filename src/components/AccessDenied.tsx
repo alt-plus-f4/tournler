@@ -9,13 +9,19 @@ interface AccessDeniedProps {
 
 export function AccessDenied({ resource }: AccessDeniedProps) {
 	return (
-		<div className='mx-4 mt-12 flex max-w-6xl flex-col items-center py-24 text-center md:mx-12'>
-			<Lock aria-hidden size='1em' className='mb-4 text-4xl text-muted-foreground' />
-			<h1 className='mb-2 text-2xl font-bold'>Access denied</h1>
-			<p className='text-muted-foreground mb-6'>Your role doesn&apos;t have permission to manage {resource}.</p>
-			<Link href='/admin' className={cn(buttonVariants({ variant: 'outline' }))}>
-				Back to dashboard
-			</Link>
+		<div className='relative flex min-h-[60vh] items-center justify-center overflow-hidden px-4 py-16 text-center'>
+			<div aria-hidden className='pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(50%_100%_at_50%_0,hsl(0_0%_100%/0.08),transparent)]' />
+			<div className='relative flex max-w-md flex-col items-center'>
+				<span className='mb-5 flex h-14 w-14 items-center justify-center rounded-md border border-border bg-card'>
+					<Lock aria-hidden className='h-6 w-6 text-muted-foreground' />
+				</span>
+				<p className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Access denied</p>
+				<h1 className='mt-2 text-3xl font-black uppercase tracking-wide md:text-4xl'>You need staff access</h1>
+				<p className='mt-3 text-sm text-muted-foreground'>Your role doesn&apos;t have permission to manage {resource}.</p>
+				<Link href='/admin' className={cn(buttonVariants({ variant: 'outline' }), 'mt-6')}>
+					Back to dashboard
+				</Link>
+			</div>
 		</div>
 	);
 }

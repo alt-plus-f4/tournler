@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { TeamLogo } from '@/components/TeamLogo';
 import { useHydrated } from '@/lib/hooks/use-hydrated';
 import { GameTag } from '@/components/games/GameMark';
@@ -73,50 +74,65 @@ function MatchRow({ match, timeZone }: { match: MatchListItem; timeZone: string 
 	// Pickups record the winning side (winnerSide); team matches record the winning team.
 	const aWon = isCompleted && (match.isPickup ? match.winnerSide === 'TEAM_A' : !!match.winner && match.winner.id === match.teamA?.id);
 	const bWon = isCompleted && (match.isPickup ? match.winnerSide === 'TEAM_B' : !!match.winner && match.winner.id === match.teamB?.id);
-	// Shared result rule: winner white + bold, loser muted — identical for either side.
-	const nameClass = (won: boolean, lost: boolean) => (lost ? 'text-muted-foreground' : won ? 'font-bold text-white' : 'font-medium text-white');
+	// Shared result rule: winner white + bold, loser muted, identical for either side.
+	const nameClass = (won: boolean, lost: boolean) => (lost ? 'font-medium text-muted-foreground' : won ? 'font-bold text-white' : 'font-medium text-white');
+	const scoreClass = (lost: boolean) => (lost ? 'text-muted-foreground' : 'text-white');
+	const PILL = 'inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.1em]';
 
 	return (
 		<Link
 			href={`/matches/${match.id}`}
-			className='flex items-center gap-2 rounded-md border border-border px-3 py-3 transition-colors hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:gap-3 sm:px-4'
+			className='relative grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 gap-y-2 border-b border-border px-4 py-3 transition-colors last:border-b-0 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem_minmax(0,1fr)_6rem] sm:gap-x-4'
 		>
-			<GameTag game={match.tournament.game ?? 'CS2'} showLabel={false} className='shrink-0' />
-			<span className='hidden w-28 shrink-0 truncate text-xs text-muted-foreground sm:block'>{match.isPickup ? 'Pickup' : match.tournament.name}</span>
+			<span className='col-span-3 flex min-w-0 items-center gap-2 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.06em] text-muted-foreground sm:col-span-1'>
+				<GameTag game={match.tournament.game ?? 'CS2'} showLabel={false} className='shrink-0' />
+				<span className='truncate'>{match.isPickup ? 'Pickup' : match.tournament.name}</span>
+			</span>
 
-			<div className='flex min-w-0 flex-1 items-center justify-center gap-2 sm:gap-3'>
-				<div className='flex min-w-0 flex-1 items-center justify-end gap-2'>
-					<span className={`truncate text-sm ${nameClass(aWon, bWon)}`}>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</span>
-					{!match.isPickup && <TeamLogo src={match.teamA?.logo} name={match.teamA?.name} size='sm' decorative />}
-				</div>
-				<div className='w-14 shrink-0 whitespace-nowrap text-center font-mono text-sm font-bold tabular-nums text-white'>
-					{isOpen ? `${match.participantCount}/10` : inProgress ? `${match.scoreTeamA ?? 0} : ${match.scoreTeamB ?? 0}` : tiedFinal ? '–' : 'vs'}
-				</div>
-				<div className='flex min-w-0 flex-1 items-center gap-2'>
-					{!match.isPickup && <TeamLogo src={match.teamB?.logo} name={match.teamB?.name} size='sm' decorative />}
-					<span className={`truncate text-sm ${nameClass(bWon, aWon)}`}>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</span>
-				</div>
+			<div className='flex min-w-0 items-center justify-end gap-2.5'>
+				<span className={`truncate text-right text-sm font-black uppercase tracking-wide ${nameClass(aWon, bWon)}`}>{match.isPickup ? match.teamAName || 'Side A' : (match.teamA?.name ?? 'TBD')}</span>
+				{!match.isPickup && <TeamLogo src={match.teamA?.logo} name={match.teamA?.name} size='sm' decorative />}
 			</div>
-
-			<div className='w-20 shrink-0 whitespace-nowrap text-right text-xs'>
+			<div className='whitespace-nowrap text-center font-mono text-lg font-bold tabular-nums tracking-wider text-white sm:w-[4.5rem]'>
 				{isOpen ? (
-					<span className='font-semibold text-signal-ready-text'>OPEN</span>
-				) : isLive ? (
-					<span className='inline-flex items-center gap-1.5 font-bold text-white'>
-						<span aria-hidden className='h-2 w-2 animate-pulse rounded-full bg-signal-live' />
-						LIVE
-					</span>
-				) : isPaused ? (
-					<span className='inline-flex items-center gap-1.5 font-bold text-signal-hold'>
-						<span aria-hidden className='h-2 w-2 rounded-full bg-signal-hold' />
-						PAUSED
-					</span>
-				) : isCompleted ? (
-					<span className='text-muted-foreground'>Final</span>
+					<span className='text-sm text-muted-foreground'>{match.participantCount}/10</span>
+				) : inProgress ? (
+					<>
+						<span className={scoreClass(bWon)}>{match.scoreTeamA ?? 0}</span>
+						<span className='px-1 text-muted-foreground'>:</span>
+						<span className={scoreClass(aWon)}>{match.scoreTeamB ?? 0}</span>
+					</>
+				) : tiedFinal ? (
+					<span className='text-muted-foreground'>–</span>
 				) : (
-					<span className='font-mono tabular-nums text-muted-foreground'>{formatMatchTime(match.matchDate, timeZone)}</span>
+					<span className='text-sm font-medium text-muted-foreground'>vs</span>
 				)}
 			</div>
+			<div className='flex min-w-0 items-center gap-2.5'>
+				{!match.isPickup && <TeamLogo src={match.teamB?.logo} name={match.teamB?.name} size='sm' decorative />}
+				<span className={`truncate text-sm font-black uppercase tracking-wide ${nameClass(bWon, aWon)}`}>{match.isPickup ? match.teamBName || 'Side B' : (match.teamB?.name ?? 'TBD')}</span>
+			</div>
+
+			<div className='col-span-3 flex sm:col-span-1 sm:justify-end'>
+				{isOpen ? (
+					<span className={`${PILL} bg-white text-black`}>Open</span>
+				) : isLive ? (
+					<span className={`${PILL} bg-white/10 text-white`}>
+						<span aria-hidden className='h-1.5 w-1.5 animate-pulse rounded-full bg-signal-live' />
+						Live
+					</span>
+				) : isPaused ? (
+					<span className={`${PILL} bg-white/10 text-signal-hold`}>
+						<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-hold' />
+						Paused
+					</span>
+				) : isCompleted ? (
+					<span className={`${PILL} bg-white/5 text-muted-foreground`}>Final</span>
+				) : (
+					<span className='font-mono text-xs tabular-nums text-muted-foreground'>{formatMatchTime(match.matchDate, timeZone)}</span>
+				)}
+			</div>
+			<LinkPendingVeil />
 		</Link>
 	);
 }
@@ -126,16 +142,16 @@ export function MatchList({ matches }: { matches: MatchListItem[] }) {
 	const groups = groupByDay(matches, timeZone);
 
 	return (
-		<div className='space-y-6'>
+		<div className='space-y-2'>
 			{groups.map((group) => (
-				<div key={group.label}>
-					<h2 className='mb-2 whitespace-nowrap text-xs font-bold uppercase tracking-widest text-muted-foreground'>{group.label}</h2>
-					<div className='space-y-2'>
+				<section key={group.label} aria-label={group.label}>
+					<h2 className='whitespace-nowrap pb-2 pt-5 font-mono text-[0.6875rem] font-medium uppercase tracking-[0.14em] text-muted-foreground'>{group.label}</h2>
+					<div className='overflow-hidden rounded-md border border-border bg-card/40'>
 						{group.matches.map((match) => (
 							<MatchRow key={match.id} match={match} timeZone={timeZone} />
 						))}
 					</div>
-				</div>
+				</section>
 			))}
 		</div>
 	);

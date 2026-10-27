@@ -25,8 +25,9 @@ export default async function NewForumThreadPage({ searchParams }: { searchParam
 				<ArrowLeft aria-hidden className='h-4 w-4' />
 				Forum
 			</Link>
-			<h1 className='mt-3 text-3xl font-black uppercase tracking-wide'>New thread</h1>
-			<div className='mt-6 rounded-md border border-border p-4 sm:p-6'>
+			<p className='mb-2 mt-6 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Community</p>
+			<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>New thread</h1>
+			<div className='mt-8 rounded-md border border-border bg-card/40 p-4 sm:p-6'>
 				<NewThreadForm defaultCategory={category} />
 			</div>
 		</div>

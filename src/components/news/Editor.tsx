@@ -249,85 +249,93 @@ export const Editor: React.FC<EditorProps> = ({ post }) => {
 	const { ref: titleRef, ...rest } = register('title');
 
 	return (
-		<form id='news-post-form' className='space-y-6' onSubmit={handleSubmit(onSubmit)}>
-			<div className='news-editor w-full rounded-md border border-border bg-card px-4 py-6 md:px-8'>
-				<div className='prose prose-invert max-w-none'>
-					<TextareaAutosize
-						ref={(e) => {
-							titleRef(e);
-							_titleRef.current = e;
-						}}
-						{...rest}
-						aria-label='Title'
-						placeholder='Title'
-						className='w-full resize-none appearance-none overflow-hidden bg-transparent text-3xl font-bold leading-tight text-foreground placeholder:text-neutral-500 focus:outline-none md:text-4xl'
-					/>
-					<div id='editor' className='min-h-[400px]' />
-					<p className='text-sm text-muted-foreground'>
-						Use <kbd className='rounded-sm border border-border bg-muted px-1 font-mono text-xs uppercase text-foreground'>Tab</kbd> to open the command menu.
-					</p>
+		<form id='news-post-form' onSubmit={handleSubmit(onSubmit)}>
+			<div className='mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5'>
+				<div>
+					<p className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>News</p>
+					<h1 className='mt-1 text-2xl font-black uppercase tracking-wide md:text-3xl'>{isEditing ? 'Edit post' : 'Write a post'}</h1>
+				</div>
+				<div className='flex items-center gap-2'>
+					<Link href={isEditing ? `/news/${post.id}` : '/news'} className={cn(buttonVariants({ variant: 'outline' }))}>
+						Cancel
+					</Link>
+					<Button type='submit' isLoading={isSaving} disabled={isSaving || isUploadingCover}>
+						{isEditing ? 'Save changes' : 'Publish post'}
+					</Button>
 				</div>
 			</div>
 
-			<section aria-labelledby='post-settings' className='space-y-5 rounded-md border border-border p-4 md:p-6'>
-				<h2 id='post-settings' className='text-xs font-bold uppercase tracking-widest text-neutral-400'>
-					Post settings
-				</h2>
-
-				<div className='space-y-2'>
-					<Label htmlFor='news-cover'>Cover image</Label>
-					{imageUrl && (
-						<div className='relative aspect-[16/9] w-full max-w-sm overflow-hidden rounded-md border border-border'>
-							<Image src={imageUrl} alt='' fill sizes='384px' unoptimized={!isOptimizable(imageUrl)} className='object-cover' />
-						</div>
-					)}
-					<div className='flex flex-wrap items-center gap-3'>
-						<input
-							id='news-cover'
-							type='file'
-							accept='image/png,image/jpeg,image/webp,image/gif,image/avif'
-							disabled={isUploadingCover}
-							onChange={(e) => {
-								onCoverSelected(e.target.files?.[0]);
-								e.target.value = '';
+			<div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start'>
+				<div className='news-editor w-full min-w-0 rounded-md border border-border bg-card px-4 py-6 md:px-8'>
+					<div className='prose prose-invert max-w-none'>
+						<TextareaAutosize
+							ref={(e) => {
+								titleRef(e);
+								_titleRef.current = e;
 							}}
-							className='block text-sm text-muted-foreground file:mr-3 file:h-9 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-background file:px-3 file:text-sm file:text-foreground hover:file:bg-accent'
+							{...rest}
+							aria-label='Title'
+							placeholder='Title'
+							className='w-full resize-none appearance-none overflow-hidden bg-transparent text-3xl font-black uppercase leading-tight tracking-wide text-foreground placeholder:text-neutral-500 focus:outline-none md:text-4xl'
 						/>
-						{isUploadingCover && <Loader2 aria-label='Uploading' className='h-4 w-4 animate-spin text-muted-foreground' />}
-						{imageUrl && !isUploadingCover && (
-							<Button type='button' variant='ghost' size='sm' onClick={() => setImageUrl(null)}>
-								Remove cover
-							</Button>
-						)}
+						<div id='editor' className='min-h-[400px]' />
+						<p className='text-sm text-muted-foreground'>
+							Use <kbd className='rounded-sm border border-border bg-muted px-1 font-mono text-xs uppercase text-foreground'>Tab</kbd> to open the command menu.
+						</p>
 					</div>
-					<p className='text-xs text-muted-foreground'>PNG, JPEG, WebP, GIF or AVIF, up to 5MB. Shown on the feed and the homepage card.</p>
 				</div>
 
-				<div className='space-y-2'>
-					<Label htmlFor='news-blurb'>Summary</Label>
-					<TextareaAutosize
-						id='news-blurb'
-						minRows={2}
-						maxRows={6}
-						{...register('blurb')}
-						placeholder='Leave empty to use the first paragraph'
-						className='flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
-					/>
-				</div>
+				<aside aria-labelledby='post-settings' className='space-y-5 rounded-md border border-border bg-card p-4 md:p-5 lg:sticky lg:top-24'>
+					<h2 id='post-settings' className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>
+						Post settings
+					</h2>
 
-				<label htmlFor='news-featured' className='flex w-fit cursor-pointer items-center gap-2'>
-					<Checkbox id='news-featured' checked={isFeatured} onCheckedChange={(checked) => setValue('isFeatured', checked === true, { shouldDirty: true })} />
-					<span className='text-sm'>Feature on the homepage</span>
-				</label>
-			</section>
+					<div className='space-y-2'>
+						<Label htmlFor='news-cover'>Cover image</Label>
+						{imageUrl && (
+							<div className='relative aspect-[16/9] w-full overflow-hidden rounded-md border border-border'>
+								<Image src={imageUrl} alt='' fill sizes='320px' unoptimized={!isOptimizable(imageUrl)} className='object-cover' />
+							</div>
+						)}
+						<div className='flex flex-wrap items-center gap-3 rounded-md border border-dashed border-border p-3'>
+							<input
+								id='news-cover'
+								type='file'
+								accept='image/png,image/jpeg,image/webp,image/gif,image/avif'
+								disabled={isUploadingCover}
+								onChange={(e) => {
+									onCoverSelected(e.target.files?.[0]);
+									e.target.value = '';
+								}}
+								className='block w-full text-sm text-muted-foreground file:mr-3 file:h-9 file:cursor-pointer file:rounded-md file:border file:border-border file:bg-background file:px-3 file:text-sm file:text-foreground hover:file:bg-accent'
+							/>
+							{isUploadingCover && <Loader2 aria-label='Uploading' className='h-4 w-4 animate-spin text-muted-foreground' />}
+							{imageUrl && !isUploadingCover && (
+								<Button type='button' variant='ghost' size='sm' onClick={() => setImageUrl(null)}>
+									Remove cover
+								</Button>
+							)}
+						</div>
+						<p className='text-xs text-muted-foreground'>PNG, JPEG, WebP, GIF or AVIF, up to 5MB. Shown on the feed and the homepage card.</p>
+					</div>
 
-			<div className='flex flex-wrap items-center justify-end gap-2'>
-				<Link href={isEditing ? `/news/${post.id}` : '/news'} className={cn(buttonVariants({ variant: 'outline' }))}>
-					Cancel
-				</Link>
-				<Button type='submit' isLoading={isSaving} disabled={isSaving || isUploadingCover}>
-					{isEditing ? 'Save changes' : 'Publish post'}
-				</Button>
+					<div className='space-y-2'>
+						<Label htmlFor='news-blurb'>Summary</Label>
+						<TextareaAutosize
+							id='news-blurb'
+							minRows={3}
+							maxRows={8}
+							{...register('blurb')}
+							placeholder='Leave empty to use the first paragraph'
+							className='flex w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+						/>
+					</div>
+
+					<label htmlFor='news-featured' className='flex w-fit cursor-pointer items-center gap-2'>
+						<Checkbox id='news-featured' checked={isFeatured} onCheckedChange={(checked) => setValue('isFeatured', checked === true, { shouldDirty: true })} />
+						<span className='text-sm'>Feature on the homepage</span>
+					</label>
+				</aside>
 			</div>
 		</form>
 	);
