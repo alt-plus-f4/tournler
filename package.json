@@ -82,7 +82,7 @@
 		"zod": "^3.23.8"
 	},
 	"devDependencies": {
-		"@next/eslint-plugin-next": "^15.5.18",
+		"@next/eslint-plugin-next": "^16.4.3",
 		"@tailwindcss/typography": "^0.5.20",
 		"@testing-library/jest-dom": "^6.1.4",
 		"@testing-library/react": "^14.0.0",
