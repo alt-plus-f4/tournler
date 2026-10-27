@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { FeaturedLayout, FeaturedSource, RewatchProvider } from '@prisma/client';
+import { HOME_LAYOUTS } from '@/lib/home/layouts';
 import { parseRewatchSource } from '@/components/home/rewatch-config';
 
 const SETTINGS_ID = 1;
@@ -79,7 +80,7 @@ async function parseRewatch(body: Record<string, unknown>): Promise<{ data: Rewa
 /**
  * GET /api/admin/homepage-settings — read the singleton homepage config, creating the
  * default row on first access.
- * PATCH /api/admin/homepage-settings — update featuredSource/featuredLayout, showForumPosts
+ * PATCH /api/admin/homepage-settings — update featuredSource/featuredLayout, pageLayout (whole-page homepage design), showForumPosts
  * (homepage "Forum" block), showLiveMatches (homepage "Live now" panel) and the rewatch
  * (homepage VOD) fields.
  * Gated on `content:manage`.
@@ -115,13 +116,17 @@ export async function PATCH(request: Request) {
 
 		const body = await request.json().catch(() => null);
 		if (!body || typeof body !== 'object') return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
-		const { featuredSource, featuredLayout, showForumPosts, showLiveMatches } = body;
+		const { featuredSource, featuredLayout, pageLayout, showForumPosts, showLiveMatches } = body;
 
 		if (featuredSource !== undefined && !Object.values(FeaturedSource).includes(featuredSource)) {
 			return NextResponse.json({ error: 'Invalid featuredSource' }, { status: 400 });
 		}
 		if (featuredLayout !== undefined && !Object.values(FeaturedLayout).includes(featuredLayout)) {
 			return NextResponse.json({ error: 'Invalid featuredLayout' }, { status: 400 });
+		}
+
+		if (pageLayout !== undefined && !HOME_LAYOUTS.some((layout) => layout.value === pageLayout)) {
+			return NextResponse.json({ error: 'Invalid pageLayout' }, { status: 400 });
 		}
 
 		if (showForumPosts !== undefined && typeof showForumPosts !== 'boolean') {
@@ -138,6 +143,7 @@ export async function PATCH(request: Request) {
 		const changes = {
 			...(featuredSource !== undefined ? { featuredSource } : {}),
 			...(featuredLayout !== undefined ? { featuredLayout } : {}),
+			...(pageLayout !== undefined ? { pageLayout } : {}),
 			...(showForumPosts !== undefined ? { showForumPosts } : {}),
 			...(showLiveMatches !== undefined ? { showLiveMatches } : {}),
 			...rewatch.data,

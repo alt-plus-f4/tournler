@@ -105,6 +105,7 @@ Rules: you can't ban yourself, admins can't be banned, and staff (any non-USER r
 - GET `/api/admin/bans?q=<name>`: `users:ban`. Player search (id, name, image, role, active ban; no emails).
 - `/admin/bans`: `users:ban`. Also available from the Users table (admins) and next to authors in forum threads (moderators).
 - The homepage "Forum" block is toggled by `showForumPosts` on PATCH `/api/admin/homepage-settings` (`content:manage`).
+- The whole homepage design is chosen with `pageLayout` on PATCH `/api/admin/homepage-settings` (`content:manage`): `CLASSIC` (default), `SEASON`, `DOORS`, `CAMPUS` or `WEEK`. Any other value returns 400. Writes invalidate the `homepage` cache tag through the Prisma extension. Picked in `/admin/featured` ("Homepage design"); previews live at `/home-preview/<layout in lowercase>`.
 
 ## Game servers admin
 

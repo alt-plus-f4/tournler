@@ -643,6 +643,14 @@ enum FeaturedLayout {
   CAROUSEL
 }
 
+enum HomepageLayout {
+  CLASSIC
+  SEASON
+  DOORS
+  CAMPUS
+  WEEK
+}
+
 enum RewatchProvider {
   YOUTUBE
   TWITCH
@@ -652,6 +660,9 @@ model HomepageSettings {
   id             Int            @id @default(1)
   featuredSource FeaturedSource @default(TOURNAMENTS) @map("featured_source")
   featuredLayout FeaturedLayout @default(GRID) @map("featured_layout")
+
+  // Which whole-page homepage design is rendered (chosen in /admin/featured). CLASSIC is the original.
+  pageLayout HomepageLayout @default(CLASSIC) @map("layout")
 
   // Homepage rewatch/VOD player, shown as the hero when no match is live. All nullable: null
   // falls back to the built-in default VOD (see src/components/home/rewatch-defaults.ts).
