@@ -209,14 +209,11 @@ export const authOptions: NextAuthOptions = {
 							},
 						});
 					} else {
-						console.error(
-							`Discord account ${discordId} is already linked to a different user; refusing to reassign`,
-							{
-								discordId,
-								existingUserId: existingDiscordAccount.userId,
-								incomingUserId: user.id,
-							},
-						);
+						console.error(`Discord account ${discordId} is already linked to a different user; refusing to reassign`, {
+							discordId,
+							existingUserId: existingDiscordAccount.userId,
+							incomingUserId: user.id,
+						});
 					}
 
 					if (!token.id && user?.id) {
