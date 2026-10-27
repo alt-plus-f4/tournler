@@ -35,6 +35,9 @@ export async function POST(request: Request) {
 			return NextResponse.json({ error: 'userId is required' }, { status: 400 });
 		}
 
+		const userExists = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
+		if (!userExists) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
 		const badge = await db.badge.upsert({
 			where: { name: VERIFIED_BADGE.name },
 			update: {},

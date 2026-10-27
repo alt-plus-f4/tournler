@@ -153,7 +153,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		const body = await request.json();
 		if (!body || Object.keys(body).length === 0) return NextResponse.json({ error: 'No fields to update provided' }, { status: 400 });
 
-		const allowedFields = ['name', 'logo', 'background', 'capitanId', 'cs2TournamentId'];
+		// cs2TournamentId is deliberately NOT editable here: joining/leaving a tournament has its own
+		// status/window/capacity/eligibility checks in `/api/tournaments/[slug]/teams`, which this
+		// generic PATCH must not be able to bypass.
+		const allowedFields = ['name', 'logo', 'background', 'capitanId'];
 		const dataToUpdate: Record<string, any> = {};
 		for (const key of allowedFields) {
 			if (body[key] !== undefined) dataToUpdate[key] = body[key];
@@ -165,13 +168,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 		// member can't be on (let alone captain) another team of this game.
 		if (dataToUpdate.capitanId !== undefined && dataToUpdate.capitanId !== null && !team.members.some((m) => m.id === dataToUpdate.capitanId)) {
 			return NextResponse.json({ error: 'The new captain must be a member of the team' }, { status: 400 });
-		}
-
-		// coerce numeric tournament id if provided
-		if (dataToUpdate.cs2TournamentId !== undefined) {
-			const n = Number(dataToUpdate.cs2TournamentId);
-			if (Number.isNaN(n)) return NextResponse.json({ error: 'cs2TournamentId must be a number' }, { status: 400 });
-			dataToUpdate.cs2TournamentId = n;
 		}
 
 		const updated = await db.cs2Team.update({ where: { id: numericId }, data: dataToUpdate });

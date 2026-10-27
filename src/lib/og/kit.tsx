@@ -1,7 +1,10 @@
 import 'server-only';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import http from 'node:http';
+import https from 'node:https';
 import sharp from 'sharp';
+import { checkUrlIsSafe, safeLookup, UnsafeUrlError } from '@/lib/net/ssrf-guard';
 
 /** DESIGN.md's Broadcast Booth tokens — kept in lockstep with the colors block there. */
 export const OG = {
@@ -20,27 +23,75 @@ export const OG = {
 
 export const CARD_SIZE = { width: 1200, height: 630 } as const;
 
+const FETCH_TIMEOUT_MS = 5000;
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+/** Fetches `url` over http(s), resolved through `safeLookup` so the address that's actually
+ *  connected to is the one that's checked (no DNS-rebinding gap between check and connect).
+ *  `logo`/`background`/etc. are client-supplied (team captains, news authors, …), so this must
+ *  never be a bare `fetch()` — that can't pin the resolved address and would let any of those
+ *  fields reach loopback/private/link-local/cloud-metadata addresses server-side. Follows no
+ *  redirects: a 3xx is treated as a failure (same as any other fetch error) so a redirect to an
+ *  unsafe host can't smuggle its way past the destination check. */
+function fetchSafe(rawUrl: string): Promise<Buffer> {
+	return new Promise((resolvePromise, rejectPromise) => {
+		const controller = new AbortController();
+		const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+		const resolve = (buf: Buffer) => {
+			clearTimeout(timer);
+			resolvePromise(buf);
+		};
+		const reject = (err: unknown) => {
+			clearTimeout(timer);
+			rejectPromise(err);
+		};
+
+		const url = checkUrlIsSafe(rawUrl);
+		const client = url.protocol === 'https:' ? https : http;
+		const req = client.request(url, { method: 'GET', lookup: safeLookup, signal: controller.signal }, (res) => {
+			const status = res.statusCode ?? 0;
+			if (status < 200 || status >= 300) {
+				res.resume();
+				return reject(new Error(`Unexpected status ${status}`));
+			}
+			const chunks: Buffer[] = [];
+			let size = 0;
+			res.on('data', (chunk: Buffer) => {
+				size += chunk.length;
+				if (size > MAX_IMAGE_BYTES) {
+					res.destroy();
+					return reject(new Error('Response too large'));
+				}
+				chunks.push(chunk);
+			});
+			res.on('end', () => resolve(Buffer.concat(chunks)));
+			res.on('error', reject);
+		});
+		req.on('error', reject);
+		req.end();
+	});
+}
+
 /**
  * Satori (next/og's renderer) fetches remote `<img src>` URLs itself, but only decodes PNG/JPEG —
  * it errors on WebP outright ("Unsupported image type: image/webp") and doesn't reliably rasterize
  * SVG (Dicebear-generated avatars). Uploads on this app can be any of those (avatars, team/
  * tournament art), so every remote asset is fetched and normalized to PNG with sharp (already a
- * project dependency) before being inlined as a data URI. Returns null on any failure so callers
+ * project dependency) before being inlined as a data URI. Returns null on any failure — including
+ * `url` pointing at a non-public/internal address (see `fetchSafe`/`checkUrlIsSafe`) — so callers
  * fall back to their drawn placeholder instead of a broken image reaching the social-media crawler.
  */
 export async function remoteImageDataUri(url: string | null | undefined, maxWidth = 1200): Promise<string | null> {
 	if (!url) return null;
 	try {
-		const res = await fetch(url, { cache: 'no-store' });
-		if (!res.ok) return null;
-		const buf = Buffer.from(await res.arrayBuffer());
+		const buf = await fetchSafe(url);
 		// Uploads can be arbitrarily large (a source banner easily re-encodes past several MB as a
 		// lossless PNG) — capped to the card's own width, since embedding it any bigger just bloats
 		// the data URI Satori has to hold in memory for no visible gain at 1200x630.
 		const png = await sharp(buf).resize({ width: maxWidth, withoutEnlargement: true }).png().toBuffer();
 		return `data:image/png;base64,${png.toString('base64')}`;
 	} catch (err) {
-		console.error('[og] remoteImageDataUri failed', url, err);
+		if (!(err instanceof UnsafeUrlError)) console.error('[og] remoteImageDataUri failed', url, err);
 		return null;
 	}
 }

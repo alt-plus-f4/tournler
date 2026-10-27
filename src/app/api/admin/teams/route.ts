@@ -13,7 +13,7 @@ export async function GET() {
 		}
 
 		if (!(await userHasPermission(session.user.id, 'teams:manage'))) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		// Only need a per-team member count, not every member's full row.
