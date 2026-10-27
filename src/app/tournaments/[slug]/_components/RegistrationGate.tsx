@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Check, Clock, X as XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter, DialogClose, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 import { GAME_META } from '@/lib/games';
 import type { Game } from '@prisma/client';
 
@@ -76,19 +76,20 @@ export function RegistrationGate({
 			</Button>
 
 			<Dialog open={open} onOpenChange={setOpen}>
-				<DialogContent className='sm:max-w-sm'>
-					<DialogHeader>
-						<DialogTitle>
+				<DialogContent panel className='sm:max-w-md'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Before you register</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>
 							{teamName} · {meta.label} check
 						</DialogTitle>
-						<DialogDescription>
+						<DialogDescription className='pt-1 leading-relaxed'>
 							Every rostered player needs a {meta.account.toLowerCase() === 'steam' ? 'linked Steam account' : 'verified Riot ID'} before {teamName} can register.
 						</DialogDescription>
 					</DialogHeader>
 
-					<ul className='divide-y divide-border rounded-md border border-border'>
+					<ul className='divide-y divide-border overflow-hidden rounded-md border border-border bg-background'>
 						{roster.map((player) => (
-							<li key={player.id} className='flex items-center justify-between gap-3 px-3 py-2 text-sm'>
+							<li key={player.id} className='flex items-center justify-between gap-3 px-3.5 py-2.5 text-sm'>
 								<span className='min-w-0 truncate'>
 									{player.name ?? 'Unnamed player'}
 									{player.isViewer && <span className='text-muted-foreground'> · you</span>}
@@ -100,9 +101,14 @@ export function RegistrationGate({
 
 					<p className='text-xs text-muted-foreground'>Only a player can link their own account — a captain can&apos;t link it for a teammate. Ask anyone marked "Not linked" to do it themselves.</p>
 
-					<Button asChild>
-						<Link href={`/profile/${viewerId}#accounts`}>Link my account</Link>
-					</Button>
+					<DialogFooter bar>
+						<DialogClose asChild>
+							<Button variant='outline'>Cancel</Button>
+						</DialogClose>
+						<Button asChild>
+							<Link href={`/profile/${viewerId}#accounts`}>Link my account</Link>
+						</Button>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 		</>

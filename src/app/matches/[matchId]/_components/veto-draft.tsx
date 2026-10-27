@@ -297,7 +297,7 @@ export function DraftPanel({
 	canManage: boolean;
 	canJoinPool: boolean;
 	isJoiningPool: boolean;
-	onJoinPool: () => void;
+	onJoinPool: () => void | Promise<unknown>;
 	onDraftUpdated: (next: DraftState) => void;
 }) {
 	const [pendingUserId, setPendingUserId] = useState<string | null>(null);
@@ -335,7 +335,7 @@ export function DraftPanel({
 	};
 
 	const joinButton = canJoinPool && !isComplete && (
-		<Button size='sm' onClick={onJoinPool} disabled={isJoiningPool} className='-my-1 h-10'>
+		<Button size='sm' onClick={() => onJoinPool()} isLoading={isJoiningPool} className='-my-1 h-10'>
 			{isJoiningPool ? 'Joining…' : draft.captainAUserId && draft.captainBUserId ? 'Join pool' : 'Join lobby'}
 		</Button>
 	);

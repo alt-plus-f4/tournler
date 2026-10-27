@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -118,14 +119,15 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[460px]'>
-				<DialogHeader>
-					<DialogTitle>Create match</DialogTitle>
-					<DialogDescription>Creates a standalone match for testing — it isn&apos;t wired into any tournament bracket.</DialogDescription>
+			<DialogContent panel className='sm:max-w-[520px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Matches</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Create match</DialogTitle>
+					<DialogDescription className='pt-1'>Creates a standalone match for testing — it isn&apos;t wired into any tournament bracket.</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className='space-y-5'>
-					<label htmlFor='create-match-pickup' className='flex items-start gap-3 rounded-md border border-border p-3 cursor-pointer'>
+				<form onSubmit={handleSubmit} className='grid gap-5'>
+					<label htmlFor='create-match-pickup' className='flex cursor-pointer items-start gap-3 rounded-md border border-border bg-background p-3.5 transition-colors hover:border-zinc-600'>
 						<Checkbox id='create-match-pickup' checked={isPickup} onCheckedChange={(checked) => setIsPickup(checked === true)} className='mt-0.5' />
 						<span className='text-sm'>
 							Pickup match
@@ -136,7 +138,9 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 					{isPickup && (
 						<>
 							<div className='space-y-2'>
-								<Label htmlFor='create-match-bestof'>Best of</Label>
+								<Label htmlFor='create-match-bestof' className={fieldLabel}>
+									Best of
+								</Label>
 								<Select value={bestOf} onValueChange={(v) => setBestOf(v as '1' | '3')}>
 									<SelectTrigger id='create-match-bestof'>
 										<SelectValue />
@@ -149,7 +153,9 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 							</div>
 
 							<div className='space-y-2'>
-								<Label htmlFor='create-match-mode'>Roster mode</Label>
+								<Label htmlFor='create-match-mode' className={fieldLabel}>
+									Roster mode
+								</Label>
 								<Select value={pickupMode} onValueChange={(v) => setPickupMode(v as 'OPEN' | 'CAPTAIN_DRAFT')}>
 									<SelectTrigger id='create-match-mode'>
 										<SelectValue />
@@ -166,7 +172,9 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 					{!isPickup && (
 						<>
 							<div className='space-y-2'>
-								<Label htmlFor='create-match-tournament'>Tournament</Label>
+								<Label htmlFor='create-match-tournament' className={fieldLabel}>
+									Tournament
+								</Label>
 								<Select value={tournamentId} onValueChange={pickTournament}>
 									<SelectTrigger id='create-match-tournament'>
 										<SelectValue placeholder='Select a tournament' />
@@ -187,7 +195,9 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-2'>
-									<Label htmlFor='create-match-team-a'>Team A</Label>
+									<Label htmlFor='create-match-team-a' className={fieldLabel}>
+										Team A
+									</Label>
 									<Select value={teamAId} onValueChange={setTeamAId}>
 										<SelectTrigger id='create-match-team-a'>
 											<SelectValue placeholder='Select a team' />
@@ -202,7 +212,9 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 									</Select>
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='create-match-team-b'>Team B</Label>
+									<Label htmlFor='create-match-team-b' className={fieldLabel}>
+										Team B
+									</Label>
 									<Select value={teamBId} onValueChange={setTeamBId}>
 										<SelectTrigger id='create-match-team-b'>
 											<SelectValue placeholder='Select a team' />
@@ -221,15 +233,17 @@ export default function CreateMatchDialog({ isOpen, onClose, onCreate }: CreateM
 					)}
 
 					<div className='space-y-2'>
-						<Label htmlFor='create-match-date'>Match date</Label>
+						<Label htmlFor='create-match-date' className={fieldLabel}>
+							Match date
+						</Label>
 						<Input id='create-match-date' type='datetime-local' className='font-mono tabular-nums' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
 					</div>
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar>
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>
-						<Button type='submit' disabled={isSaving || !matchDate || (!isPickup && (!tournamentId || !teamAId || !teamBId))}>
+						<Button type='submit' isLoading={isSaving} disabled={!matchDate || (!isPickup && (!tournamentId || !teamAId || !teamBId))}>
 							{isSaving ? 'Creating…' : 'Create match'}
 						</Button>
 					</DialogFooter>

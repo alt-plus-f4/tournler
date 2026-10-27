@@ -24,13 +24,16 @@ export function FriendButton({ profileUserId, initialStatus, className }: Friend
 	const { toast } = useToast();
 
 	const run = (action: () => Promise<void>, next: FriendStatus, successTitle: string) => async () => {
+		// The outcome of each action is predictable, so show it right away and roll back if the request fails.
+		const previous = status;
 		setPending(true);
+		setStatus(next);
 		try {
 			await action();
-			setStatus(next);
 			toast({ title: successTitle });
 			router.refresh();
 		} catch (error) {
+			setStatus(previous);
 			toast({ variant: 'destructive', title: 'Something went wrong', description: error instanceof Error ? error.message : undefined });
 		} finally {
 			setPending(false);

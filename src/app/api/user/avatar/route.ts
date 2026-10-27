@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { put } from '@vercel/blob';
 import { deleteBlobsQuietly } from '@/lib/blob';
+import { sanitizeSvgAvatar } from '@/lib/helpers/sanitize-html';
 
 export async function GET() {
 	const session = await getAuthSession();
@@ -36,14 +37,24 @@ export async function PATCH(request: Request) {
 	const MAX_AVATAR_BYTES = 100 * 1024;
 	const trimmed = avatar.trim();
 	const looksLikeSvg = trimmed.startsWith('<svg') || trimmed.startsWith('<?xml');
-	const hasDangerousContent = /<script|on[a-z]+\s*=|javascript:|<foreignObject/i.test(avatar);
 
-	if (avatar.length > MAX_AVATAR_BYTES || !looksLikeSvg || hasDangerousContent) {
+	if (avatar.length > MAX_AVATAR_BYTES || !looksLikeSvg) {
+		return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
+	}
+
+	// Sanitize to a safe, decorative-shapes-only allowlist rather than denylisting known-dangerous
+	// constructs — a denylist can't enumerate every scriptable SVG primitive (SMIL <animate*>/<set>,
+	// <style>/@import, <foreignObject>, <script>, event-handler attributes, etc.), while an allowlist
+	// is safe by construction against all of them, including ones not explicitly anticipated here.
+	const sanitizedAvatar = sanitizeSvgAvatar(avatar);
+	const sanitizedTrimmed = sanitizedAvatar.trim();
+
+	if (!sanitizedTrimmed || !sanitizedTrimmed.startsWith('<svg')) {
 		return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
 	}
 
 	try {
-		const buffer = Buffer.from(avatar, 'utf-8');
+		const buffer = Buffer.from(sanitizedAvatar, 'utf-8');
 
 		// Keyed by user id, never email: Blob URLs are public. The random suffix gives every upload a
 		// fresh URL, so browsers and the CDN don't keep serving the previous avatar.

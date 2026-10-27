@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User } from '@/types/types';
 import UserTable from '@/components/UserTable';
+import { AdminPage, AdminHeader, AdminToolbar } from '@/components/admin/AdminPage';
 
 const USERS_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -110,12 +111,14 @@ export default function UsersClient() {
 	};
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<h1 className='mb-6 text-2xl font-bold'>Users</h1>
-			<Label htmlFor='admin-user-search' className='sr-only'>
-				Search users
-			</Label>
-			<Input id='admin-user-search' type='search' placeholder='Search by name or email…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+		<AdminPage>
+			<AdminHeader title='Users' subtitle='Search accounts, edit roles and verify players.' />
+			<AdminToolbar>
+				<Label htmlFor='admin-user-search' className='sr-only'>
+					Search users
+				</Label>
+				<Input id='admin-user-search' type='search' placeholder='Search by name or email…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='sm:max-w-sm' />
+			</AdminToolbar>
 			<UserTable
 				isLoading={isLoading && !hasLoadedOnce}
 				users={users}
@@ -130,6 +133,6 @@ export default function UsersClient() {
 			/>
 			<Pagination totalPages={totalPages} currentPage={currentPage} onPageChange={handlePageChange} />
 			{isDialogOpen && selectedUser && <EditUserDialog isOpen={isDialogOpen} user={selectedUser} onSave={handleSave} onClose={handleDialogClose} onDelete={handleDelete} />}
-		</div>
+		</AdminPage>
 	);
 }

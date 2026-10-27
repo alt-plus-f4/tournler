@@ -6,13 +6,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { Game } from '@prisma/client';
 import { Button } from '@/components/ui/button';
-import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/lib/hooks/use-toast';
 import { GameGlyph } from '@/components/games/GameMark';
 import { GAME_META, GAMES } from '@/lib/games';
 import { cn } from '@/lib/utils';
+import { fieldLabel } from '@/components/ui/dialog-styles';
+import { DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 
 const formSchema = z.object({
 	teamName: z.string().trim().min(3, 'Team name must be at least 3 characters long').max(50, 'Team name cannot exceed 50 characters'),
@@ -80,21 +82,25 @@ export default function TeamCreationDrawerPanel({ open, onOpenChange, triggerRef
 	};
 
 	return (
-		<Drawer open={open && ready} onOpenChange={onOpenChange}>
+		<Drawer open={open && ready} onOpenChange={onOpenChange} direction='right' shouldScaleBackground={false}>
 			<DrawerContent
+				handle={false}
+				overlayClassName='bg-black/75 backdrop-blur-sm'
+				className='inset-x-auto inset-y-0 bottom-auto right-0 mt-0 h-full w-full max-w-[420px] rounded-none border-y-0 border-r-0 border-border bg-card'
 				onCloseAutoFocus={(e) => {
 					e.preventDefault();
 					triggerRef.current?.focus();
 				}}
 			>
-				<div className='mx-auto w-full max-w-sm'>
-					<DrawerHeader>
-						<DrawerTitle className='text-center'>Create a team</DrawerTitle>
-						<DrawerDescription className='text-center'>Pick the game and a name. You become captain.</DrawerDescription>
+				<form onSubmit={handleSubmit(onSubmit)} className='flex h-full min-h-0 flex-col'>
+					<DrawerHeader className='gap-1 px-6 pb-2 pt-6 text-left'>
+						<DialogEyebrow>Teams</DialogEyebrow>
+						<DrawerTitle className={dialogPanelTitle}>Create a team</DrawerTitle>
+						<DrawerDescription className='pt-1'>Pick the game and a name. You become captain.</DrawerDescription>
 					</DrawerHeader>
-					<form onSubmit={handleSubmit(onSubmit)} className='mb-10 space-y-5 p-4 pb-0'>
+					<div className='flex-1 space-y-5 overflow-y-auto px-6 py-4'>
 						<fieldset disabled={isSubmitting}>
-							<legend className='mb-2 block text-sm font-medium'>Game</legend>
+							<legend className={cn(fieldLabel, 'mb-2 block')}>Game</legend>
 							<div className='grid grid-cols-2 gap-2'>
 								{GAMES.map((game) => {
 									const available = games.includes(game);
@@ -104,8 +110,8 @@ export default function TeamCreationDrawerPanel({ open, onOpenChange, triggerRef
 											key={game}
 											className={cn(
 												'flex min-h-[64px] cursor-pointer flex-col justify-center gap-1 rounded-md border px-3 py-2 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background',
-												checked ? 'border-foreground bg-white/5 text-white' : 'border-border text-neutral-300 hover:border-neutral-500',
-												!available && 'cursor-not-allowed opacity-50 hover:border-border',
+												checked ? 'border-white bg-white/[0.05] text-white' : 'border-zinc-700 bg-background text-neutral-300 hover:border-zinc-500',
+												!available && 'cursor-not-allowed opacity-50 hover:border-zinc-700',
 											)}
 										>
 											<input type='radio' value={game} disabled={!available} className='sr-only' {...register('game')} />
@@ -119,8 +125,8 @@ export default function TeamCreationDrawerPanel({ open, onOpenChange, triggerRef
 								})}
 							</div>
 						</fieldset>
-						<div>
-							<label htmlFor='team-name' className='block text-sm font-medium'>
+						<div className='space-y-2'>
+							<label htmlFor='team-name' className={cn(fieldLabel, 'block')}>
 								Team name
 							</label>
 							<Input
@@ -132,25 +138,25 @@ export default function TeamCreationDrawerPanel({ open, onOpenChange, triggerRef
 								disabled={isSubmitting}
 							/>
 							{errors.teamName ? (
-								<p id='team-name-error' role='alert' className='mt-1 text-sm text-signal-live'>
+								<p id='team-name-error' role='alert' className='text-sm text-signal-live'>
 									{String(errors.teamName.message)}
 								</p>
 							) : (
-								<p className='mt-1 text-xs text-muted-foreground'>Unique among {GAME_META[selectedGame ?? defaultGame].short} teams.</p>
+								<p className='text-xs text-muted-foreground'>Unique among {GAME_META[selectedGame ?? defaultGame].short} teams.</p>
 							)}
 						</div>
-						<div className='flex gap-2'>
-							<Button className='flex-1' type='submit' disabled={isSubmitting}>
-								{isSubmitting ? 'Creating…' : 'Create team'}
+					</div>
+					<DrawerFooter className='flex-row justify-end gap-2 border-t border-border bg-white/[0.03] px-6 py-4'>
+						<DrawerClose asChild>
+							<Button type='button' variant='outline'>
+								Cancel
 							</Button>
-							<DrawerClose asChild>
-								<Button className='flex-1' type='button' variant='outline'>
-									Cancel
-								</Button>
-							</DrawerClose>
-						</div>
-					</form>
-				</div>
+						</DrawerClose>
+						<Button type='submit' isLoading={isSubmitting}>
+							{isSubmitting ? 'Creating…' : 'Create team'}
+						</Button>
+					</DrawerFooter>
+				</form>
 			</DrawerContent>
 		</Drawer>
 	);

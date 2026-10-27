@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { adminTable as t } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
+import { AdminPage, AdminHeader, AdminToolbar } from '@/components/admin/AdminPage';
 
 export default function BadgesClient() {
 	const [badges, setBadges] = useState<BadgeDefinition[]>([]);
@@ -66,19 +67,15 @@ export default function BadgesClient() {
 	});
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
-				<div>
-					<h1 className='text-2xl font-bold'>Badges</h1>
-					<p className='text-sm text-muted-foreground'>Create badge types here, then award them to players from the Users page.</p>
-				</div>
-				<Button onClick={openCreate}>Create badge</Button>
-			</div>
+		<AdminPage>
+			<AdminHeader title='Badges' subtitle='Create badge types here, then award them to players from the Users page.' actions={<Button onClick={openCreate}>Create badge</Button>} />
 
-			<Label htmlFor='admin-badge-search' className='sr-only'>
-				Search badges
-			</Label>
-			<Input id='admin-badge-search' type='search' placeholder='Search badges by name or description…' value={search} onChange={(e) => setSearch(e.target.value)} className='mb-4' />
+			<AdminToolbar>
+				<Label htmlFor='admin-badge-search' className='sr-only'>
+					Search badges
+				</Label>
+				<Input id='admin-badge-search' type='search' placeholder='Search badges by name or description…' value={search} onChange={(e) => setSearch(e.target.value)} className='sm:max-w-sm' />
+			</AdminToolbar>
 
 			<div className={t.wrapper}>
 				<table className={t.table}>
@@ -141,6 +138,6 @@ export default function BadgesClient() {
 			</div>
 
 			{dialogMounted && <EditBadgeDialog badge={isCreatingNew ? null : editingBadge} isOpen={isDialogOpen} onClose={() => setIsDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
-		</div>
+		</AdminPage>
 	);
 }

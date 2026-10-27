@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { GameTag } from '@/components/games/GameMark';
 import { ExtendedCs2Team } from '@/lib/models/team-model';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,7 @@ export function TeamCard({ team, roster }: { team: ExtendedCs2Team; roster?: Rea
 		<Link
 			href={`/teams/${team.id}`}
 			className={cn(
-				'group block w-full cursor-pointer overflow-hidden bg-card transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+				'group relative block w-full cursor-pointer overflow-hidden bg-card transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
 				roster ? 'rounded-t-md' : 'rounded-md border border-border hover:border-neutral-500 motion-safe:hover:scale-105',
 			)}
 		>
@@ -42,6 +43,7 @@ export function TeamCard({ team, roster }: { team: ExtendedCs2Team; roster?: Rea
 					</span>
 				</p>
 			</div>
+			<LinkPendingVeil />
 		</Link>
 	);
 

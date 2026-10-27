@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AdminPage, AdminHeader, AdminPanel, AdminEmpty } from '@/components/admin/AdminPage';
 import { useToast } from '@/lib/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import type { NewsPostDefinition } from '@/components/EditNewsDialog';
@@ -214,23 +215,20 @@ export default function FeaturedClient() {
 
 	if (!settings || !rewatchDraft) {
 		return (
-			<div className='mx-4 mt-12 max-w-6xl md:mx-12 space-y-4'>
+			<AdminPage className='space-y-4'>
 				<Skeleton className='h-24 w-full bg-muted' />
 				<Skeleton className='h-48 w-full bg-muted' />
-			</div>
+			</AdminPage>
 		);
 	}
 
 	return (
-		<div className='mx-4 mt-12 mb-12 max-w-6xl md:mx-12 space-y-10'>
-			<div>
-				<h1 className='text-2xl font-bold mb-1'>Featured</h1>
-				<p className='text-muted-foreground text-sm'>Control what shows in the homepage&apos;s Featured section, and how it&apos;s displayed.</p>
-			</div>
+		<AdminPage className='space-y-10'>
+			<AdminHeader className='mb-0' title='Featured' subtitle="Control what shows in the homepage's Featured section, and how it's displayed." />
 
 			{/* Homepage layout */}
-			<section className='space-y-4 rounded-md border border-border p-5'>
-				<h2 className='text-lg font-semibold'>Homepage layout</h2>
+			<AdminPanel className='space-y-4'>
+				<h2 className='text-sm font-black uppercase tracking-wide'>Homepage layout</h2>
 				<div className='grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg'>
 					<div className='space-y-2'>
 						<Label htmlFor='featured-source'>Content source</Label>
@@ -304,12 +302,12 @@ export default function FeaturedClient() {
 						/>
 					</button>
 				</div>
-			</section>
+			</AdminPanel>
 
 			{/* Homepage rewatch */}
-			<section className='space-y-4 rounded-md border border-border p-5'>
+			<AdminPanel className='space-y-4'>
 				<div>
-					<h2 className='text-lg font-semibold'>Homepage watch</h2>
+					<h2 className='text-sm font-black uppercase tracking-wide'>Homepage watch</h2>
 					<p className='text-sm text-muted-foreground'>
 						The player that leads the homepage when no match is live — a YouTube rewatch or a live Twitch channel. Leave a field empty to use the default ({DEFAULT_REWATCH.title}).
 					</p>
@@ -389,11 +387,11 @@ export default function FeaturedClient() {
 						</Button>
 					</div>
 				</form>
-			</section>
+			</AdminPanel>
 
 			{/* Featured tournaments */}
 			<section className='space-y-4'>
-				<h2 className='text-lg font-semibold'>Featured tournaments</h2>
+				<h2 className='text-sm font-black uppercase tracking-wide'>Featured tournaments</h2>
 				<p className='text-sm text-muted-foreground -mt-2'>Only upcoming/ongoing tournaments can be featured. Leave unchecked to fall back to automatic selection by prize pool.</p>
 				{isLoadingTournaments ? (
 					<div className='space-y-2'>
@@ -402,9 +400,9 @@ export default function FeaturedClient() {
 						))}
 					</div>
 				) : tournaments.length === 0 ? (
-					<div className='text-center py-12 text-muted-foreground border border-border rounded-md'>No upcoming or ongoing tournaments.</div>
+					<AdminEmpty>No upcoming or ongoing tournaments.</AdminEmpty>
 				) : (
-					<div className='divide-y divide-border border border-border rounded-md'>
+					<div className='divide-y divide-border overflow-hidden rounded-lg border border-border bg-card'>
 						{tournaments.map((tournament) => (
 							<div key={tournament.id} className='flex items-center gap-4 p-3'>
 								<label className='flex items-center gap-2 cursor-pointer shrink-0'>
@@ -439,7 +437,7 @@ export default function FeaturedClient() {
 			{/* News posts */}
 			<section className='space-y-4'>
 				<div className='flex items-center justify-between'>
-					<h2 className='text-lg font-semibold'>News posts</h2>
+					<h2 className='text-sm font-black uppercase tracking-wide'>News posts</h2>
 					<Button variant='outline' onClick={openCreatePost}>
 						Create post
 					</Button>
@@ -451,9 +449,9 @@ export default function FeaturedClient() {
 						))}
 					</div>
 				) : posts.length === 0 ? (
-					<div className='text-center py-12 text-muted-foreground border border-border rounded-md'>No news posts yet. Create your first one.</div>
+					<AdminEmpty>No news posts yet. Create your first one.</AdminEmpty>
 				) : (
-					<ul className='divide-y divide-border rounded-md border border-border'>
+					<ul className='divide-y divide-border overflow-hidden rounded-lg border border-border bg-card'>
 						{posts.map((post) => (
 							<li key={post.id}>
 								<button
@@ -464,7 +462,9 @@ export default function FeaturedClient() {
 								>
 									<span className='flex items-center gap-2'>
 										<span className='flex-1 truncate font-medium'>{post.title}</span>
-										{post.isFeatured && <span className='shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-widest text-muted-foreground'>Featured</span>}
+										{post.isFeatured && (
+											<span className='shrink-0 rounded bg-muted px-2 py-1 font-mono text-[10.5px] font-semibold uppercase leading-none tracking-widest text-muted-foreground'>Featured</span>
+										)}
 									</span>
 									<span className='prose prose-sm prose-invert line-clamp-1 max-w-none text-sm text-muted-foreground [&_*]:text-inherit' dangerouslySetInnerHTML={{ __html: post.blurb }} />
 								</button>
@@ -477,6 +477,6 @@ export default function FeaturedClient() {
 			{postDialogMounted && (
 				<EditNewsDialog post={isCreatingPost ? null : editingPost} isOpen={isPostDialogOpen} onClose={() => setIsPostDialogOpen(false)} onSave={handleSavePost} onDelete={handleDeletePost} />
 			)}
-		</div>
+		</AdminPage>
 	);
 }

@@ -14,7 +14,7 @@ export async function GET() {
 		}
 
 		if (!(await userHasPermission(sessionUser.id, 'tournaments:manage'))) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		const [ended, upcoming] = await Promise.all([

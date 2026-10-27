@@ -53,7 +53,7 @@ export function ThreadModControls({ threadId, title, isPinned, isLocked, compact
 				type='button'
 				variant='outline'
 				size={compact ? 'icon' : 'sm'}
-				className={cn(compact && 'h-8 w-8', state.isPinned && 'bg-muted')}
+				className={cn(compact && 'h-8 w-8', state.isPinned && 'border-white/40 bg-white/10')}
 				onClick={() => toggle('isPinned')}
 				disabled={pending !== null}
 				aria-label={compact ? `${pinLabel} “${title}”` : undefined}
@@ -66,7 +66,7 @@ export function ThreadModControls({ threadId, title, isPinned, isLocked, compact
 				type='button'
 				variant='outline'
 				size={compact ? 'icon' : 'sm'}
-				className={cn(compact && 'h-8 w-8', state.isLocked && 'bg-muted')}
+				className={cn(compact && 'h-8 w-8', state.isLocked && 'border-white/40 bg-white/10')}
 				onClick={() => toggle('isLocked')}
 				disabled={pending !== null}
 				aria-label={compact ? `${lockLabel} “${title}”` : undefined}

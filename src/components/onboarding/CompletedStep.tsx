@@ -10,8 +10,8 @@ interface CompletedStepProps {
 
 export function CompletedStep({ previousStep, close }: CompletedStepProps) {
 	return (
-		<div className='flex flex-1 flex-col justify-center px-6 py-10 sm:px-12'>
-			<div className='flex flex-col items-center text-center'>
+		<div className='flex flex-1 flex-col px-6 py-10 sm:px-12'>
+			<div className='flex flex-1 flex-col items-center justify-center text-center'>
 				<span className='flex h-20 w-20 items-center justify-center rounded-full border border-white bg-white text-black shadow-[0_0_0_4px_rgba(255,255,255,0.08)]'>
 					<Check className='h-9 w-9' aria-hidden strokeWidth={2.5} />
 				</span>

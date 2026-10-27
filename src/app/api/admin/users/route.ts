@@ -13,7 +13,7 @@ export async function GET() {
 		}
 
 		if (!(await userHasPermission(sessionUser.id, 'users:manage'))) {
-			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+			return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 		}
 
 		const [usersInTeam, usersNotInTeam] = await Promise.all([db.user.count({ where: { teams: { some: {} } } }), db.user.count({ where: { teams: { none: {} } } })]);

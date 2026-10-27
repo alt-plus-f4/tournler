@@ -5,7 +5,7 @@ import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
-import { Bell, CheckIcon, X } from 'lucide-react';
+import { Bell, CheckIcon, UserPlus, Users, X } from 'lucide-react';
 import { Separator } from './ui/separator';
 import { ScrollArea } from './ui/scroll-area';
 import { timeAgo } from '@/lib/utils';
@@ -24,7 +24,21 @@ export default function Notifications({ userId }: NotificationsProps) {
 	const notifications = useQuery(api.notifications.getMyNotifications);
 	const markAsRead = useMutation(api.notifications.markNotificationAsRead);
 	const markAllAsRead = useMutation(api.notifications.markAllMyNotificationsAsRead);
-	const hasNewNotifications = (notifications?.length ?? 0) > 0;
+	// Rows the viewer just answered or dismissed vanish at once; a failed request puts them back.
+	const [hiddenIds, setHiddenIds] = useState<ReadonlySet<string>>(new Set());
+	const visibleNotifications = notifications?.filter((notification) => !hiddenIds.has(notification._id));
+	const hasNewNotifications = (visibleNotifications?.length ?? 0) > 0;
+
+	function setHidden(ids: string[], hidden: boolean) {
+		setHiddenIds((prev) => {
+			const next = new Set(prev);
+			for (const id of ids) {
+				if (hidden) next.add(id);
+				else next.delete(id);
+			}
+			return next;
+		});
+	}
 
 	const { toast } = useToast();
 
@@ -33,6 +47,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 	}, []);
 
 	async function handleAcceptInvite(id: Id<'notifications'>, teamId: number) {
+		setHidden([id], true);
 		try {
 			await acceptTeamInvite({ userId, teamId });
 			await markAsRead({ id });
@@ -42,6 +57,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 			});
 			window.location.reload();
 		} catch (error) {
+			setHidden([id], false);
 			toast({
 				variant: 'destructive',
 				title: 'Error',
@@ -52,6 +68,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 	}
 
 	async function handleDenyInvite(id: Id<'notifications'>, teamId: number) {
+		setHidden([id], true);
 		try {
 			await denyTeamInvite({ userId, teamId });
 			await markAsRead({ id });
@@ -61,6 +78,7 @@ export default function Notifications({ userId }: NotificationsProps) {
 			});
 			window.location.reload();
 		} catch (error) {
+			setHidden([id], false);
 			toast({
 				variant: 'destructive',
 				title: 'Error',
@@ -71,29 +89,57 @@ export default function Notifications({ userId }: NotificationsProps) {
 	}
 
 	async function handleAcceptFriendRequest(id: Id<'notifications'>, fromUserId: string) {
+		setHidden([id], true);
 		try {
 			await acceptFriendRequest(fromUserId);
 			await markAsRead({ id });
 			toast({ variant: 'default', title: 'Friend added' });
 			window.location.reload();
 		} catch (error) {
+			setHidden([id], false);
 			toast({ variant: 'destructive', title: 'Error', description: 'Failed to accept friend request.' });
 			console.error('Failed to accept friend request:', error);
 		}
 	}
 
 	async function handleDeclineFriendRequest(id: Id<'notifications'>, fromUserId: string) {
+		setHidden([id], true);
 		try {
 			await declineFriendRequest(fromUserId);
 			await markAsRead({ id });
 			toast({ variant: 'default', title: 'Request declined' });
 		} catch (error) {
+			setHidden([id], false);
 			toast({ variant: 'destructive', title: 'Error', description: 'Failed to decline friend request.' });
 			console.error('Failed to decline friend request:', error);
 		}
 	}
 
-	const count = notifications?.length ?? 0;
+	async function dismiss(id: Id<'notifications'>) {
+		setHidden([id], true);
+		try {
+			await markAsRead({ id });
+		} catch (error) {
+			setHidden([id], false);
+			toast({ variant: 'destructive', title: 'Error', description: 'Failed to dismiss notification.' });
+			console.error('Failed to dismiss notification:', error);
+		}
+	}
+
+	// Invites and friend requests need an answer, so the server leaves them unread (see markAllMyNotificationsAsRead).
+	async function handleMarkAllAsRead() {
+		const ids = (visibleNotifications ?? []).filter((notification) => notification.type !== 1 && notification.type !== 2).map((notification) => notification._id);
+		setHidden(ids, true);
+		try {
+			await markAllAsRead();
+		} catch (error) {
+			setHidden(ids, false);
+			toast({ variant: 'destructive', title: 'Error', description: 'Failed to mark notifications as read.' });
+			console.error('Failed to mark all notifications as read:', error);
+		}
+	}
+
+	const count = visibleNotifications?.length ?? 0;
 	// Convex caps the query at 10 unread; say "10+" rather than implying an exact count.
 	const countLabel = count >= 10 ? '10+' : String(count);
 	const triggerLabel = count > 0 ? `Notifications, ${countLabel} unread` : 'Notifications';
@@ -121,49 +167,64 @@ export default function Notifications({ userId }: NotificationsProps) {
 					)}
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align='end' className='w-[calc(100vw-2rem)] max-w-[400px] rounded-md p-0'>
-				<div className='flex items-center justify-between px-4 py-3'>
-					<h3 className='text-base font-semibold'>Notifications</h3>
-					{hasNewNotifications && <span className='font-mono text-xs tabular-nums text-muted-foreground'>{countLabel} unread</span>}
+			<PopoverContent align='end' className='w-[calc(100vw-2rem)] max-w-[400px] overflow-hidden rounded-lg border-border bg-card p-0 shadow-[0_24px_60px_-16px_#000]'>
+				<div className='flex items-center justify-between px-4 py-3.5'>
+					<h3 className='text-sm font-black uppercase tracking-wide text-white'>Notifications</h3>
+					{hasNewNotifications && <span className='font-mono text-xs tabular-nums text-neutral-300'>{countLabel} unread</span>}
 				</div>
 				<Separator />
 				<ScrollArea className='max-h-[60vh]'>
 					<ul className='divide-y divide-border'>
 						{!hasNewNotifications && <li className='px-4 py-6 text-sm text-muted-foreground'>You&apos;re all caught up.</li>}
 						{hasNewNotifications &&
-							notifications?.map(({ _id, text, _creationTime, type, teamId, fromUserId }) => {
+							visibleNotifications?.map(({ _id, text, _creationTime, type, teamId, fromUserId }) => {
 								const teamName = teamNameFromText(text);
 								const textId = `notification-${_id}`;
 								return (
-									<li key={_id} className='grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3'>
+									<li key={_id} className='grid grid-cols-[34px_1fr_auto] items-center gap-3 bg-white/[0.04] px-4 py-3'>
+										<span aria-hidden className='flex h-[34px] w-[34px] items-center justify-center rounded-full border border-border bg-background text-neutral-300'>
+											{type === 1 ? <Users className='h-4 w-4' /> : type === 2 ? <UserPlus className='h-4 w-4' /> : <Bell className='h-4 w-4' />}
+										</span>
 										<div className='min-w-0 space-y-1'>
 											<p id={textId} className='text-sm font-medium'>
 												{text}
 											</p>
-											<p className='text-xs text-muted-foreground'>{timeAgo(_creationTime)}</p>
+											<p className='font-mono text-xs tabular-nums text-muted-foreground'>{timeAgo(_creationTime)}</p>
 										</div>
-										<div className='flex gap-2'>
+										<div className='flex gap-1.5'>
 											{type === 1 ? (
 												<>
-													<Button size='icon' onClick={() => handleAcceptInvite(_id, teamId || -1)} aria-label={`Accept invite to ${teamName}`}>
-														<CheckIcon aria-hidden className='h-5 w-5' />
+													<Button
+														size='icon'
+														variant='outline'
+														className='h-8 w-8 text-signal-ready-text'
+														onClick={() => handleAcceptInvite(_id, teamId || -1)}
+														aria-label={`Accept invite to ${teamName}`}
+													>
+														<CheckIcon aria-hidden className='h-4 w-4' />
 													</Button>
-													<Button size='icon' variant='outline' onClick={() => handleDenyInvite(_id, teamId || -1)} aria-label={`Decline invite to ${teamName}`}>
-														<X aria-hidden className='h-5 w-5' />
+													<Button size='icon' variant='outline' className='h-8 w-8' onClick={() => handleDenyInvite(_id, teamId || -1)} aria-label={`Decline invite to ${teamName}`}>
+														<X aria-hidden className='h-4 w-4' />
 													</Button>
 												</>
 											) : type === 2 && fromUserId ? (
 												<>
-													<Button size='icon' onClick={() => handleAcceptFriendRequest(_id, fromUserId)} aria-label='Accept friend request'>
-														<CheckIcon aria-hidden className='h-5 w-5' />
+													<Button
+														size='icon'
+														variant='outline'
+														className='h-8 w-8 text-signal-ready-text'
+														onClick={() => handleAcceptFriendRequest(_id, fromUserId)}
+														aria-label='Accept friend request'
+													>
+														<CheckIcon aria-hidden className='h-4 w-4' />
 													</Button>
-													<Button size='icon' variant='outline' onClick={() => handleDeclineFriendRequest(_id, fromUserId)} aria-label='Decline friend request'>
-														<X aria-hidden className='h-5 w-5' />
+													<Button size='icon' variant='outline' className='h-8 w-8' onClick={() => handleDeclineFriendRequest(_id, fromUserId)} aria-label='Decline friend request'>
+														<X aria-hidden className='h-4 w-4' />
 													</Button>
 												</>
 											) : (
-												<Button size='icon' variant='ghost' onClick={() => markAsRead({ id: _id })} aria-label='Dismiss notification' aria-describedby={textId}>
-													<X aria-hidden className='h-5 w-5' />
+												<Button size='icon' variant='ghost' className='h-8 w-8' onClick={() => dismiss(_id)} aria-label='Dismiss notification' aria-describedby={textId}>
+													<X aria-hidden className='h-4 w-4' />
 												</Button>
 											)}
 										</div>
@@ -175,8 +236,8 @@ export default function Notifications({ userId }: NotificationsProps) {
 				{hasNewNotifications && (
 					<>
 						<Separator />
-						<div className='p-3'>
-							<Button variant='outline' className='w-full' onClick={() => markAllAsRead()}>
+						<div className='bg-white/[0.03] p-3'>
+							<Button variant='secondary' className='w-full' onClick={handleMarkAllAsRead}>
 								Mark all as read
 							</Button>
 						</div>

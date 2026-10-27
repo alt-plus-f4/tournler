@@ -58,7 +58,7 @@ function ThreadSkeleton() {
 		<div role='status' aria-busy='true'>
 			<span className='sr-only'>Loading thread…</span>
 			<Skeleton className='h-5 w-44 rounded-sm bg-neutral-900' />
-			<div className='mt-4 rounded-md border border-border p-4 sm:p-5'>
+			<div className='mt-4 rounded-md border border-border bg-card/40 p-4 sm:p-5'>
 				<div className='flex gap-3'>
 					<Skeleton className='h-28 w-10 rounded-sm bg-neutral-900 sm:w-8' />
 					<div className='flex-1 space-y-3'>
@@ -104,7 +104,7 @@ function SortToggle({ threadId, sort }: { threadId: number; sort: ReplySort }) {
 		{ value: 'oldest', label: 'Oldest' },
 	];
 	return (
-		<nav aria-label='Sort replies' className='flex items-center gap-0.5 rounded-md border border-border p-0.5'>
+		<nav aria-label='Sort replies' className='flex items-center gap-0.5 rounded-md border border-border bg-card/60 p-[3px]'>
 			{options.map((option) => {
 				const active = option.value === sort;
 				return (
@@ -116,7 +116,7 @@ function SortToggle({ threadId, sort }: { threadId: number; sort: ReplySort }) {
 						aria-current={active ? 'true' : undefined}
 						className={cn(
 							'inline-flex h-9 items-center rounded-sm px-3 text-xs font-bold uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-7 sm:px-2.5',
-							active ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground',
+							active ? 'bg-white/10 text-foreground' : 'text-muted-foreground hover:text-foreground',
 						)}
 					>
 						{option.label}
@@ -197,7 +197,7 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 				</Link>
 			</div>
 
-			<article className='mt-4 rounded-md border border-border'>
+			<article className='mt-4 rounded-md border border-border bg-card/40'>
 				<header className='flex gap-2 border-b border-border p-3 sm:gap-3 sm:p-5'>
 					<VoteControl
 						endpoint={`/api/forum/threads/${thread.id}/vote`}
@@ -211,19 +211,19 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 					<div className='min-w-0 flex-1'>
 						<div className='flex flex-wrap items-center gap-2'>
 							{thread.isPinned && (
-								<span className='inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-widest text-foreground'>
+								<span className='inline-flex items-center gap-1 rounded bg-white px-1.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.1em] text-black'>
 									<Pin aria-hidden className='h-3 w-3' />
 									Pinned
 								</span>
 							)}
 							{thread.isLocked && (
-								<span className='inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+								<span className='inline-flex items-center gap-1 rounded bg-white/10 px-1.5 py-1 font-mono text-[0.625rem] font-semibold uppercase leading-none tracking-[0.1em] text-muted-foreground'>
 									<Lock aria-hidden className='h-3 w-3' />
 									Locked
 								</span>
 							)}
 						</div>
-						<h1 className='mt-1 text-balance break-words text-2xl font-bold leading-tight md:text-3xl'>{thread.title}</h1>
+						<h1 className='mt-2 text-balance break-words text-2xl font-black uppercase leading-tight tracking-wide md:text-3xl'>{thread.title}</h1>
 						<div className='mt-3 flex flex-wrap items-center gap-x-3 gap-y-2'>
 							<ForumAvatar author={thread.author} />
 							<div className='flex min-w-0 flex-col text-sm leading-tight'>
@@ -232,7 +232,7 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 							</div>
 							{banControl(thread.author)}
 							{(canModerate || canDeleteThread) && (
-								<div className='ml-auto flex items-center gap-1.5'>
+								<div className='ml-auto flex flex-wrap items-center gap-1.5 border-t border-border pt-3 sm:border-0 sm:pt-0'>
 									{canModerate && <ThreadModControls threadId={thread.id} title={thread.title} isPinned={thread.isPinned} isLocked={thread.isLocked} />}
 									{canDeleteThread && (
 										<ConfirmActionButton
@@ -258,7 +258,7 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 
 			<section aria-labelledby='replies-heading' className='mt-8'>
 				<div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
-					<h2 id='replies-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+					<h2 id='replies-heading' className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>
 						Replies · <span className='font-mono tabular-nums'>{replyCount}</span>
 					</h2>
 					{thread.replies.length > 1 && <SortToggle threadId={thread.id} sort={sort} />}
@@ -266,11 +266,11 @@ async function ThreadContent({ params, searchParams }: ThreadPageProps) {
 				{tree.length > 0 ? (
 					<ReplyTree nodes={tree} ctx={{ threadId: thread.id, viewerId, canModerate, isLocked: thread.isLocked, myVotes: replyVotes, signInHref, now: new Date(), banControl }} />
 				) : (
-					<p className='rounded-md border border-border px-4 py-8 text-center text-sm text-muted-foreground'>No replies yet.</p>
+					<p className='rounded-md border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground'>No replies yet.</p>
 				)}
 			</section>
 
-			<section aria-label='Reply to this thread' className='mt-6 rounded-md border border-border p-4'>
+			<section aria-label='Reply to this thread' className='mt-8 rounded-md border border-border bg-card/40 p-4 sm:p-5'>
 				{!session ? (
 					<p className='text-sm text-muted-foreground'>
 						<Link href={signInHref} className={buttonVariants({ variant: 'outline', size: 'sm' })}>

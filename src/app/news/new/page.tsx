@@ -13,8 +13,7 @@ export default async function NewNewsPostPage() {
 	if (!(await userHasPermission(session.user.id, 'content:manage'))) return <AccessDenied resource='news' />;
 
 	return (
-		<div className='mx-auto my-8 w-full max-w-4xl px-4'>
-			<h1 className='mb-6 text-2xl font-bold'>Write a post</h1>
+		<div className='mx-auto my-8 w-full max-w-6xl px-4'>
 			<Editor />
 		</div>
 	);

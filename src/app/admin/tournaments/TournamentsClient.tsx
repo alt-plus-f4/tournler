@@ -19,7 +19,7 @@ import { useLatched } from '@/lib/hooks/use-latched';
 const TournamentForm = dynamic(() => import('@/components/TournamentForm').then((m) => m.TournamentForm), { loading: () => <Button disabled>Create tournament</Button> });
 const EditTournamentDialog = dynamic(() => import('@/components/EditTournamentDialog'));
 import { Tournament } from '@/types/types';
-import { cn } from '@/lib/utils';
+import { AdminPage, AdminHeader, AdminToolbar, segmentedGroup, segmentedButton } from '@/components/admin/AdminPage';
 
 const TOURNAMENTS_PER_PAGE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -132,29 +132,32 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 	const filterLabel = STATUS_FILTERS.find((f) => f.value === status)?.label.toLowerCase();
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
-				<h1 className='text-2xl font-bold'>Tournaments</h1>
-				<div className='flex items-center gap-3'>
-					<DropdownMenu modal={false}>
-						<DropdownMenuTrigger asChild>
-							<Button variant='ghost' className='text-muted-foreground'>
-								Dev tools <ChevronDown aria-hidden />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent align='end'>
-							<DropdownMenuLabel className='text-xs text-muted-foreground'>Test data</DropdownMenuLabel>
-							<DropdownMenuItem onSelect={() => setDevTool('simulate')}>Simulate tournament…</DropdownMenuItem>
-							<DropdownMenuSeparator />
-							<DropdownMenuItem onSelect={() => setDevTool('delete')} className='text-signal-live focus:text-signal-live'>
-								Delete simulated tournaments…
-							</DropdownMenuItem>
-						</DropdownMenuContent>
-					</DropdownMenu>
-					<span aria-hidden className='h-6 w-px bg-border' />
-					{createMounted ? <TournamentForm onSubmit={handleSubmit} defaultOpen onOpenChange={handleCreateOpenChange} /> : <Button onClick={() => setCreateMounted(true)}>Create tournament</Button>}
-				</div>
-			</div>
+		<AdminPage>
+			<AdminHeader
+				title='Tournaments'
+				subtitle='Create, schedule and manage tournaments.'
+				actions={
+					<>
+						<DropdownMenu modal={false}>
+							<DropdownMenuTrigger asChild>
+								<Button variant='ghost' className='text-muted-foreground'>
+									Dev tools <ChevronDown aria-hidden />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align='end'>
+								<DropdownMenuLabel className='text-xs text-muted-foreground'>Test data</DropdownMenuLabel>
+								<DropdownMenuItem onSelect={() => setDevTool('simulate')}>Simulate tournament…</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem onSelect={() => setDevTool('delete')} className='text-signal-live focus:text-signal-live'>
+									Delete simulated tournaments…
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+						<span aria-hidden className='h-6 w-px bg-border' />
+						{createMounted ? <TournamentForm onSubmit={handleSubmit} defaultOpen onOpenChange={handleCreateOpenChange} /> : <Button onClick={() => setCreateMounted(true)}>Create tournament</Button>}
+					</>
+				}
+			/>
 
 			<SimulateTournamentButton open={devTool === 'simulate'} onOpenChange={(o) => setDevTool(o ? 'simulate' : null)} />
 			<DeleteSimulatedTournamentsButton
@@ -165,14 +168,14 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 				}}
 			/>
 
-			<div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-end'>
-				<div className='flex-1 space-y-1.5'>
+			<AdminToolbar>
+				<div className='w-full space-y-1.5 sm:w-auto sm:min-w-[240px] sm:max-w-sm sm:flex-1'>
 					<Label htmlFor='admin-tournament-search' className='sr-only'>
 						Search tournaments
 					</Label>
 					<Input id='admin-tournament-search' type='search' placeholder='Search by tournament name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
 				</div>
-				<div role='group' aria-label='Filter by status' className='inline-flex h-10 rounded-md border border-border p-0.5'>
+				<div role='group' aria-label='Filter by status' className={segmentedGroup}>
 					{STATUS_FILTERS.map((f) => (
 						<button
 							key={f.label}
@@ -182,16 +185,13 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 								setStatus(f.value);
 								setPage(1);
 							}}
-							className={cn(
-								'rounded-sm px-3 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-								status === f.value ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground',
-							)}
+							className={segmentedButton(status === f.value)}
 						>
 							{f.label}
 						</button>
 					))}
 				</div>
-			</div>
+			</AdminToolbar>
 
 			<TournamentTable
 				isLoading={isLoading && !hasLoadedOnce}
@@ -204,6 +204,6 @@ export default function TournamentsClient({ openCreate = false }: { openCreate?:
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={setPage} />
 			{editMounted && <EditTournamentDialog tournament={editingTournament} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
-		</div>
+		</AdminPage>
 	);
 }

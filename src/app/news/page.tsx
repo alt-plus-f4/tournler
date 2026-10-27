@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { ChevronLeft, ChevronRight, MessageSquare, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
@@ -63,6 +64,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 		<div className='mx-auto my-8 w-full max-w-5xl px-4'>
 			<div className='flex flex-wrap items-end justify-between gap-4'>
 				<div>
+					<p className='mb-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Tournler staff</p>
 					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>News</h1>
 					<p className='mt-2 text-sm text-muted-foreground'>Announcements, patch notes and tournament news from the Tournler team.</p>
 				</div>
@@ -75,7 +77,7 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 			</div>
 
 			{posts.length === 0 ? (
-				<div className='mt-8 rounded-md border border-border px-6 py-16 text-center'>
+				<div className='mt-8 rounded-md border border-border bg-card px-6 py-16 text-center'>
 					<p className='font-medium'>{page > 1 ? 'No posts on this page.' : 'No news yet.'}</p>
 					<p className='mt-1 text-sm text-muted-foreground'>{page > 1 ? 'Head back to the latest posts.' : 'Announcements will show up here as soon as they’re published.'}</p>
 					{page > 1 && (
@@ -85,36 +87,24 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 					)}
 				</div>
 			) : (
-				<ol className='mt-8 divide-y divide-border border-y border-border'>
+				<ol className='mt-8 space-y-3.5'>
 					{posts.map((post) => {
 						const cover = post.imageUrl || FALLBACK_IMAGE;
 						return (
-							<li key={post.id} className='group relative flex gap-4 py-5 transition-colors hover:bg-white/[0.02] md:gap-6'>
-								<div className='relative hidden aspect-[16/10] w-44 shrink-0 overflow-hidden rounded-md border border-border bg-neutral-900 sm:block md:w-56'>
-									<Image src={cover} alt='' fill sizes='224px' unoptimized={!isOptimizable(cover)} className='object-cover' />
+							<li
+								key={post.id}
+								className='group relative grid gap-4 rounded-md border border-border bg-card p-4 transition-colors hover:border-neutral-500 sm:grid-cols-[240px_minmax(0,1fr)] sm:gap-5'
+							>
+								<div className='relative hidden aspect-[16/10] overflow-hidden rounded bg-neutral-900 sm:block'>
+									<Image src={cover} alt='' fill sizes='240px' unoptimized={!isOptimizable(cover)} className='object-cover' />
 								</div>
-								<div className='min-w-0 flex-1'>
-									<h2 className='text-lg font-bold leading-snug md:text-xl'>
-										<Link
-											href={`/news/${post.id}`}
-											className='after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background group-hover:underline group-hover:decoration-neutral-500 group-hover:underline-offset-4'
-										>
-											{post.title}
-										</Link>
-									</h2>
-									{post.blurb && (
-										<div
-											className='prose prose-sm prose-invert mt-1.5 line-clamp-2 max-w-[70ch] text-muted-foreground [&_*]:m-0 [&_*]:text-inherit'
-											// Blurbs are sanitized on write (sanitizeRichText / escaped plain text).
-											dangerouslySetInnerHTML={{ __html: post.blurb }}
-										/>
-									)}
-									<div className='mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'>
-										<NewsAuthor author={post.author} />
+								<div className='flex min-w-0 flex-col justify-center gap-2'>
+									<div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-xs'>
+										<NewsDate date={post.publishedAt} />
 										<span aria-hidden className='text-neutral-600'>
 											·
 										</span>
-										<NewsDate date={post.publishedAt} />
+										<NewsAuthor author={post.author} />
 										<span aria-hidden className='text-neutral-600'>
 											·
 										</span>
@@ -124,6 +114,19 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
 											<span className='sr-only'>{post._count.comments === 1 ? 'comment' : 'comments'}</span>
 										</span>
 									</div>
+									<h2 className='text-lg font-black uppercase leading-snug tracking-wide md:text-xl'>
+										<Link href={`/news/${post.id}`} className='after:absolute after:inset-0 after:rounded-md focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring'>
+											{post.title}
+											<LinkPendingVeil />
+										</Link>
+									</h2>
+									{post.blurb && (
+										<div
+											className='prose prose-sm prose-invert line-clamp-2 max-w-[70ch] text-muted-foreground [&_*]:m-0 [&_*]:text-inherit'
+											// Blurbs are sanitized on write (sanitizeRichText / escaped plain text).
+											dangerouslySetInnerHTML={{ __html: post.blurb }}
+										/>
+									)}
 								</div>
 							</li>
 						);

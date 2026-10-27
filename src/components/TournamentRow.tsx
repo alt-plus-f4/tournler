@@ -4,6 +4,7 @@ import { GameTag } from '@/components/games/GameMark';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 
 export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, location, teamCapacity, status, game = 'CS2' }: ReducedTournament & { status?: string }) {
 	const hasPrize = prizePool !== null && prizePool !== undefined;
@@ -12,7 +13,7 @@ export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, 
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className='flex w-full flex-col gap-3 rounded-md border border-border p-3 transition-colors hover:border-neutral-500 hover:bg-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex-row sm:items-center sm:justify-between'
+			className='relative flex w-full flex-col gap-3 rounded-md border border-border p-3 transition-colors hover:border-neutral-500 hover:bg-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:flex-row sm:items-center sm:justify-between'
 		>
 			<div className='flex min-w-0 items-center'>
 				<div className='relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-neutral-900'>
@@ -50,6 +51,7 @@ export function TournamentRow({ id, name, startDate, logoUrl, prizePool, teams, 
 					</dd>
 				</div>
 			</dl>
+			<LinkPendingVeil />
 		</Link>
 	);
 }

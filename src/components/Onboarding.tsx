@@ -269,7 +269,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 			case OnboardingDialogSteps.Nickname:
 				return <NicknameStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Welcome))} nextStep={(nickname: string) => handleNickname(nickname)} loading={isStepLoading} />;
 			case OnboardingDialogSteps.Avatar:
-				return <AvatarStep previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))} nextStep={(avatar: Blob) => handleAvatar(avatar)} loading={isStepLoading} />;
+				return <AvatarStep panel previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Nickname))} nextStep={(avatar: Blob) => handleAvatar(avatar)} loading={isStepLoading} />;
 			case OnboardingDialogSteps.Games:
 				return (
 					<GamesStep initialGames={games} previousStep={() => dispatch(setCurrentStep(OnboardingDialogSteps.Avatar))} nextStep={(selected: Game[]) => handleGames(selected)} loading={isStepLoading} />
@@ -290,7 +290,7 @@ export function OnboardingDialog({ isOpen }: OnboardingDialogProps) {
 		// player who came back to review an earlier step move on again without resubmitting it.
 		if (completedSteps.includes(currentStep) && currentStep !== OnboardingDialogSteps.Completed) {
 			return (
-				<div className='px-6 pb-8 text-center sm:px-12'>
+				<div className='px-6 pb-4 pt-3 text-center sm:px-12'>
 					<Button variant='link' size='sm' onClick={handleSkip} disabled={isStepLoading} className='text-neutral-500 hover:text-white'>
 						{isStepLoading ? 'Skipping…' : 'Skip this step'}
 					</Button>

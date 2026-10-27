@@ -79,7 +79,11 @@ export function VoteControl({ endpoint, score: initialScore, myVote: initialVote
 	};
 
 	return (
-		<div role='group' aria-label={`Votes for ${subject}`} className={cn('inline-flex items-center', vertical ? 'flex-col' : 'flex-row gap-0.5', className)}>
+		<div
+			role='group'
+			aria-label={`Votes for ${subject}`}
+			className={cn('inline-flex items-center', vertical ? 'flex-col gap-0.5 rounded-md border border-border bg-black/30 py-1' : 'flex-row gap-0.5', className)}
+		>
 			{arrow(1)}
 			<span aria-live='polite' aria-atomic='true' className={cn('min-w-[2ch] text-center font-mono text-sm tabular-nums', 'text-foreground', state.myVote !== 0 && 'font-bold')}>
 				<span aria-hidden>{formatScore(state.score)}</span>

@@ -35,13 +35,13 @@ export function NicknameStep({ previousStep, nextStep, loading }: NicknameStepPr
 	return (
 		<Form {...form}>
 			<form className='flex flex-1 flex-col px-6 py-10 sm:px-12' onSubmit={form.handleSubmit(onSubmit)}>
-				<StepHeading center={false} title='Nickname' description='This is the name other players see in brackets and on the scoreboard.' />
+				<StepHeading title='Nickname' description='This is the name other players see in brackets and on the scoreboard.' />
 				<FormField
 					control={form.control}
 					name='nickname'
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Nickname</FormLabel>
+							<FormLabel className='text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground'>Nickname</FormLabel>
 							<FormControl>
 								<Input autoComplete='nickname' placeholder='Enter your nickname' {...field} />
 							</FormControl>

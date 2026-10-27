@@ -10,8 +10,8 @@ interface WelcomeStepProps {
 
 export function WelcomeStep({ nextStep, loading }: WelcomeStepProps) {
 	return (
-		<div className='flex flex-1 flex-col justify-center px-6 py-10 sm:px-12'>
-			<div className='flex flex-col items-center text-center'>
+		<div className='flex flex-1 flex-col px-6 py-10 sm:px-12'>
+			<div className='flex flex-1 flex-col items-center justify-center text-center'>
 				<span className='flex h-20 w-20 items-center justify-center rounded-full border border-border bg-white/5'>
 					<Icons.logo size={44} aria-hidden />
 				</span>

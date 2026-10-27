@@ -87,7 +87,7 @@ export function ReplyItem({ number, descendantCount, indentChildren, header, too
 						)}
 					</div>
 					{replying && reply?.kind === 'form' && (
-						<div id={formId} className='mb-3 mt-1 max-w-[72ch] rounded-md border border-border p-3'>
+						<div id={formId} className='mb-3 mt-1 max-w-[72ch] rounded-md border border-border bg-card/60 p-3'>
 							<ReplyForm threadId={reply.threadId} parentId={reply.parentId} parentLabel={reply.parentLabel} lockedForModerator={reply.lockedForModerator} onDone={() => setReplying(false)} />
 						</div>
 					)}
@@ -95,10 +95,10 @@ export function ReplyItem({ number, descendantCount, indentChildren, header, too
 
 				{children &&
 					(indentChildren ? (
-						<div className='relative ml-3.5 pl-2 sm:pl-3.5'>
+						<div className='relative ml-3.5 pl-2 sm:pl-4'>
 							{/* The thread line: a hairline guide that also collapses this reply, like Reddit's. Mouse-only; [–] is the keyboard path. */}
 							<button type='button' tabIndex={-1} aria-hidden onClick={() => setCollapsed(true)} className='group absolute inset-y-0 -left-1.5 w-3 cursor-pointer' title={`Collapse reply #${number}`}>
-								<span className='absolute inset-y-0 left-1/2 w-px bg-border transition-colors group-hover:bg-foreground/70' />
+								<span className='absolute inset-y-0 left-1/2 w-px bg-white/15 transition-colors group-hover:bg-foreground/70' />
 							</button>
 							{children}
 						</div>

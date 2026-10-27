@@ -2,7 +2,8 @@
 
 import { TeamLogo } from '@/components/TeamLogo';
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel, sectionLabel, uploadSurface } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -131,12 +132,13 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 	if (isConfirmingDelete) {
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Delete this team?</DialogTitle>
-						<DialogDescription>{editingTeam?.name} will be permanently deleted, along with its match history. This can&apos;t be undone.</DialogDescription>
+				<DialogContent panel className='max-w-md'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete this team?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>{editingTeam?.name} will be permanently deleted, along with its match history. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
@@ -153,39 +155,44 @@ export default function EditTeamDialog({ team, isOpen, onClose, onSave, onDelete
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[460px]'>
-				<DialogHeader>
-					<DialogTitle>Edit team</DialogTitle>
-					<DialogDescription>Update the team&apos;s details below.</DialogDescription>
+			<DialogContent panel className='sm:max-w-[500px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Team</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Edit team</DialogTitle>
+					<DialogDescription className='pt-1'>Update the team&apos;s details below.</DialogDescription>
 				</DialogHeader>
-				<form onSubmit={handleEdit} className='space-y-5'>
+				<form onSubmit={handleEdit} className='grid gap-5'>
 					<div className='flex items-center gap-4'>
 						<TeamLogo src={previewSrc} name={editingTeam?.name} size='lg' className='h-16 w-16' />
 						<div className='flex-1 space-y-2'>
-							<Label htmlFor='edit-name'>Team Name</Label>
+							<Label htmlFor='edit-name' className={fieldLabel}>
+								Team Name
+							</Label>
 							<Input id='edit-name' value={editingTeam?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
 						</div>
 					</div>
 
 					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Branding</p>
-						<div className='space-y-2'>
-							<Label htmlFor='edit-logo-file'>Team Logo</Label>
+						<p className={sectionLabel}>Branding</p>
+						<div className={`${uploadSurface} flex-col items-stretch gap-2`}>
+							<Label htmlFor='edit-logo-file' className={fieldLabel}>
+								Team Logo
+							</Label>
 							<Input id='edit-logo-file' type='file' accept='image/*' onChange={(e) => setLogoFile(e.target.files?.[0] || null)} />
 							{logoFile && <p className='text-xs text-muted-foreground'>Selected: {logoFile.name}</p>}
 						</div>
 						<div className='flex items-center gap-3'>
-							<Label htmlFor='edit-background' className='shrink-0'>
+							<Label htmlFor='edit-background' className={`${fieldLabel} shrink-0`}>
 								Background Color
 							</Label>
 							<Input id='edit-background' type='color' value={(editingTeam?.background as string) || '#000000'} onChange={(e) => handleChange('background', e.target.value)} className='h-9 w-16 p-1' />
-							<span className='text-sm font-mono text-muted-foreground'>{(editingTeam?.background as string) || '#000000'}</span>
+							<span className='font-mono text-sm tabular-nums text-muted-foreground'>{(editingTeam?.background as string) || '#000000'}</span>
 						</div>
 					</div>
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar className='flex-wrap'>
 						{onDelete && (
-							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+							<Button type='button' variant='destructive' className='sm:mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete team…
 							</Button>
 						)}

@@ -60,6 +60,8 @@ interface AvatarStepProps {
 	previousStep: () => void;
 	nextStep: (avatar: Blob) => void;
 	loading: boolean;
+	/** Redesigned onboarding look. Off by default so the profile's avatar editor keeps its original styling. */
+	panel?: boolean;
 }
 
 interface CustomizationOptionProps {
@@ -67,9 +69,23 @@ interface CustomizationOptionProps {
 	label: string;
 	onPrevious: (category: keyof CustomizationOptions) => void;
 	onNext: (category: keyof CustomizationOptions) => void;
+	panel?: boolean;
 }
 
-function CustomizationOption({ category, label, onPrevious, onNext }: CustomizationOptionProps) {
+function CustomizationOption({ category, label, onPrevious, onNext, panel = false }: CustomizationOptionProps) {
+	if (panel) {
+		return (
+			<div className='flex items-center justify-between gap-2 rounded-md border border-border bg-background px-1.5 py-1'>
+				<Button type='button' variant='ghost' size='icon' className='h-7 w-7 shrink-0' onClick={() => onPrevious(category)} aria-label={`Previous ${label.toLowerCase()}`}>
+					<ChevronLeft className='h-3.5 w-3.5' aria-hidden />
+				</Button>
+				<span className='truncate text-center text-xs font-bold uppercase tracking-wide text-neutral-300'>{label}</span>
+				<Button type='button' variant='ghost' size='icon' className='h-7 w-7 shrink-0' onClick={() => onNext(category)} aria-label={`Next ${label.toLowerCase()}`}>
+					<ChevronRight className='h-3.5 w-3.5' aria-hidden />
+				</Button>
+			</div>
+		);
+	}
 	return (
 		<div className='flex items-center justify-between gap-2 border-b border-border py-2 last:border-b-0'>
 			<span className='text-xs font-bold uppercase tracking-wide text-neutral-400'>{label}</span>
@@ -85,7 +101,7 @@ function CustomizationOption({ category, label, onPrevious, onNext }: Customizat
 	);
 }
 
-export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps) {
+export function AvatarStep({ previousStep, nextStep, loading, panel = false }: AvatarStepProps) {
 	const [customization, setCustomization] = useState<CustomizationOptions>({
 		mouth: 0,
 		top: 0,
@@ -143,42 +159,50 @@ export function AvatarStep({ previousStep, nextStep, loading }: AvatarStepProps)
 		nextStep(blob);
 	};
 
+	const variant = panel ? 'panel' : 'legacy';
+
 	return (
 		<div className='flex flex-1 flex-col px-6 py-10 sm:px-12'>
-			<StepHeading title='Make your own avatar' description='Step through each feature with the arrows.' />
+			<StepHeading variant={variant} title='Make your own avatar' description='Step through each feature with the arrows.' />
 
 			<div className='flex flex-col items-center gap-6 sm:flex-row sm:items-start'>
-				<div className='flex h-[120px] w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-black/40'>
+				<div
+					className={
+						panel
+							? 'flex h-[132px] w-[132px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-zinc-700 bg-background'
+							: 'flex h-[120px] w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-black/40'
+					}
+				>
 					{avatarSVG ? (
-						<Image src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`} alt='Avatar preview' width={120} height={120} />
+						<Image src={`data:image/svg+xml;utf8,${encodeURIComponent(avatarSVG)}`} alt='Avatar preview' width={panel ? 132 : 120} height={panel ? 132 : 120} />
 					) : (
 						<div role='status' aria-label='Loading avatar preview' className='h-full w-full animate-pulse bg-neutral-900' />
 					)}
 				</div>
 
 				<ScrollArea className='h-[220px] w-full'>
-					<div className='grid grid-cols-1 gap-x-6 pr-3 sm:grid-cols-2'>
-						<div className='flex flex-col'>
-							<CustomizationOption category='skinColor' label='Skin color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='eyes' label='Eyes' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='eyebrows' label='Eyebrows' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='mouth' label='Mouth' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='facialHair' label='Facial hair' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='facialHairColor' label='Facial hair color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+					<div className={panel ? 'grid grid-cols-1 gap-2 pr-3 sm:grid-cols-2' : 'grid grid-cols-1 gap-x-6 pr-3 sm:grid-cols-2'}>
+						<div className={panel ? 'flex flex-col gap-2' : 'flex flex-col'}>
+							<CustomizationOption panel={panel} category='skinColor' label='Skin color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='eyes' label='Eyes' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='eyebrows' label='Eyebrows' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='mouth' label='Mouth' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='facialHair' label='Facial hair' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='facialHairColor' label='Facial hair color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
 						</div>
-						<div className='flex flex-col'>
-							<CustomizationOption category='top' label='Top' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='hairColor' label='Hair color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='clothing' label='Clothing' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='clothesColor' label='Clothes color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='accessories' label='Accessories' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
-							<CustomizationOption category='accessoryColor' label='Accessory color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+						<div className={panel ? 'flex flex-col gap-2' : 'flex flex-col'}>
+							<CustomizationOption panel={panel} category='top' label='Top' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='hairColor' label='Hair color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='clothing' label='Clothing' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='clothesColor' label='Clothes color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='accessories' label='Accessories' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
+							<CustomizationOption panel={panel} category='accessoryColor' label='Accessory color' onPrevious={handleGoToPreviousOption} onNext={handleNextOption} />
 						</div>
 					</div>
 				</ScrollArea>
 			</div>
 
-			<StepFooter onPrevious={previousStep} onNext={handleContinue} nextDisabled={!avatarSVG} loading={loading} />
+			<StepFooter variant={variant} onPrevious={previousStep} onNext={handleContinue} nextDisabled={!avatarSVG} loading={loading} />
 		</div>
 	);
 }

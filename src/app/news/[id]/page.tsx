@@ -104,7 +104,7 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 	const externalLink = post.link && /^https?:\/\//.test(post.link) ? post.link : null;
 
 	return (
-		<article className='mx-auto my-8 w-full max-w-3xl px-4'>
+		<article className='mx-auto my-8 w-full max-w-4xl px-4'>
 			<div className='flex items-center justify-between gap-4'>
 				<Link
 					href='/news'
@@ -121,9 +121,10 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 				)}
 			</div>
 
-			<header className='mt-6'>
-				<h1 className='text-balance text-3xl font-bold leading-tight tracking-tight md:text-4xl'>{post.title}</h1>
-				<div className='mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'>
+			<header className='mt-8'>
+				<p className='mb-3 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>News</p>
+				<h1 className='text-balance text-3xl font-black uppercase leading-tight tracking-wide md:text-5xl'>{post.title}</h1>
+				<div className='mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm'>
 					<NewsAuthor author={post.author} size='md' />
 					<span aria-hidden className='text-neutral-600'>
 						·
@@ -133,39 +134,41 @@ export default async function NewsPostPage({ params }: NewsPostPageProps) {
 			</header>
 
 			{post.imageUrl && (
-				<div className='relative mt-6 aspect-[16/9] w-full overflow-hidden rounded-md border border-border bg-neutral-900'>
-					<Image src={post.imageUrl} alt='' fill priority sizes='(max-width: 768px) 100vw, 768px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
+				<div className='relative mt-8 aspect-[16/9] w-full overflow-hidden rounded-md border border-border bg-neutral-900'>
+					<Image src={post.imageUrl} alt='' fill priority sizes='(max-width: 896px) 100vw, 896px' unoptimized={!isOptimizable(post.imageUrl)} className='object-cover' />
 				</div>
 			)}
 
-			<div className='prose prose-invert mt-8 max-w-[70ch] prose-headings:font-bold prose-a:text-foreground prose-a:underline-offset-4 prose-code:before:content-none prose-code:after:content-none'>
-				{hasBody ? (
-					<EditorOutput content={post.content} />
-				) : (
-					<>
-						{/* Legacy posts: the blurb is sanitized rich text (sanitizeRichText on write). */}
-						<div dangerouslySetInnerHTML={{ __html: post.blurb }} />
-						{externalLink && (
-							<p>
-								<a href={externalLink} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1.5'>
-									Read the full announcement
-									<ExternalLink aria-hidden className='h-4 w-4' />
-									<span className='sr-only'>(opens in a new tab)</span>
-								</a>
-							</p>
-						)}
-						{!externalLink && post.link && (
-							<p>
-								<Link href={post.link}>Read more</Link>
-							</p>
-						)}
-					</>
-				)}
-			</div>
+			<div className='mx-auto max-w-[66ch]'>
+				<div className='prose prose-invert mt-10 max-w-none text-[15.5px] leading-[1.75] prose-headings:font-black prose-headings:uppercase prose-headings:tracking-wide prose-a:text-foreground prose-a:underline-offset-4 prose-code:before:content-none prose-code:after:content-none'>
+					{hasBody ? (
+						<EditorOutput content={post.content} />
+					) : (
+						<>
+							{/* Legacy posts: the blurb is sanitized rich text (sanitizeRichText on write). */}
+							<div dangerouslySetInnerHTML={{ __html: post.blurb }} />
+							{externalLink && (
+								<p>
+									<a href={externalLink} target='_blank' rel='noopener noreferrer' className='inline-flex items-center gap-1.5'>
+										Read the full announcement
+										<ExternalLink aria-hidden className='h-4 w-4' />
+										<span className='sr-only'>(opens in a new tab)</span>
+									</a>
+								</p>
+							)}
+							{!externalLink && post.link && (
+								<p>
+									<Link href={post.link}>Read more</Link>
+								</p>
+							)}
+						</>
+					)}
+				</div>
 
-			<Suspense fallback={<CommentsSkeleton />}>
-				<CommentsSection postId={post.id} comments={comments} viewer={session ? { id: session.user.id, canModerate: canManage } : null} />
-			</Suspense>
+				<Suspense fallback={<CommentsSkeleton />}>
+					<CommentsSection postId={post.id} comments={comments} viewer={session ? { id: session.user.id, canModerate: canManage } : null} />
+				</Suspense>
+			</div>
 		</article>
 	);
 }

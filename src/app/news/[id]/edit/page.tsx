@@ -26,8 +26,7 @@ export default async function EditNewsPostPage({ params }: EditNewsPostPageProps
 	if (!post) notFound();
 
 	return (
-		<div className='mx-auto my-8 w-full max-w-4xl px-4'>
-			<h1 className='mb-6 text-2xl font-bold'>Edit post</h1>
+		<div className='mx-auto my-8 w-full max-w-6xl px-4'>
 			<Editor post={post} />
 		</div>
 	);

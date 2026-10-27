@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LinkPendingBar } from './LinkPending';
 import type { Game } from '@prisma/client';
 import { GAME_META, gameParam } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
@@ -43,11 +44,12 @@ export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
 								href={`${t.path}?game=${q}`}
 								aria-current={isActive ? 'page' : undefined}
 								className={cn(
-									'flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium transition-all duration-100 active:scale-[0.97] active:opacity-70',
+									'relative flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium transition-all duration-100 active:scale-[0.97] active:opacity-70',
 									isActive ? 'border-white text-white' : 'text-neutral-400 hover:text-white',
 								)}
 							>
 								{t.label}
+								<LinkPendingBar className='inset-x-0' />
 							</Link>
 						);
 					})}

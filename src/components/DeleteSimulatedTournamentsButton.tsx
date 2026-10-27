@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 
 interface DevToolDialogProps {
 	/** When provided the dialog is controlled and no trigger button is rendered (used from the admin "Dev tools" menu). */
@@ -60,14 +60,15 @@ export function DeleteSimulatedTournamentsButton({ open, onOpenChange }: DevTool
 					<Button variant='outline'>Delete simulated tournaments</Button>
 				</DialogTrigger>
 			)}
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Delete all simulated tournaments?</DialogTitle>
-					<DialogDescription>
+			<DialogContent panel className='max-w-md'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Dev tools</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Delete all simulated tournaments?</DialogTitle>
+					<DialogDescription className='pt-1 leading-relaxed'>
 						This permanently deletes every tournament created by Simulate Tournament, along with their teams and fake players. Real tournaments and teams are not affected.
 					</DialogDescription>
 				</DialogHeader>
-				<DialogFooter className='flex justify-end gap-2'>
+				<DialogFooter bar>
 					<DialogClose asChild>
 						<Button variant='outline'>Cancel</Button>
 					</DialogClose>

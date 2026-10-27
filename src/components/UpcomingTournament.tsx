@@ -2,6 +2,7 @@ import { formatMoney } from '@/lib/helpers/format-money';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import Image from 'next/image';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { GameTag } from '@/components/games/GameMark';
 import { isOptimizable } from '@/lib/image-hosts';
 
@@ -71,6 +72,7 @@ export function UpcomingTournament({ id, name, startDate, bannerUrl, prizePool, 
 					</div>
 				</dl>
 			</div>
+			<LinkPendingVeil />
 		</Link>
 	);
 }

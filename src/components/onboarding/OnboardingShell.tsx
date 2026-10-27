@@ -35,11 +35,11 @@ export function OnboardingShell({ steps, currentStep, completedSteps, children }
 
 	return (
 		<DialogPortal>
-			<DialogOverlay />
+			<DialogOverlay className='bg-black/75 backdrop-blur-sm' />
 			<DialogPrimitive.Content
 				onInteractOutside={(e) => e.preventDefault()}
 				onEscapeKeyDown={(e) => e.preventDefault()}
-				className='stage-grid fixed left-1/2 top-1/2 z-50 flex h-[min(680px,90vh)] w-[calc(100%-2rem)] max-w-[880px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-border shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:flex-row'
+				className='fixed left-1/2 top-1/2 z-50 flex h-[min(680px,90vh)] w-[calc(100%-2rem)] max-w-[880px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-2xl duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:flex-row'
 			>
 				<DialogTitle className='sr-only'>Set up your account</DialogTitle>
 				<DialogDescription className='sr-only'>
@@ -47,9 +47,10 @@ export function OnboardingShell({ steps, currentStep, completedSteps, children }
 				</DialogDescription>
 
 				{/* Desktop rail: the full sequence, with the signal chain connecting each step. */}
-				<aside className='hidden w-[240px] shrink-0 flex-col border-r border-border bg-black/40 px-6 py-8 sm:flex'>
-					<span className='text-xs font-bold uppercase tracking-[0.2em] text-neutral-500'>Account setup</span>
-					<ol aria-label='Setup steps' className='mt-6 flex flex-1 flex-col'>
+				<aside className='hidden w-[240px] shrink-0 flex-col border-r border-border bg-white/[0.02] px-6 py-8 sm:flex'>
+					<span className='text-xs font-bold uppercase tracking-[0.2em] text-neutral-400'>Setup</span>
+					<p className='mt-2 text-xl font-black uppercase leading-tight tracking-wide text-white'>Set up your account</p>
+					<ol aria-label='Setup steps' className='mt-7 flex flex-1 flex-col'>
 						{steps.map((step, i) => {
 							const isCurrent = step.number === currentStep;
 							const isDone = completedSteps.includes(step.number) && !isCurrent;

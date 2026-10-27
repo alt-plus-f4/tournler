@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -127,12 +128,13 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 	if (isConfirmingDelete && post) {
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent className='sm:max-w-[440px]'>
-					<DialogHeader>
-						<DialogTitle>Delete &quot;{post.title}&quot;?</DialogTitle>
-						<DialogDescription>This removes the post and its homepage placement. This can&apos;t be undone.</DialogDescription>
+				<DialogContent panel className='sm:max-w-[460px]'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete &quot;{post.title}&quot;?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>This removes the post and its homepage placement. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
@@ -147,13 +149,14 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[480px]'>
-				<DialogHeader>
-					<DialogTitle>{isCreating ? 'Create News Post' : 'Edit News Post'}</DialogTitle>
-					<DialogDescription>Announcements shown on the homepage when featured.</DialogDescription>
+			<DialogContent panel className='max-h-[90vh] overflow-y-auto sm:max-w-[600px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Admin</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>{isCreating ? 'Create News Post' : 'Edit News Post'}</DialogTitle>
+					<DialogDescription className='pt-1'>Announcements shown on the homepage when featured.</DialogDescription>
 				</DialogHeader>
 
-				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-3 py-2.5'>
+				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-background px-3 py-2.5'>
 					<p className='text-sm text-muted-foreground'>
 						{isCreating ? 'Writing a full article? Use the post editor.' : post.content ? 'This post has a full article body.' : 'Add a full article body in the post editor.'}
 					</p>
@@ -163,19 +166,25 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					</Link>
 				</div>
 
-				<form onSubmit={handleSubmit} className='space-y-5'>
+				<form onSubmit={handleSubmit} className='grid gap-5'>
 					<div className='space-y-2'>
-						<Label htmlFor='news-title'>Title</Label>
+						<Label htmlFor='news-title' className={fieldLabel}>
+							Title
+						</Label>
 						<Input id='news-title' value={title} onChange={(e) => setTitle(e.target.value)} placeholder='New season kicks off next week' required />
 					</div>
 
 					<div className='space-y-2'>
-						<Label id='news-blurb-label'>Blurb</Label>
+						<Label id='news-blurb-label' className={fieldLabel}>
+							Blurb
+						</Label>
 						<RichTextEditor labelId='news-blurb-label' value={blurb} onChange={setBlurb} placeholder='Short summary shown on the card' />
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='news-image-file'>Image</Label>
+						<Label htmlFor='news-image-file' className={fieldLabel}>
+							Image
+						</Label>
 						{(imagePreview ?? imageUrl) && (
 							<div className='relative h-32 w-full max-w-xs overflow-hidden rounded-md border border-border'>
 								{/* A freshly picked file is a local blob: preview, which the optimizer can't fetch. */}
@@ -199,7 +208,9 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='news-link'>Link (optional)</Label>
+						<Label htmlFor='news-link' className={fieldLabel}>
+							Link (optional)
+						</Label>
 						<Input id='news-link' value={link} onChange={(e) => setLink(e.target.value)} placeholder='https://...' />
 						{!isCreating && !!post.content && <p className='text-xs text-muted-foreground'>The homepage card opens the article on /news, so this link isn&apos;t used.</p>}
 					</div>
@@ -210,16 +221,16 @@ export default function EditNewsDialog({ post, isOpen, onClose, onSave, onDelete
 							<span className='text-sm'>Featured on homepage</span>
 						</label>
 						<div className='flex items-center gap-2'>
-							<Label htmlFor='news-order' className='text-sm text-muted-foreground shrink-0'>
+							<Label htmlFor='news-order' className={`${fieldLabel} shrink-0`}>
 								Order
 							</Label>
 							<Input id='news-order' type='number' value={featuredOrder} onChange={(e) => setFeaturedOrder(e.target.value)} className='h-9 w-20' placeholder='0' />
 						</div>
 					</div>
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar className='flex-wrap'>
 						{!isCreating && onDelete && (
-							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+							<Button type='button' variant='destructive' className='sm:mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete
 							</Button>
 						)}

@@ -65,7 +65,11 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 
 	function completeSuccessfulInviteConfirmation(userId: string) {
 		// The invite API route sends the Convex notification server-side.
-		setLocalInvitedUserIds((prev) => [...prev, userId]);
+		setLocalInvitedUserIds((prev) => (prev.includes(userId) ? prev : [...prev, userId]));
+	}
+
+	function undoInvite(userId: string) {
+		setLocalInvitedUserIds((prev) => prev.filter((id) => id !== userId));
 	}
 
 	function openInviteConfirmation(user: ReducedUser) {
@@ -77,6 +81,8 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 				user={user}
 				teamId={teamId}
 				completeSuccessfulInviteConfirmation={() => completeSuccessfulInviteConfirmation(user.id)}
+				onInviteStart={() => completeSuccessfulInviteConfirmation(user.id)}
+				onInviteFailed={() => undoInvite(user.id)}
 				onOpenChange={(isOpen) => {
 					if (!isOpen) {
 						setDialog(undefined);
@@ -91,24 +97,22 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 	function commandItemProfile(user: ReducedUser, isInvited: boolean = false) {
 		return (
 			<>
-				<div className='mr-2'>
-					<Avatar>
-						{user.image && <AvatarImage className='w-12 h-12' src={user.image} alt='' />}
-						<AvatarFallback>{user.name?.charAt(0) ?? 'X'}</AvatarFallback>
-					</Avatar>
+				<Avatar className='relative mr-3 flex h-8 w-8 shrink-0 overflow-hidden rounded-full bg-muted'>
+					{user.image && <AvatarImage className='h-full w-full object-cover' src={user.image} alt='' />}
+					<AvatarFallback className='flex h-full w-full items-center justify-center text-xs font-semibold'>{user.name?.charAt(0) ?? 'X'}</AvatarFallback>
+				</Avatar>
+				<div className='min-w-0 flex-1'>
+					<p className='truncate font-semibold'>{user.name}</p>
+					<p className='truncate text-xs text-muted-foreground'>{user.email}</p>
 				</div>
-				<div>
-					<p className='font-semibold'>{user.name}</p>
-					<p className='text-sm text-muted-foreground'>{user.email}</p>
-					{isInvited && <p className='text-sm text-signal-ready-text'>Invited</p>}
-				</div>
+				{isInvited && <span className='ml-3 shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-signal-ready-text'>Invited</span>}
 			</>
 		);
 	}
 
 	return (
 		<>
-			<CommandDialog open={isOpen} onOpenChange={setIsOpen}>
+			<CommandDialog open={isOpen} onOpenChange={setIsOpen} shouldFilter={false}>
 				<CommandInput placeholder={`Search players without a ${GAME_META[game].short} team…`} value={query} onValueChange={setQuery} />
 				<CommandList>
 					{loading ? (
@@ -125,7 +129,7 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 									{allUsers.map((user) => {
 										const isInvited = invitedUserIds.includes(user.id);
 										return (
-											<CommandItem className='cursor-pointer' key={user.id} onSelect={() => !isInvited && openInviteConfirmation(user)} disabled={isInvited}>
+											<CommandItem className='cursor-pointer rounded-md px-3' key={user.id} onSelect={() => !isInvited && openInviteConfirmation(user)} disabled={isInvited}>
 												{commandItemProfile(user, isInvited)}
 											</CommandItem>
 										);
@@ -135,6 +139,7 @@ export default function UsersSearchPalette({ open: isOpen, onOpenChange: setIsOp
 						</>
 					)}
 				</CommandList>
+				<div className='border-t border-border px-4 py-2.5 text-xs text-muted-foreground'>↑↓ to move · Enter to invite · Esc to close</div>
 			</CommandDialog>
 
 			{dialog}

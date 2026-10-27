@@ -11,6 +11,7 @@ import { BanStatus, BanUserDialog } from '@/components/admin/BanUserDialog';
 import { adminTable as t, formatAdminDate } from '@/components/admin/table-styles';
 import { isOptimizable } from '@/lib/image-hosts';
 import { cn } from '@/lib/utils';
+import { AdminPage, AdminHeader, AdminEyebrow, StatusPill, segmentedGroup, segmentedButton } from '@/components/admin/AdminPage';
 
 type Person = { id: string; name: string | null; image: string | null; role: string };
 type SearchResult = Person & { ban: { reason: string; expiresAt: string | null } | null };
@@ -80,19 +81,15 @@ export default function BansClient() {
 	};
 
 	return (
-		<div className='mx-4 mb-12 mt-12 max-w-6xl space-y-8 md:mx-12'>
-			<div>
-				<h1 className='mb-1 text-2xl font-bold'>Bans</h1>
-				<p className='max-w-prose text-sm text-muted-foreground'>
-					A banned player can still browse, but can&apos;t post, comment, manage teams, register for tournaments or play until the ban ends or is lifted. Staff can only be banned by an admin, and
-					admins can&apos;t be banned.
-				</p>
-			</div>
+		<AdminPage className='space-y-8'>
+			<AdminHeader
+				className='mb-0'
+				title='Bans'
+				subtitle="A banned player can still browse, but can't post, comment, manage teams, register for tournaments or play until the ban ends or is lifted. Staff can only be banned by an admin, and admins can't be banned."
+			/>
 
 			<section aria-labelledby='find-heading' className='space-y-3'>
-				<h2 id='find-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
-					Ban a player
-				</h2>
+				<AdminEyebrow id='find-heading'>Ban a player</AdminEyebrow>
 				<div className='max-w-sm space-y-1.5'>
 					<Label htmlFor={searchId}>Find by name</Label>
 					<div className='relative'>
@@ -101,7 +98,7 @@ export default function BansClient() {
 					</div>
 				</div>
 				{results && (
-					<ul className='max-w-2xl divide-y divide-border rounded-md border border-border' aria-live='polite'>
+					<ul className='max-w-2xl divide-y divide-border overflow-hidden rounded-lg border border-border bg-card' aria-live='polite'>
 						{results.length === 0 ? (
 							<li className='px-4 py-3 text-sm text-muted-foreground'>No players match &ldquo;{query.trim()}&rdquo;.</li>
 						) : (
@@ -121,10 +118,8 @@ export default function BansClient() {
 
 			<section aria-labelledby='list-heading' className='space-y-3'>
 				<div className='flex flex-wrap items-center justify-between gap-3'>
-					<h2 id='list-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
-						{status === 'active' ? 'Active bans' : 'Ban history'}
-					</h2>
-					<div role='group' aria-label='Show' className='inline-flex rounded-md border border-border p-0.5'>
+					<AdminEyebrow id='list-heading'>{status === 'active' ? 'Active bans' : 'Ban history'}</AdminEyebrow>
+					<div role='group' aria-label='Show' className={segmentedGroup}>
 						{(['active', 'all'] as const).map((s) => (
 							<button
 								key={s}
@@ -134,10 +129,7 @@ export default function BansClient() {
 									setStatus(s);
 									setPage(1);
 								}}
-								className={cn(
-									'h-8 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-									status === s ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground',
-								)}
+								className={segmentedButton(status === s)}
 							>
 								{s === 'active' ? 'Active' : 'All history'}
 							</button>
@@ -196,9 +188,9 @@ export default function BansClient() {
 											{b.active ? (
 												<BanStatus active expiresAt={b.expiresAt} />
 											) : b.liftedAt ? (
-												<span className='text-xs text-muted-foreground'>Lifted{b.liftedBy?.name ? ` by ${b.liftedBy.name}` : ''}</span>
+												<StatusPill tone='line'>Lifted{b.liftedBy?.name ? ` by ${b.liftedBy.name}` : ''}</StatusPill>
 											) : (
-												<span className='text-xs text-muted-foreground'>Expired</span>
+												<StatusPill tone='line'>Expired</StatusPill>
 											)}
 										</td>
 										<td className={cn(t.td, 'text-right')}>{b.active && <BanUserDialog user={b.user} ban={{ reason: b.reason, expiresAt: b.expiresAt }} onChanged={refresh} />}</td>
@@ -210,7 +202,7 @@ export default function BansClient() {
 				</div>
 				{totalPages > 1 && <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />}
 			</section>
-		</div>
+		</AdminPage>
 	);
 }
 

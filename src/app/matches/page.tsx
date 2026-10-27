@@ -19,6 +19,8 @@ export const dynamic = 'force-dynamic';
 
 const MATCHES_PER_PAGE = 20;
 
+const GAME_EYEBROW: Record<Game, string> = { CS2: 'Counter-Strike 2', LOL: 'League of Legends' };
+
 type SearchParams = Promise<{ status?: string | string[]; tournament?: string | string[]; page?: string | string[]; game?: string | string[] }>;
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
@@ -99,16 +101,12 @@ export function MatchesSkeleton() {
 		<div role='status' aria-busy='true'>
 			<span className='sr-only'>Loading matches…</span>
 			<div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between' aria-hidden>
-				<div className='flex flex-wrap gap-2'>
-					{[44, 48, 76, 88].map((w) => (
-						<Skeleton key={w} className='h-9 rounded-md bg-neutral-900' style={{ width: w }} />
-					))}
-				</div>
+				<Skeleton className='h-10 w-full rounded-md bg-neutral-900 sm:w-80' />
 				<Skeleton className='h-10 w-full rounded-md bg-neutral-900 sm:w-56' />
 			</div>
-			<div className='space-y-2' aria-hidden>
+			<div className='overflow-hidden rounded-md border border-border' aria-hidden>
 				{Array.from({ length: 6 }).map((_, i) => (
-					<Skeleton key={i} className='h-14 w-full bg-neutral-900' />
+					<Skeleton key={i} className='h-[3.75rem] w-full rounded-none border-b border-border bg-neutral-900' />
 				))}
 			</div>
 			{/* Pagination row */}
@@ -133,8 +131,11 @@ export default async function MatchesPage({ searchParams }: { searchParams: Sear
 			<HubPageGlow game={game} />
 			<HubSubnav game={game} active='matches' />
 			<div className='mx-auto my-8 w-full px-4 sm:w-[78%] sm:px-0'>
-				<div className='mb-6 flex flex-wrap items-center justify-between gap-3'>
-					<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
+				<div className='mb-8 flex flex-wrap items-end justify-between gap-3'>
+					<div>
+						<p className='mb-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>{GAME_EYEBROW[game]}</p>
+						<h1 className='text-3xl font-black uppercase tracking-wide md:text-5xl'>Matches</h1>
+					</div>
 					<Suspense fallback={null}>
 						<CreateMatchButtonGate />
 					</Suspense>
