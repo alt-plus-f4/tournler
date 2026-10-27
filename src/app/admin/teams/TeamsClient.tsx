@@ -12,6 +12,7 @@ import type { Game } from '@prisma/client';
 import { GameGlyph } from '@/components/games/GameMark';
 import { GAME_META, GAMES, gameParam } from '@/lib/games';
 import { cn } from '@/lib/utils';
+import { AdminPage, AdminHeader, AdminToolbar } from '@/components/admin/AdminPage';
 
 // Only fetched once an admin first opens a team.
 const EditTeamDialog = dynamic(() => import('@/components/EditTeamDialog'));
@@ -83,12 +84,12 @@ export default function TeamsClient() {
 	};
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<h1 className='mb-6 text-2xl font-bold'>Teams</h1>
+		<AdminPage>
+			<AdminHeader title='Teams' subtitle='Review rosters, verification and team details.' />
 			<Label htmlFor='admin-team-search' className='sr-only'>
 				Search teams
 			</Label>
-			<div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center'>
+			<AdminToolbar>
 				<Input id='admin-team-search' type='search' placeholder='Search by team name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='sm:max-w-sm' />
 				<div role='group' aria-label='Filter by game' className='flex flex-wrap gap-2'>
 					{([null, ...GAMES] as (Game | null)[]).map((g) => {
@@ -103,7 +104,7 @@ export default function TeamsClient() {
 									setPage(1);
 								}}
 								className={cn(
-									'inline-flex h-9 items-center gap-2 rounded-md border px-3 text-xs font-bold uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+									'inline-flex h-9 items-center gap-2 rounded-md border bg-card px-3 text-xs font-bold uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
 									active ? 'border-white bg-white/10 text-white' : 'border-border text-neutral-300 hover:border-neutral-500 hover:text-white',
 								)}
 							>
@@ -113,7 +114,7 @@ export default function TeamsClient() {
 						);
 					})}
 				</div>
-			</div>
+			</AdminToolbar>
 			<TeamTable
 				isLoading={isLoading && !hasLoadedOnce}
 				teams={teams}
@@ -125,6 +126,6 @@ export default function TeamsClient() {
 			/>
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
 			{editMounted && <EditTeamDialog team={editingTeam} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} onDelete={handleDelete} />}
-		</div>
+		</AdminPage>
 	);
 }

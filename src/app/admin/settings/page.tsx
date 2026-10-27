@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CircleCheck, CircleX } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AdminPage, AdminHeader, AdminPanel, StatusPill } from '@/components/admin/AdminPage';
 
 // Reports the server's runtime environment; must not be frozen at build time.
 export const dynamic = 'force-dynamic';
@@ -82,31 +82,36 @@ export default function AdminSettingsPage() {
 	const groups = buildStatusGroups();
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<h1 className='text-2xl font-bold mb-2'>System status</h1>
-			<p className='text-muted-foreground mb-6'>Read-only view of which integrations are configured for this environment. Values are never shown, only whether each is set.</p>
+		<AdminPage>
+			<AdminHeader title='System status' subtitle='Read-only view of which integrations are configured for this environment. Values are never shown, only whether each is set.' />
 
-			<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-				{groups.map((group) => (
-					<Card key={group.title}>
-						<CardHeader>
-							<CardTitle className='text-base'>{group.title}</CardTitle>
-							<p className='text-sm text-muted-foreground'>{group.description}</p>
-						</CardHeader>
-						<CardContent className='space-y-2'>
-							{group.checks.map((check) => (
-								<div key={check.label} className='flex items-center justify-between text-sm'>
-									<span className='font-mono'>{check.label}</span>
-									<span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', check.configured ? 'text-signal-ready-text' : 'text-signal-live')}>
-										{check.configured ? <CircleCheck aria-hidden size='1em' /> : <CircleX aria-hidden size='1em' />}
-										{check.configured ? 'Set' : 'Missing'}
-									</span>
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+				{groups.map((group) => {
+					const missing = group.checks.filter((c) => !c.configured).length;
+					return (
+						<AdminPanel key={group.title} className='flex flex-col gap-4'>
+							<div className='flex items-start justify-between gap-3'>
+								<div className='min-w-0'>
+									<h2 className='text-sm font-black uppercase tracking-wide'>{group.title}</h2>
+									<p className='mt-1 text-sm text-muted-foreground'>{group.description}</p>
 								</div>
-							))}
-						</CardContent>
-					</Card>
-				))}
+								<StatusPill tone={missing === 0 ? 'ready' : 'hold'}>{missing === 0 ? 'Ready' : `${missing} missing`}</StatusPill>
+							</div>
+							<div className='space-y-2 border-t border-border pt-4'>
+								{group.checks.map((check) => (
+									<div key={check.label} className='flex items-center justify-between gap-3 text-sm'>
+										<span className='min-w-0 truncate font-mono text-xs'>{check.label}</span>
+										<span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', check.configured ? 'text-signal-ready-text' : 'text-signal-live')}>
+											{check.configured ? <CircleCheck aria-hidden size='1em' /> : <CircleX aria-hidden size='1em' />}
+											{check.configured ? 'Set' : 'Missing'}
+										</span>
+									</div>
+								))}
+							</div>
+						</AdminPanel>
+					);
+				})}
 			</div>
-		</div>
+		</AdminPage>
 	);
 }

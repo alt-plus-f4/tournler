@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Match } from '@/types/types';
 import dynamic from 'next/dynamic';
 import { useLatched } from '@/lib/hooks/use-latched';
+import { AdminPage, AdminHeader, AdminToolbar } from '@/components/admin/AdminPage';
 
 // Both dialogs are only fetched once first opened.
 const EditMatchDialog = dynamic(() => import('@/components/EditMatchDialog'));
@@ -72,15 +73,14 @@ export default function MatchesClient() {
 	};
 
 	return (
-		<div className='mx-4 mt-12 max-w-6xl md:mx-12'>
-			<div className='mb-6 flex items-center justify-between gap-3'>
-				<h1 className='text-2xl font-bold'>Matches</h1>
-				<Button onClick={() => setIsCreateDialogOpen(true)}>Create match</Button>
-			</div>
-			<Label htmlFor='admin-match-search' className='sr-only'>
-				Search matches
-			</Label>
-			<Input id='admin-match-search' type='search' placeholder='Search by tournament or team name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='mb-4' />
+		<AdminPage>
+			<AdminHeader title='Matches' subtitle='Edit scores, schedules and status for every match.' actions={<Button onClick={() => setIsCreateDialogOpen(true)}>Create match</Button>} />
+			<AdminToolbar>
+				<Label htmlFor='admin-match-search' className='sr-only'>
+					Search matches
+				</Label>
+				<Input id='admin-match-search' type='search' placeholder='Search by tournament or team name…' value={searchInput} onChange={(e) => setSearchInput(e.target.value)} className='sm:max-w-sm' />
+			</AdminToolbar>
 			<MatchTable
 				isLoading={isLoading && !hasLoadedOnce}
 				matches={matches}
@@ -93,6 +93,6 @@ export default function MatchesClient() {
 			<Pagination totalPages={totalPages} currentPage={page} onPageChange={handlePageChange} />
 			{editMounted && <EditMatchDialog match={editingMatch} isOpen={isEditDialogOpen} onClose={() => setIsEditDialogOpen(false)} onSave={handleSave} />}
 			{createMounted && <CreateMatchDialog isOpen={isCreateDialogOpen} onClose={() => setIsCreateDialogOpen(false)} onCreate={handleCreate} />}
-		</div>
+		</AdminPage>
 	);
 }

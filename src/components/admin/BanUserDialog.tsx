@@ -4,7 +4,8 @@ import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ban, ShieldCheck } from 'lucide-react';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -115,33 +116,37 @@ export function BanUserDialog({ user, ban, onChanged, triggerProps, children }: 
 						))}
 				</Button>
 			</DialogTrigger>
-			<DialogContent className='max-w-md'>
+			<DialogContent panel className='max-w-lg'>
 				{ban ? (
 					<>
-						<DialogHeader>
-							<DialogTitle>Lift the ban on {name}?</DialogTitle>
-							<DialogDescription>They&apos;ll be able to post, join teams and play matches again right away.</DialogDescription>
+						<DialogHeader className='pr-8'>
+							<DialogEyebrow>Moderation</DialogEyebrow>
+							<DialogTitle className={dialogPanelTitle}>Lift the ban on {name}?</DialogTitle>
+							<DialogDescription className='pt-1'>They&apos;ll be able to post, join teams and play matches again right away.</DialogDescription>
 						</DialogHeader>
-						<dl className='space-y-2 rounded-md border border-border p-3 text-sm'>
+						<dl className='space-y-3 rounded-md border border-border bg-background p-3.5 text-sm'>
 							<div>
-								<dt className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Reason</dt>
+								<dt className='text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground'>Reason</dt>
 								<dd className='mt-1 whitespace-pre-wrap break-words'>{ban.reason}</dd>
 							</div>
 							<div>
-								<dt className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Ends</dt>
+								<dt className='text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground'>Ends</dt>
 								<dd className='mt-1 font-mono tabular-nums'>{formatBanEnd(ban.expiresAt)}</dd>
 							</div>
 						</dl>
 					</>
 				) : (
 					<>
-						<DialogHeader>
-							<DialogTitle>Ban {name}</DialogTitle>
-							<DialogDescription>They can still browse, but can&apos;t post, comment, join or manage teams, register for tournaments or play matches until the ban ends.</DialogDescription>
+						<DialogHeader className='pr-8'>
+							<DialogEyebrow>Moderation</DialogEyebrow>
+							<DialogTitle className={dialogPanelTitle}>Ban {name}</DialogTitle>
+							<DialogDescription className='pt-1 leading-relaxed'>
+								They can still browse, but can&apos;t post, comment, join or manage teams, register for tournaments or play matches until the ban ends.
+							</DialogDescription>
 						</DialogHeader>
 
-						<fieldset className='space-y-2'>
-							<legend className='text-sm font-medium'>Duration</legend>
+						<fieldset className='space-y-2.5'>
+							<legend className={fieldLabel}>Duration</legend>
 							<div role='radiogroup' className='grid grid-cols-3 gap-1.5 sm:grid-cols-5'>
 								{DURATIONS.map((d) => (
 									<label
@@ -168,7 +173,9 @@ export function BanUserDialog({ user, ban, onChanged, triggerProps, children }: 
 						</fieldset>
 
 						<div className='space-y-2'>
-							<Label htmlFor={reasonId}>Reason</Label>
+							<Label htmlFor={reasonId} className={fieldLabel}>
+								Reason
+							</Label>
 							<textarea
 								id={reasonId}
 								value={reason}
@@ -191,7 +198,7 @@ export function BanUserDialog({ user, ban, onChanged, triggerProps, children }: 
 					</p>
 				)}
 
-				<DialogFooter>
+				<DialogFooter bar>
 					<Button variant='outline' onClick={() => setOpen(false)} disabled={busy}>
 						Cancel
 					</Button>
