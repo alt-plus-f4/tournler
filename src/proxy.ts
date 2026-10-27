@@ -31,7 +31,24 @@ const API_RATE_LIMITS: { pattern: RegExp; limit: number; windowMs: number; label
 	{ pattern: /^\/api\//, limit: 180, windowMs: 60_000, label: 'api-default' },
 ];
 
+// Vercel's edge overwrites `x-forwarded-for` on every request reaching a Function/Proxy and does
+// not forward external IPs, specifically to prevent spoofing (see
+// https://vercel.com/docs/headers/request-headers#x-forwarded-for). `x-vercel-forwarded-for` is
+// Vercel's own, non-standard header carrying that same Vercel-computed value, documented as
+// identical to `x-forwarded-for` except that it is NOT subject to being overwritten again by an
+// extra proxy the app owner might place in front of Vercel (e.g. Cloudflare) — such a proxy could
+// append/rewrite the generic `x-forwarded-for` convention, but has no reason to know about or
+// tamper with this Vercel-specific header name. So prefer it first. Fall back to
+// `x-forwarded-for`/`x-real-ip` for local dev (`next dev`, no Vercel edge in front) where neither
+// Vercel header is present and the client-supplied value is the only thing we have — acceptable
+// here since rate limiting is best-effort, not a hard security boundary (see rate-limit.ts).
+//
+// This trust assumption is specific to running on Vercel and would NOT hold if this app were ever
+// self-hosted or placed behind a different/unknown reverse proxy; in that case `x-forwarded-for`
+// would need to be validated against a configured list of trusted proxy IPs instead.
 function clientIp(request: NextRequest): string {
+	const vercelForwardedFor = request.headers.get('x-vercel-forwarded-for');
+	if (vercelForwardedFor) return vercelForwardedFor.split(',')[0].trim();
 	const forwardedFor = request.headers.get('x-forwarded-for');
 	if (forwardedFor) return forwardedFor.split(',')[0].trim();
 	return request.headers.get('x-real-ip') ?? 'unknown';
