@@ -201,13 +201,18 @@ export const authOptions: NextAuthOptions = {
 								accessToken,
 							},
 						});
-					} else {
+					} else if (existingDiscordAccount.userId === user.id) {
 						await db.discordAccount.update({
 							where: { discordId },
 							data: {
-								userId: user.id,
 								accessToken,
 							},
+						});
+					} else {
+						console.error(`Discord account ${discordId} is already linked to a different user; refusing to reassign`, {
+							discordId,
+							existingUserId: existingDiscordAccount.userId,
+							incomingUserId: user.id,
 						});
 					}
 
