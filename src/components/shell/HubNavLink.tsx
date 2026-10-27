@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { LinkPendingBar } from './LinkPending';
 import { usePathname } from 'next/navigation';
 import type { Game } from '@prisma/client';
 import { GAME_FILTER_COOKIE, GAME_META, gameParam, parseGameParam } from '@/lib/games';
@@ -78,10 +79,11 @@ export function HubNavLink({ game, href, className, onNavigate }: { game: Game; 
 				onNavigate?.();
 			}}
 			aria-current={isActive ? 'page' : undefined}
-			className={cn(className, isActive && 'bg-white/10 text-white')}
+			className={cn('relative', className, isActive && 'bg-white/10 text-white')}
 		>
 			<GameGlyph game={game} className='h-[15px] w-[15px]' />
 			{game === 'CS2' ? GAME_META.CS2.short : GAME_META.LOL.label}
+			<LinkPendingBar />
 		</Link>
 	);
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { Button, type ButtonProps } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogEyebrow, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, dialogPanelTitle } from '@/components/ui/dialog';
 
 interface ConfirmActionProps {
 	trigger: ReactNode;
@@ -43,12 +43,13 @@ export function ConfirmAction({ trigger, title, description, confirmLabel = 'Con
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>{trigger}</DialogTrigger>
-			<DialogContent className='max-w-md rounded-md'>
-				<DialogHeader>
-					<DialogTitle>{title}</DialogTitle>
-					{description && <DialogDescription className='leading-relaxed'>{description}</DialogDescription>}
+			<DialogContent panel className='max-w-md sm:rounded-lg'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>{confirmVariant === 'destructive' ? 'Confirm' : 'Please confirm'}</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>{title}</DialogTitle>
+					{description && <DialogDescription className='pt-1 leading-relaxed'>{description}</DialogDescription>}
 				</DialogHeader>
-				<DialogFooter className='flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:space-x-0'>
+				<DialogFooter bar>
 					<DialogClose asChild>
 						<Button variant='outline' disabled={pending}>
 							{cancelLabel}

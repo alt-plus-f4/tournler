@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { getStartLabel } from '@/components/tournament-tabs/schedule';
 import { formatMoney } from '@/lib/helpers/format-money';
 import { GameTag } from '@/components/games/GameMark';
@@ -22,7 +23,7 @@ export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePo
 	return (
 		<Link
 			href={`/tournaments/${id}`}
-			className='group block overflow-hidden rounded-md border border-border bg-card transition-[transform,border-color] duration-200 hover:border-neutral-500 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+			className='group relative block overflow-hidden rounded-md border border-border bg-card transition-[transform,border-color] duration-200 hover:border-neutral-500 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 		>
 			<div className='relative h-32 w-full bg-neutral-900'>
 				<GameTag game={game} className='absolute right-2 top-2 z-10 bg-black/70' />
@@ -48,6 +49,7 @@ export function FeaturedTournamentCard({ id, name, startDate, bannerUrl, prizePo
 				</div>
 				<p className='truncate text-sm text-muted-foreground'>{location}</p>
 			</div>
+			<LinkPendingVeil />
 		</Link>
 	);
 }

@@ -2,7 +2,9 @@
 
 import type { RefObject } from 'react';
 import Link from 'next/link';
+import { LinkPendingBar } from '@/components/shell/LinkPending';
 import { usePathname } from 'next/navigation';
+import { ChevronRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { HUB_LINKS, NAV_LINKS } from '@/lib/nav-links';
 import { HubNavLink } from '@/components/shell/HubNavLink';
@@ -25,13 +27,13 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 			<SheetContent
 				id='burger-menu'
 				side='left'
-				className='w-72 bg-black p-0'
+				className='w-72 border-border bg-card p-0 sm:max-w-[300px]'
 				onCloseAutoFocus={(e) => {
 					e.preventDefault();
 					triggerRef.current?.focus();
 				}}
 			>
-				<SheetTitle className='px-6 pb-4 pt-6 text-xs font-bold uppercase tracking-widest text-neutral-400'>Menu</SheetTitle>
+				<SheetTitle className='px-6 pb-4 pt-6 text-xs font-bold uppercase tracking-[0.2em] text-neutral-400'>Menu</SheetTitle>
 				<nav aria-label='Main'>
 					<ul className='border-t border-border'>
 						{HUB_LINKS.map(({ game, href }) => (
@@ -40,7 +42,7 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 									game={game}
 									href={href}
 									onNavigate={() => onOpenChange(false)}
-									className='flex h-14 items-center gap-3 px-6 text-base font-medium text-neutral-300 transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none'
+									className='flex h-[60px] items-center gap-3 px-6 text-[15px] font-extrabold uppercase tracking-[0.08em] text-neutral-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:outline-none aria-[current=page]:shadow-[inset_3px_0_0_0_#fafafa]'
 								/>
 							</li>
 						))}
@@ -53,11 +55,13 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 										onClick={() => onOpenChange(false)}
 										aria-current={isActive ? 'page' : undefined}
 										className={cn(
-											'flex h-14 items-center px-6 text-base font-medium transition-colors hover:bg-white/5 focus-visible:bg-white/5 focus-visible:outline-none',
-											isActive ? 'text-white' : 'text-neutral-300',
+											'relative flex h-[60px] items-center justify-between px-6 text-[15px] font-extrabold uppercase tracking-[0.08em] transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:outline-none',
+											isActive ? 'text-white shadow-[inset_3px_0_0_0_#fafafa]' : 'text-neutral-400',
 										)}
 									>
 										{label}
+										<ChevronRight aria-hidden className='h-4 w-4 text-neutral-500' />
+										<LinkPendingBar className='inset-x-0' />
 									</Link>
 								</li>
 							);

@@ -66,30 +66,32 @@ export function UserNav() {
 					</div>
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent className='w-56' align='end' forceMount>
-				<DropdownMenuLabel className='font-normal'>
+			<DropdownMenuContent className='w-60 overflow-hidden rounded-lg border-border bg-card p-0 shadow-[0_24px_60px_-16px_#000]' align='end' forceMount>
+				<DropdownMenuLabel className='px-4 py-3.5 font-normal'>
 					<div className='flex flex-col space-y-1'>
-						<p className='text-sm font-medium leading-none'>{user.name}</p>
+						<p className='text-sm font-bold leading-none text-white'>{user.name}</p>
 						<p className='text-xs leading-none text-muted-foreground'>{user.email}</p>
 					</div>
 				</DropdownMenuLabel>
-				<DropdownMenuSeparator />
-				<DropdownMenuGroup>
-					<DropdownMenuItem asChild>
+				<DropdownMenuSeparator className='m-0 bg-border' />
+				<DropdownMenuGroup className='p-1'>
+					<DropdownMenuItem asChild className='gap-3 rounded-md px-3 py-2.5'>
 						<Link href={profileHref}>
 							<Users aria-hidden />
 							<span>Profile</span>
 						</Link>
 					</DropdownMenuItem>
-					<DropdownMenuItem asChild>
+					<DropdownMenuItem asChild className='gap-3 rounded-md px-3 py-2.5'>
 						<Link href='/teams'>
 							<UserPlus aria-hidden />
 							<span>New team</span>
 						</Link>
 					</DropdownMenuItem>
 				</DropdownMenuGroup>
-				<DropdownMenuSeparator />
-				<SignOut />
+				<DropdownMenuSeparator className='m-0 bg-border' />
+				<div className='p-1'>
+					<SignOut />
+				</div>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

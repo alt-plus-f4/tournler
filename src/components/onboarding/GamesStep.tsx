@@ -50,10 +50,10 @@ export function GamesStep({ initialGames, previousStep, nextStep, loading }: Gam
 							onClick={() => toggle(game)}
 							className={cn(
 								'flex w-full items-start gap-3 rounded-md border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-								selected ? 'border-white bg-white/[0.06]' : 'border-border hover:border-neutral-600 hover:bg-white/[0.02]',
+								selected ? 'border-white bg-white/[0.05]' : 'border-zinc-700 bg-background hover:border-zinc-500',
 							)}
 						>
-							<span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border bg-black', selected ? 'border-white' : 'border-border')}>
+							<span className={cn('mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-sm border bg-card', selected ? 'border-white' : 'border-border')}>
 								<GameGlyph game={game} className='h-4 w-4' />
 							</span>
 							<span className='min-w-0 flex-1'>
@@ -68,7 +68,7 @@ export function GamesStep({ initialGames, previousStep, nextStep, loading }: Gam
 				})}
 			</div>
 
-			<p className='mt-4 text-center text-xs font-medium uppercase tracking-wide text-neutral-500'>{nextHint(games)}</p>
+			<p className='mt-4 font-mono text-xs uppercase tracking-wide text-neutral-500'>{nextHint(games)}</p>
 
 			<StepFooter onPrevious={previousStep} onNext={() => nextStep(games)} nextDisabled={games.length === 0} loading={loading} />
 		</div>

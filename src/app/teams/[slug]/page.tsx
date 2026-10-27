@@ -142,7 +142,7 @@ export default async function CS2TeamPage({ params }: CS2TeamPageProps) {
 					</p>
 				</div>
 				<div className='ml-auto flex flex-row gap-2'>
-					<ShareButton label='Share team' compact />
+					<ShareButton label='Share team' size='default' compact />
 
 					{isUserMember && user && (
 						<LeaveTeamDialog teamId={team.id} userId={user.id}>

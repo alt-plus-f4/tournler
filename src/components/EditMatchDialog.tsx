@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel, sectionLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -80,36 +81,41 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[460px]'>
-				<DialogHeader>
-					<DialogTitle>Edit match</DialogTitle>
-					<DialogDescription className='flex items-center gap-2'>
+			<DialogContent panel className='max-h-[90vh] overflow-y-auto sm:max-w-[560px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Matches</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Edit match</DialogTitle>
+					<DialogDescription className='flex items-center gap-2 pt-1'>
 						<GameTag game={match.tournament?.game ?? 'CS2'} />
 						{match.tournament?.name}
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className='flex items-center justify-center gap-4 rounded-md border border-border py-4'>
+				<div className='flex items-center justify-center gap-4 rounded-md border border-border bg-background py-4'>
 					<span className='font-bold uppercase'>{match.teamA?.name ?? 'TBD'}</span>
 					<span className='text-sm text-muted-foreground'>vs</span>
 					<span className='font-bold uppercase'>{match.teamB?.name ?? 'TBD'}</span>
 				</div>
 
-				<form onSubmit={handleSubmit} className='space-y-5'>
+				<form onSubmit={handleSubmit} className='grid gap-5'>
 					<div className='space-y-2'>
-						<Label htmlFor='edit-match-date'>Match date</Label>
+						<Label htmlFor='edit-match-date' className={fieldLabel}>
+							Match date
+						</Label>
 						<Input id='edit-match-date' type='datetime-local' className='font-mono tabular-nums' value={matchDate} onChange={(e) => setMatchDate(e.target.value)} required />
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='edit-stream-url'>Stream link</Label>
+						<Label htmlFor='edit-stream-url' className={fieldLabel}>
+							Stream link
+						</Label>
 						<Input id='edit-stream-url' type='url' placeholder='https://twitch.tv/yourchannel' value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} />
 						<p className='text-xs text-muted-foreground'>Shown on the match page as a &quot;Watch live&quot; link while the match is LIVE. Leave blank to remove.</p>
 					</div>
 
 					{canEditResult ? (
-						<div className='space-y-3'>
-							<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>{isLol ? 'Record result' : 'Result override'}</p>
+						<div className='space-y-3 border-t border-border pt-5'>
+							<p className={sectionLabel}>{isLol ? 'Record result' : 'Result override'}</p>
 							<p className='text-sm text-muted-foreground'>
 								{isLol
 									? 'League matches are played in the League client, so nothing reports the score. Enter the games won and pick the winner to record the result and advance the bracket.'
@@ -117,16 +123,22 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 							</p>
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-2'>
-									<Label htmlFor='edit-score-a'>{match.teamA?.name} score</Label>
+									<Label htmlFor='edit-score-a' className={fieldLabel}>
+										{match.teamA?.name} score
+									</Label>
 									<Input id='edit-score-a' type='number' min={0} className='font-mono tabular-nums' value={scoreTeamA} onChange={(e) => setScoreTeamA(e.target.value)} />
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='edit-score-b'>{match.teamB?.name} score</Label>
+									<Label htmlFor='edit-score-b' className={fieldLabel}>
+										{match.teamB?.name} score
+									</Label>
 									<Input id='edit-score-b' type='number' min={0} className='font-mono tabular-nums' value={scoreTeamB} onChange={(e) => setScoreTeamB(e.target.value)} />
 								</div>
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-winner'>Winner</Label>
+								<Label htmlFor='edit-winner' className={fieldLabel}>
+									Winner
+								</Label>
 								<Select value={winnerId} onValueChange={setWinnerId}>
 									<SelectTrigger id='edit-winner'>
 										<SelectValue placeholder='Not decided yet' />
@@ -139,7 +151,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 							</div>
 							{match.status === 'COMPLETED' && (
 								<p className='rounded-md border border-border p-2 text-xs text-neutral-300'>
-									<span className='font-bold uppercase tracking-widest text-muted-foreground'>Completed · </span>
+									<span className='font-bold uppercase tracking-[0.2em] text-muted-foreground'>Completed · </span>
 									Changing the winner to a different team will be rejected to protect bracket integrity.
 								</p>
 							)}
@@ -148,7 +160,7 @@ export default function EditMatchDialog({ match, isOpen, onClose, onSave }: Edit
 						<p className='text-sm text-muted-foreground'>This match&apos;s teams aren&apos;t decided yet (waiting on a previous round) &mdash; only the date can be edited.</p>
 					)}
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar>
 						<Button type='button' variant='outline' onClick={onClose}>
 							Cancel
 						</Button>

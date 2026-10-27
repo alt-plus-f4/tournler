@@ -28,13 +28,14 @@ jest.mock('next/navigation', () => ({
 
 // Mock next/link
 jest.mock('next/link', () => {
-	return ({ children, href, ...rest }) => {
+	const Link = ({ children, href, ...rest }) => {
 		return (
 			<a href={href} {...rest}>
 				{children}
 			</a>
 		);
 	};
+	return { __esModule: true, default: Link, useLinkStatus: () => ({ pending: false }) };
 });
 
 // Suppress console errors during tests

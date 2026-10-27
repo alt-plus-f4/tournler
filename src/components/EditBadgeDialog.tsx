@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ImageUp, Loader2, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -140,12 +141,13 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 	if (isConfirmingDelete && badge) {
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent className='sm:max-w-[440px]'>
-					<DialogHeader>
-						<DialogTitle>Delete &quot;{badge.name}&quot;?</DialogTitle>
-						<DialogDescription>This revokes it from every player who currently holds it ({badge._count?.awards ?? 0}). This can&apos;t be undone.</DialogDescription>
+				<DialogContent panel className='sm:max-w-[460px]'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete &quot;{badge.name}&quot;?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>This revokes it from every player who currently holds it ({badge._count?.awards ?? 0}). This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
@@ -160,28 +162,33 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[480px]'>
-				<DialogHeader>
-					<DialogTitle>{isCreating ? 'Create Badge' : 'Edit Badge'}</DialogTitle>
-					<DialogDescription>Badges are awarded to individual players from the Users page.</DialogDescription>
+			<DialogContent panel className='max-h-[90vh] overflow-y-auto sm:max-w-[560px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Admin</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>{isCreating ? 'Create Badge' : 'Edit Badge'}</DialogTitle>
+					<DialogDescription className='pt-1'>Badges are awarded to individual players from the Users page.</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleSubmit} className='space-y-5'>
+				<form onSubmit={handleSubmit} className='grid gap-5'>
 					<div className='flex items-center gap-4'>
 						<TrophyIcon badge={{ name: name || 'Badge preview', icon, color, imageUrl }} size={64} fallback='tint' />
 						<div className='flex-1 space-y-2'>
-							<Label htmlFor='badge-name'>Name</Label>
+							<Label htmlFor='badge-name' className={fieldLabel}>
+								Name
+							</Label>
 							<Input id='badge-name' value={name} onChange={(e) => setName(e.target.value)} placeholder='Tournament Champion' required />
 						</div>
 					</div>
 
 					<div className='space-y-2'>
-						<Label htmlFor='badge-description'>Description</Label>
+						<Label htmlFor='badge-description' className={fieldLabel}>
+							Description
+						</Label>
 						<Input id='badge-description' value={description} onChange={(e) => setDescription(e.target.value)} placeholder='Won a Tournler tournament' />
 					</div>
 
 					<div className='space-y-2'>
-						<p id='badge-image-label' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+						<p id='badge-image-label' className={fieldLabel}>
 							Trophy image
 						</p>
 						<div className='flex flex-wrap items-center gap-2' role='group' aria-labelledby='badge-image-label'>
@@ -217,7 +224,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 					</div>
 
 					<div className='space-y-2'>
-						<p id='badge-icon-label' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+						<p id='badge-icon-label' className={fieldLabel}>
 							{imageUrl ? 'Fallback icon' : 'Icon'}
 						</p>
 						<div role='group' aria-labelledby='badge-icon-label' className='grid grid-cols-7 gap-2'>
@@ -236,15 +243,15 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						</div>
 					</div>
 
-					<div className='flex items-center gap-3'>
-						<Label htmlFor='badge-color' className='shrink-0'>
+					<div className='flex items-center gap-3 rounded-md border border-border bg-background p-3'>
+						<Label htmlFor='badge-color' className={`${fieldLabel} shrink-0`}>
 							Color
 						</Label>
 						<Input id='badge-color' type='color' value={color} onChange={(e) => setColor(e.target.value)} className='h-9 w-16 p-1' />
-						<span className='text-sm font-mono text-muted-foreground'>{color}</span>
+						<span className='font-mono text-sm tabular-nums text-muted-foreground'>{color}</span>
 					</div>
 
-					<label htmlFor='badge-overlay' className='flex items-center gap-3 rounded-md border border-border p-3 cursor-pointer'>
+					<label htmlFor='badge-overlay' className='flex cursor-pointer items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:border-zinc-600'>
 						<input id='badge-overlay' type='checkbox' checked={isOverlay} onChange={(e) => setIsOverlay(e.target.checked)} className='h-4 w-4 shrink-0 accent-white' />
 						<span className='text-sm'>
 							Show on avatar
@@ -252,9 +259,9 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						</span>
 					</label>
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar className='flex-wrap'>
 						{!isCreating && onDelete && (
-							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+							<Button type='button' variant='destructive' className='sm:mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete
 							</Button>
 						)}

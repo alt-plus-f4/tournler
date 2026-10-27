@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { GAME_META, GAMES } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
@@ -82,13 +83,16 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 					<Button variant='outline'>Simulate tournament</Button>
 				</DialogTrigger>
 			)}
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Simulate tournament</DialogTitle>
-					<DialogDescription>Generates fake teams, starts a tournament in the chosen format, and auto-plays every match with random results.</DialogDescription>
+			<DialogContent panel className='sm:max-w-md'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Dev tools</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Simulate tournament</DialogTitle>
+					<DialogDescription className='pt-1 leading-relaxed'>Generates fake teams, starts a tournament in the chosen format, and auto-plays every match with random results.</DialogDescription>
 				</DialogHeader>
-				<div className='space-y-2'>
-					<Label htmlFor='sim-game'>Game</Label>
+				<div className='grid gap-2'>
+					<Label htmlFor='sim-game' className={fieldLabel}>
+						Game
+					</Label>
 					<Select value={game} onValueChange={(v) => setGame(v as Game)}>
 						<SelectTrigger id='sim-game'>
 							<SelectValue placeholder='Select a game' />
@@ -105,10 +109,14 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 						</SelectContent>
 					</Select>
 
-					<Label htmlFor='sim-team-count'>Number of teams</Label>
+					<Label htmlFor='sim-team-count' className={`${fieldLabel} mt-2`}>
+						Number of teams
+					</Label>
 					<Input id='sim-team-count' type='number' min={2} max={64} className='font-mono tabular-nums' value={teamCount} onChange={(e) => setTeamCount(Number(e.target.value))} />
 
-					<Label htmlFor='sim-format'>Bracket format</Label>
+					<Label htmlFor='sim-format' className={`${fieldLabel} mt-2`}>
+						Bracket format
+					</Label>
 					<Select value={format} onValueChange={setFormat}>
 						<SelectTrigger id='sim-format'>
 							<SelectValue placeholder='Select a format' />
@@ -124,19 +132,21 @@ export function SimulateTournamentButton({ open, onOpenChange }: DevToolDialogPr
 
 					{format === 'SWISS' && (
 						<>
-							<Label htmlFor='sim-swiss-rounds'>Number of rounds</Label>
+							<Label htmlFor='sim-swiss-rounds' className={`${fieldLabel} mt-2`}>
+								Number of rounds
+							</Label>
 							<Input id='sim-swiss-rounds' type='number' min={1} className='font-mono tabular-nums' value={swissRounds} onChange={(e) => setSwissRounds(Number(e.target.value))} />
 						</>
 					)}
 				</div>
-				<div className='flex justify-end gap-2 pt-2'>
+				<DialogFooter bar>
 					<DialogClose asChild>
 						<Button variant='outline'>Cancel</Button>
 					</DialogClose>
 					<Button onClick={handleSimulate} isLoading={isSimulating}>
 						{isSimulating ? 'Simulating…' : 'Simulate'}
 					</Button>
-				</div>
+				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);

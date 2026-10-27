@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
-import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogClose, DialogHeader, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
 import { revalidateTournamentPage } from '@/lib/actions';
 
 interface JoinLeaveButtonProps {
@@ -119,14 +119,15 @@ export function JoinLeaveButton({ tournament, team, timeLeftToJoin, isFull = fal
 			</Button>
 
 			<Dialog open={isDialogOpen} onOpenChange={(open) => !submitting && setIsDialogOpen(open)}>
-				<DialogContent className='sm:max-w-sm'>
-					<DialogHeader>
-						<DialogTitle>{isInTournament ? 'Leave this tournament?' : 'Register your team?'}</DialogTitle>
-						<DialogDescription>
+				<DialogContent panel className='sm:max-w-md'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Tournament</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>{isInTournament ? 'Leave this tournament?' : 'Register your team?'}</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>
 							{isInTournament ? `${team.name} will be removed from ${tournament.name}. You can register again while slots are open.` : `${team.name} will be registered for ${tournament.name}.`}
 						</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
+					<DialogFooter bar>
 						<DialogClose asChild>
 							<Button variant='outline' disabled={submitting}>
 								Cancel

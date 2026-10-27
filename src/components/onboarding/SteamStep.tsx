@@ -56,7 +56,7 @@ export function SteamStep({ previousStep, nextStep }: SteamStepProps) {
 			<button
 				type='button'
 				onClick={handleSteamLogin}
-				className='flex w-full flex-col items-center gap-4 rounded-md border border-border bg-black/40 px-6 py-12 text-center transition-colors hover:border-neutral-600 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+				className='flex w-full flex-col items-center gap-4 rounded-md border border-dashed border-zinc-700 bg-background px-6 py-12 text-center transition-colors hover:border-neutral-600 hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 			>
 				<span className='flex h-20 w-20 items-center justify-center rounded-full border border-border'>
 					<SteamSymbolIcon aria-hidden className='h-10 w-10 text-white' />

@@ -117,8 +117,10 @@ export default function MatchPage() {
 		if (userLoaded && tab === 'admin' && !canManage) setTab('overview');
 	}, [userLoaded, tab, canManage, setTab]);
 
-	const withPending = async (key: string, request: () => Promise<Response>, failTitle: string, after?: () => void) => {
+	const withPending = async (key: string, request: () => Promise<Response>, failTitle: string, after?: () => void, optimistic?: () => void) => {
+		if (pendingSide !== null) return;
 		setPendingSide(key);
+		optimistic?.();
 		try {
 			const response = await request();
 			const payload = await response.json().catch(() => null);
@@ -127,6 +129,8 @@ export default function MatchPage() {
 			after?.();
 		} catch (e) {
 			console.error(failTitle, e);
+			// Undo the optimistic edit by refetching the server's truth.
+			if (optimistic) void mutate();
 			toast({ variant: 'destructive', title: failTitle, description: e instanceof Error ? e.message : undefined });
 		} finally {
 			setPendingSide(null);
@@ -143,7 +147,18 @@ export default function MatchPage() {
 			'Could not join',
 			() => mutateDraft(),
 		);
-	const leaveMatch = () => withPending('LEAVE', () => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }), 'Could not leave match');
+	// Leaving is predictable, so the viewer's slot opens up immediately; a failure refetches the real roster.
+	const leaveMatch = () =>
+		withPending(
+			'LEAVE',
+			() => fetch(`/api/matches/${matchId}/join`, { method: 'DELETE' }),
+			'Could not leave match',
+			undefined,
+			() => {
+				if (!currentUserId) return;
+				void mutate((current) => (current ? { ...current, participants: current.participants.filter((p) => p.userId !== currentUserId) } : current), { revalidate: false });
+			},
+		);
 
 	const deleteMatch = async () => {
 		// Confirmed in the Admin tab's dialog before this runs.

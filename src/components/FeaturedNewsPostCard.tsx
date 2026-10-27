@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { LinkPendingVeil } from '@/components/shell/LinkPending';
 import { formatDate } from '@/lib/helpers/format-date';
 
 const FALLBACK_IMAGE = '/info-image.png';
@@ -17,7 +18,7 @@ interface FeaturedNewsPostCardProps {
 }
 
 const LINK_CLASS =
-	'group block rounded-md transition-transform duration-200 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
+	'group relative block rounded-md transition-transform duration-200 motion-safe:hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 export function FeaturedNewsPostCard({ id, hasContent, title, blurb, imageUrl, link: externalLink, publishedAt }: FeaturedNewsPostCardProps) {
 	// Our own post page handles every post (legacy ones show their blurb); only a legacy post with an
@@ -53,6 +54,7 @@ export function FeaturedNewsPostCard({ id, hasContent, title, blurb, imageUrl, l
 	return (
 		<Link href={link} className={LINK_CLASS}>
 			{content}
+			<LinkPendingVeil />
 		</Link>
 	);
 }

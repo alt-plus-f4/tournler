@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel, sectionLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -156,15 +157,16 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 	if (isConfirmingDelete) {
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent className='sm:max-w-[440px]'>
-					<DialogHeader>
-						<DialogTitle>Delete this user?</DialogTitle>
-						<DialogDescription>
+				<DialogContent panel className='sm:max-w-[460px]'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete this user?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>
 							{editingUser?.name || 'This user'}
 							{editingUser?.email ? ` (${editingUser.email})` : ''} will be permanently deleted. This can&apos;t be undone.
 						</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
@@ -179,13 +181,14 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[480px] max-h-[85vh] overflow-y-auto'>
-				<DialogHeader>
-					<DialogTitle>Edit user</DialogTitle>
-					<DialogDescription>Update the user&apos;s details, access, and badges.</DialogDescription>
+			<DialogContent panel className='max-h-[88vh] overflow-y-auto sm:max-w-[560px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Admin</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Edit user</DialogTitle>
+					<DialogDescription className='pt-1'>Update the user&apos;s details, access, and badges.</DialogDescription>
 				</DialogHeader>
 
-				<form onSubmit={handleEdit} className='space-y-5'>
+				<form onSubmit={handleEdit} className='grid gap-5'>
 					<div className='flex items-center gap-4'>
 						<div className='h-16 w-16 shrink-0 rounded-full overflow-hidden border border-border bg-neutral-900 flex items-center justify-center'>
 							{editingUser?.image ? (
@@ -196,28 +199,36 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 							)}
 						</div>
 						<div className='flex-1 space-y-2'>
-							<Label htmlFor='edit-name'>Name</Label>
+							<Label htmlFor='edit-name' className={fieldLabel}>
+								Name
+							</Label>
 							<Input id='edit-name' value={editingUser?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Profile</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Profile</p>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-email'>Email</Label>
+							<Label htmlFor='edit-email' className={fieldLabel}>
+								Email
+							</Label>
 							<Input id='edit-email' type='email' value={editingUser?.email || ''} onChange={(e) => handleChange('email', e.target.value)} required />
 						</div>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-image'>Image URL</Label>
+							<Label htmlFor='edit-image' className={fieldLabel}>
+								Image URL
+							</Label>
 							<Input id='edit-image' value={editingUser?.image || ''} onChange={(e) => handleChange('image', e.target.value)} />
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Access</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Access</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-role'>Role</Label>
+								<Label htmlFor='edit-role' className={fieldLabel}>
+									Role
+								</Label>
 								<Select value={editingUser?.role || 'USER'} onValueChange={(value) => handleChange('role', value)}>
 									<SelectTrigger id='edit-role'>
 										<SelectValue placeholder='Select a role' />
@@ -232,7 +243,9 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 								</Select>
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-emailVerified'>Email Verified</Label>
+								<Label htmlFor='edit-emailVerified' className={fieldLabel}>
+									Email Verified
+								</Label>
 								<Input
 									id='edit-emailVerified'
 									type='datetime-local'
@@ -241,16 +254,16 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 								/>
 							</div>
 						</div>
-						<div className='flex items-center justify-between rounded-md border border-border px-3 py-2'>
-							<Label htmlFor='edit-onboarding' className='cursor-pointer'>
+						<div className='flex items-center justify-between rounded-md border border-border bg-background px-3 py-2.5'>
+							<Label htmlFor='edit-onboarding' className='cursor-pointer text-sm font-medium'>
 								Onboarding Completed
 							</Label>
 							<Checkbox id='edit-onboarding' checked={editingUser?.isOnboardingCompleted || false} onCheckedChange={(checked) => handleChange('isOnboardingCompleted', checked)} />
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Badges</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Badges</p>
 						{userBadges.length > 0 && (
 							<div className='flex flex-wrap gap-2'>
 								{userBadges.map(({ badge }) => (
@@ -288,9 +301,9 @@ export default function EditUserDialog({ user, isOpen, onClose, onSave, onDelete
 						</div>
 					</div>
 
-					<DialogFooter className='flex flex-wrap justify-end gap-2 pt-2'>
+					<DialogFooter bar className='flex-wrap'>
 						{onDelete && (
-							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+							<Button type='button' variant='destructive' className='sm:mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete user…
 							</Button>
 						)}

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { LinkPendingBar } from './LinkPending';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
@@ -16,8 +17,9 @@ export function NavLink({ href, className, children }: { href: string; className
 	const isActive = pathname === href || pathname.startsWith(`${href}/`);
 
 	return (
-		<Link href={href} aria-current={isActive ? 'page' : undefined} className={cn(className, isActive && 'bg-white/10 text-white')}>
+		<Link href={href} aria-current={isActive ? 'page' : undefined} className={cn('relative', className, isActive && 'bg-white/10 text-white')}>
 			{children}
+			<LinkPendingBar />
 		</Link>
 	);
 }

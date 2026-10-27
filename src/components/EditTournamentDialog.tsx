@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel, sectionLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -128,12 +129,13 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 	if (isConfirmingDelete) {
 		return (
 			<Dialog open={isOpen} onOpenChange={onClose}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Delete this tournament?</DialogTitle>
-						<DialogDescription>{editingTournament?.name} will be permanently deleted, along with its matches. This can&apos;t be undone.</DialogDescription>
+				<DialogContent panel className='max-w-md'>
+					<DialogHeader className='pr-8'>
+						<DialogEyebrow>Confirm</DialogEyebrow>
+						<DialogTitle className={dialogPanelTitle}>Delete this tournament?</DialogTitle>
+						<DialogDescription className='pt-1 leading-relaxed'>{editingTournament?.name} will be permanently deleted, along with its matches. This can&apos;t be undone.</DialogDescription>
 					</DialogHeader>
-					<DialogFooter className='flex justify-end gap-2'>
+					<DialogFooter bar>
 						<Button variant='outline' onClick={() => setIsConfirmingDelete(false)}>
 							Cancel
 						</Button>
@@ -148,24 +150,31 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[560px] max-h-[85vh] overflow-y-auto'>
-				<DialogHeader>
-					<DialogTitle>Edit tournament</DialogTitle>
-					<DialogDescription>Update the tournament details.</DialogDescription>
+			<DialogContent panel className='max-h-[88vh] overflow-y-auto sm:max-w-[640px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Admin</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Edit tournament</DialogTitle>
+					<DialogDescription className='pt-1'>Update the tournament details.</DialogDescription>
 				</DialogHeader>
-				<form onSubmit={handleEdit} className='space-y-5'>
+				<form onSubmit={handleEdit} className='grid gap-5'>
 					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Details</p>
+						<p className={sectionLabel}>Details</p>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-name'>Tournament Name</Label>
+							<Label htmlFor='edit-name' className={fieldLabel}>
+								Tournament Name
+							</Label>
 							<Input id='edit-name' value={editingTournament?.name || ''} onChange={(e) => handleChange('name', e.target.value)} required />
 						</div>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-location'>Location</Label>
+							<Label htmlFor='edit-location' className={fieldLabel}>
+								Location
+							</Label>
 							<Input id='edit-location' value={editingTournament?.location || ''} onChange={(e) => handleChange('location', e.target.value)} required />
 						</div>
 						<div className='space-y-2'>
-							<Label id='edit-description-label'>Description</Label>
+							<Label id='edit-description-label' className={fieldLabel}>
+								Description
+							</Label>
 							<RichTextEditor
 								labelId='edit-description-label'
 								value={editingTournament?.description || ''}
@@ -175,7 +184,9 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-prizePool'>Prize Pool</Label>
+								<Label htmlFor='edit-prizePool' className={fieldLabel}>
+									Prize Pool
+								</Label>
 								<Input
 									id='edit-prizePool'
 									type='number'
@@ -185,7 +196,9 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 								/>
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-teamCapacity'>Team Capacity</Label>
+								<Label htmlFor='edit-teamCapacity' className={fieldLabel}>
+									Team Capacity
+								</Label>
 								<Input
 									id='edit-teamCapacity'
 									type='number'
@@ -198,32 +211,38 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Schedule</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Schedule</p>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-startDate'>Start Date</Label>
+								<Label htmlFor='edit-startDate' className={fieldLabel}>
+									Start Date
+								</Label>
 								<Input id='edit-startDate' type='date' value={editingTournament?.startDate || ''} onChange={(e) => handleChange('startDate', e.target.value)} required />
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-endDate'>End Date</Label>
+								<Label htmlFor='edit-endDate' className={fieldLabel}>
+									End Date
+								</Label>
 								<Input id='edit-endDate' type='date' value={editingTournament?.endDate || ''} onChange={(e) => handleChange('endDate', e.target.value)} required />
 							</div>
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Media</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Media</p>
 						<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 							<ImageField id='edit-bannerFile' label='Banner' currentUrl={editingTournament?.bannerUrl} onFileChange={setBannerFile} aspect='aspect-video' />
 							<ImageField id='edit-logoFile' label='Logo' currentUrl={editingTournament?.logoUrl} onFileChange={setLogoFile} aspect='aspect-square' />
 						</div>
 					</div>
 
-					<div className='space-y-3'>
-						<p className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Configuration</p>
+					<div className='space-y-3 border-t border-border pt-5'>
+						<p className={sectionLabel}>Configuration</p>
 						<div className='space-y-2'>
-							<Label htmlFor='edit-game'>Game</Label>
+							<Label htmlFor='edit-game' className={fieldLabel}>
+								Game
+							</Label>
 							<Select value={game} onValueChange={(value) => handleChange('game', value)} disabled={gameLocked}>
 								<SelectTrigger id='edit-game' aria-describedby='edit-game-hint'>
 									<SelectValue placeholder='Select a game' />
@@ -249,7 +268,9 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 						<div className='grid grid-cols-2 gap-3'>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-status'>Status</Label>
+								<Label htmlFor='edit-status' className={fieldLabel}>
+									Status
+								</Label>
 								<Select value={editingTournament?.status || 'UPCOMING'} onValueChange={(value) => handleChange('status', value)}>
 									<SelectTrigger id='edit-status'>
 										<SelectValue placeholder='Select a status' />
@@ -264,7 +285,9 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 								</Select>
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='edit-type'>Type</Label>
+								<Label htmlFor='edit-type' className={fieldLabel}>
+									Type
+								</Label>
 								<Select value={editingTournament?.type || 'ONLINE'} onValueChange={(value) => handleChange('type', value)}>
 									<SelectTrigger id='edit-type'>
 										<SelectValue placeholder='Select a type' />
@@ -281,9 +304,9 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 						</div>
 					</div>
 
-					<DialogFooter className='flex flex-wrap gap-2 pt-2'>
+					<DialogFooter bar className='flex-wrap'>
 						{onDelete && (
-							<Button type='button' variant='destructive' className='mr-auto' onClick={() => setIsConfirmingDelete(true)}>
+							<Button type='button' variant='destructive' className='sm:mr-auto' onClick={() => setIsConfirmingDelete(true)}>
 								Delete tournament…
 							</Button>
 						)}

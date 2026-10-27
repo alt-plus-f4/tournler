@@ -7,7 +7,8 @@ import { z } from 'zod';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogEyebrow, DialogFooter, dialogPanelTitle } from '@/components/ui/dialog';
+import { fieldLabel } from '@/components/ui/dialog-styles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/LazyRichTextEditor';
 import { formatMoney } from '@/lib/helpers/format-money';
@@ -170,25 +171,24 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 			<DialogTrigger asChild>
 				<Button>Create tournament</Button>
 			</DialogTrigger>
-			<DialogContent className='sm:max-w-[560px] max-h-[90vh] overflow-y-auto'>
-				<DialogHeader>
-					<DialogTitle>Create tournament</DialogTitle>
-					<DialogDescription>
-						Step {step + 1} of {STEPS.length}: {STEPS[step].title}
+			<DialogContent panel className='max-h-[90vh] overflow-y-auto sm:max-w-[600px]'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Admin</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Create tournament</DialogTitle>
+					<DialogDescription className='flex items-center justify-between gap-3 pt-2'>
+						<span className='text-xs font-bold uppercase tracking-[0.2em] text-neutral-300'>
+							Step <span className='font-mono tabular-nums'>{step + 1}</span> of <span className='font-mono tabular-nums'>{STEPS.length}</span>
+						</span>
+						<span className='text-xs'>{STEPS[step].title}</span>
 					</DialogDescription>
 				</DialogHeader>
 
-				<ol className='grid grid-cols-3 gap-2' aria-label='Progress'>
+				<ol className='grid grid-cols-3 gap-1.5' aria-label='Progress'>
 					{STEPS.map((s, i) => (
-						<li
-							key={s.title}
-							aria-current={i === step ? 'step' : undefined}
-							className={cn(
-								'border-t-2 pt-2 text-xs font-medium',
-								i === step ? 'border-foreground text-foreground' : i < step ? 'border-neutral-400 text-neutral-300' : 'border-border text-muted-foreground',
-							)}
-						>
-							<span className='font-mono tabular-nums'>{i + 1}</span> {s.title}
+						<li key={s.title} aria-current={i === step ? 'step' : undefined} className={cn('h-1 rounded-full transition-colors', i <= step ? 'bg-white' : 'bg-zinc-800')}>
+							<span className='sr-only'>
+								{i + 1} {s.title}
+							</span>
 						</li>
 					))}
 				</ol>
@@ -199,13 +199,13 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						if (isLast) void submit(e);
 						else void next();
 					}}
-					className='space-y-4'
+					className='grid gap-4'
 					noValidate
 				>
 					{step === 0 && (
 						<>
 							<fieldset className='space-y-2'>
-								<legend className='text-sm font-medium leading-none'>Game</legend>
+								<legend className={fieldLabel}>Game</legend>
 								<Controller
 									control={control}
 									name='game'
@@ -234,13 +234,17 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 								</p>
 							</fieldset>
 							<div className='space-y-2'>
-								<Label htmlFor='create-name'>Tournament name</Label>
+								<Label htmlFor='create-name' className={fieldLabel}>
+									Tournament name
+								</Label>
 								<Input id='create-name' autoFocus {...register('name')} {...invalid('name')} />
 								<FieldError id={errId('name')} message={errors.name?.message} />
 							</div>
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 								<div className='space-y-2'>
-									<Label htmlFor='create-format'>Bracket format</Label>
+									<Label htmlFor='create-format' className={fieldLabel}>
+										Bracket format
+									</Label>
 									<Controller
 										control={control}
 										name='format'
@@ -261,14 +265,18 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									/>
 									{v.format === SWISS_FORMAT_VALUE && (
 										<div className='mt-2 space-y-2'>
-											<Label htmlFor='create-swissRounds'>Number of rounds</Label>
+											<Label htmlFor='create-swissRounds' className={fieldLabel}>
+												Number of rounds
+											</Label>
 											<Input id='create-swissRounds' type='number' inputMode='numeric' min={1} max={20} className='font-mono tabular-nums' {...register('swissRounds')} {...invalid('swissRounds')} />
 											<FieldError id={errId('swissRounds')} message={errors.swissRounds?.message} />
 										</div>
 									)}
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='create-type'>Online or LAN</Label>
+									<Label htmlFor='create-type' className={fieldLabel}>
+										Online or LAN
+									</Label>
 									<Controller
 										control={control}
 										name='type'
@@ -291,12 +299,16 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 							</div>
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 								<div className='space-y-2'>
-									<Label htmlFor='create-location'>Location</Label>
+									<Label htmlFor='create-location' className={fieldLabel}>
+										Location
+									</Label>
 									<Input id='create-location' placeholder='e.g. Europe, or Sofia Arena' {...register('location')} {...invalid('location')} />
 									<FieldError id={errId('location')} message={errors.location?.message} />
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='create-teamCapacity'>Team capacity</Label>
+									<Label htmlFor='create-teamCapacity' className={fieldLabel}>
+										Team capacity
+									</Label>
 									<Input id='create-teamCapacity' type='number' inputMode='numeric' min={2} max={256} className='font-mono tabular-nums' {...register('teamCapacity')} {...invalid('teamCapacity')} />
 									<FieldError id={errId('teamCapacity')} message={errors.teamCapacity?.message} />
 								</div>
@@ -308,18 +320,24 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						<>
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 								<div className='space-y-2'>
-									<Label htmlFor='create-startDate'>Starts</Label>
+									<Label htmlFor='create-startDate' className={fieldLabel}>
+										Starts
+									</Label>
 									<Input id='create-startDate' type='datetime-local' autoFocus className='font-mono tabular-nums' {...register('startDate')} {...invalid('startDate')} />
 									<FieldError id={errId('startDate')} message={errors.startDate?.message} />
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='create-endDate'>Ends</Label>
+									<Label htmlFor='create-endDate' className={fieldLabel}>
+										Ends
+									</Label>
 									<Input id='create-endDate' type='datetime-local' className='font-mono tabular-nums' {...register('endDate')} {...invalid('endDate')} />
 									<FieldError id={errId('endDate')} message={errors.endDate?.message} />
 								</div>
 							</div>
 							<div className='space-y-2'>
-								<Label id='create-description-label'>Description</Label>
+								<Label id='create-description-label' className={fieldLabel}>
+									Description
+								</Label>
 								<Controller
 									control={control}
 									name='description'
@@ -329,7 +347,9 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 								/>
 							</div>
 							<div className='space-y-2'>
-								<Label htmlFor='create-prizePool'>Prize pool (USD, optional)</Label>
+								<Label htmlFor='create-prizePool' className={fieldLabel}>
+									Prize pool (USD, optional)
+								</Label>
 								<Input id='create-prizePool' type='number' inputMode='numeric' min={0} className='font-mono tabular-nums' {...register('prizePool')} {...invalid('prizePool')} />
 								<FieldError id={errId('prizePool')} message={errors.prizePool?.message} />
 							</div>
@@ -340,7 +360,9 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						<>
 							<div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
 								<div className='space-y-2'>
-									<Label htmlFor='create-bannerFile'>Banner (optional)</Label>
+									<Label htmlFor='create-bannerFile' className={fieldLabel}>
+										Banner (optional)
+									</Label>
 									<Controller
 										control={control}
 										name='bannerFile'
@@ -348,7 +370,9 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 									/>
 								</div>
 								<div className='space-y-2'>
-									<Label htmlFor='create-logoFile'>Logo (optional)</Label>
+									<Label htmlFor='create-logoFile' className={fieldLabel}>
+										Logo (optional)
+									</Label>
 									<Controller
 										control={control}
 										name='logoFile'
@@ -357,8 +381,8 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 								</div>
 							</div>
 
-							<section aria-labelledby='create-review-heading' className='rounded-md border border-border'>
-								<h3 id='create-review-heading' className='border-b border-border px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+							<section aria-labelledby='create-review-heading' className='rounded-md border border-border bg-background'>
+								<h3 id='create-review-heading' className='border-b border-border px-3 py-2 text-xs font-bold uppercase tracking-[0.2em] text-neutral-400'>
 									Review
 								</h3>
 								<dl className='grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 px-3 py-2 text-sm'>
@@ -391,8 +415,8 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 								</dl>
 							</section>
 
-							<section aria-labelledby='create-auto-heading' className='rounded-md border border-border px-3 py-2'>
-								<h3 id='create-auto-heading' className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>
+							<section aria-labelledby='create-auto-heading' className='rounded-md border border-border bg-background px-3 py-2'>
+								<h3 id='create-auto-heading' className='text-xs font-bold uppercase tracking-[0.2em] text-neutral-400'>
 									What Tournler does for you
 								</h3>
 								{v.game === 'LOL' ? (
@@ -412,25 +436,23 @@ export function TournamentForm({ onSubmit, defaultOpen = false, onOpenChange }: 
 						</>
 					)}
 
-					<div className='flex items-center gap-2 border-t border-border pt-4'>
-						<Button type='button' variant='ghost' onClick={() => changeOpen(false)}>
+					<DialogFooter bar className='items-center'>
+						<Button type='button' variant='ghost' className='sm:mr-auto' onClick={() => changeOpen(false)}>
 							Cancel
 						</Button>
-						<div className='ml-auto flex gap-2'>
-							{step > 0 && (
-								<Button type='button' variant='outline' onClick={() => setStep((s) => s - 1)}>
-									Back
-								</Button>
-							)}
-							{isLast ? (
-								<Button type='submit' isLoading={isSubmitting}>
-									Create tournament
-								</Button>
-							) : (
-								<Button type='submit'>Next</Button>
-							)}
-						</div>
-					</div>
+						{step > 0 && (
+							<Button type='button' variant='outline' onClick={() => setStep((s) => s - 1)}>
+								Back
+							</Button>
+						)}
+						{isLast ? (
+							<Button type='submit' isLoading={isSubmitting}>
+								Create tournament
+							</Button>
+						) : (
+							<Button type='submit'>Next</Button>
+						)}
+					</DialogFooter>
 				</form>
 			</DialogContent>
 		</Dialog>

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import type { Game, TournamentFormat } from '@prisma/client';
 import { hostsGameServers } from '@/lib/tournaments/game-rules';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogEyebrow, dialogPanelTitle } from '@/components/ui/dialog';
+import { sectionLabel } from '@/components/ui/dialog-styles';
 import { useToast } from '@/lib/hooks/use-toast';
 
 const FORMAT_LABEL: Record<TournamentFormat, string> = {
@@ -85,22 +86,23 @@ export function StartTournamentButton({ tournamentId, tournamentName, teamCount,
 			<DialogTrigger asChild>
 				<Button variant='outline'>Start tournament</Button>
 			</DialogTrigger>
-			<DialogContent className='sm:max-w-md'>
-				<DialogHeader>
-					<DialogTitle>Start {tournamentName}?</DialogTitle>
-					<DialogDescription>Registration closes and the bracket is locked to the teams registered now. This can&apos;t be undone.</DialogDescription>
+			<DialogContent panel className='sm:max-w-lg'>
+				<DialogHeader className='pr-8'>
+					<DialogEyebrow>Tournament</DialogEyebrow>
+					<DialogTitle className={dialogPanelTitle}>Start {tournamentName}?</DialogTitle>
+					<DialogDescription className='pt-1 leading-relaxed'>Registration closes and the bracket is locked to the teams registered now. This can&apos;t be undone.</DialogDescription>
 				</DialogHeader>
 
 				<dl className='grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border text-sm'>
 					<div className='bg-background p-3'>
-						<dt className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Teams</dt>
+						<dt className='text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground'>Teams</dt>
 						<dd className='mt-1 font-mono text-lg font-bold tabular-nums text-white'>
 							{teamCount}
 							<span className='text-muted-foreground'>/{teamCapacity}</span>
 						</dd>
 					</div>
 					<div className='bg-background p-3'>
-						<dt className='text-xs font-bold uppercase tracking-widest text-muted-foreground'>Format</dt>
+						<dt className='text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground'>Format</dt>
 						<dd className='mt-1 text-white'>
 							{FORMAT_LABEL[format]} <span className='text-muted-foreground'>· Best of {bestOf}</span>
 						</dd>
@@ -120,7 +122,7 @@ export function StartTournamentButton({ tournamentId, tournamentName, teamCount,
 				)}
 
 				<div className='space-y-2 text-sm'>
-					<h3 className='font-bold text-white'>What happens next</h3>
+					<h3 className={sectionLabel}>What happens next</h3>
 					<ol className='list-decimal space-y-1 pl-5 text-muted-foreground'>
 						<li>The bracket is generated and every match is created.</li>
 						{hostsGameServers(game) ? (
@@ -134,7 +136,7 @@ export function StartTournamentButton({ tournamentId, tournamentName, teamCount,
 					</ol>
 				</div>
 
-				<DialogFooter className='flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:space-x-0'>
+				<DialogFooter bar>
 					<DialogClose asChild>
 						<Button variant='outline' disabled={isStarting}>
 							Cancel
