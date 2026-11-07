@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -237,6 +236,9 @@ model Cs2Tournament {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([organizerId])
+  // Listing/cron lookups: by status + start date, and the featured carousel.
+  @@index([status, startDate])
+  @@index([isFeatured, featuredOrder])
 }
 
 model Cs2Team {
@@ -446,6 +448,7 @@ model Matches {
   @@index([tournamentId, bracketSlot, round])
   @@index([nextMatchId])
   @@index([nextLoserMatchId])
+  @@index([status])
   @@map("matches")
 }
 
@@ -629,6 +632,8 @@ model NewsPost {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([authorId])
+  @@index([publishedAt])
+  @@index([isFeatured, featuredOrder])
   @@map("news_posts")
 }
 

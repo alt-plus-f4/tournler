@@ -6,3 +6,5 @@ coverage
 localhost
 convex/_generated
 package-lock.json
+pnpm-lock.yaml
+.omc

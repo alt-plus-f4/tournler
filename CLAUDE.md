@@ -5,19 +5,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev              # start dev server (Next.js App Router)
-npm run build            # prisma generate + next build
-npm run start            # start production server
-npm run lint             # eslint src (eslint:recommended + @typescript-eslint + @next/next)
-npm test                 # run all jest tests
-npm run test:watch       # jest watch mode
-npx jest path/to/file.test.tsx          # run a single test file
-npx jest -t "test name substring"       # run tests matching a name
+pnpm install             # install deps (pnpm only — the lockfile is pnpm-lock.yaml)
+pnpm dev                 # start dev server (Next.js App Router)
+pnpm build               # prisma generate + next build
+pnpm start               # start production server
+pnpm lint                # eslint src (eslint:recommended + @typescript-eslint + @next/next)
+pnpm test                # run all jest tests
+pnpm test:watch          # jest watch mode
+pnpm exec jest path/to/file.test.tsx    # run a single test file
+pnpm exec jest -t "test name substring" # run tests matching a name
 
-npx prisma generate                     # regenerate Prisma client after schema changes
-npx prisma migrate dev --name <name>    # create + apply a migration in dev
-npx prisma migrate deploy               # apply migrations in production
+pnpm exec prisma generate                     # regenerate Prisma client after schema changes
+pnpm exec prisma migrate dev --name <name>    # create + apply a migration in dev
+pnpm exec prisma migrate deploy               # apply migrations in production
 ```
+
+pnpm settings (security overrides, which packages may run install scripts) live in `pnpm-workspace.yaml`. pnpm doesn't expose undeclared transitive packages, so anything imported or referenced by config (e.g. ESLint plugins) must be listed in `package.json` directly.
 
 There is no separate typecheck script; `next build` / editor TS server surfaces type errors (`tsc --noEmit` also works directly).
 

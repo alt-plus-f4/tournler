@@ -11,8 +11,23 @@ const nextConfig = {
 	turbopack: { root: __dirname },
 	// ~20KB of atomic Tailwind CSS: inlining it removes the render-blocking stylesheet request on first
 	// load (Lighthouse: ~340ms). Production builds only.
-	experimental: { inlineCss: true },
+	experimental: { inlineCss: true, optimizePackageImports: ['lucide-react'] },
+	compress: true,
+	// /_next/static is already immutable. Files in public/ (map art, level icons, logo) aren't
+	// content-hashed, so cache them for a day and serve stale for a week while revalidating.
+	async headers() {
+		return [
+			{
+				source: '/:all*(png|jpg|jpeg|webp|avif|svg|ico|woff2)',
+				headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+			},
+		];
+	},
 	images: {
+		// WebP only (also Next's default, set explicitly so it can't drift).
+		formats: ['image/webp'],
+		// Uploaded art is replaced by new URLs, never overwritten, so optimized copies can live a month.
+		minimumCacheTTL: 60 * 60 * 24 * 30,
 		// Keep in sync with OPTIMIZED_IMAGE_HOSTS in src/lib/image-hosts.ts. Anything else (SVG,
 		// third-party link previews, local blob: previews) is rendered with `unoptimized`.
 		remotePatterns: [

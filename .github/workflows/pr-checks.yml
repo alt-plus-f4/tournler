@@ -45,37 +45,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Reads the pnpm version from package.json's packageManager field.
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
 
-      - run: npm i
+      - run: pnpm install --frozen-lockfile
 
       - name: Generate the Prisma client
-        run: npx prisma generate
+        run: pnpm exec prisma generate
 
       - name: Apply schema to the CI database
-        run: npx prisma migrate deploy
+        run: pnpm exec prisma migrate deploy
 
-      - run: npm run lint
+      - run: pnpm lint
 
-      - run: npm run format:check
+      - run: pnpm format:check
 
-      - run: npm test
+      - run: pnpm test
 
       - name: Build
-        run: npm run build
+        run: pnpm build
 
       - name: Start the app and run Unlighthouse
         run: |
-          npm run start -- -p 3000 &
+          pnpm start -p 3000 &
           server_pid=$!
           for _ in $(seq 1 30); do
             curl -sf http://localhost:3000/ > /dev/null && break
             sleep 2
           done
-          npx --yes unlighthouse-ci \
+          pnpm dlx unlighthouse-ci \
             --site http://localhost:3000 \
             --urls /,/tournaments,/matches,/teams,/news,/forum,/information,/privacy,/terms \
             --budget 50 \

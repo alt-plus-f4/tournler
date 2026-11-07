@@ -35,11 +35,16 @@ export function DoorsHome() {
 			<div className='mx-auto mb-8 mt-2 max-w-3xl text-center sm:mb-10'>
 				<Eyebrow className='mb-3.5'>Tournler for schools</Eyebrow>
 				<h1 className='text-3xl font-black uppercase tracking-wide text-white sm:text-5xl'>Competitive gaming for school teams</h1>
-				<p className='mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground'>Brackets, schedules and live results for school tournaments. Organizers set it up, players just play.</p>
+				<p className='mx-auto mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground'>
+					Brackets, schedules and live results for school tournaments. Organizers set it up, players just play.
+				</p>
 			</div>
 
 			<div className='grid grid-cols-1 gap-5 md:grid-cols-2'>
-				<section aria-labelledby='door-play' className='flex min-h-[320px] flex-col gap-5 rounded-lg border border-neutral-700 bg-gradient-to-b from-neutral-900 to-black p-6 transition-colors hover:border-white sm:p-7'>
+				<section
+					aria-labelledby='door-play'
+					className='flex min-h-[320px] flex-col gap-5 rounded-lg border border-neutral-700 bg-gradient-to-b from-neutral-900 to-black p-6 transition-colors hover:border-white sm:p-7'
+				>
 					<div className='flex items-center justify-between text-muted-foreground'>
 						<Eyebrow>I play</Eyebrow>
 						<Users aria-hidden className='h-[22px] w-[22px]' />

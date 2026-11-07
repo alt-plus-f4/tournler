@@ -10,6 +10,7 @@ async function verifyWithSteam(searchParams: URLSearchParams) {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: verifyParams.toString(),
+		signal: AbortSignal.timeout(5000),
 	});
 
 	const text = await response.text();
