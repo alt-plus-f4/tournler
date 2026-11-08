@@ -42,7 +42,7 @@ export default function BurgerMenuPanel({ open, onOpenChange, triggerRef }: Burg
 									game={game}
 									href={href}
 									onNavigate={() => onOpenChange(false)}
-									className='flex h-[60px] items-center gap-3 px-6 text-[15px] font-extrabold uppercase tracking-[0.08em] text-neutral-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:outline-none aria-[current=page]:shadow-[inset_3px_0_0_0_#fafafa]'
+									className='flex h-[60px] items-center gap-3 px-6 text-[15px] font-extrabold uppercase tracking-[0.08em] text-neutral-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:bg-white/5 focus-visible:outline-none aria-[current=page]:text-white aria-[current=page]:shadow-[inset_3px_0_0_0_#fafafa]'
 								/>
 							</li>
 						))}

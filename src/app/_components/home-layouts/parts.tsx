@@ -106,18 +106,8 @@ function teamNames(match: WeekMatch) {
 }
 
 function StatePill({ status }: { status: WeekMatch['status'] }) {
-	if (status === 'LIVE')
-		return (
-			<span className='inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white'>
-				<span className='h-1.5 w-1.5 rounded-full bg-signal-live motion-safe:animate-pulse' aria-hidden /> Live
-			</span>
-		);
-	if (status === 'PAUSED')
-		return (
-			<span className='inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-signal-hold'>
-				<span className='h-1.5 w-1.5 rounded-full bg-signal-hold' aria-hidden /> Paused
-			</span>
-		);
+	if (status === 'LIVE') return <span className='inline-flex items-center text-[10px] font-bold uppercase tracking-[0.12em] text-signal-live'>Live</span>;
+	if (status === 'PAUSED') return <span className='inline-flex items-center text-[10px] font-bold uppercase tracking-[0.12em] text-signal-hold'>Paused</span>;
 	if (status === 'COMPLETED') return <span className='text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>Final</span>;
 	return null;
 }
