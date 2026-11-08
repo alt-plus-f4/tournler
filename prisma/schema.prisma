@@ -149,6 +149,16 @@ model User {
   showSteam   Boolean @default(true) @map("show_steam")
   showRiot    Boolean @default(true) @map("show_riot")
 
+  // Personal colour theme; null follows the site default (SiteSettings.defaultTheme). Mirrored into a
+  // cookie on change so the root layout's inline script can apply it before first paint.
+  theme SiteTheme? @map("theme")
+
+  // The award the player chose to pin to their avatar corner (only honoured while
+  // SiteSettings.playerBadgeChoice is on and the badge is still awarded and allowed on avatars).
+  // Null = automatic (newest eligible award). See src/lib/badges/placement.ts.
+  avatarBadgeId Int?   @map("avatar_badge_id")
+  avatarBadge   Badge? @relation("AvatarBadge", fields: [avatarBadgeId], references: [id], onDelete: SetNull)
+
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
   role                  UserRole  @default(USER) @map("role")
@@ -189,6 +199,8 @@ model User {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([avatarBadgeId])
 }
 
 model Cs2Tournament {
@@ -457,6 +469,11 @@ model GameServer {
   matchId Int     @unique @map("match_id")
   match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
+  // Which registered server the match was put on. Null on rows created before the registry
+  // existed (those are matched by connectIp:port) or when the server row was later deleted.
+  serverId Int?       @map("server_id")
+  server   Cs2Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
   connectIp String @map("connect_ip")
   port      Int    @map("port")
   password  String @map("password")
@@ -469,14 +486,10 @@ model GameServer {
   matchConfigLoadedAt DateTime? @map("match_config_loaded_at")
 
   createdAt DateTime @default(now()) @map("created_at")
-  // Which registered server the match was put on. Null on rows created before the registry
-  // existed (those are matched by connectIp:port) or when the server row was later deleted.
-  serverId Int?       @map("server_id")
-  server   Cs2Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
-
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([matchId])
+  @@index([serverId])
   @@map("game_servers")
 }
 
@@ -489,19 +502,6 @@ enum GameServerStatus {
   @@map("game_server_status")
 }
 
-  @@index([serverId])
-model MatchMapAction {
-  id      Int     @id @default(autoincrement()) @map("id")
-  matchId Int     @map("match_id")
-  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  // Null only for the system-generated DECIDER action (the last remaining map, not chosen by either team) — or for any pickup-match action, which uses `side` instead (pickups have no Cs2Team).
-  teamId Int?     @map("team_id")
-  team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
-
-  // Pickup-match veto actor: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
-  // Cs2Team id `teamId` could reference. Null for non-pickup actions (which use `teamId`) and for
-  // the system-generated DECIDER action either way. Mirrors PlayerMatchStat's teamId/side split.
 enum Cs2ServerStatus {
   ACTIVE // eligible for new matches
   DRAINING // finishes its current match, gets no new ones
@@ -577,6 +577,18 @@ model Cs2Server {
   @@map("cs2_servers")
 }
 
+model MatchMapAction {
+  id      Int     @id @default(autoincrement()) @map("id")
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // Null only for the system-generated DECIDER action (the last remaining map, not chosen by either team) — or for any pickup-match action, which uses `side` instead (pickups have no Cs2Team).
+  teamId Int?     @map("team_id")
+  team   Cs2Team? @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  // Pickup-match veto actor: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
+  // Cs2Team id `teamId` could reference. Null for non-pickup actions (which use `teamId`) and for
+  // the system-generated DECIDER action either way. Mirrors PlayerMatchStat's teamId/side split.
   side MatchSlot? @map("side")
 
   action  MapActionType @map("action")
@@ -663,11 +675,20 @@ model Badge {
   description String? @map("description")
   icon        String  @map("icon")
   color       String  @default("#facc15") @map("color")
-  isOverlay   Boolean @default(false) @map("is_overlay")
-  // Uploaded trophy artwork (Vercel Blob). When set it is shown instead of the built-in `icon`.
-  imageUrl    String? @map("image_url")
 
-  awards UserBadge[]
+  // Where the badge is displayed (all off = hidden everywhere; players still hold the award).
+  // Replaces the old is_overlay flag (is_overlay=true became showOnAvatar). See src/lib/badges/placement.ts.
+  showInTrophyRow Boolean @default(true) @map("show_in_trophy_row")
+  showOnAvatar    Boolean @default(false) @map("show_on_avatar")
+  showNextToName  Boolean @default(false) @map("show_next_to_name")
+  // Legacy: superseded by the three flags above. Kept for one release so code deployed before the
+  // migration still reads it; nothing new should use it. Drop in a follow-up migration.
+  isOverlay       Boolean @default(false) @map("is_overlay")
+  // Uploaded trophy artwork (Vercel Blob). When set it is shown instead of the built-in `icon`.
+  imageUrl        String? @map("image_url")
+
+  awards   UserBadge[]
+  avatarOf User[]      @relation("AvatarBadge")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -685,6 +706,10 @@ model UserBadge {
   badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   awardedAt DateTime @default(now()) @map("awarded_at")
+
+  // The player hid this award from their own profile (only honoured while
+  // SiteSettings.playerBadgeChoice is on).
+  hidden Boolean @default(false) @map("hidden")
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -731,6 +756,7 @@ enum FeaturedLayout {
 
 enum HomepageLayout {
   CLASSIC
+  MODERN
   SEASON
   DOORS
   CAMPUS
@@ -740,6 +766,31 @@ enum HomepageLayout {
 enum RewatchProvider {
   YOUTUBE
   TWITCH
+}
+
+/// Colour themes. MONO is the original black/white look; the rest are dark alternatives.
+/// Rendered as <html data-theme="mono|mocha|..."> (lowercased), see src/lib/theme.ts.
+enum SiteTheme {
+  MONO
+  MOCHA
+  GRUVBOX
+  NORD
+  ROSEPINE
+}
+
+/// Site-wide settings singleton (id 1), edited on /admin/settings.
+model SiteSettings {
+  id Int @id @default(1)
+
+  // Theme for everyone who hasn't picked their own.
+  defaultTheme SiteTheme @default(MONO) @map("default_theme")
+
+  // Players may hide their own badges and choose which one sits on their avatar.
+  playerBadgeChoice Boolean @default(true) @map("player_badge_choice")
+
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("site_settings")
 }
 
 model HomepageSettings {

@@ -95,7 +95,7 @@ export default function UsersClient() {
 				prev.map((u) => {
 					if (u.id !== user.id) return u;
 					const badges = u.badges?.filter((b) => b.badge.name !== 'Verified') ?? [];
-					if (verified) badges.push({ badge: { id: 0, name: 'Verified', icon: 'verified', color: '#3b82f6', isOverlay: true } });
+					if (verified) badges.push({ badge: { id: 0, name: 'Verified', icon: 'verified', color: '#3b82f6', showOnAvatar: true } });
 					return { ...u, badges };
 				}),
 			);

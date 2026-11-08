@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { BADGE_ICON_KEYS, isBadgeImageUrl } from '@/lib/badge-icons';
+import { parsePlacementPatch } from '@/lib/badges/placement';
 
 const HEX_COLOR = /^#([0-9A-Fa-f]{6})$/;
 
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
 
 		const body = await request.json();
 		const { name, description, icon, color, isOverlay, imageUrl } = body;
+		const placements = parsePlacementPatch(body);
+		if ('error' in placements) return NextResponse.json({ error: placements.error }, { status: 400 });
 
 		if (!name || typeof name !== 'string') {
 			return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -62,7 +65,9 @@ export async function POST(request: Request) {
 				description: description || null,
 				icon,
 				color: color || undefined,
-				isOverlay: Boolean(isOverlay),
+				// Legacy `isOverlay: true` (older clients) means "on the avatar instead of the trophy row".
+				...(isOverlay === true ? { showOnAvatar: true, showInTrophyRow: false } : {}),
+				...placements,
 				imageUrl: imageUrl ?? null,
 			},
 		});

@@ -16,6 +16,8 @@ export const CACHE_TAGS = {
 	news: 'news',
 	forum: 'forum',
 	homepage: 'homepage',
+	/** Site-wide settings (default theme, badge player-choice). Read by the root layout. */
+	site: 'site',
 	/** External FACEIT lookups: keyed by Steam ID, refreshed on a timer only (no DB write affects them). */
 	faceit: 'faceit',
 	/** External Riot league-v4 lookups: keyed by PUUID, refreshed on a timer only (no DB write affects them). */
@@ -53,6 +55,7 @@ export const MODEL_TAGS: Record<string, readonly CacheTag[]> = {
 	ForumReply: [T.forum],
 	ForumVote: [T.forum],
 	HomepageSettings: [T.homepage],
+	SiteSettings: [T.site, T.users],
 };
 
 function flush(tags: Iterable<string>) {

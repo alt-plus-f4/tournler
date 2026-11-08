@@ -105,7 +105,17 @@ Rules: you can't ban yourself, admins can't be banned, and staff (any non-USER r
 - GET `/api/admin/bans?q=<name>`: `users:ban`. Player search (id, name, image, role, active ban; no emails).
 - `/admin/bans`: `users:ban`. Also available from the Users table (admins) and next to authors in forum threads (moderators).
 - The homepage "Forum" block is toggled by `showForumPosts` on PATCH `/api/admin/homepage-settings` (`content:manage`).
-- The whole homepage design is chosen with `pageLayout` on PATCH `/api/admin/homepage-settings` (`content:manage`): `CLASSIC` (default), `SEASON`, `DOORS`, `CAMPUS` or `WEEK`. Any other value returns 400. Writes invalidate the `homepage` cache tag through the Prisma extension. Picked in `/admin/featured` ("Homepage design"); previews live at `/home-preview/<layout in lowercase>`.
+- The whole homepage design is chosen with `pageLayout` on PATCH `/api/admin/homepage-settings` (`content:manage`): `CLASSIC` (default, the original), `MODERN` ("Classic redesign"), `SEASON`, `DOORS`, `CAMPUS` or `WEEK`. Any other value returns 400. Writes invalidate the `homepage` cache tag through the Prisma extension. Picked in `/admin/featured` ("Homepage design") or `/admin/settings` (Appearance); previews live at `/home-preview/<layout in lowercase>`.
+
+### Site settings, themes and badge placement
+
+- `/admin/settings`: viewable with `admin:access`. Appearance and Badges controls need `content:manage`; the Danger zone ("Delete simulated data", DELETE `/api/tournaments/simulate`) needs `tournaments:manage`. Integrations/General are read-only env checks (values never shown).
+- GET `/api/admin/site-settings`: `content:manage`. Returns `{ settings: { defaultTheme, playerBadgeChoice, updatedAt } }`, creating the singleton with defaults on first access.
+- PATCH `/api/admin/site-settings`: `content:manage`. Body `{ defaultTheme?: 'mono' | 'mocha' | 'gruvbox' | 'nord' | 'rosepine', playerBadgeChoice?: boolean }`; 400 on anything else. Writes flush the `site` cache tag (the root layout reads the default theme through it).
+- PATCH `/api/admin/badges/[badgeId]` and POST `/api/admin/badges` (`content:manage`) accept the placement flags `showInTrophyRow`, `showOnAvatar`, `showNextToName` (booleans; all off = hidden everywhere, players keep the award). The legacy `isOverlay` field is still accepted and maps to `showOnAvatar` (and the opposite of `showInTrophyRow`).
+- PATCH `/api/user`: any authenticated user, acts on themselves only. Besides `showDiscord`/`showSteam`/`showRiot` it accepts `theme` (a theme id, or `null` to follow the site default; also sets/clears the `tournler-theme` cookie) and `avatarBadgeId` (an awarded badge with `showOnAvatar`, or `null` for automatic; 403 while `playerBadgeChoice` is off).
+- PATCH `/api/user/badges`: any authenticated user, acts on their own awards. Body `{ badgeId: number, hidden: boolean }`; 404 if the user doesn't hold it, 403 while `playerBadgeChoice` is off.
+- GET `/api/users/[slug]` (public) leaves out awards the player hid (unless the viewer is the owner) and returns each badge's placement flags instead of `isOverlay`.
 
 ## Game servers admin
 

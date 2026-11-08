@@ -38,7 +38,7 @@ export interface User {
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];
 	sessions: Session[];
-	badges?: { badge: { id: number; name: string; icon: string; color: string; isOverlay: boolean } }[];
+	badges?: { badge: { id: number; name: string; icon: string; color: string; showOnAvatar?: boolean } }[];
 	createdAt: string;
 	updatedAt: string;
 }
