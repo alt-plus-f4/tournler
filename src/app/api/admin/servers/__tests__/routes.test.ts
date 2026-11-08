@@ -5,9 +5,9 @@ jest.mock('server-only', () => ({}), { virtual: true });
 jest.mock('@/lib/auth', () => ({ getAuthSession: jest.fn() }));
 jest.mock('@/lib/helpers/permissions', () => ({ userHasPermission: jest.fn() }));
 jest.mock('@/lib/rate-limit', () => ({ checkRateLimit: jest.fn(() => true) }));
-jest.mock('@/lib/cs2/server-pool', () => ({ getServerPool: jest.fn() }));
+jest.mock('@/lib/cs2/server-pool', () => ({ getServerPool: jest.fn(), getEnvServerPool: jest.fn(() => []), recordServerHealth: jest.fn() }));
 jest.mock('@/lib/cs2/rcon-client', () => ({ withRcon: jest.fn() }));
-jest.mock('@/lib/db', () => ({ db: { gameServer: { findMany: jest.fn(), findFirst: jest.fn() } } }));
+jest.mock('@/lib/db', () => ({ db: { gameServer: { findMany: jest.fn(), findFirst: jest.fn() }, serverHost: { findMany: jest.fn() } } }));
 
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
@@ -49,11 +49,12 @@ beforeEach(() => {
 	(getAuthSession as jest.Mock).mockResolvedValue({ user: { id: 'u1' } });
 	(userHasPermission as jest.Mock).mockResolvedValue(true);
 	(checkRateLimit as jest.Mock).mockReturnValue(true);
-	(getServerPool as jest.Mock).mockReturnValue(POOL);
+	(getServerPool as jest.Mock).mockResolvedValue(POOL);
 	execute.mockImplementation(async (cmd: string) => (cmd === 'status' ? STATUS : `"${cmd}" = "30" ( def. "0" )`));
 	(withRcon as jest.Mock).mockImplementation(async (_t: unknown, fn: (r: { execute: jest.Mock }) => unknown) => fn({ execute }));
 	gs.findMany.mockResolvedValue([activeRow]);
 	gs.findFirst.mockResolvedValue(activeRow);
+	(db as unknown as { serverHost: { findMany: jest.Mock } }).serverHost.findMany.mockResolvedValue([]);
 });
 
 describe.each([
@@ -113,7 +114,7 @@ describe('GET /api/admin/servers', () => {
 	});
 
 	it('returns an empty list when no servers are configured', async () => {
-		(getServerPool as jest.Mock).mockReturnValue([]);
+		(getServerPool as jest.Mock).mockResolvedValue([]);
 		const body = await (await listGET(new Request('http://localhost/api/admin/servers'))).json();
 		expect(body.servers).toEqual([]);
 		expect(body.summary.total).toBe(0);

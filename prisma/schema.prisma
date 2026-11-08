@@ -469,6 +469,11 @@ model GameServer {
   matchConfigLoadedAt DateTime? @map("match_config_loaded_at")
 
   createdAt DateTime @default(now()) @map("created_at")
+  // Which registered server the match was put on. Null on rows created before the registry
+  // existed (those are matched by connectIp:port) or when the server row was later deleted.
+  serverId Int?       @map("server_id")
+  server   Cs2Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([matchId])
@@ -484,6 +489,7 @@ enum GameServerStatus {
   @@map("game_server_status")
 }
 
+  @@index([serverId])
 model MatchMapAction {
   id      Int     @id @default(autoincrement()) @map("id")
   matchId Int     @map("match_id")
@@ -496,6 +502,81 @@ model MatchMapAction {
   // Pickup-match veto actor: pickup sides are MatchParticipant rows, not Cs2Teams, so there is no
   // Cs2Team id `teamId` could reference. Null for non-pickup actions (which use `teamId`) and for
   // the system-generated DECIDER action either way. Mirrors PlayerMatchStat's teamId/side split.
+enum Cs2ServerStatus {
+  ACTIVE // eligible for new matches
+  DRAINING // finishes its current match, gets no new ones
+  DISABLED // never allocated
+
+  @@map("cs2_server_status")
+}
+
+/// A machine that runs CS2 containers. When `agentUrl` is set, the host agent in
+/// `cs-docker/agent` creates/removes/restarts containers on it; otherwise it is just a label
+/// for servers registered by hand.
+model ServerHost {
+  id   Int    @id @default(autoincrement()) @map("id")
+  slug String @unique @map("slug")
+  name String @map("name")
+
+  region     String @default("eu") @map("region")
+  /// Address players and RCON use to reach servers on this host.
+  publicHost String @map("public_host")
+
+  agentUrl       String? @map("agent_url")
+  /// AES-GCM sealed shared secret used to sign requests to the agent (see src/lib/cs2/secret-box.ts).
+  agentSecretEnc String? @map("agent_secret_enc")
+
+  /// First game port handed out; each server takes `portStep` ports from here.
+  portRangeStart Int @default(27015) @map("port_range_start")
+  portStep       Int @default(10) @map("port_step")
+  maxServers     Int @default(4) @map("max_servers")
+
+  servers Cs2Server[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("server_hosts")
+}
+
+/// One CS2 dedicated server in the fleet. Replaces the CS2_SERVER_POOL env JSON.
+model Cs2Server {
+  id   Int    @id @default(autoincrement()) @map("id")
+  slug String @unique @map("slug")
+  name String @map("name")
+
+  hostId Int?        @map("host_id")
+  host   ServerHost? @relation(fields: [hostId], references: [id], onDelete: SetNull)
+
+  /// Address players connect to.
+  ip              String @map("ip")
+  port            Int    @map("port")
+  /// Where RCON is reached (defaults to `ip`).
+  rconHost        String @map("rcon_host")
+  rconPort        Int    @map("rcon_port")
+  /// AES-GCM sealed RCON password (see src/lib/cs2/secret-box.ts). Never returned by any API.
+  rconPasswordEnc String @map("rcon_password_enc")
+
+  region  String          @default("eu") @map("region")
+  status  Cs2ServerStatus @default(ACTIVE) @map("status")
+  /// True when the host agent created this container (so the app may also remove/restart it).
+  managed Boolean         @default(false) @map("managed")
+
+  lastSeenAt  DateTime? @map("last_seen_at")
+  lastHealthy Boolean?  @map("last_healthy")
+  lastError   String?   @map("last_error")
+
+  gameServers GameServer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([ip, port])
+  @@index([hostId])
+  @@index([status])
+  @@map("cs2_servers")
+}
+
   side MatchSlot? @map("side")
 
   action  MapActionType @map("action")

@@ -23,6 +23,17 @@ free until the next match loads. Nothing recreates a container. (This used to go
 `pool-controller` sidecar that rebooted the container onto each map, because live map changes
 crashed the server — that was `sv_coaching_enabled 1`, see below.)
 
+## Managing servers from the admin UI (recommended)
+
+Servers are stored in the app's database and managed in **Admin → Servers**. The compose file below
+is the manual alternative for a single box. To have Tournler create servers itself (and share one
+game install between all of them instead of ~50 GB each), run the host agent on each game host: see
+[`agent/README.md`](agent/README.md).
+
+Migrating from `CS2_SERVER_POOL`: set `SERVER_SECRET_KEY` in the app, open Admin → Servers and press
+**Import from env**. Matches already running keep working: they are matched to their server by
+address until they finish.
+
 ## Running locally
 
 ```bash

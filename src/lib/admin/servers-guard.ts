@@ -22,12 +22,12 @@ export async function guardServersRequest(rateLimit?: { key: string; limit: numb
 
 export type ServerLookup = { ok: true; server: Cs2ServerConfig } | { ok: false; response: NextResponse };
 
-/** Resolves a URL id to a pool entry. The id is only ever matched against the configured pool, never used as a host. */
-export function lookupPoolServer(rawId: string): ServerLookup {
+/** Resolves a URL id to a registered server. The id is only ever matched against the fleet, never used as a host. */
+export async function lookupPoolServer(rawId: string): Promise<ServerLookup> {
 	const parsed = serverIdSchema.safeParse(rawId);
 	if (!parsed.success) return { ok: false, response: NextResponse.json({ error: 'Invalid server ID' }, { status: 400, headers: noStore }) };
-	const pool = loadPool();
-	if (!pool.ok) return { ok: false, response: NextResponse.json({ error: 'Server pool is misconfigured' }, { status: 500, headers: noStore }) };
+	const pool = await loadPool();
+	if (!pool.ok) return { ok: false, response: NextResponse.json({ error: 'Server registry could not be read' }, { status: 500, headers: noStore }) };
 	const server = pool.pool.find((s) => s.id === parsed.data);
 	if (!server) return { ok: false, response: NextResponse.json({ error: 'Server not found' }, { status: 404, headers: noStore }) };
 	return { ok: true, server };

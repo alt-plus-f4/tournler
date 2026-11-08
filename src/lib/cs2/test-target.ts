@@ -31,3 +31,25 @@ export async function checkTestHost(host: string, pool: Pick<Cs2ServerConfig, 'i
 		return { ok: false };
 	}
 }
+
+/**
+ * Vets a host agent URL before the app talks to it. Production requires https and a public
+ * address (same SSRF rules as the RCON test); elsewhere http and local addresses are fine for dev.
+ * `knownHosts` are hosts already registered, which stay allowed (e.g. a private-network agent).
+ */
+export async function checkAgentUrl(rawUrl: string, knownHosts: string[], env: string | undefined = process.env.NODE_ENV): Promise<{ ok: true } | { ok: false; reason: string }> {
+	let url: URL;
+	try {
+		url = new URL(rawUrl);
+	} catch {
+		return { ok: false, reason: 'Agent URL is not a valid URL' };
+	}
+	if (env === 'production' && url.protocol !== 'https:') return { ok: false, reason: 'Agent URL must use https in production' };
+	if (url.username || url.password) return { ok: false, reason: 'Agent URL must not contain credentials' };
+	const check = await checkTestHost(
+		url.hostname,
+		knownHosts.map((h) => ({ ip: h, rconHost: h })),
+		env,
+	);
+	return check.ok ? { ok: true } : { ok: false, reason: 'Agent host is not allowed. Use a public address.' };
+}

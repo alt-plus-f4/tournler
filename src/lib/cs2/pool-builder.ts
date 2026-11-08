@@ -2,15 +2,15 @@ import { z } from 'zod';
 import type { Cs2ServerConfig } from './server-pool';
 
 /** Ids that would collide with static API segments under /api/admin/servers. */
-export const RESERVED_SERVER_IDS = ['test', 'preview', 'status'];
+export const RESERVED_SERVER_IDS = ['test', 'preview', 'status', 'import'];
 
-const hostSchema = z
+export const hostSchema = z
 	.string()
 	.trim()
 	.min(1, 'Host is required')
 	.max(253)
 	.regex(/^([A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?|[0-9A-Fa-f:]+)$/, 'Use a hostname or IP address only');
-const portSchema = z.number().int().min(1, 'Port must be 1-65535').max(65535, 'Port must be 1-65535');
+export const portSchema = z.number().int().min(1, 'Port must be 1-65535').max(65535, 'Port must be 1-65535');
 
 export const poolEntrySchema = z
 	.object({
@@ -31,6 +31,15 @@ export const poolEntrySchema = z
 			.max(128)
 			// eslint-disable-next-line no-control-regex
 			.regex(/^[^\u0000-\u001f\u007f]*$/, 'Password contains control characters'),
+		name: z.string().trim().min(1).max(80).optional(),
+		region: z
+			.string()
+			.trim()
+			.min(2)
+			.max(32)
+			.regex(/^[a-z0-9-]+$/, 'Use lowercase letters, numbers and dashes')
+			.optional(),
+		hostId: z.number().int().positive().nullable().optional(),
 	})
 	.strict();
 

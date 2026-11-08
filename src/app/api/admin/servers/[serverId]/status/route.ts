@@ -11,7 +11,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ser
 		const guard = await guardServersRequest({ key: 'admin-servers-status', limit: 30 });
 		if (!guard.ok) return guard.response;
 
-		const lookup = lookupPoolServer((await params).serverId);
+		const lookup = await lookupPoolServer((await params).serverId);
 		if (!lookup.ok) return lookup.response;
 
 		const { live } = await getLiveStatus(lookup.server, { fresh: true });
