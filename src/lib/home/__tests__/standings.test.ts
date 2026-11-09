@@ -6,7 +6,13 @@ const A = t(1, 'Alpha');
 const B = t(2, 'Bravo');
 const C = t(3, 'Charlie');
 
-const m = (teamA: RankingTeam | null, teamB: RankingTeam | null, winnerId: number | null, a: number | null, b: number | null): RankingMatch => ({ teamA, teamB, winnerId, scoreTeamA: a, scoreTeamB: b });
+const m = (teamA: RankingTeam | null, teamB: RankingTeam | null, winnerId: number | null, a: number | null, b: number | null): RankingMatch => ({
+	teamA,
+	teamB,
+	winnerId,
+	scoreTeamA: a,
+	scoreTeamB: b,
+});
 
 describe('computeRanking', () => {
 	it('awards 3 points per win and counts losses', () => {

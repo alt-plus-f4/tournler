@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { computePlayerCareerStats, getPlayerRecentMatches } from '@/lib/tournaments/player-stats';
 import { getFaceitInfo } from '@/lib/faceit';
+import { getSiteSettings } from '@/lib/site-settings';
+import { badgeStatus, visibleAwards } from '@/lib/badges/placement';
 import { NextResponse } from 'next/server';
 import { AccountDeletionBlockedError, deleteUserAccount } from '@/lib/account';
 
@@ -39,8 +41,9 @@ const PUBLIC_USER_SELECT = {
 		orderBy: { awardedAt: 'desc' },
 		select: {
 			awardedAt: true,
+			hidden: true,
 			// Explicit fields only: the badge row also carries timestamps that aren't public profile data.
-			badge: { select: { id: true, name: true, description: true, icon: true, color: true, isOverlay: true, imageUrl: true } },
+			badge: { select: { id: true, name: true, description: true, icon: true, color: true, imageUrl: true, showInTrophyRow: true, showOnAvatar: true, showNextToName: true } },
 		},
 	},
 	createdAt: true,
@@ -70,18 +73,27 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
 		}
 
 		// The FACEIT level is public FACEIT data, so it's looked up even when the player hides Steam.
-		const [stats, recentMatches, faceit, session] = await Promise.all([
+		const [stats, recentMatches, faceit, session, siteSettings] = await Promise.all([
 			computePlayerCareerStats(user.id),
 			getPlayerRecentMatches(user.id, 20),
 			user.steam ? getFaceitInfo(user.steam.steamId) : Promise.resolve(null),
 			getAuthSession(),
+			getSiteSettings(),
 		]);
 
 		// Hidden linked accounts are omitted for everyone but the owner.
 		const isOwner = session?.user?.id === user.id;
-		const { showDiscord, showSteam, showRiot, steam, discord, ...rest } = user;
+		const { showDiscord, showSteam, showRiot, steam, discord, badges, ...rest } = user;
+		// Awards the player hid, and badges an admin hid everywhere, stay out of everyone else's payload;
+		// the owner sees all of theirs, flagged.
+		const shownBadges = isOwner
+			? badges
+			: visibleAwards(badges, { playerChoice: siteSettings.playerBadgeChoice })
+					.filter((award) => badgeStatus(award.badge) === 'shown')
+					.map((award) => ({ awardedAt: award.awardedAt, badge: award.badge }));
 		const publicUser = {
 			...rest,
+			badges: shownBadges,
 			steam: isOwner || showSteam ? steam : null,
 			discord: isOwner || showDiscord ? discord : null,
 			...(isOwner ? { showDiscord, showSteam, showRiot } : {}),

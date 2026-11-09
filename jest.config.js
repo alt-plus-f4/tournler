@@ -25,12 +25,13 @@ const baseJestConfig = createJestConfig(customJestConfig);
 // next/jest's own transformIgnorePatterns only allowlists next's internal ESM packages, and it merges
 // by concatenation rather than replacement, so adding entries to customJestConfig can't loosen it.
 // sanitize-html's dependency chain (htmlparser2, domhandler, domutils, domelementtype, parse5) ships
-// ESM-only packages, so the resolved config is patched here to also let those through the transform.
+// ESM-only packages, so the resolved config is patched here to also let those through the transform —
+// in both the flat npm layout and pnpm's node_modules/.pnpm/<name>@<version>/ layout.
 export default async () => {
 	const config = await baseJestConfig();
 	config.transformIgnorePatterns = [
 		'/node_modules/(?!.pnpm)(?!(geist|next/dist/client|next/dist/shared/lib|next/src/client|next/src/shared/lib|sanitize-html|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities|parse5)/)',
-		'/node_modules[\\/]\\.pnpm[\\/](?!(geist|next\\+dist\\+client|next\\+dist\\+shared\\+lib|next\\+src\\+client|next\\+src\\+shared\\+lib)@)(?!.*node_modules[\\/](geist|next[\\/]dist[\\/]client|next[\\/]dist[\\/]shared[\\/]lib|next[\\/]src[\\/]client|next[\\/]src[\\/]shared[\\/]lib)[\\/])',
+		'/node_modules[\\/]\\.pnpm[\\/](?!(geist|next\\+dist\\+client|next\\+dist\\+shared\\+lib|next\\+src\\+client|next\\+src\\+shared\\+lib|sanitize-html|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities|parse5)@)(?!.*node_modules[\\/](geist|next[\\/]dist[\\/]client|next[\\/]dist[\\/]shared[\\/]lib|next[\\/]src[\\/]client|next[\\/]src[\\/]shared[\\/]lib|sanitize-html|htmlparser2|domhandler|domutils|domelementtype|dom-serializer|entities|parse5)[\\/])',
 		'^.+\\.module\\.(css|sass|scss)$',
 	];
 	return config;

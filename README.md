@@ -27,8 +27,8 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 
 ## Prerequisites
 
-- Node.js 18.x or higher
-- npm or yarn
+- Node.js 24 or higher
+- pnpm (see `packageManager` in package.json)
 - Git
 
 ## Installation
@@ -39,10 +39,10 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 git clone https://github.com/alt-plus-f4/tournler
 cd tournler
 
-npm i
-npx prisma generate
+pnpm install
+pnpm exec prisma generate
 
-npm run dev
+pnpm dev
 ```
 
 ## Images

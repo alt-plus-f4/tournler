@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { CornerDownRight, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { formatAbsolute, formatRelative } from './forum-shared';
 import type { ForumReplyItem } from './forum-queries';
 import { MAX_INDENT_DEPTH, type ReplyNode } from './reply-tree';
@@ -101,7 +102,9 @@ export function ReplyTree({ nodes, ctx, root = true }: { nodes: Node[]; ctx: Rep
 				const { reply } = node;
 				const deleted = !!reply.deletedAt;
 				return (
-					<li key={reply.id} id={`r${node.number}`} className='scroll-mt-20'>
+					// Top-level replies skip layout/paint while offscreen, so long threads render like a virtualized list
+					// without losing SSR, find-in-page or #rN anchor links.
+					<li key={reply.id} id={`r${node.number}`} className={cn('scroll-mt-20', node.depth === 0 && '[contain-intrinsic-size:auto_200px] [content-visibility:auto]')}>
 						<ReplyItem
 							number={node.number}
 							descendantCount={node.descendantCount}

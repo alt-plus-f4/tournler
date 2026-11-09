@@ -1,6 +1,5 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -150,6 +149,16 @@ model User {
   showSteam   Boolean @default(true) @map("show_steam")
   showRiot    Boolean @default(true) @map("show_riot")
 
+  // Personal colour theme; null follows the site default (SiteSettings.defaultTheme). Mirrored into a
+  // cookie on change so the root layout's inline script can apply it before first paint.
+  theme SiteTheme? @map("theme")
+
+  // The award the player chose to pin to their avatar corner (only honoured while
+  // SiteSettings.playerBadgeChoice is on and the badge is still awarded and allowed on avatars).
+  // Null = automatic (newest eligible award). See src/lib/badges/placement.ts.
+  avatarBadgeId Int?   @map("avatar_badge_id")
+  avatarBadge   Badge? @relation("AvatarBadge", fields: [avatarBadgeId], references: [id], onDelete: SetNull)
+
   isOnboardingCompleted Boolean   @default(false) @map("is_onboarding_completed")
   emailVerified         DateTime? @map("email_verified") @db.Timestamp(6)
   role                  UserRole  @default(USER) @map("role")
@@ -190,6 +199,8 @@ model User {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([avatarBadgeId])
 }
 
 model Cs2Tournament {
@@ -237,6 +248,9 @@ model Cs2Tournament {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([organizerId])
+  // Listing/cron lookups: by status + start date, and the featured carousel.
+  @@index([status, startDate])
+  @@index([isFeatured, featuredOrder])
 }
 
 model Cs2Team {
@@ -446,6 +460,7 @@ model Matches {
   @@index([tournamentId, bracketSlot, round])
   @@index([nextMatchId])
   @@index([nextLoserMatchId])
+  @@index([status])
   @@map("matches")
 }
 
@@ -453,6 +468,11 @@ model GameServer {
   id      Int     @id @default(autoincrement()) @map("id")
   matchId Int     @unique @map("match_id")
   match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  // Which registered server the match was put on. Null on rows created before the registry
+  // existed (those are matched by connectIp:port) or when the server row was later deleted.
+  serverId Int?       @map("server_id")
+  server   Cs2Server? @relation(fields: [serverId], references: [id], onDelete: SetNull)
 
   connectIp String @map("connect_ip")
   port      Int    @map("port")
@@ -469,6 +489,7 @@ model GameServer {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([matchId])
+  @@index([serverId])
   @@map("game_servers")
 }
 
@@ -479,6 +500,81 @@ enum GameServerStatus {
   FAILED
 
   @@map("game_server_status")
+}
+
+enum Cs2ServerStatus {
+  ACTIVE // eligible for new matches
+  DRAINING // finishes its current match, gets no new ones
+  DISABLED // never allocated
+
+  @@map("cs2_server_status")
+}
+
+/// A machine that runs CS2 containers. When `agentUrl` is set, the host agent in
+/// `cs-docker/agent` creates/removes/restarts containers on it; otherwise it is just a label
+/// for servers registered by hand.
+model ServerHost {
+  id   Int    @id @default(autoincrement()) @map("id")
+  slug String @unique @map("slug")
+  name String @map("name")
+
+  region     String @default("eu") @map("region")
+  /// Address players and RCON use to reach servers on this host.
+  publicHost String @map("public_host")
+
+  agentUrl       String? @map("agent_url")
+  /// AES-GCM sealed shared secret used to sign requests to the agent (see src/lib/cs2/secret-box.ts).
+  agentSecretEnc String? @map("agent_secret_enc")
+
+  /// First game port handed out; each server takes `portStep` ports from here.
+  portRangeStart Int @default(27015) @map("port_range_start")
+  portStep       Int @default(10) @map("port_step")
+  maxServers     Int @default(4) @map("max_servers")
+
+  servers Cs2Server[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("server_hosts")
+}
+
+/// One CS2 dedicated server in the fleet. Replaces the CS2_SERVER_POOL env JSON.
+model Cs2Server {
+  id   Int    @id @default(autoincrement()) @map("id")
+  slug String @unique @map("slug")
+  name String @map("name")
+
+  hostId Int?        @map("host_id")
+  host   ServerHost? @relation(fields: [hostId], references: [id], onDelete: SetNull)
+
+  /// Address players connect to.
+  ip              String @map("ip")
+  port            Int    @map("port")
+  /// Where RCON is reached (defaults to `ip`).
+  rconHost        String @map("rcon_host")
+  rconPort        Int    @map("rcon_port")
+  /// AES-GCM sealed RCON password (see src/lib/cs2/secret-box.ts). Never returned by any API.
+  rconPasswordEnc String @map("rcon_password_enc")
+
+  region  String          @default("eu") @map("region")
+  status  Cs2ServerStatus @default(ACTIVE) @map("status")
+  /// True when the host agent created this container (so the app may also remove/restart it).
+  managed Boolean         @default(false) @map("managed")
+
+  lastSeenAt  DateTime? @map("last_seen_at")
+  lastHealthy Boolean?  @map("last_healthy")
+  lastError   String?   @map("last_error")
+
+  gameServers GameServer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([ip, port])
+  @@index([hostId])
+  @@index([status])
+  @@map("cs2_servers")
 }
 
 model MatchMapAction {
@@ -579,11 +675,20 @@ model Badge {
   description String? @map("description")
   icon        String  @map("icon")
   color       String  @default("#facc15") @map("color")
-  isOverlay   Boolean @default(false) @map("is_overlay")
-  // Uploaded trophy artwork (Vercel Blob). When set it is shown instead of the built-in `icon`.
-  imageUrl    String? @map("image_url")
 
-  awards UserBadge[]
+  // Where the badge is displayed (all off = hidden everywhere; players still hold the award).
+  // Replaces the old is_overlay flag (is_overlay=true became showOnAvatar). See src/lib/badges/placement.ts.
+  showInTrophyRow Boolean @default(true) @map("show_in_trophy_row")
+  showOnAvatar    Boolean @default(false) @map("show_on_avatar")
+  showNextToName  Boolean @default(false) @map("show_next_to_name")
+  // Legacy: superseded by the three flags above. Kept for one release so code deployed before the
+  // migration still reads it; nothing new should use it. Drop in a follow-up migration.
+  isOverlay       Boolean @default(false) @map("is_overlay")
+  // Uploaded trophy artwork (Vercel Blob). When set it is shown instead of the built-in `icon`.
+  imageUrl        String? @map("image_url")
+
+  awards   UserBadge[]
+  avatarOf User[]      @relation("AvatarBadge")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -601,6 +706,10 @@ model UserBadge {
   badge   Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   awardedAt DateTime @default(now()) @map("awarded_at")
+
+  // The player hid this award from their own profile (only honoured while
+  // SiteSettings.playerBadgeChoice is on).
+  hidden Boolean @default(false) @map("hidden")
 
   @@unique([userId, badgeId])
   @@index([userId])
@@ -629,6 +738,8 @@ model NewsPost {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([authorId])
+  @@index([publishedAt])
+  @@index([isFeatured, featuredOrder])
   @@map("news_posts")
 }
 
@@ -645,6 +756,7 @@ enum FeaturedLayout {
 
 enum HomepageLayout {
   CLASSIC
+  MODERN
   SEASON
   DOORS
   CAMPUS
@@ -654,6 +766,31 @@ enum HomepageLayout {
 enum RewatchProvider {
   YOUTUBE
   TWITCH
+}
+
+/// Colour themes. MONO is the original black/white look; the rest are dark alternatives.
+/// Rendered as <html data-theme="mono|mocha|..."> (lowercased), see src/lib/theme.ts.
+enum SiteTheme {
+  MONO
+  MOCHA
+  GRUVBOX
+  NORD
+  ROSEPINE
+}
+
+/// Site-wide settings singleton (id 1), edited on /admin/settings.
+model SiteSettings {
+  id Int @id @default(1)
+
+  // Theme for everyone who hasn't picked their own.
+  defaultTheme SiteTheme @default(MONO) @map("default_theme")
+
+  // Players may hide their own badges and choose which one sits on their avatar.
+  playerBadgeChoice Boolean @default(true) @map("player_badge_choice")
+
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("site_settings")
 }
 
 model HomepageSettings {

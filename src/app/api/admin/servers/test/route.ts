@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 		const target = effectiveRcon(entry);
 		if (target.port > 65535) return NextResponse.json({ error: 'Port must be 1-65535' }, { status: 400, headers: noStore });
 
-		const pool = loadPool();
+		const pool = await loadPool();
 		const check = await checkTestHost(target.host, pool.ok ? pool.pool : []);
 		if (!check.ok) return NextResponse.json({ error: 'This host is not allowed. Use a public address.' }, { status: 400, headers: noStore });
 

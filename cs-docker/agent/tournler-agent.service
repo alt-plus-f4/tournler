@@ -1,0 +1,17 @@
+[Unit]
+Description=Tournler CS2 host agent
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+# Root is needed for the overlayfs mounts (mount/umount) and for chown on the data dir.
+User=root
+EnvironmentFile=/etc/tournler-agent.env
+WorkingDirectory=/opt/tournler/cs-docker/agent
+ExecStart=/usr/bin/node agent.ts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

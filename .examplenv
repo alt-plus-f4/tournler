@@ -78,7 +78,17 @@ GAME_SERVER_TOKEN=your_game_server_shared_secret
 
 # GAME_SERVER_CALLBACK_URL=http://host.docker.internal:3000
 
-# CS2 dedicated server pool (see cs-docker/README.md and CS2_SERVER_GUIDE.md) — a fixed set of
+# Game servers are managed in Admin → Servers and stored in the database. This one secret encrypts
+
+# their RCON passwords and host-agent secrets (random string, 32+ characters: openssl rand -base64 48).
+
+# Changing it later means re-entering each server's password.
+
+SERVER_SECRET_KEY=
+
+# LEGACY — CS2 server pool from env (see cs-docker/README.md and CS2_SERVER_GUIDE.md); only read while the
+
+# server registry is empty, and importable with one click in Admin → Servers. A fixed set of
 
 # persistent servers, one match at a time each; NOT one container per match. Prefer
 

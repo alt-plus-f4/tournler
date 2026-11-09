@@ -106,18 +106,8 @@ function teamNames(match: WeekMatch) {
 }
 
 function StatePill({ status }: { status: WeekMatch['status'] }) {
-	if (status === 'LIVE')
-		return (
-			<span className='inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white'>
-				<span className='h-1.5 w-1.5 rounded-full bg-signal-live motion-safe:animate-pulse' aria-hidden /> Live
-			</span>
-		);
-	if (status === 'PAUSED')
-		return (
-			<span className='inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-signal-hold'>
-				<span className='h-1.5 w-1.5 rounded-full bg-signal-hold' aria-hidden /> Paused
-			</span>
-		);
+	if (status === 'LIVE') return <span className='inline-flex items-center text-[10px] font-bold uppercase tracking-[0.12em] text-signal-live'>Live</span>;
+	if (status === 'PAUSED') return <span className='inline-flex items-center text-[10px] font-bold uppercase tracking-[0.12em] text-signal-hold'>Paused</span>;
 	if (status === 'COMPLETED') return <span className='text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground'>Final</span>;
 	return null;
 }
@@ -155,7 +145,10 @@ function MatchSlot({ match }: { match: WeekMatch }) {
 
 function DayCard({ day }: { day: WeekDay<WeekMatch> }) {
 	return (
-		<section aria-label={`${day.label} ${day.date} ${day.month}`} className={cn('flex min-h-[120px] min-w-0 flex-col rounded-md border bg-black lg:min-h-[300px]', day.isToday ? 'border-white' : 'border-border')}>
+		<section
+			aria-label={`${day.label} ${day.date} ${day.month}`}
+			className={cn('flex min-h-[120px] min-w-0 flex-col rounded-md border bg-black lg:min-h-[300px]', day.isToday ? 'border-white' : 'border-border')}
+		>
 			<h3 className='flex items-center justify-between border-b border-border px-3.5 py-3 text-[15px] font-black uppercase tracking-[0.1em] text-white'>
 				<span>
 					{day.label}
@@ -462,7 +455,10 @@ export function NewsList({ posts }: { posts: NewsItem[] }) {
 /** The organizer call-to-action. Links stay static so the page remains cacheable for every viewer. */
 export function OrganizerCta({ className }: { className?: string }) {
 	return (
-		<section aria-labelledby='organizer-cta-heading' className={cn('flex flex-col gap-3 self-start rounded-md border border-neutral-600 bg-gradient-to-b from-neutral-900 to-black p-5 sm:p-6', className)}>
+		<section
+			aria-labelledby='organizer-cta-heading'
+			className={cn('flex flex-col gap-3 self-start rounded-md border border-neutral-600 bg-gradient-to-b from-neutral-900 to-black p-5 sm:p-6', className)}
+		>
 			<Eyebrow>Organizers</Eyebrow>
 			<h2 id='organizer-cta-heading' className='text-2xl font-black uppercase tracking-wide text-white'>
 				Run a tournament for your school

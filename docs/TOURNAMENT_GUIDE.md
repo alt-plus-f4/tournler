@@ -297,6 +297,7 @@ CRON_API_KEY=your-cron-secret        # For scheduled tournament checks
 
 # CS2 dedicated server pool (see cs-docker/) — a fixed-size set of persistent servers, one
 # match at a time each, NOT one container per match / dynamically created containers.
+# Legacy: servers now live in the database (Admin → Servers). Needs SERVER_SECRET_KEY instead.
 CS2_SERVER_POOL=[{"id":"01","ip":"your-cs2-server-ip.com","port":27015,"rconPort":27016,"rconPassword":"..."},{"id":"02","ip":"your-cs2-server-ip.com","port":27025,"rconPort":27026,"rconPassword":"..."}]
 
 # If CS2_SERVER_POOL is unset, these define a single-server pool instead (backwards-compatible

@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 		const entry = parsed.data;
 		if (effectiveRcon(entry).port > 65535) return NextResponse.json({ error: 'Port must be 1-65535' }, { status: 400, headers: noStore });
 
-		const pool = loadPool();
+		const pool = await loadPool();
 		if (!pool.ok) return NextResponse.json({ error: 'The current CS2_SERVER_POOL is not valid JSON. Fix it before adding servers.' }, { status: 409, headers: noStore });
 		const conflict = findPoolConflict(pool.pool, entry);
 		if (conflict) return NextResponse.json({ error: conflict }, { status: 409, headers: noStore });

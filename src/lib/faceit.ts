@@ -23,7 +23,7 @@ const lookupFaceitInfo = cachedQuery(
 		let response: Response;
 		try {
 			// no-store: the surrounding cachedQuery is the cache (and decides what gets stored).
-			response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.FACEIT_API_KEY}` }, cache: 'no-store' });
+			response = await fetch(url, { headers: { Authorization: `Bearer ${process.env.FACEIT_API_KEY}` }, cache: 'no-store', signal: AbortSignal.timeout(5000) });
 		} catch (error) {
 			throw new FaceitLookupError(`FACEIT request failed: ${error instanceof Error ? error.message : String(error)}`);
 		}

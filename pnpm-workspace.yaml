@@ -1,0 +1,21 @@
+# Single-package repo; this file only holds pnpm settings.
+
+# Security pins carried over from the old npm "overrides" block.
+overrides:
+  # eslint 8's minimatch@3 pulls brace-expansion 1.x.
+  brace-expansion@1: 1.1.21
+  postcss: ^8.5.26
+  # Keep in step with the direct nodemailer dependency in package.json.
+  next-auth>nodemailer: ^10.0.16
+
+# pnpm skips dependency install scripts unless allowed. These need theirs
+# (native binaries / generated clients).
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
+  esbuild: true
+  # jest's watcher ships prebuilt binaries; its script only rebuilds from source.
+  '@parcel/watcher': false

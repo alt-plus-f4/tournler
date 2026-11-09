@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { BADGE_ICON_KEYS, isBadgeImageUrl } from '@/lib/badge-icons';
+import { parsePlacementPatch } from '@/lib/badges/placement';
 import { deleteBlobsQuietly } from '@/lib/blob';
 
 const HEX_COLOR = /^#([0-9A-Fa-f]{6})$/;
@@ -27,6 +28,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ba
 
 		const body = await request.json();
 		const { name, description, icon, color, isOverlay, imageUrl } = body;
+		const placements = parsePlacementPatch(body);
+		if ('error' in placements) return NextResponse.json({ error: placements.error }, { status: 400 });
 
 		if (icon !== undefined && !BADGE_ICON_KEYS.includes(icon)) {
 			return NextResponse.json({ error: 'Invalid icon' }, { status: 400 });
@@ -48,7 +51,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ba
 				...(description !== undefined ? { description: description || null } : {}),
 				...(icon !== undefined ? { icon } : {}),
 				...(color !== undefined ? { color } : {}),
-				...(isOverlay !== undefined ? { isOverlay: Boolean(isOverlay) } : {}),
+				// Legacy `isOverlay` (older clients): avatar instead of trophy row, or the reverse.
+				...(isOverlay !== undefined ? { showOnAvatar: Boolean(isOverlay), showInTrophyRow: !isOverlay } : {}),
+				...placements,
 				...(imageUrl !== undefined ? { imageUrl: imageUrl ?? null } : {}),
 			},
 		});

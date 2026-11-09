@@ -9,6 +9,9 @@ import { adminTable as t } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
 import ServerDetailDialog from './ServerDetailDialog';
 import AddServerDialog from './AddServerDialog';
+import HostsPanel from './HostsPanel';
+import { adminFetch } from './api';
+import { useToast } from '@/lib/hooks/use-toast';
 import type { LiveStatus, ServerListItem, ServersResponse } from './types';
 
 const REFRESH_MS = 15_000;
@@ -39,7 +42,10 @@ function ServerCard({ server, checking, onOpen, onRetry }: { server: ServerListI
 			>
 				<div className='flex items-start justify-between gap-3'>
 					<div className='min-w-0'>
-						<p className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>Server {server.id}</p>
+						<p className='text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground'>
+							{server.name !== server.id ? server.name : `Server ${server.id}`}
+							{server.region ? ` · ${server.region}` : ''}
+						</p>
 						<p className={cn(t.num, 'mt-1 truncate text-lg font-semibold')}>{server.address}</p>
 					</div>
 					{checking ? (
@@ -72,6 +78,7 @@ function ServerCard({ server, checking, onOpen, onRetry }: { server: ServerListI
 					)}
 				</div>
 				<div className='flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3'>
+					{server.availability !== 'ACTIVE' && <StatusPill tone='hold'>{server.availability === 'DRAINING' ? 'Draining' : 'Disabled'}</StatusPill>}
 					{match ? (
 						<span className='min-w-0 truncate text-sm'>
 							<StatusPill tone='live' className='mr-2'>
@@ -106,6 +113,9 @@ export default function ServersClient() {
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [checking, setChecking] = useState<Set<string>>(new Set());
 	const [addOpen, setAddOpen] = useState(false);
+	const [hostsKey, setHostsKey] = useState(0);
+	const [importing, setImporting] = useState(false);
+	const { toast } = useToast();
 	const inFlight = useRef(false);
 
 	const load = useCallback(async (silent: boolean, fresh = false) => {
@@ -165,6 +175,24 @@ export default function ServersClient() {
 		};
 	}, [load]);
 
+	const reloadAll = useCallback(() => {
+		load(true);
+		setHostsKey((k) => k + 1);
+	}, [load]);
+
+	const importFromEnv = async () => {
+		setImporting(true);
+		try {
+			const res = await adminFetch<{ imported: number; skipped: number }>('/api/admin/servers/import', 'POST');
+			toast({ title: `Imported ${res.imported} server${res.imported === 1 ? '' : 's'}`, description: 'You can delete CS2_SERVER_POOL from the environment now.' });
+			reloadAll();
+		} catch (e) {
+			toast({ title: 'Import failed', description: e instanceof Error ? e.message : undefined, variant: 'destructive' });
+		} finally {
+			setImporting(false);
+		}
+	};
+
 	const summary = data?.summary;
 	const servers = data?.servers ?? [];
 	const selected = servers.find((s) => s.id === selectedId) ?? null;
@@ -174,7 +202,7 @@ export default function ServersClient() {
 			<AdminHeader
 				className='mb-0'
 				title='Game servers'
-				subtitle='CS2 servers in the pool with live status read over RCON. Select a server for its console, settings and current match.'
+				subtitle='Your CS2 servers with live status read over RCON. Select a server to manage it, open its console or settings, or see its current match.'
 				actions={
 					<>
 						{updatedAt && <span className={cn(t.num, 'text-xs text-muted-foreground')}>Last checked {updatedAt.toLocaleTimeString()}</span>}
@@ -189,6 +217,23 @@ export default function ServersClient() {
 					</>
 				}
 			/>
+
+			{data?.secretKeyMissing && (
+				<p className='rounded-md border border-signal-hold/40 bg-signal-hold/10 px-4 py-3 text-sm'>
+					<code className='font-mono'>SERVER_SECRET_KEY</code> is not set. Servers can&apos;t be added or imported until it is a random string of 32+ characters (for example from{' '}
+					<code className='font-mono'>openssl rand -base64 48</code>). Redeploy after setting it.
+				</p>
+			)}
+			{data?.envImportAvailable && (
+				<div className='flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3 text-sm'>
+					<span>
+						These servers still come from the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable. Import them to manage them here.
+					</span>
+					<Button type='button' size='sm' onClick={importFromEnv} isLoading={importing}>
+						Import from env
+					</Button>
+				</div>
+			)}
 
 			<div className='grid grid-cols-2 gap-3 md:grid-cols-5'>
 				<Tile label='Servers' value={summary?.total ?? 0} />
@@ -219,17 +264,15 @@ export default function ServersClient() {
 			) : data?.poolError ? (
 				<AdminEmpty>
 					<ServerIcon aria-hidden className='mx-auto mb-3 h-6 w-6' />
-					The server pool configuration could not be read. <code className='font-mono'>CS2_SERVER_POOL</code> must be a valid JSON array. See{' '}
-					<code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3.
+					The server list could not be read. Either <code className='font-mono'>SERVER_SECRET_KEY</code> is missing or changed since the passwords were saved, or the legacy{' '}
+					<code className='font-mono'>CS2_SERVER_POOL</code> is not valid JSON. See <code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>.
 				</AdminEmpty>
 			) : servers.length === 0 ? (
 				<AdminEmpty>
 					<ServerIcon aria-hidden className='mx-auto mb-3 h-6 w-6' />
-					<p className='font-medium text-foreground'>No servers configured</p>
+					<p className='font-medium text-foreground'>No servers yet</p>
 					<p className='mx-auto mt-1 max-w-prose'>
-						Servers come from the <code className='font-mono'>CS2_SERVER_POOL</code> environment variable, or the single-server variables <code className='font-mono'>CS2_SERVER_IP</code>,{' '}
-						<code className='font-mono'>CS2_SERVER_PORT</code> and <code className='font-mono'>CS2_RCON_PASSWORD</code>. See <code className='font-mono'>docs/CS2_SERVER_GUIDE.md</code>, section 3, for
-						the format.
+						Add a host below and create servers on it with one click, or use <strong className='text-foreground'>Add server</strong> to register one you already run.
 					</p>
 				</AdminEmpty>
 			) : (
@@ -243,7 +286,16 @@ export default function ServersClient() {
 				</div>
 			)}
 
-			<AddServerDialog open={addOpen} onClose={() => setAddOpen(false)} suggestions={data?.suggestions ?? { id: '01', port: 27015 }} />
+			<HostsPanel refreshKey={hostsKey} onServersChanged={() => load(true)} />
+
+			<AddServerDialog
+				open={addOpen}
+				onClose={() => setAddOpen(false)}
+				onAdded={reloadAll}
+				suggestions={data?.suggestions ?? { id: '01', port: 27015 }}
+				hosts={data?.hosts ?? []}
+				secretKeyMissing={data?.secretKeyMissing ?? false}
+			/>
 
 			<ServerDetailDialog serverId={selected?.id ?? null} summary={selected} onClose={() => setSelectedId(null)} onChanged={() => load(true)} />
 		</AdminPage>

@@ -4,6 +4,7 @@ export type HomepageLayoutValue = HomepageLayout;
 
 export const HOME_LAYOUTS: { value: HomepageLayoutValue; label: string; description: string }[] = [
 	{ value: 'CLASSIC', label: 'Classic', description: 'Scoreboard hero with a sidebar.' },
+	{ value: 'MODERN', label: 'Classic redesign', description: 'Scoreboard hero with a sidebar, redesigned' },
 	{ value: 'SEASON', label: 'Season hub', description: 'Season banner, registration countdown and ranking.' },
 	{ value: 'DOORS', label: 'Two doors', description: 'Separate entry points for players and organizers.' },
 	{ value: 'CAMPUS', label: 'Campus scoreboard', description: 'Live match, standings and this week side by side.' },

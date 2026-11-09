@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
  * traps focus, closes on Escape/overlay click, and is announced as a dialog; closing it pops the
  * intercepted route off history, same as before.
  */
-export function AuthModal({ title, children }: { title: string; children: React.ReactNode }) {
+export function AuthModal({ title, wide = false, children }: { title: string; /** Edge-to-edge split layout (sign-in). */ wide?: boolean; children: React.ReactNode }) {
 	const router = useRouter();
 
 	useEffect(() => {
@@ -24,7 +24,7 @@ export function AuthModal({ title, children }: { title: string; children: React.
 
 	return (
 		<Dialog open onOpenChange={(open) => !open && router.back()}>
-			<DialogContent className='stage-grid max-w-md px-6 py-10 shadow-2xl sm:px-10'>
+			<DialogContent className={wide ? 'stage-grid max-w-md overflow-hidden p-0 shadow-2xl md:max-w-3xl' : 'stage-grid max-w-md px-6 py-10 shadow-2xl sm:px-10'}>
 				<DialogTitle className='sr-only'>{title}</DialogTitle>
 				{children}
 			</DialogContent>

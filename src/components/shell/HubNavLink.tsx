@@ -1,17 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
 import Link from 'next/link';
 import { LinkPendingBar } from './LinkPending';
 import { usePathname } from 'next/navigation';
 import type { Game } from '@prisma/client';
 import { GAME_FILTER_COOKIE, GAME_META, gameParam, parseGameParam } from '@/lib/games';
+import { HUB_HOME } from '@/lib/nav-links';
 import { GameGlyph } from '@/components/games/GameMark';
 import { cn } from '@/lib/utils';
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
-// The three hub tabs (see HubSubnav) — switching games from one of these keeps you on the same
-// tab (e.g. Teams·CS2 → Teams·LoL) instead of always landing back on Tournaments.
+// The three hub list tabs (see HubSubnav) — switching games from one of these keeps you on the same
+// tab (e.g. Teams·CS2 → Teams·LoL) instead of landing back on the hub's Overview.
 const HUB_TAB_PATHS = ['/tournaments', '/matches', '/teams'];
 // Fired whenever a click here changes which game a hub page shows. Same pathname, new `?game=` —
 // usePathname alone can't see that, so every other HubNavLink instance listens for this instead.
@@ -29,19 +30,41 @@ function readActiveGame(): Game {
 	return fromCookie ?? 'CS2';
 }
 
+/** The game whose Overview page `pathname` is, if any. */
+function hubHomeGame(pathname: string): Game | null {
+	return (Object.keys(HUB_HOME) as Game[]).find((g) => pathname === HUB_HOME[g] || pathname.startsWith(`${HUB_HOME[g]}/`)) ?? null;
+}
+
 /**
- * A top-nav entry into a game hub (direction B). Writes GAME_FILTER_COOKIE on click so the hub
- * (Tournaments/Matches/Teams) keeps opening on this game on later visits that don't carry `?game=`
- * — the same cookie those pages already read server-side. Plain — the hub accent hue lives on the
- * hub page itself (HubPageGlow), not on this nav entry.
+ * A nav entry into a game hub. Opens the hub's Overview (`href`), or — when you're on one of the hub
+ * list tabs — the same tab for this game. Writes GAME_FILTER_COOKIE on click so the hub list pages
+ * keep opening on this game on later visits that don't carry `?game=`. Sets aria-current when this
+ * game's hub is the page you're on; callers style that with `aria-[current=page]:` variants.
+ * `children` replaces the default glyph + name content.
  */
-export function HubNavLink({ game, href, className, onNavigate }: { game: Game; href: string; className?: string; onNavigate?: () => void }) {
+export function HubNavLink({
+	game,
+	href,
+	className,
+	style,
+	onNavigate,
+	children,
+}: {
+	game: Game;
+	href: string;
+	className?: string;
+	style?: CSSProperties;
+	onNavigate?: () => void;
+	children?: ReactNode;
+}) {
 	const pathname = usePathname();
 	const currentTabPath = HUB_TAB_PATHS.find((p) => pathname === p || pathname.startsWith(`${p}/`));
+	const homeGame = hubHomeGame(pathname);
+	// Only the list roots carry the game in the URL; a detail page (/teams/12) just switches to the list.
 	const target = currentTabPath ? `${currentTabPath}?game=${gameParam(game)}` : href;
 
-	// Client-only "you are here": read post-mount only (never during SSR), so it can't cause a
-	// hydration mismatch — worst case this entry's highlight paints one tick after hydration.
+	// Client-only "you are here" for the list tabs: read post-mount only (never during SSR), so it
+	// can't cause a hydration mismatch — worst case the highlight paints one tick after hydration.
 	const [activeGame, setActiveGame] = useState<Game | null>(null);
 	useEffect(() => {
 		if (!currentTabPath) {
@@ -64,7 +87,7 @@ export function HubNavLink({ game, href, className, onNavigate }: { game: Game; 
 		};
 	}, [pathname, currentTabPath]);
 
-	const isActive = !!currentTabPath && activeGame === game;
+	const isActive = homeGame === game || (!!currentTabPath && activeGame === game);
 
 	return (
 		<Link
@@ -79,10 +102,15 @@ export function HubNavLink({ game, href, className, onNavigate }: { game: Game; 
 				onNavigate?.();
 			}}
 			aria-current={isActive ? 'page' : undefined}
-			className={cn('relative', className, isActive && 'bg-white/10 text-white')}
+			className={cn('relative', className)}
+			style={style}
 		>
-			<GameGlyph game={game} className='h-[15px] w-[15px]' />
-			{game === 'CS2' ? GAME_META.CS2.short : GAME_META.LOL.label}
+			{children ?? (
+				<>
+					<GameGlyph game={game} className='h-[15px] w-[15px]' />
+					{game === 'CS2' ? GAME_META.CS2.short : GAME_META.LOL.label}
+				</>
+			)}
 			<LinkPendingBar />
 		</Link>
 	);

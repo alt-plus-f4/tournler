@@ -1,7 +1,7 @@
 import { withRcon, type RconTarget } from './rcon-client';
 import { describeRconError, parseServerStatus, type ParsedServerStatus } from './parse-status';
 import { isWriteOnly, parseCvarValue, SETTING_DEFINITIONS } from './server-settings';
-import { getServerPool, type Cs2ServerConfig } from './server-pool';
+import { getServerPool, recordServerHealth, type Cs2ServerConfig } from './server-pool';
 
 export const STATUS_TIMEOUT_MS = 4000;
 export const STATUS_CACHE_TTL_MS = 5000;
@@ -22,11 +22,11 @@ export interface LiveStatusResult {
 
 const EMPTY_PARSED: ParsedServerStatus = { hostname: null, version: null, map: null, humans: null, bots: null, maxPlayers: null, hibernating: false };
 
-/** Removes every pool RCON password from text that is about to leave the server. */
-export function redactSecrets(text: string): string {
+/** Removes every known RCON password from text that is about to leave the server. */
+export async function redactSecrets(text: string): Promise<string> {
 	let out = text;
 	try {
-		for (const s of getServerPool()) {
+		for (const s of await getServerPool()) {
 			if (s.rconPassword && s.rconPassword.length >= 4) out = out.split(s.rconPassword).join('[redacted]');
 		}
 	} catch {
@@ -59,9 +59,7 @@ export async function probeTarget(target: RconTarget): Promise<LiveStatusResult>
 			withRcon(target, (rcon) => rcon.execute('status')),
 			STATUS_TIMEOUT_MS,
 		);
-		const raw = redactSecrets(String(output ?? ''))
-			.split(target.password)
-			.join('[redacted]');
+		const raw = (await redactSecrets(String(output ?? ''))).split(target.password).join('[redacted]');
 		return { live: { ...parseServerStatus(raw), online: true, reason: null, latencyMs: Date.now() - started, checkedAt: new Date().toISOString() }, raw };
 	} catch (error) {
 		return { live: { ...EMPTY_PARSED, online: false, reason: describeRconError(error), latencyMs: null, checkedAt: new Date().toISOString() }, raw: null };
@@ -80,6 +78,8 @@ export function getLiveStatus(server: Cs2ServerConfig, options: { fresh?: boolea
 	const hit = cache.get(server.id);
 	if (!options.fresh && hit && now - hit.at < STATUS_CACHE_TTL_MS) return hit.result;
 	const result = probeTarget({ host: server.rconHost, port: server.rconPort, password: server.rconPassword });
+	// Every probe doubles as a health check the allocator can read (fire-and-forget).
+	void result.then(({ live }) => recordServerHealth(server.dbId, { healthy: live.online, error: live.reason })).catch(() => {});
 	cache.set(server.id, { at: now, result });
 	return result;
 }
@@ -96,7 +96,7 @@ export async function readSettingValues(server: { rconHost: string; rconPort: nu
 				const values: Record<string, string | null> = {};
 				for (const def of SETTING_DEFINITIONS) {
 					if (isWriteOnly(def)) continue;
-					values[def.name] = parseCvarValue(redactSecrets(String(await rcon.execute(def.name))), def.name);
+					values[def.name] = parseCvarValue(await redactSecrets(String(await rcon.execute(def.name))), def.name);
 				}
 				return values;
 			}),

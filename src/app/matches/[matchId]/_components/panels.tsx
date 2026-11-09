@@ -5,119 +5,160 @@ import Image from 'next/image';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { PlayerAvatar } from '@/components/PlayerAvatar';
-import { Check, Copy, Download, ExternalLink, Loader2, Server, Swords } from 'lucide-react';
+import { Check, Copy, Download, ExternalLink, Loader2, Play, Server, Swords } from 'lucide-react';
 import { GameGlyph } from '@/components/games/GameMark';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/lib/hooks/use-toast';
 import { getMapDisplayName, getMapImage } from '@/lib/tournaments/maps';
 import type { HeadToHead } from '@/lib/helpers/head-to-head';
-import { RoomPanel, SectionLabel, SignalDot } from './room-ui';
+import { RoomPanel, SectionLabel } from './room-ui';
 import { formatDuration, formatKd, getBestOf, getSideLabels, getStatsBySide, getWinningSide, isLolMatch, MAP_STATUS_LABEL, type Match, type MatchMapRow, type PlayerStatRow } from './types';
 
 function useCopy() {
+	const { toast } = useToast();
 	const [copied, setCopied] = useState<string | null>(null);
 	const copy = (key: string, text: string) => {
 		navigator.clipboard.writeText(text).then(
 			() => {
 				setCopied(key);
+				toast({ title: 'Copied to clipboard' });
 				setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
 			},
-			() => setCopied(null),
+			() => {
+				setCopied(null);
+				toast({ variant: 'destructive', title: 'Couldn’t copy', description: 'Select the command and copy it manually.' });
+			},
 		);
 	};
 	return { copied, copy };
 }
 
+/** The map being played now (or next up); falls back to the last map once the series is over. */
+function getCurrentMapIndex(maps: MatchMapRow[]) {
+	const live = maps.findIndex((m) => m.status === 'LIVE' || m.status === 'PAUSED');
+	if (live >= 0) return live;
+	const next = maps.findIndex((m) => m.status !== 'COMPLETED');
+	return next >= 0 ? next : maps.length - 1;
+}
+
+const PANEL_LABEL = 'text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground';
+
 /**
- * Where to connect. Connect info only appears once the server has confirmed loading this match
- * (`matchConfigLoadedAt`) — the container can exist for a minute or two before that.
+ * Where to connect, FACEIT-style. Connect info only appears once the server has confirmed loading
+ * this match (`matchConfigLoadedAt`) — the container can exist for a minute or two before that.
+ * Who sees the password is decided server-side (GET /api/matches/[matchId] nulls it for anyone who
+ * isn't rostered on this match or staff), so this panel just renders whatever it was given.
+ * Location/ping/connected-player cells are intentionally absent: GameServer stores none of that,
+ * and this panel never shows a number it can't back up.
  */
 export function ServerPanel({ match }: { match: Match }) {
 	const { copied, copy } = useCopy();
 	const server = match.gameServer;
 	const ready = !!server?.matchConfigLoadedAt;
 	const address = server && ready ? `${server.connectIp}:${server.port}` : null;
+	const password = server?.password || null;
 	// `password` must be set BEFORE `connect` — it's read during the handshake, so the reverse
 	// order is a well-known cause of "Bad Password" even with the right one.
-	const command = address ? `${server?.password ? `password ${server.password}; ` : ''}connect ${address}` : null;
-	// `rungameid` launches Steam/CS2 if needed and passes `+connect` as a startup command.
-	const steamUrl = address ? `steam://rungameid/730/+connect ${address}${server?.password ? `; password ${server.password}` : ''}` : null;
+	const command = address ? `${password ? `password ${password}; ` : ''}connect ${address}` : null;
+	const steamUrl = address ? `steam://connect/${address}${password ? `/${encodeURIComponent(password)}` : ''}` : null;
 
-	let statusLine: ReactNode;
-	if (address) {
-		// The header's StatusReadout already carries the pulsing "server ready" signal for this same
-		// fact — repeating the dot here would just be a second thing blinking for one piece of news.
-		statusLine = <span className='text-sm font-bold text-signal-ready-text'>{match.status === 'SCHEDULED' ? 'Warming up — join early to practice' : 'Server is live'}</span>;
-	} else if (server) {
+	const maps = [...match.maps].sort((a, b) => a.order - b.order);
+	const currentIndex = maps.length > 0 ? getCurrentMapIndex(maps) : -1;
+	const currentMap = currentIndex >= 0 ? maps[currentIndex] : null;
+	const mapImage = currentMap ? getMapImage(currentMap.mapName) : null;
+	const bestOf = getBestOf(match);
+	const mapCount = Math.max(bestOf ?? 0, maps.length);
+
+	let statusLine: ReactNode = null;
+	if (!address && server) {
 		statusLine = (
-			<span className='flex items-center gap-2 text-sm text-neutral-300'>
+			<p className='flex items-center gap-2 text-sm text-neutral-300'>
 				<Loader2 className='h-4 w-4 animate-spin text-muted-foreground' aria-hidden /> Server is starting — this takes a minute or two
-			</span>
+			</p>
 		);
-	} else {
+	} else if (!address) {
 		statusLine = (
-			<span className='text-sm text-muted-foreground'>
+			<p className='text-sm text-muted-foreground'>
 				{match.status === 'SCHEDULED'
 					? match.isPickup
 						? 'The server opens once an admin starts the match.'
 						: 'The server opens about 5 minutes before the start.'
 					: 'Waiting for a free server — every pool server is in use.'}
-			</span>
+			</p>
 		);
+	} else if (match.status === 'SCHEDULED') {
+		statusLine = <p className='text-sm text-neutral-300'>Warming up — join early to practice.</p>;
 	}
 
 	return (
-		<RoomPanel
-			label={
-				<>
-					<Server className='h-3.5 w-3.5' aria-hidden /> Server
-				</>
-			}
-			bodyClassName='space-y-4'
-		>
-			{statusLine}
-			{address && (
-				<dl className='divide-y divide-border rounded-md border border-border bg-black'>
-					<div className='flex items-center gap-3 px-3 py-2'>
-						<dt className='w-16 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>IP</dt>
-						<dd className='flex-1 truncate font-mono text-sm text-white'>{address}</dd>
-						<button
-							type='button'
-							onClick={() => copy('ip', address)}
-							className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-							aria-label={copied === 'ip' ? 'IP copied' : 'Copy IP'}
-						>
-							{copied === 'ip' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
-						</button>
-					</div>
-					{server?.password && (
-						<div className='flex items-center gap-3 px-3 py-2'>
-							<dt className='w-16 text-xs font-bold uppercase tracking-[0.1em] text-muted-foreground'>Pass</dt>
-							<dd className='flex-1 truncate font-mono text-sm text-white'>{server.password}</dd>
-							<button
-								type='button'
-								onClick={() => copy('pw', server.password ?? '')}
-								className='-my-1 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-								aria-label={copied === 'pw' ? 'Password copied' : 'Copy password'}
-							>
-								{copied === 'pw' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
-							</button>
+		<section aria-labelledby='match-server-heading' className='flex flex-col overflow-hidden rounded-md border border-border bg-neutral-950/90'>
+			{currentMap && (
+				<div className='relative h-[132px] overflow-hidden'>
+					{mapImage && <Image src={mapImage} alt='' fill sizes='(min-width: 1024px) 480px, 100vw' className='object-cover' />}
+					<div className='absolute inset-0 bg-gradient-to-t from-neutral-950 from-[4%] to-black/35' />
+					<div className='absolute inset-x-[18px] bottom-3 flex items-end justify-between gap-3'>
+						<div className='min-w-0'>
+							<span className='text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-300'>
+								Map {currentIndex + 1} of {mapCount}
+							</span>
+							<p className='truncate text-[26px] font-black uppercase leading-none tracking-[0.03em] text-white'>{getMapDisplayName(currentMap.mapName)}</p>
 						</div>
-					)}
-				</dl>
-			)}
-			{address && (
-				<div className='grid grid-cols-[1fr_auto] gap-2'>
-					<Button size='lg' disabled={!steamUrl} onClick={() => steamUrl && (window.location.href = steamUrl)} className='gap-2 font-bold'>
-						<ExternalLink className='h-4 w-4' aria-hidden /> Connect
-					</Button>
-					<Button size='lg' variant='outline' disabled={!command} onClick={() => command && copy('cmd', command)} className='gap-2' title='Copy the console command (paste into the CS2 console)'>
-						{copied === 'cmd' ? <Check className='h-4 w-4 text-signal-ready-text' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
-						<span aria-live='polite'>{copied === 'cmd' ? 'Copied' : 'Console'}</span>
-					</Button>
+						{bestOf && <span className='shrink-0 font-mono text-xs text-neutral-300'>Bo{bestOf}</span>}
+					</div>
 				</div>
 			)}
-		</RoomPanel>
+			<div className='flex flex-col gap-3.5 px-[18px] pb-[18px] pt-4'>
+				<div className='flex items-center justify-between gap-3'>
+					<h2 id='match-server-heading' className='flex items-center gap-2 text-[13px] font-black uppercase tracking-[0.12em] text-white'>
+						<Server className='h-3.5 w-3.5 text-muted-foreground' aria-hidden /> Server
+					</h2>
+					{!currentMap && bestOf && <span className='font-mono text-xs text-muted-foreground'>Bo{bestOf}</span>}
+				</div>
+				{statusLine}
+				{address && steamUrl && (
+					<>
+						<a
+							href={steamUrl}
+							className='flex h-[52px] items-center justify-center gap-2.5 rounded-md bg-primary text-base font-black uppercase tracking-[0.12em] text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+						>
+							<Play className='h-[18px] w-[18px] fill-current' aria-hidden /> Connect
+						</a>
+						{command && (
+							<label className='flex flex-col gap-1.5'>
+								<span className={PANEL_LABEL}>Or paste in the CS2 console</span>
+								<span className='flex h-10 items-center overflow-hidden rounded-md border border-border bg-black'>
+									<input
+										readOnly
+										value={command}
+										onFocus={(e) => e.currentTarget.select()}
+										className='h-full min-w-0 flex-1 bg-transparent px-3 font-mono text-xs text-white focus-visible:outline-none'
+									/>
+									<button
+										type='button'
+										onClick={() => copy('cmd', command)}
+										aria-label={copied === 'cmd' ? 'Connect command copied' : 'Copy connect command'}
+										className='flex h-full w-10 shrink-0 items-center justify-center border-l border-border text-neutral-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
+									>
+										{copied === 'cmd' ? <Check className='h-4 w-4' aria-hidden /> : <Copy className='h-4 w-4' aria-hidden />}
+									</button>
+								</span>
+							</label>
+						)}
+					</>
+				)}
+				<div className='flex items-center justify-between gap-3 text-[13px]'>
+					{match.streamUrl ? (
+						<a href={match.streamUrl} target='_blank' rel='noopener noreferrer' className='text-neutral-300 underline-offset-4 hover:text-white hover:underline'>
+							Watch stream
+						</a>
+					) : (
+						<span />
+					)}
+					<span className='font-mono text-neutral-500'>Match #{match.id}</span>
+				</div>
+			</div>
+		</section>
 	);
 }
 
@@ -168,7 +209,7 @@ export function StreamPanel({ match }: { match: Match }) {
 		<RoomPanel
 			label={
 				<>
-					<SignalDot tone='live' pulse /> Watch live
+					<span className='text-signal-live'>Live</span> Watch
 				</>
 			}
 		>
@@ -352,18 +393,10 @@ function mapWinnerSide(match: Match, m: MatchMapRow) {
 
 function MapStatus({ match, map }: { match: Match; map: MatchMapRow }) {
 	if (map.status === 'LIVE' && match.status === 'LIVE') {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-white'>
-				<SignalDot tone='live' pulse /> Live
-			</span>
-		);
+		return <span className='inline-flex items-center text-xs font-bold uppercase tracking-[0.1em] text-signal-live'>Live</span>;
 	}
 	if (map.status === 'PAUSED' || (map.status === 'LIVE' && match.status === 'PAUSED')) {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.1em] text-signal-hold'>
-				<SignalDot tone='hold' /> Paused
-			</span>
-		);
+		return <span className='inline-flex items-center text-xs font-bold uppercase tracking-[0.1em] text-signal-hold'>Paused</span>;
 	}
 	return <span className='text-xs uppercase tracking-[0.1em] text-muted-foreground'>{MAP_STATUS_LABEL[map.status] ?? map.status}</span>;
 }

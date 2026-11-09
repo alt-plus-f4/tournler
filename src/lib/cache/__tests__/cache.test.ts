@@ -52,8 +52,8 @@ describe('MODEL_TAGS', () => {
 	it('maps every content model in the Prisma schema', () => {
 		const schema = fs.readFileSync(path.join(process.cwd(), 'prisma/schema.prisma'), 'utf8');
 		const models = [...schema.matchAll(/^model (\w+) \{/gm)].map((m) => m[1]);
-		// Auth plumbing that no cached page query reads.
-		const ignored = new Set(['Account', 'Session', 'VerificationToken']);
+		// Auth plumbing and the admin-only server registry: no cached page query reads them.
+		const ignored = new Set(['Account', 'Session', 'VerificationToken', 'ServerHost', 'Cs2Server']);
 		const unmapped = models.filter((m) => !ignored.has(m) && !MODEL_TAGS[m]?.length);
 		expect(unmapped).toEqual([]);
 	});

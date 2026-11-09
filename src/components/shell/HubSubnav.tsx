@@ -3,27 +3,31 @@ import { LinkPendingBar } from './LinkPending';
 import type { Game } from '@prisma/client';
 import { GAME_META, gameParam } from '@/lib/games';
 import { GameGlyph } from '@/components/games/GameMark';
+import { HUB_HOME } from '@/lib/nav-links';
 import { cn } from '@/lib/utils';
 
-export type HubTab = 'tournaments' | 'matches' | 'teams';
+export type HubTab = 'home' | 'tournaments' | 'matches' | 'teams';
 
-const TABS: { key: HubTab; label: string; path: string }[] = [
+// `path: null` = the hub's own Overview route (HUB_HOME), which carries the game in the path.
+const TABS: { key: HubTab; label: string; path: string | null }[] = [
+	{ key: 'home', label: 'Overview', path: null },
 	{ key: 'tournaments', label: 'Tournaments', path: '/tournaments' },
 	{ key: 'matches', label: 'Matches', path: '/matches' },
 	{ key: 'teams', label: 'Teams', path: '/teams' },
 ];
 
 /**
- * Direction B's "the other stuff" row: a second navbar, full width and sticky right under the
- * global one, for the hub pages (Tournaments/Matches/Teams). Names the active hub on the left and
- * switches between its three lists on the right, without losing the game — every link carries
- * `?game=` so a bookmark or share stays in the right hub.
+ * The hub row under the site header, for the hub pages (Overview/Tournaments/Matches/Teams). Names
+ * the active hub on the left and switches between its sections on the right, without losing the
+ * game — the Overview is per-game by route, every list link carries `?game=` so a bookmark or share
+ * stays in the right hub. Sticky under the compact mobile bar; on desktop it scrolls away with the
+ * two-tier header (the floating pill takes over).
  */
 export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
 	const q = gameParam(game);
 
 	return (
-		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:top-14'>
+		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:static'>
 			<div className='mx-auto flex h-11 max-w-[1400px] items-center gap-x-6 px-4 lg:px-8'>
 				<span className='flex shrink-0 items-center gap-2 text-sm'>
 					<span className='hidden text-neutral-400 sm:inline'>Tournler</span>
@@ -41,7 +45,7 @@ export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
 						return (
 							<Link
 								key={t.key}
-								href={`${t.path}?game=${q}`}
+								href={t.path ? `${t.path}?game=${q}` : HUB_HOME[game]}
 								aria-current={isActive ? 'page' : undefined}
 								className={cn(
 									'relative flex h-full shrink-0 items-center border-b-2 border-transparent px-3 font-medium transition-all duration-100 active:scale-[0.97] active:opacity-70',
@@ -68,7 +72,7 @@ export function HubSubnav({ game, active }: { game: Game; active: HubTab }) {
  */
 export function HubSubnavSkeleton({ active }: { active: HubTab }) {
 	return (
-		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:top-14' aria-hidden>
+		<div className='sticky top-16 z-40 w-full border-b navbar-color xl:static' aria-hidden>
 			<div className='mx-auto flex h-11 max-w-[1400px] items-center gap-x-6 px-4 lg:px-8'>
 				<span className='flex shrink-0 items-center gap-2 text-sm'>
 					<span className='hidden text-neutral-400 sm:inline'>Tournler</span>

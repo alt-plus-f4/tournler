@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
 		const guard = await guardServersRequest({ key: 'admin-servers-rcon', limit: 30 });
 		if (!guard.ok) return guard.response;
 
-		const lookup = lookupPoolServer((await params).serverId);
+		const lookup = await lookupPoolServer((await params).serverId);
 		if (!lookup.ok) return lookup.response;
 		const { server } = lookup;
 
@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ser
 				withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute(command)),
 				STATUS_TIMEOUT_MS * 2,
 			);
-			return NextResponse.json({ success: true, output: redactSecrets(String(output ?? '')) }, { headers: noStore });
+			return NextResponse.json({ success: true, output: await redactSecrets(String(output ?? '')) }, { headers: noStore });
 		} catch (error) {
 			return NextResponse.json({ error: `Command failed: ${describeRconError(error)}` }, { status: 502, headers: noStore });
 		}
