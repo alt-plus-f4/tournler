@@ -57,6 +57,18 @@ systemctl daemon-reload && systemctl enable --now tournler-agent
 Add more servers the same way. When a host is full, raise its limit or add another host (another
 region, another machine) and repeat.
 
+## Performance settings
+
+- `CPU_LIST` (e.g. `2-7`): each new server is pinned to its own core from the list (`--cpuset-cpus`),
+  so servers can't steal time from each other. Leave a couple of cores for the OS, Docker and the
+  agent. Once every listed core has a server, creating another is refused. Pinning is chosen at
+  creation; existing servers keep theirs.
+- `NETWORK_MODE=host`: containers use the host network instead of Docker NAT, which removes per-packet
+  overhead on the game's UDP traffic. Each server already has distinct ports, so there are no clashes.
+  Firewall RCON to the app's address either way. Default is `bridge`.
+
+Both need a real Linux host to check; the tests only cover the arguments the agent builds.
+
 ## Updating CS2
 
 Valve updates break old servers, so update the shared files when a new build ships: stop the

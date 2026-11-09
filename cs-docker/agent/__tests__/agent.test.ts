@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { buildRunArgs, containerName, findPortConflict, loadConfig, matchRoute, pickToken, sign, validateSpec, verify, HttpError, type ServerSpec } from '../agent';
+import { buildRunArgs, containerName, findPortConflict, loadConfig, matchRoute, parseCpuList, pickCpu, pickToken, sign, validateSpec, verify, HttpError, type ServerSpec } from '../agent';
 import { signAgentRequest, verifyAgentRequest } from '@/lib/cs2/agent-signature';
 
 const SECRET = 's'.repeat(32);
@@ -126,6 +126,45 @@ describe('buildRunArgs', () => {
 	});
 });
 
+describe('buildRunArgs performance options', () => {
+	it('sets TV_PORT so GOTV listens where it is published', () => {
+		expect(buildRunArgs(spec, cfg, null, '/m')).toContain('TV_PORT=27040');
+	});
+
+	it('pins to a core only when given one', () => {
+		const pinned = buildRunArgs(spec, cfg, null, '/m', 3);
+		expect(pinned[pinned.indexOf('--cpuset-cpus') + 1]).toBe('3');
+		expect(buildRunArgs(spec, cfg, null, '/m')).not.toContain('--cpuset-cpus');
+	});
+
+	it('host networking drops -p and adds --network host', () => {
+		const host = buildRunArgs(spec, { ...cfg, networkMode: 'host' }, null, '/m');
+		expect(host.slice(host.indexOf('--network'), host.indexOf('--network') + 2)).toEqual(['--network', 'host']);
+		expect(host).not.toContain('-p');
+		expect(host[host.length - 1]).toBe('joedwards32/cs2');
+		expect(buildRunArgs(spec, { ...cfg, networkMode: 'bridge' }, null, '/m')).toContain('-p');
+	});
+});
+
+describe('parseCpuList / pickCpu', () => {
+	it('parses ranges and lists', () => {
+		expect(parseCpuList('2-4,7, 4')).toEqual([2, 3, 4, 7]);
+		expect(parseCpuList('')).toEqual([]);
+		expect(parseCpuList(undefined)).toEqual([]);
+	});
+
+	it('rejects bad input', () => {
+		expect(() => parseCpuList('a')).toThrow(/invalid/);
+		expect(() => parseCpuList('5-2')).toThrow(/backwards/);
+	});
+
+	it('hands out the first free core, none when pinning is off, and refuses when full', () => {
+		expect(pickCpu([2, 3, 4], [2, null, undefined])).toBe(3);
+		expect(pickCpu([], [])).toBeNull();
+		expect(() => pickCpu([2], [2])).toThrow(HttpError);
+	});
+});
+
 describe('pickToken', () => {
 	it('hands out the first token no server uses', () => {
 		expect(pickToken(['a', 'b', 'c'], [0, null, 2])).toEqual({ index: 1, token: 'b' });
@@ -159,5 +198,15 @@ describe('loadConfig', () => {
 		expect(() => loadConfig({ ...base, AGENT_SECRET: 'short' })).toThrow(/AGENT_SECRET/);
 		expect(() => loadConfig({ AGENT_SECRET: SECRET })).toThrow(/SETTINGS_DIR/);
 		expect(() => loadConfig({ ...base, SHARE_MODE: 'zfs' })).toThrow(/SHARE_MODE/);
+		expect(() => loadConfig({ ...base, NETWORK_MODE: 'macvlan' })).toThrow(/NETWORK_MODE/);
+	});
+
+	it('defaults to bridge with no pinning, and reads NETWORK_MODE and CPU_LIST', () => {
+		const d = loadConfig(base);
+		expect(d.networkMode).toBe('bridge');
+		expect(d.cpus).toEqual([]);
+		const c = loadConfig({ ...base, NETWORK_MODE: 'host', CPU_LIST: '2-4' });
+		expect(c.networkMode).toBe('host');
+		expect(c.cpus).toEqual([2, 3, 4]);
 	});
 });

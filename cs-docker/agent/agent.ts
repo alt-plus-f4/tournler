@@ -60,6 +60,8 @@ export interface ServerSpec {
 export interface StoredSpec extends ServerSpec {
 	desired: 'running' | 'stopped';
 	tokenIndex: number | null;
+	/** CPU core this server is pinned to (from CPU_LIST); null when pinning is off. */
+	cpu?: number | null;
 }
 
 export interface AgentConfig {
@@ -71,6 +73,10 @@ export interface AgentConfig {
 	mode: 'overlay' | 'copy';
 	customCssDir: string | null;
 	steamcmdPath: string;
+	/** `host` skips Docker's NAT for UDP (lower latency); `bridge` publishes ports with -p. */
+	networkMode: 'host' | 'bridge';
+	/** Cores servers may be pinned to, one each. Empty = no pinning. */
+	cpus: number[];
 }
 
 export class HttpError extends Error {
@@ -138,7 +144,13 @@ export function matchRoute(method: string, pathname: string): Route | null {
 }
 
 /** Docker arguments for one server. `merged` is the directory mounted as the game root. */
-export function buildRunArgs(spec: ServerSpec, cfg: Pick<AgentConfig, 'image' | 'settingsDir' | 'customCssDir'>, token: string | null, merged: string): string[] {
+export function buildRunArgs(
+	spec: ServerSpec,
+	cfg: Pick<AgentConfig, 'image' | 'settingsDir' | 'customCssDir'> & Partial<Pick<AgentConfig, 'networkMode'>>,
+	token: string | null,
+	merged: string,
+	cpu: number | null = null,
+): string[] {
 	const root = '/home/steam/cs2-dedicated';
 	const args = [
 		'run',
@@ -155,6 +167,8 @@ export function buildRunArgs(spec: ServerSpec, cfg: Pick<AgentConfig, 'image' | 
 		'tournler.managed=true',
 		'--label',
 		`tournler.slug=${spec.slug}`,
+		...(cfg.networkMode === 'host' ? ['--network', 'host'] : []),
+		...(cpu !== null ? ['--cpuset-cpus', String(cpu)] : []),
 		'-e',
 		`CS2_SERVERNAME=${spec.name}`,
 		'-e',
@@ -167,6 +181,8 @@ export function buildRunArgs(spec: ServerSpec, cfg: Pick<AgentConfig, 'image' | 
 		`CS2_PW=${spec.gamePassword}`,
 		'-e',
 		`CS2_RCONPW=${spec.rconPassword}`,
+		'-e',
+		`TV_PORT=${spec.tvPort}`,
 		'-e',
 		`TV_PW=${spec.tvPassword}`,
 		'-e',
@@ -186,17 +202,19 @@ export function buildRunArgs(spec: ServerSpec, cfg: Pick<AgentConfig, 'image' | 
 		`${cfg.settingsDir}/game/csgo/cfg/MatchZy:${root}/game/csgo/cfg/MatchZy`,
 	);
 	if (cfg.customCssDir) args.push('-v', `${cfg.customCssDir}:${root}/custom-counterstrikesharp:ro`);
-	args.push(
-		'-p',
-		`${spec.gamePort}:${spec.gamePort}/tcp`,
-		'-p',
-		`${spec.rconPort}:${spec.rconPort}/tcp`,
-		'-p',
-		`${spec.gamePort}:${spec.gamePort}/udp`,
-		'-p',
-		`${spec.tvPort}:${spec.tvPort}/udp`,
-		cfg.image,
-	);
+	if (cfg.networkMode !== 'host') {
+		args.push(
+			'-p',
+			`${spec.gamePort}:${spec.gamePort}/tcp`,
+			'-p',
+			`${spec.rconPort}:${spec.rconPort}/tcp`,
+			'-p',
+			`${spec.gamePort}:${spec.gamePort}/udp`,
+			'-p',
+			`${spec.tvPort}:${spec.tvPort}/udp`,
+		);
+	}
+	args.push(cfg.image);
 	return args;
 }
 
@@ -208,6 +226,30 @@ export function pickToken(tokens: string[], used: (number | null)[]): { index: n
 		409,
 		tokens.length === 0 ? 'No Steam game server login token configured (SRCDS_TOKENS)' : `All ${tokens.length} Steam game server login tokens are in use — add more to SRCDS_TOKENS`,
 	);
+}
+
+/** Parses a core list like "2-7,9" into sorted unique core numbers. */
+export function parseCpuList(raw: string | undefined): number[] {
+	if (!raw || !raw.trim()) return [];
+	const out = new Set<number>();
+	for (const part of raw.split(',')) {
+		const m = /^\s*(\d{1,3})(?:\s*-\s*(\d{1,3}))?\s*$/.exec(part);
+		if (!m) throw new Error(`CPU_LIST has an invalid part: "${part.trim()}" (use e.g. 2-7 or 2,3,4)`);
+		const from = Number(m[1]);
+		const to = m[2] === undefined ? from : Number(m[2]);
+		if (to < from) throw new Error(`CPU_LIST range ${from}-${to} is backwards`);
+		for (let c = from; c <= to; c++) out.add(c);
+	}
+	return [...out].sort((a, b) => a - b);
+}
+
+/** First configured core no other server is pinned to. Null when pinning is off. */
+export function pickCpu(cpus: number[], used: (number | null | undefined)[]): number | null {
+	if (cpus.length === 0) return null;
+	const taken = new Set(used.filter((c): c is number => typeof c === 'number'));
+	const free = cpus.find((c) => !taken.has(c));
+	if (free === undefined) throw new HttpError(409, `All ${cpus.length} CPU cores in CPU_LIST already have a server — add cores or another host`);
+	return free;
 }
 
 export function findPortConflict(spec: ServerSpec, existing: ServerSpec[]): string | null {
@@ -231,6 +273,8 @@ export function loadConfig(env: Record<string, string | undefined>): AgentConfig
 		.filter(Boolean);
 	const mode = env.SHARE_MODE ?? (process.platform === 'linux' ? 'overlay' : 'copy');
 	if (mode !== 'overlay' && mode !== 'copy') throw new Error('SHARE_MODE must be overlay or copy');
+	const networkMode = env.NETWORK_MODE ?? 'bridge';
+	if (networkMode !== 'host' && networkMode !== 'bridge') throw new Error('NETWORK_MODE must be host or bridge');
 	return {
 		secret,
 		dataDir: env.AGENT_DATA_DIR ?? '/srv/cs2',
@@ -240,6 +284,8 @@ export function loadConfig(env: Record<string, string | undefined>): AgentConfig
 		mode,
 		customCssDir: env.CUSTOM_CSS_DIR && existsSync(env.CUSTOM_CSS_DIR) ? env.CUSTOM_CSS_DIR : null,
 		steamcmdPath: env.STEAMCMD_PATH ?? '/home/steam/steamcmd/steamcmd.sh',
+		networkMode,
+		cpus: parseCpuList(env.CPU_LIST),
 	};
 }
 
@@ -353,7 +399,7 @@ class Agent {
 		} catch {
 			// statfs unavailable
 		}
-		return { ok: true, hostname: os.hostname(), mode: this.cfg.mode, baseInstalled: this.baseInstalled(), baseUpdate: this.baseUpdate, diskFreeGb, diskTotalGb, servers: (await this.specs()).length };
+		return { ok: true, hostname: os.hostname(), mode: this.cfg.mode, networkMode: this.cfg.networkMode, baseInstalled: this.baseInstalled(), baseUpdate: this.baseUpdate, diskFreeGb, diskTotalGb, servers: (await this.specs()).length };
 	}
 
 	async list() {
@@ -374,6 +420,11 @@ class Agent {
 				existing.map((s) => s.tokenIndex),
 			);
 
+			const cpu = pickCpu(
+				this.cfg.cpus,
+				existing.map((s) => s.cpu),
+			);
+
 			const d = this.dirs(spec.slug);
 			try {
 				await fs.mkdir(d.root, { recursive: true });
@@ -389,9 +440,9 @@ class Agent {
 				} else {
 					await this.ensureMounted(spec.slug);
 				}
-				const stored: StoredSpec = { ...spec, desired: 'running', tokenIndex: index };
+				const stored: StoredSpec = { ...spec, desired: 'running', tokenIndex: index, cpu };
 				await fs.writeFile(d.spec, JSON.stringify(stored), { mode: 0o600 });
-				await this.docker(...buildRunArgs(spec, this.cfg, token, d.merged));
+				await this.docker(...buildRunArgs(spec, this.cfg, token, d.merged, cpu));
 			} catch (error) {
 				await this.docker('rm', '-f', containerName(spec.slug)).catch(() => {});
 				await this.unmount(spec.slug).catch(() => {});
@@ -438,7 +489,7 @@ class Agent {
 		if (state === 'running') return;
 		if (state === 'missing') {
 			const token = spec.tokenIndex !== null ? (this.cfg.tokens[spec.tokenIndex] ?? null) : null;
-			await this.docker(...buildRunArgs(spec, this.cfg, token, this.dirs(spec.slug).merged));
+			await this.docker(...buildRunArgs(spec, this.cfg, token, this.dirs(spec.slug).merged, spec.cpu ?? null));
 		} else {
 			await this.docker('start', containerName(spec.slug));
 		}
