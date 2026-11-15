@@ -203,16 +203,7 @@ export function buildRunArgs(
 	);
 	if (cfg.customCssDir) args.push('-v', `${cfg.customCssDir}:${root}/custom-counterstrikesharp:ro`);
 	if (cfg.networkMode !== 'host') {
-		args.push(
-			'-p',
-			`${spec.gamePort}:${spec.gamePort}/tcp`,
-			'-p',
-			`${spec.rconPort}:${spec.rconPort}/tcp`,
-			'-p',
-			`${spec.gamePort}:${spec.gamePort}/udp`,
-			'-p',
-			`${spec.tvPort}:${spec.tvPort}/udp`,
-		);
+		args.push('-p', `${spec.gamePort}:${spec.gamePort}/tcp`, '-p', `${spec.rconPort}:${spec.rconPort}/tcp`, '-p', `${spec.gamePort}:${spec.gamePort}/udp`, '-p', `${spec.tvPort}:${spec.tvPort}/udp`);
 	}
 	args.push(cfg.image);
 	return args;
@@ -399,7 +390,17 @@ class Agent {
 		} catch {
 			// statfs unavailable
 		}
-		return { ok: true, hostname: os.hostname(), mode: this.cfg.mode, networkMode: this.cfg.networkMode, baseInstalled: this.baseInstalled(), baseUpdate: this.baseUpdate, diskFreeGb, diskTotalGb, servers: (await this.specs()).length };
+		return {
+			ok: true,
+			hostname: os.hostname(),
+			mode: this.cfg.mode,
+			networkMode: this.cfg.networkMode,
+			baseInstalled: this.baseInstalled(),
+			baseUpdate: this.baseUpdate,
+			diskFreeGb,
+			diskTotalGb,
+			servers: (await this.specs()).length,
+		};
 	}
 
 	async list() {
