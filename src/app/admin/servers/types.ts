@@ -39,13 +39,15 @@ export type HostHealth = {
 	hostname: string;
 	mode: 'overlay' | 'copy';
 	baseInstalled: boolean;
-	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; error?: string };
+	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; finishedAt?: string; error?: string };
 	diskFreeGb: number | null;
 	diskTotalGb: number | null;
 	servers: number;
 };
 
-export type HostWithHealth = HostListItem & { health: HostHealth | null; error: string | null };
+export type HostUpdateInfo = { requestedAt: string | null; state: 'idle' | 'waiting' | 'updating'; busyServers: number };
+
+export type HostWithHealth = HostListItem & { health: HostHealth | null; error: string | null; update?: HostUpdateInfo };
 
 export type ServerListItem = PublicServer & { lastHealthy: boolean | null; status: LiveStatus; match: AssignedMatch | null };
 export type ServersResponse = {

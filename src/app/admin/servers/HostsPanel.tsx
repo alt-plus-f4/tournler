@@ -18,6 +18,7 @@ export default function HostsPanel({ refreshKey, onServersChanged }: { refreshKe
 	const [error, setError] = useState(false);
 	const [addOpen, setAddOpen] = useState(false);
 	const [busy, setBusy] = useState<string | null>(null);
+	const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
 
 	const load = useCallback(async () => {
 		try {
@@ -39,6 +40,26 @@ export default function HostsPanel({ refreshKey, onServersChanged }: { refreshKe
 		const timer = setInterval(load, 10_000);
 		return () => clearInterval(timer);
 	}, [updating, load]);
+
+	// A rolling update is pending: nudge it along (idempotent) so it proceeds as matches end, then refresh.
+	const pendingIds = (hosts ?? []).filter((h) => h.update && h.update.state !== 'idle').map((h) => h.id);
+	const pendingKey = pendingIds.join(',');
+	useEffect(() => {
+		if (!pendingKey) return;
+		const tick = async () => {
+			for (const id of pendingKey.split(',')) {
+				try {
+					const res = await adminFetch<{ step: { state: string; error?: string } }>(`/api/admin/hosts/${id}/update`, 'POST', { action: 'advance' });
+					setStepErrors((prev) => ({ ...prev, [id]: res.step.state === 'error' ? (res.step.error ?? 'Update failed') : '' }));
+				} catch {
+					// transient; the next tick retries
+				}
+			}
+			await load();
+		};
+		const timer = setInterval(tick, 15_000);
+		return () => clearInterval(timer);
+	}, [pendingKey, load]);
 
 	const act = async (key: string, fn: () => Promise<void>, failTitle: string) => {
 		setBusy(key);
@@ -72,6 +93,19 @@ export default function HostsPanel({ refreshKey, onServersChanged }: { refreshKe
 				await load();
 			},
 			'Could not start the install',
+		);
+
+	const updateWhenIdle = (h: HostWithHealth, action: 'request' | 'cancel') =>
+		act(
+			`upd-${h.id}`,
+			async () => {
+				const res = await adminFetch<{ step: { state: string; error?: string } }>(`/api/admin/hosts/${h.id}/update`, 'POST', { action });
+				setStepErrors((prev) => ({ ...prev, [h.id]: res.step.state === 'error' ? (res.step.error ?? 'Update failed') : '' }));
+				if (action === 'request') toast({ title: 'CS2 update requested', description: 'Servers on this host take no new matches. The update runs once the current ones finish.' });
+				onServersChanged();
+				await load();
+			},
+			action === 'request' ? 'Could not request the update' : 'Could not cancel the update',
 		);
 
 	const removeHost = (h: HostWithHealth) =>
@@ -173,6 +207,22 @@ export default function HostsPanel({ refreshKey, onServersChanged }: { refreshKe
 										<Button type='button' variant='outline' size='sm' onClick={() => installBase(h)} isLoading={busy === `base-${h.id}`} disabled={busy !== null || updatingHere}>
 											{health?.baseInstalled ? 'Update game files' : 'Install game files'}
 										</Button>
+										{h.update && h.update.state !== 'idle' ? (
+											<Button type='button' variant='outline' size='sm' onClick={() => updateWhenIdle(h, 'cancel')} isLoading={busy === `upd-${h.id}`} disabled={busy !== null}>
+												Cancel update
+											</Button>
+										) : (
+											<Button
+												type='button'
+												variant='outline'
+												size='sm'
+												onClick={() => updateWhenIdle(h, 'request')}
+												isLoading={busy === `upd-${h.id}`}
+												disabled={busy !== null || updatingHere || !health?.baseInstalled}
+											>
+												Update CS2 when idle
+											</Button>
+										)}
 									</>
 								)}
 								<Button
@@ -188,6 +238,12 @@ export default function HostsPanel({ refreshKey, onServersChanged }: { refreshKe
 									Remove
 								</Button>
 							</div>
+							{h.update && h.update.state !== 'idle' && (
+								<p className='mt-2 text-sm text-muted-foreground'>
+									{h.update.state === 'waiting' ? `Waiting for ${h.update.busyServers} ${h.update.busyServers === 1 ? 'match' : 'matches'} to finish…` : 'Updating…'}
+								</p>
+							)}
+							{stepErrors[h.id] && <p className='mt-2 text-sm text-signal-live'>{stepErrors[h.id]}</p>}
 							{h.hasAgent && !health?.baseInstalled && !h.error && health && (
 								<p className='mt-2 text-xs text-muted-foreground'>Install the game files once before adding servers. Stop servers on the host before updating them.</p>
 							)}

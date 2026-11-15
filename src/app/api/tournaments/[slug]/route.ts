@@ -89,7 +89,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			return NextResponse.json({ error: 'No fields to update provided' }, { status: 400 });
 		}
 
-		const allowedFields = ['name', 'prizePool', 'teamCapacity', 'location', 'startDate', 'endDate', 'status', 'type', 'bannerUrl', 'logoUrl', 'description', 'isFeatured', 'featuredOrder', 'game'];
+		const allowedFields = [
+			'name',
+			'prizePool',
+			'teamCapacity',
+			'location',
+			'startDate',
+			'endDate',
+			'status',
+			'type',
+			'bannerUrl',
+			'logoUrl',
+			'description',
+			'isFeatured',
+			'featuredOrder',
+			'game',
+			'predictionsEnabled',
+		];
 
 		const dataToUpdate: Record<string, any> = {};
 		for (const key of allowedFields) {
@@ -112,6 +128,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ sl
 			if (dataToUpdate.game !== existingTournament.game && (teams > 0 || matches > 0)) {
 				return NextResponse.json({ error: 'The game can’t change once teams have registered. Remove every team first.' }, { status: 409 });
 			}
+		}
+
+		if (dataToUpdate.predictionsEnabled !== undefined && typeof dataToUpdate.predictionsEnabled !== 'boolean') {
+			return NextResponse.json({ error: 'predictionsEnabled must be a boolean' }, { status: 400 });
 		}
 
 		// Coerce/validate certain field types for Prisma

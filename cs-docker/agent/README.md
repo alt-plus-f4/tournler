@@ -71,9 +71,19 @@ Both need a real Linux host to check; the tests only cover the arguments the age
 
 ## Updating CS2
 
-Valve updates break old servers, so update the shared files when a new build ships: stop the
-servers on the host, press **Update game files**, start them again. The agent refuses to update while
-any of its servers is running, because changing the files under a live server breaks it.
+Valve updates break old servers, so update the shared files when a new build ships. The agent
+refuses to update while any of its servers is running, because changing the files under a live
+server breaks it.
+
+**Admin → Servers → Update CS2 when idle** does the whole rolling update without downtime for running
+matches: the host's active servers are set to _draining_ (they finish their current match and get no
+new ones), and once no match is running on the host the app stops the containers, calls
+`POST /base/update`, and starts the servers again when `/health` shows the install finished
+(`baseUpdate.finishedAt`). Servers return to active afterwards. **Cancel update** abandons it and puts
+the servers back in service. If the install fails, the host card shows the error and the servers stay
+drained until you retry or cancel. Servers an admin disabled are left disabled.
+
+The manual route still works: stop the servers on the host, press **Update game files**, start them again.
 
 ## Things the agent does on purpose
 

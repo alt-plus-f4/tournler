@@ -62,16 +62,28 @@ export async function generateMetadata({ params }: NewsPostPageProps): Promise<M
 	};
 }
 
-/** A post's comments with their authors, shared by every viewer (delete rights are decided in NewsComments from `viewer`). */
-const getComments = cachedQuery((postId: number) => db.newsComment.findMany({ where: { postId }, orderBy: { createdAt: 'asc' }, select: commentSelect }), ['news-comments'], {
-	tags: ['news', 'users'],
-	revalidate: REVALIDATE.standard,
-});
+const COMMENTS_PAGE_SIZE = 50;
+
+/** A post's first page of comments with their authors, shared by every viewer (delete rights are decided in NewsComments from `viewer`). */
+const getComments = cachedQuery(
+	async (postId: number) => {
+		const [rows, total] = await Promise.all([
+			db.newsComment.findMany({ where: { postId }, orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], take: COMMENTS_PAGE_SIZE + 1, select: commentSelect }),
+			db.newsComment.count({ where: { postId } }),
+		]);
+		return { comments: rows.slice(0, COMMENTS_PAGE_SIZE), nextCursor: rows.length > COMMENTS_PAGE_SIZE ? rows[COMMENTS_PAGE_SIZE].id : null, total };
+	},
+	['news-comments'],
+	{
+		tags: ['news', 'users'],
+		revalidate: REVALIDATE.standard,
+	},
+);
 
 /** Comments stream in below the article, which paints as soon as the post row is read. */
 async function CommentsSection({ postId, comments: commentsPromise, viewer }: { postId: number; comments: ReturnType<typeof getComments>; viewer: { id: string; canModerate: boolean } | null }) {
-	const comments = await commentsPromise;
-	return <NewsComments postId={postId} initialComments={comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))} viewer={viewer} />;
+	const { comments, nextCursor, total } = await commentsPromise;
+	return <NewsComments postId={postId} initialComments={comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() }))} initialNextCursor={nextCursor} initialTotal={total} viewer={viewer} />;
 }
 
 function CommentsSkeleton() {

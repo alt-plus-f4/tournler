@@ -53,6 +53,9 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 
 - PATCH `/api/matches/[matchId]`
   - Requires organizer ownership OR `matches:manage`
+  - `action: 'START'` when every server is busy does not fail: the match stays SCHEDULED, gets `queuedAt`, and the response has `queued: true`. The oldest queued match starts by itself when a match finishes (and as a safety net on each `GET /api/tournaments/check-start` run). `action: 'DEQUEUE'` removes a match from the queue, `action: 'PRIORITIZE'` moves it to the front (409 if it is not queued). `GET /api/matches/[matchId]` includes `queuePosition` (1-based, or null).
+- GET `/api/matches/[matchId]/events`
+  - Public. Live game log (kills, bomb events, round results, map results) written from the game server's MatchZy webhook. `?after=<id>` returns only newer events, oldest first; without it the newest 400. Response `{ events, lastId }`; poll with `lastId`. Stores no SteamIDs.
 - POST `/api/matches/[matchId]/game-server`
   - Requires organizer ownership OR `servers:manage`
 - GET `/api/matches/[matchId]/game-server`
@@ -60,6 +63,25 @@ Permissions are centralized in `src/lib/helpers/permissions.ts`.
 - POST `/api/matches/game-state`
   - Requires valid `x-game-server-token`
   - Payload is now explicitly validated before processing.
+- POST `/api/matches/game-state/matchzy`
+  - Requires valid `x-game-server-token`. Besides score and series events it records `going_live`, `round_start`, `player_death`, `bomb_planted`, `bomb_defused`, `round_end`, `map_result` and `backup_loaded` into the game log. Log writes are best effort and never fail score handling. The kill/bomb/round events need a MatchZy build that sends MatchZy's live events (see `LiveEvents.cs` upstream); without them the game log only shows round and map results.
+
+### Match predictions
+
+- GET `/api/matches/[matchId]/prediction`
+  - Public. Returns `{ enabled, locked, pick, counts: { teamA, teamB } }`; `pick` is the signed-in user's picked team id (null when signed out or no pick).
+- PUT `/api/matches/[matchId]/prediction`
+  - Requires: any authenticated, non-banned user. Body `{ teamId }` (teamA or teamB). 409 unless the match is SCHEDULED, has both teams, is not a pickup and the tournament has `predictionsEnabled`.
+- DELETE `/api/matches/[matchId]/prediction`
+  - Requires: any authenticated, non-banned user. Removes the user's own pick (same 409 rules).
+- GET `/api/tournaments/[slug]/predictions`
+  - Public. Top 50 prediction leaderboard (`correct`, `total`, `points`) for the tournament.
+- PATCH `/api/tournaments/[slug]` also accepts `predictionsEnabled` (boolean), same auth as other tournament fields.
+
+### News comments
+
+- GET `/api/news/[id]/comments`
+  - Public. Cursor-paginated: `?cursor=<comment id>&limit=` (default 50, max 100). Returns `{ comments, nextCursor, total }`.
 
 ### User and admin endpoints
 

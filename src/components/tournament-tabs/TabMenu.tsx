@@ -14,6 +14,7 @@ const tabLoading = () => <Skeleton className='mx-4 mt-6 h-64 rounded-md md:mx-8'
 const Matches = dynamic(() => import('./Matches'), { loading: tabLoading });
 const Bracket = dynamic(() => import('./Bracket'), { loading: tabLoading });
 const PlayerStats = dynamic(() => import('./PlayerStats'), { loading: tabLoading });
+const PredictionsLeaderboard = dynamic(() => import('./PredictionsLeaderboard'), { loading: tabLoading });
 import type { Podium, TournamentDetail } from './types';
 
 const TABS = [
@@ -23,6 +24,7 @@ const TABS = [
 	{ value: 'matches', label: 'Matches' },
 	{ value: 'bracket', label: 'Bracket' },
 	{ value: 'stats', label: 'Stats' },
+	{ value: 'predictions', label: 'Predictions' },
 ] as const;
 
 type TabValue = (typeof TABS)[number]['value'];
@@ -92,6 +94,9 @@ export default function TabMenu({ tournament, podium }: TabMenuProps) {
 			</TabsContent>
 			<TabsContent value='stats' className='mt-0'>
 				<PlayerStats tournament={tournament} />
+			</TabsContent>
+			<TabsContent value='predictions' className='mt-0'>
+				<PredictionsLeaderboard slug={tournament.id} />
 			</TabsContent>
 		</Tabs>
 	);

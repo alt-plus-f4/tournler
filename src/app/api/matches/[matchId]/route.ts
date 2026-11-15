@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { MatchLifecycleError, MatchResultConflictError, recordMatchResult, startMatch, pauseMatch, resumeMatch, restartMatch, forceStartMatch } from '@/lib/tournaments/bracket-advancement';
+import { dequeueMatch, getQueuePosition, prioritizeQueuedMatch } from '@/lib/tournaments/match-queue';
 import { flairMapper, playerFlairSelect } from '@/lib/helpers/player-flair';
 import { HostedServerUnsupportedError } from '@/lib/tournaments/game-rules';
 import { NextResponse } from 'next/server';
@@ -127,7 +128,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ matc
 		const responseMatch =
 			matchWithFaceitLevels.gameServer && !canSeePassword ? { ...matchWithFaceitLevels, gameServer: { ...matchWithFaceitLevels.gameServer, password: null } } : matchWithFaceitLevels;
 
-		return NextResponse.json({ match: responseMatch });
+		const queuePosition = await getQueuePosition(match.id);
+
+		return NextResponse.json({ match: { ...responseMatch, queuePosition } });
 	} catch (error) {
 		console.error('Error fetching match:', error);
 		return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
@@ -193,11 +196,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 		}
 
 		let configPushError: string | null = null;
+		let queued = false;
 		if (data.action !== undefined) {
 			switch (data.action) {
 				case 'START': {
 					const result = await startMatch(parsedMatchId);
 					configPushError = result.configPushError;
+					queued = result.queued === true;
+					break;
+				}
+				case 'DEQUEUE': {
+					if (!(await dequeueMatch(parsedMatchId))) return NextResponse.json({ error: 'Match is not in the queue' }, { status: 409 });
+					break;
+				}
+				case 'PRIORITIZE': {
+					if (!(await prioritizeQueuedMatch(parsedMatchId))) return NextResponse.json({ error: 'Match is not in the queue' }, { status: 409 });
 					break;
 				}
 				case 'PAUSE': {
@@ -268,6 +281,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ma
 			// LIVE in the DB, but the veto result/teams/password may not actually be loaded on the real
 			// server. The UI should surface this and offer the manual sync endpoint as a retry.
 			configPushError,
+			// True when every server was busy: the match was queued and starts by itself when one frees up.
+			queued,
 		});
 	} catch (error) {
 		if (error instanceof MatchResultConflictError) {

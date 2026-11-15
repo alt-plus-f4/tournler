@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { guardServersRequest, noStore } from '@/lib/admin/servers-guard';
 import { toPublicHost } from '@/lib/admin/hosts';
+import { getHostUpdateState } from '@/lib/admin/host-updates';
 import { db } from '@/lib/db';
 import { agentClient, type AgentHealth } from '@/lib/cs2/agent-client';
 import { agentTargetFor } from '@/lib/cs2/fleet';
@@ -29,7 +30,8 @@ export async function GET() {
 				}
 			}),
 		);
-		return NextResponse.json({ hosts: hosts.map((h, i) => ({ ...toPublicHost(h), ...health[i] })) }, { headers: noStore });
+		const updates = await Promise.all(hosts.map((h) => getHostUpdateState(h.id)));
+		return NextResponse.json({ hosts: hosts.map((h, i) => ({ ...toPublicHost(h), ...health[i], update: updates[i] })) }, { headers: noStore });
 	} catch (error) {
 		console.error('Error listing server hosts:', error instanceof Error ? error.message : 'unknown error');
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: noStore });

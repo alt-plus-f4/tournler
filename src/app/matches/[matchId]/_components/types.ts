@@ -96,6 +96,8 @@ export type MatchStatus = 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED';
 
 export interface Match {
 	id: number;
+	/** 1-based place in the server queue when every server was busy at start; null/absent when not queued. */
+	queuePosition?: number | null;
 	tournament: {
 		id: number;
 		name: string;

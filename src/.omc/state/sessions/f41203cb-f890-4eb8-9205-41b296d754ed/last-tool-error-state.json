@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /Users/valentin.asenov/Desktop/tournler/src/components && grep -v '^import' home/UpNext.tsx | sed -n 1,140p; echo =====; grep -v '^import' UpcomingTournament.tsx | sed -n 1,120p\",\"descr...",
+  "error": "Exit code 1\n\nconst MAX_ROWS = 5;\n// Mirrors the join route's caps: OPEN = 5 per side, CAPTAIN_DRAFT = 2 captains + the pool.\nconst OPEN_LOBBY_SIZE = 10;\nconst DRAFT_LOBBY_SIZE = 2 + DRAFT_POOL_SIZE;\n\n/**\n * Everything that could go on air next: open pickup lobbies (joinable right now) and scheduled\n * team matches. A team match still SCHEDULED after its matchDate is shown as \"Awaiting start\"\n * rather than hidden or given a fake time — it's still the next thing that will happen.\n */\n// Cached fo...",
+  "timestamp": "2026-11-07T16:42:14.124Z",
+  "retry_count": 1
+}

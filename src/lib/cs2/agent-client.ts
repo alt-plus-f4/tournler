@@ -19,7 +19,7 @@ export interface AgentHealth {
 	hostname: string;
 	mode: 'overlay' | 'copy';
 	baseInstalled: boolean;
-	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; error?: string };
+	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; finishedAt?: string; error?: string };
 	diskFreeGb: number | null;
 	diskTotalGb: number | null;
 	servers: number;

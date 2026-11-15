@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { RoomPanel, SectionLabel } from './room-ui';
 import { getSideLabels, isLolMatch, type GameServer, type Match } from './types';
 
-export type AdminAction = 'start' | 'pause' | 'resume' | 'force-start' | 'restart' | 'update score' | 'end';
+export type AdminAction = 'start' | 'pause' | 'resume' | 'force-start' | 'restart' | 'update score' | 'end' | 'leave queue' | 'move to front';
 
 /** One PATCH pipeline shared by the header quick bar and the Admin tab, so a pending action disables both. */
 export function useMatchAdmin(matchId: string, onChanged: () => void) {
@@ -36,6 +36,9 @@ export function useMatchAdmin(matchId: string, onChanged: () => void) {
 						title: "Saved, but the game server didn't confirm it",
 						description: `${payload.configPushError} — the app's state is updated, but the real server may not match it yet. Check or retry from the RCON console in the Admin tab.`,
 					});
+				}
+				if (payload?.queued) {
+					toast({ title: 'Queued for a server', description: 'Every server is busy. The match starts by itself, in order, as soon as one frees up.' });
 				}
 				onChanged();
 			} catch (error) {
@@ -152,6 +155,20 @@ export function AdminPanel({ match, admin, vetoComplete, isDeleting, onDelete }:
 									<Button onClick={() => run('start', { action: 'START' })} disabled={busy || !canStart(match, vetoComplete)} className='gap-2'>
 										<ActionSpinner show={pendingAction === 'start'} icon={Play} /> Start
 									</Button>
+								</ControlRow>
+							)}
+							{match.status === 'SCHEDULED' && match.queuePosition != null && (
+								<ControlRow title={`In the server queue (position ${match.queuePosition})`} hint='Every server was busy. This match starts automatically when one frees up, oldest first.'>
+									<div className='flex flex-wrap gap-2'>
+										{match.queuePosition > 1 && (
+											<Button variant='outline' onClick={() => run('move to front', { action: 'PRIORITIZE' })} disabled={busy}>
+												Move to front
+											</Button>
+										)}
+										<Button variant='outline' onClick={() => run('leave queue', { action: 'DEQUEUE' })} disabled={busy}>
+											Leave queue
+										</Button>
+									</div>
 								</ControlRow>
 							)}
 							{match.status === 'LIVE' && (

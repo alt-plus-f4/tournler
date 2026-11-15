@@ -17,7 +17,9 @@ import { AdminPanel, AdminQuickBar, useMatchAdmin } from './_components/admin';
 import { RoomHeader } from './_components/header';
 import { HeadToHeadPanel, LolMatchPanel, MapsTab, MatchInfoPanel, ResultPanel, ScoreboardTab, ServerPanel, StreamPanel } from './_components/panels';
 import { LobbyNameEditor, TeamColumn, type RosterPlayer } from './_components/roster';
-import { SignalDot } from './_components/room-ui';
+import { RoomPanel, SignalDot } from './_components/room-ui';
+import { GameLog } from './_components/GameLog';
+import { MatchPrediction } from './_components/MatchPrediction';
 import { getSideLabels, getStatsBySide, getWinningSide, isLolMatch, type DraftState, type Match, type Side, type VetoState } from './_components/types';
 import { DraftPanel, getVetoTurn, VetoPanel } from './_components/veto-draft';
 
@@ -41,7 +43,7 @@ const jsonFetcher = async <T,>(url: string) => {
 	return response.json() as Promise<T>;
 };
 
-const TABS = ['overview', 'scoreboard', 'maps', 'admin'] as const;
+const TABS = ['overview', 'log', 'scoreboard', 'maps', 'admin'] as const;
 type RoomTab = (typeof TABS)[number];
 
 /** Tab lives in the URL hash (#scoreboard) so a refresh or a shared link lands on the same view. */
@@ -304,6 +306,12 @@ export default function MatchPage() {
 					</>
 				)}
 			</TabsTrigger>
+			{!isLol && (
+				<TabsTrigger value='log' className={tabTriggerClass}>
+					Game log
+					{(match.status === 'LIVE' || match.status === 'PAUSED') && <SignalDot tone='live' pulse />}
+				</TabsTrigger>
+			)}
 			<TabsTrigger value='scoreboard' className={tabTriggerClass}>
 				Scoreboard
 			</TabsTrigger>
@@ -374,7 +382,23 @@ export default function MatchPage() {
 									}}
 								/>
 							)}
+							{match.status === 'SCHEDULED' && match.queuePosition != null && (
+								<RoomPanel label='Waiting for a server'>
+									<p className='text-sm text-neutral-300'>
+										Every server is busy right now. This match is <span className='font-bold text-white'>#{match.queuePosition}</span> in the queue and starts by itself as soon as one frees up.
+									</p>
+								</RoomPanel>
+							)}
 							{match.status === 'COMPLETED' ? <ResultPanel match={match} /> : isLol ? <LolMatchPanel match={match} /> : !draftActive && <ServerPanel match={match} />}
+							{!isLol && !match.isPickup && match.teamA && match.teamB && (
+								<MatchPrediction
+									matchId={match.id}
+									teamA={{ id: match.teamA.id, name: match.teamA.name }}
+									teamB={{ id: match.teamB.id, name: match.teamB.name }}
+									status={match.status}
+									winnerId={match.winner?.id ?? null}
+								/>
+							)}
 							<StreamPanel match={match} />
 							<MatchInfoPanel match={match} />
 							<HeadToHeadPanel match={match} />
@@ -382,6 +406,19 @@ export default function MatchPage() {
 						<div className='order-3'>{column('TEAM_B')}</div>
 					</div>
 				</TabsContent>
+
+				{!isLol && (
+					<TabsContent value='log' className='mt-0'>
+						<div className='mx-auto max-w-3xl'>
+							<GameLog
+								matchId={match.id}
+								teamAName={getSideLabels(match).teamALabel}
+								teamBName={getSideLabels(match).teamBLabel}
+								status={match.status as 'SCHEDULED' | 'LIVE' | 'PAUSED' | 'COMPLETED'}
+							/>
+						</div>
+					</TabsContent>
+				)}
 
 				<TabsContent value='scoreboard' className='mt-0'>
 					<ScoreboardTab match={match} />

@@ -287,7 +287,7 @@ export function loadConfig(env: Record<string, string | undefined>): AgentConfig
 // Files are chowned to 1000:1000, the `steam` user inside joedwards32/cs2.
 class Agent {
 	cfg: AgentConfig;
-	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; error?: string } = { state: 'idle' };
+	baseUpdate: { state: 'idle' | 'running' | 'failed'; startedAt?: string; finishedAt?: string; error?: string } = { state: 'idle' };
 	private queue: Promise<unknown> = Promise.resolve();
 
 	constructor(cfg: AgentConfig) {
@@ -524,7 +524,7 @@ class Agent {
 				'+quit',
 			)
 				.then(() => {
-					this.baseUpdate = { state: 'idle' };
+					this.baseUpdate = { state: 'idle', startedAt: this.baseUpdate.startedAt, finishedAt: new Date().toISOString() };
 				})
 				.catch((error: unknown) => {
 					this.baseUpdate = { state: 'failed', startedAt: this.baseUpdate.startedAt, error: error instanceof Error ? error.message.slice(0, 300) : 'update failed' };
