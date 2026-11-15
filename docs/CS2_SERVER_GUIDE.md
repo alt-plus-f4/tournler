@@ -176,8 +176,7 @@ doesn't match that server's `CS2_SERVER_<N>_RCONPW` in `cs-docker/.env`.
    use" error, confirming the pool-exhaustion guard.
 
 I have not been able to run this walkthrough myself end-to-end (it needs real CS2 clients and
-live servers) — the automated test suite (`npx jest`) covers the veto engine and bracket logic
-in isolation, but steps 2–7 above need to be verified manually by someone with a CS2 install.
+live servers), so steps 2–7 above need to be verified manually by someone with a CS2 install.
 
 ## 7. Production
 

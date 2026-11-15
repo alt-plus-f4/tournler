@@ -11,9 +11,7 @@
 		"start": "next start",
 		"lint": "eslint src",
 		"format": "prettier --write .",
-		"format:check": "prettier --check .",
-		"test": "jest",
-		"test:watch": "jest --watch"
+		"format:check": "prettier --check ."
 	},
 	"browserslist": [
 		"chrome >= 93",
@@ -89,9 +87,6 @@
 	"devDependencies": {
 		"@next/eslint-plugin-next": "^15.5.18",
 		"@tailwindcss/typography": "^0.5.20",
-		"@testing-library/jest-dom": "^6.1.4",
-		"@testing-library/react": "^14.0.0",
-		"@types/jest": "^30.0.0",
 		"@types/node": "^24",
 		"@types/nodemailer": "^8.0.0",
 		"@types/react": "^18",
@@ -101,8 +96,6 @@
 		"@typescript-eslint/parser": "^8.70.1",
 		"eslint": "^8",
 		"eslint-config-prettier": "^9.1.2",
-		"jest": "^30.4.2",
-		"jest-environment-jsdom": "^30.4.1",
 		"postcss": "^8.5.26",
 		"prettier": "3.9.9",
 		"prisma": "^6.2.1",

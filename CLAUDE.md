@@ -10,10 +10,6 @@ pnpm dev                 # start dev server (Next.js App Router)
 pnpm build               # prisma generate + next build
 pnpm start               # start production server
 pnpm lint                # eslint src (eslint:recommended + @typescript-eslint + @next/next)
-pnpm test                # run all jest tests
-pnpm test:watch          # jest watch mode
-pnpm exec jest path/to/file.test.tsx    # run a single test file
-pnpm exec jest -t "test name substring" # run tests matching a name
 
 pnpm exec prisma generate                     # regenerate Prisma client after schema changes
 pnpm exec prisma migrate dev --name <name>    # create + apply a migration in dev

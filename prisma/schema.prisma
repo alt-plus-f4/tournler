@@ -193,6 +193,7 @@ model User {
   forumVotes           ForumVote[]
   matchParticipations  MatchParticipant[]
   draftPicks           MatchDraftPick[]
+  predictions          Prediction[]
 
   accounts Account[]
   sessions Session[]
@@ -238,6 +239,9 @@ model Cs2Tournament {
   isFeatured    Boolean @default(false) @map("is_featured")
   featuredOrder Int?    @map("featured_order")
   isSystem      Boolean @default(false) @map("is_system")
+
+  // Whether signed-in users can predict match winners for this tournament.
+  predictionsEnabled Boolean @default(true) @map("predictions_enabled")
 
   organizerId String @map("organizer_id")
   organizer   User   @relation("TournamentOrganizers", fields: [organizerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
@@ -447,10 +451,17 @@ model Matches {
   draftPicks   MatchDraftPick[]
   mapActions   MatchMapAction[]
   maps         MatchMap[]
+  events       MatchEvent[]
+  predictions  Prediction[]
+
+  // Set when the match is ready to go live but every server was busy; cleared when it gets one.
+  // Oldest queuedAt starts first when a server frees up (see src/lib/tournaments/match-queue.ts).
+  queuedAt DateTime? @map("queued_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([queuedAt])
   @@index([tournamentId])
   @@index([teamAId])
   @@index([teamBId])
@@ -531,6 +542,10 @@ model ServerHost {
   portStep       Int @default(10) @map("port_step")
   maxServers     Int @default(4) @map("max_servers")
 
+  /// Set when an admin asked for a CS2 update "when idle": servers are drained, and once none is
+  /// running a match the agent updates the shared files and starts them again. Cleared when done.
+  updateRequestedAt DateTime? @map("update_requested_at")
+
   servers Cs2Server[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -575,6 +590,48 @@ model Cs2Server {
   @@index([hostId])
   @@index([status])
   @@map("cs2_servers")
+}
+
+/// One entry in a match's live game log (kills, bomb events, round results), written from the
+/// MatchZy event webhook. `data` is a small JSON blob shaped per `type` (see
+/// src/lib/tournaments/match-events.ts); `id` doubles as the cursor clients poll with.
+model MatchEvent {
+  id      Int     @id @default(autoincrement()) @map("id")
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  /// MatchMap.order (0-based) the event belongs to; null if the server did not report one.
+  mapOrder  Int?   @map("map_order")
+  /// 0-based round number on that map.
+  round     Int?   @map("round")
+  /// Milliseconds into the round.
+  roundTime Int?   @map("round_time")
+  type      String @map("type")
+  data      Json   @map("data")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([matchId, id])
+  @@map("match_events")
+}
+
+/// A user's pick for who wins a match. One per user per match; locked once the match goes LIVE.
+model Prediction {
+  id      Int     @id @default(autoincrement()) @map("id")
+  userId  String  @map("user_id") @db.Uuid
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId Int     @map("match_id")
+  match   Matches @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  /// Cs2Team id the user picked (a plain column, like the bracket pointers on Matches).
+  pickedTeamId Int @map("picked_team_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, matchId])
+  @@index([matchId])
+  @@map("predictions")
 }
 
 model MatchMapAction {

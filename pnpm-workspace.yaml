@@ -17,5 +17,3 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
   esbuild: true
-  # jest's watcher ships prebuilt binaries; its script only rebuilds from source.
-  '@parcel/watcher': false

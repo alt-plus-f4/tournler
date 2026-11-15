@@ -3,8 +3,6 @@
 ![Next.js](https://img.shields.io/badge/Next.js-13.5+-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-4.9+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Jest](https://img.shields.io/badge/Jest-C21325?style=for-the-badge&logo=jest&logoColor=white)
-![React Testing Library](https://img.shields.io/badge/Testing_Library-E33332?style=for-the-badge&logo=testing-library&logoColor=white)
 
 A comprehensive platform for organizing and managing esports tournaments, with a focus on Counter-Strike 2 competitions.
 
@@ -22,7 +20,6 @@ A comprehensive platform for organizing and managing esports tournaments, with a
 - **Frontend**: Next.js 13+ (App Router), React, TypeScript
 - **Styling**: Tailwind CSS, shadcn/ui components
 - **Authentication**: NextAuth.js
-- **Testing**: Jest, React Testing Library
 - **Deployment**: Vercel
 
 ## Prerequisites

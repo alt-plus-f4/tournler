@@ -1,7 +1,6 @@
 {
 	"compilerOptions": {
 		"lib": ["dom", "dom.iterable", "esnext"],
-		"types": ["jest", "@testing-library/jest-dom"],
 		"strict": true,
 		"strictNullChecks": true,
 		"strictPropertyInitialization": true,
