@@ -21,20 +21,10 @@ function formatDate(date: Date) {
 
 function StatusCell({ match, teamId }: { match: TeamMatchItem; teamId: number }) {
 	if (match.status === 'LIVE') {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-xs font-bold text-white'>
-				<span aria-hidden className='h-2 w-2 animate-pulse rounded-full bg-signal-live' />
-				LIVE
-			</span>
-		);
+		return <span className='inline-flex items-center text-xs font-bold uppercase text-signal-live'>Live</span>;
 	}
 	if (match.status === 'PAUSED') {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-xs font-bold text-signal-hold'>
-				<span aria-hidden className='h-2 w-2 rounded-full bg-signal-hold' />
-				PAUSED
-			</span>
-		);
+		return <span className='inline-flex items-center text-xs font-bold uppercase text-signal-hold'>Paused</span>;
 	}
 	if (match.status === 'COMPLETED') {
 		if (match.winnerId == null) return <span className='text-xs text-muted-foreground'>Final</span>;

@@ -52,7 +52,6 @@ export function StatusPill({ tone = 'neutral', children, className }: { tone?: k
 		<span
 			className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 font-mono text-[10.5px] font-semibold uppercase leading-none tracking-widest', PILL_TONES[tone], className)}
 		>
-			{tone === 'live' && <span aria-hidden className='h-1.5 w-1.5 rounded-full bg-white motion-safe:animate-pulse' />}
 			{children}
 		</span>
 	);

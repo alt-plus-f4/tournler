@@ -26,12 +26,7 @@ const td = 'px-3 py-2 align-middle';
 
 export function TournamentStatus({ status }: { status: string }) {
 	if (status === 'ONGOING') {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-foreground'>
-				<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-live' />
-				Ongoing
-			</span>
-		);
+		return <span className='inline-flex items-center font-bold uppercase tracking-[0.1em] text-signal-live'>Ongoing</span>;
 	}
 	return <span className={cn(status === 'COMPLETED' ? 'text-muted-foreground' : 'text-foreground')}>{status === 'COMPLETED' ? 'Completed' : 'Upcoming'}</span>;
 }

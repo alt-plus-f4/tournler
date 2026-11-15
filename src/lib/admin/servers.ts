@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { getServerPool, type Cs2ServerConfig } from '@/lib/cs2/server-pool';
 
-/** Pool ids are free-form strings from CS2_SERVER_POOL; this only bounds what a URL segment may look like before the pool lookup. */
+/** Server ids are slugs; this only bounds what a URL segment may look like before the registry lookup. */
 export const serverIdSchema = z
 	.string()
 	.min(1)
@@ -28,10 +28,10 @@ export function isBlockedRconCommand(command: string): boolean {
 
 export type PoolLookup = { ok: true; pool: Cs2ServerConfig[] } | { ok: false };
 
-/** Reads the pool; a malformed CS2_SERVER_POOL is reported as a flag instead of throwing. */
-export function loadPool(): PoolLookup {
+/** Reads the fleet; an unreadable registry (bad SERVER_SECRET_KEY, malformed env fallback) is reported as a flag instead of throwing. */
+export async function loadPool(): Promise<PoolLookup> {
 	try {
-		const pool = getServerPool();
+		const pool = await getServerPool();
 		if (!Array.isArray(pool)) return { ok: false };
 		return { ok: true, pool };
 	} catch {
@@ -39,9 +39,20 @@ export function loadPool(): PoolLookup {
 	}
 }
 
-/** The only fields about a pool entry that may reach the client: never rconHost or rconPassword. */
+/** The only fields about a server that may reach the client: never rconHost or rconPassword. */
 export function toPublicServer(server: Cs2ServerConfig) {
-	return { id: server.id, ip: server.ip, port: server.port, address: `${server.ip}:${server.port}` };
+	return {
+		id: server.id,
+		name: server.name ?? server.id,
+		ip: server.ip,
+		port: server.port,
+		address: `${server.ip}:${server.port}`,
+		availability: server.status ?? 'ACTIVE',
+		region: server.region ?? null,
+		hostId: server.hostId ?? null,
+		managed: server.managed ?? false,
+		registered: server.dbId != null,
+	};
 }
 
 export type AssignedMatch = {
@@ -82,6 +93,12 @@ const teamLabel = (team: { name: string } | null, fallback: string | null) => te
 
 export const connectKey = (ip: string, port: number) => `${ip}:${port}`;
 
+/** Prisma filter for the GameServer rows that belong to one server: by registry id, or by address for pre-registry rows. */
+export function serverClaim(server: Pick<Cs2ServerConfig, 'dbId' | 'ip' | 'port'>) {
+	const byAddress = { connectIp: server.ip, port: server.port };
+	return server.dbId != null ? { OR: [{ serverId: server.dbId }, { serverId: null, ...byAddress }] } : byAddress;
+}
+
 /** A server is "in use" while a GameServer row for it is PENDING/RUNNING and its match is not finished. */
 const activeWhere = { status: { in: ['PENDING', 'RUNNING'] as ('PENDING' | 'RUNNING')[] }, match: { status: { not: 'COMPLETED' as const } } };
 
@@ -104,17 +121,18 @@ export async function findAssignedMatches(pool: Cs2ServerConfig[]): Promise<Map<
 	const result = new Map<string, AssignedMatch>();
 	if (pool.length === 0) return result;
 	const rows = await db.gameServer.findMany({
-		where: { ...activeWhere, OR: pool.map((s) => ({ connectIp: s.ip, port: s.port })) },
+		where: { ...activeWhere, OR: pool.map((s) => serverClaim(s)) },
 		orderBy: { createdAt: 'desc' },
-		select: { id: true, status: true, matchConfigLoadedAt: true, connectIp: true, port: true, match: { select: matchSelect } },
+		select: { id: true, status: true, matchConfigLoadedAt: true, connectIp: true, port: true, serverId: true, match: { select: matchSelect } },
 	});
 	const byKey = new Map<string, AssignedMatch>();
 	for (const row of rows) {
-		const key = connectKey(row.connectIp, row.port);
+		// Registry rows are keyed by id; rows from before the registry (no serverId) by address.
+		const key = row.serverId != null ? `id:${row.serverId}` : connectKey(row.connectIp, row.port);
 		if (!byKey.has(key)) byKey.set(key, toAssigned(row));
 	}
 	for (const s of pool) {
-		const hit = byKey.get(connectKey(s.ip, s.port));
+		const hit = (s.dbId != null ? byKey.get(`id:${s.dbId}`) : undefined) ?? byKey.get(connectKey(s.ip, s.port));
 		if (hit) result.set(s.id, hit);
 	}
 	return result;
@@ -124,12 +142,12 @@ export async function findAssignedMatches(pool: Cs2ServerConfig[]): Promise<Map<
 export async function findServerMatches(server: Cs2ServerConfig) {
 	const [active, finished] = await Promise.all([
 		db.gameServer.findFirst({
-			where: { ...activeWhere, connectIp: server.ip, port: server.port },
+			where: { ...activeWhere, ...serverClaim(server) },
 			orderBy: { createdAt: 'desc' },
 			select: { id: true, status: true, matchConfigLoadedAt: true, password: true, match: { select: matchSelect } },
 		}),
 		db.gameServer.findMany({
-			where: { connectIp: server.ip, port: server.port, match: { status: 'COMPLETED' } },
+			where: { ...serverClaim(server), match: { status: 'COMPLETED' } },
 			orderBy: { createdAt: 'desc' },
 			take: 5,
 			select: { id: true, match: { select: { ...matchSelect, completedAt: true, scoreTeamA: true, scoreTeamB: true } } },

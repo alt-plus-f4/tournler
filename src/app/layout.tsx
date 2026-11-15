@@ -7,6 +7,9 @@ import { ConditionalFooter } from '@/components/shell/ConditionalFooter';
 import { SuspensionBanner } from '@/components/shell/SuspensionBanner';
 import { OnboardingGate } from '@/components/shell/OnboardingGate';
 import { InteractiveBackground } from '@/components/InteractiveBackground';
+import { ThemeSync } from '@/components/ThemeSync';
+import { getSiteSettings } from '@/lib/site-settings';
+import { themeInitScript } from '@/lib/theme';
 
 const roboto = Roboto({
 	weight: ['400', '500', '700', '900'],
@@ -23,15 +26,22 @@ export const metadata: Metadata = {
 	description: 'Effortlessly organize and manage tournaments with Tournler – your all-in-one platform for seamless competition management.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 	authModal,
 }: Readonly<{
 	children: React.ReactNode;
 	authModal: React.ReactNode;
 }>) {
+	// Site default theme from the shared data cache (no cookies/session here, so pages stay static).
+	// The inline script sets data-theme before first paint: the player's cookie, else this default.
+	const { defaultTheme } = await getSiteSettings();
+
 	return (
-		<html lang='en' data-scroll-behavior='smooth'>
+		<html lang='en' data-scroll-behavior='smooth' data-site-theme={defaultTheme} suppressHydrationWarning>
+			<head>
+				<script dangerouslySetInnerHTML={{ __html: themeInitScript() }} />
+			</head>
 			<body className={`${roboto.className} antialiased dark text-foreground bg-background min-h-screen flex flex-col`}>
 				{/* Every avatar, team logo/banner, tournament banner and news cover lives on this Vercel Blob
 				    host — frequently the page's LCP image. Warming the connection here (React hoists <link>
@@ -58,6 +68,7 @@ export default function RootLayout({
 				</main>
 
 				<Toaster />
+				<ThemeSync />
 
 				<ConditionalFooter />
 			</body>

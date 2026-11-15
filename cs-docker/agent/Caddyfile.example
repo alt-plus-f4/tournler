@@ -1,0 +1,4 @@
+# TLS in front of the agent (Caddy gets the certificate itself). Point a DNS name at the host first.
+agent.example.com {
+	reverse_proxy 127.0.0.1:8787
+}

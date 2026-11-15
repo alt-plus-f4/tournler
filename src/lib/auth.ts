@@ -1,3 +1,4 @@
+import { themeIdFromEnum } from '@/lib/theme';
 import { cache } from 'react';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { NextAuthOptions, getServerSession } from 'next-auth';
@@ -125,20 +126,24 @@ export const authOptions: NextAuthOptions = {
 		async session({ token, session }) {
 			if (token) {
 				const tokenUserId = (token.id as string) || token.sub || '';
+				const select = {
+					id: true,
+					name: true,
+					email: true,
+					image: true,
+					role: true,
+					discord: {
+						select: { discordId: true },
+					},
+					bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' as const }, take: 1, select: { id: true, reason: true, expiresAt: true, createdAt: true } },
+				};
+				// `theme` is a newer column: if this code runs before its migration, the read would throw and
+				// next-auth would drop the session, signing everyone out. Fall back to a read without it.
 				const dbUser = tokenUserId
-					? await db.user.findUnique({
-							where: { id: tokenUserId },
-							select: {
-								id: true,
-								name: true,
-								email: true,
-								image: true,
-								role: true,
-								discord: {
-									select: { discordId: true },
-								},
-								bans: { where: activeBanWhere(), orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, reason: true, expiresAt: true, createdAt: true } },
-							},
+					? await db.user.findUnique({ where: { id: tokenUserId }, select: { ...select, theme: true } }).catch(async (error: unknown) => {
+							console.error('[auth] session read with theme failed, retrying without it:', error);
+							const user = await db.user.findUnique({ where: { id: tokenUserId }, select });
+							return user && { ...user, theme: null };
 						})
 					: null;
 
@@ -151,6 +156,8 @@ export const authOptions: NextAuthOptions = {
 					role: dbUser?.role || (token.role as 'USER' | 'MODERATOR' | 'TOURNAMENT_ADMIN' | 'CONTENT_ADMIN' | 'ADMIN' | undefined),
 					// Re-read on every request, so a ban (or lifting it) applies immediately.
 					ban: toActiveBan(dbUser?.bans[0]),
+					// The player's own theme (null = site default); ThemeSync keeps this device's cookie in step.
+					theme: themeIdFromEnum(dbUser?.theme),
 				};
 			}
 			return session;

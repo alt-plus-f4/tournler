@@ -38,7 +38,7 @@ export interface User {
 	organizedTournaments: Cs2Tournament[];
 	accounts: Account[];
 	sessions: Session[];
-	badges?: { badge: { id: number; name: string; icon: string; color: string; isOverlay: boolean } }[];
+	badges?: { badge: { id: number; name: string; icon: string; color: string; showOnAvatar?: boolean } }[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -105,6 +105,8 @@ export interface Cs2Tournament {
 	/** CS2 (hosted servers) or LOL (results recorded by staff). Optional: older payloads omit it (= CS2). */
 	game?: 'CS2' | 'LOL';
 	isFeatured: boolean;
+	/** Whether viewers can predict match winners. Optional: older payloads omit it (= enabled). */
+	predictionsEnabled?: boolean;
 	featuredOrder?: number | null;
 	isSystem: boolean;
 	organizerId: string;

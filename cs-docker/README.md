@@ -6,7 +6,7 @@ just the quick reference.
 This runs a fixed-size pool of long-running CS2 dedicated server containers (`joedwards32/cs2`,
 with Metamod, CounterStrikeSharp, and MatchZy auto-installed by `settings/pre.sh`) that the
 Tournler app provisions matches onto — `docker-compose.yml` ships with two (`cs2-dedicated-01`,
-`cs2-dedicated-02`), and you can add more by copying a service block. This is deliberately
+`cs2-dedicated-02`), and you can add more with `./add-server.sh` (see below). This is deliberately
 **not** dynamic, per-match container creation — the pool is a fixed set of always-on servers,
 and each one can only run one `LIVE`/`PAUSED` match at a time. Once every server in the pool is
 busy, starting another match is rejected until one frees up (see
@@ -22,6 +22,17 @@ everyone, rotates `sv_password` and tells MatchZy to drop the match, so the serv
 free until the next match loads. Nothing recreates a container. (This used to go through a
 `pool-controller` sidecar that rebooted the container onto each map, because live map changes
 crashed the server — that was `sv_coaching_enabled 1`, see below.)
+
+## Managing servers from the admin UI (recommended)
+
+Servers are stored in the app's database and managed in **Admin → Servers**. The compose file below
+is the manual alternative for a single box. To have Tournler create servers itself (and share one
+game install between all of them instead of ~50 GB each), run the host agent on each game host: see
+[`agent/README.md`](agent/README.md).
+
+Migrating from `CS2_SERVER_POOL`: set `SERVER_SECRET_KEY` in the app, open Admin → Servers and press
+**Import from env**. Matches already running keep working: they are matched to their server by
+address until they finish.
 
 ## Running locally
 
@@ -44,10 +55,22 @@ already reaches the containers' published ports.
 
 ## Adding more servers to the pool
 
-1. Copy the `cs2-dedicated-02` service block in `docker-compose.yml`, rename it
-   (`cs2-dedicated-03`), and bump every `CS2_SERVER_2_*` reference to `CS2_SERVER_3_*`.
-2. Add a `CS2_SERVER_3_*` block to `cs-docker/.env` with new, non-colliding ports.
-3. Add a matching entry to `CS2_SERVER_POOL` in the app's `.env`.
+Each server needs its own ~50 GB game install, so don't start a fresh download per server. Start
+`cs2-dedicated-01` once, let it finish, stop it, then:
+
+```bash
+./add-server.sh        # next free number; or ./add-server.sh 4
+```
+
+It clones `data/cs2-dedicated-01` copy-on-write (APFS on macOS, btrfs/xfs on Linux, so the extra disk
+is only what diverges; on other filesystems it warns and makes a full copy), appends the service to
+`docker-compose.yml` and a `CS2_SERVER_<N>_*` block (next ports, random passwords) to `.env`, and
+prints the entry for `CS2_SERVER_POOL` in the app's `.env`. Then set `CS2_SERVER_<N>_TOKEN` (Steam
+ties a login token to one running server; it falls back to the shared `SRCDS_TOKEN`) and run
+`docker compose up -d cs2-dedicated-0<N>`.
+
+Copies drift apart when Valve ships an update, so expect each server to re-download changed files
+after one. For one shared install across every server (overlayfs, Linux only), use `agent/` instead.
 
 ## Production topology
 

@@ -8,7 +8,10 @@ const VERIFIED_BADGE = {
 	description: 'Verified account',
 	icon: 'verified',
 	color: '#3b82f6',
-	isOverlay: true,
+	// Next to the name only, same as the migration sets it; admins can change this on /admin/settings.
+	showInTrophyRow: false,
+	showOnAvatar: false,
+	showNextToName: true,
 };
 
 async function authorize() {

@@ -11,6 +11,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { BADGE_ICON_KEYS, BADGE_IMAGE_MAX_BYTES, BADGE_IMAGE_TYPES, BadgeIcon } from '@/lib/badge-icons';
 import { TrophyIcon } from '@/components/trophies/TrophyIcon';
 import { cn } from '@/lib/utils';
+import { BADGE_PLACEMENTS, BADGE_PLACEMENT_LABELS, type BadgePlacementFlags } from '@/lib/badges/placement';
 
 export interface BadgeDefinition {
 	id: number;
@@ -18,7 +19,9 @@ export interface BadgeDefinition {
 	description: string | null;
 	icon: string;
 	color: string;
-	isOverlay: boolean;
+	showInTrophyRow: boolean;
+	showOnAvatar: boolean;
+	showNextToName: boolean;
 	imageUrl: string | null;
 	_count?: { awards: number };
 }
@@ -33,13 +36,21 @@ interface EditBadgeDialogProps {
 
 const HEX_COLOR = /^#([0-9A-Fa-f]{6})$/;
 
+const DEFAULT_PLACEMENTS: BadgePlacementFlags = { showInTrophyRow: true, showOnAvatar: false, showNextToName: false };
+
+const PLACEMENT_HINTS: Record<keyof BadgePlacementFlags, string> = {
+	showInTrophyRow: 'Under the profile header, with name and year.',
+	showOnAvatar: 'One badge in the avatar corner.',
+	showNextToName: 'Small mark after the name in rosters, match rooms and the forum.',
+};
+
 export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDelete }: EditBadgeDialogProps) {
 	const isCreating = badge === null;
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [icon, setIcon] = useState(BADGE_ICON_KEYS[0]);
 	const [color, setColor] = useState('#facc15');
-	const [isOverlay, setIsOverlay] = useState(false);
+	const [placements, setPlacements] = useState<BadgePlacementFlags>(DEFAULT_PLACEMENTS);
 	const [imageUrl, setImageUrl] = useState<string | null>(null);
 	const [isUploading, setIsUploading] = useState(false);
 	const [uploadError, setUploadError] = useState<string | null>(null);
@@ -55,7 +66,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 			setDescription(badge?.description ?? '');
 			setIcon(badge?.icon ?? BADGE_ICON_KEYS[0]);
 			setColor(badge?.color ?? '#facc15');
-			setIsOverlay(badge?.isOverlay ?? false);
+			setPlacements(badge ? { showInTrophyRow: badge.showInTrophyRow, showOnAvatar: badge.showOnAvatar, showNextToName: badge.showNextToName } : DEFAULT_PLACEMENTS);
 			setImageUrl(badge?.imageUrl ?? null);
 			setUploadError(null);
 			setIsConfirmingDelete(false);
@@ -103,7 +114,7 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 			const response = await fetch(url, {
 				method,
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name, description, icon, color, isOverlay, imageUrl }),
+				body: JSON.stringify({ name, description, icon, color, imageUrl, ...placements }),
 			});
 			const payload = await response.json().catch(() => null);
 			if (!response.ok) throw new Error(payload?.error || 'Failed to save badge');
@@ -251,13 +262,25 @@ export default function EditBadgeDialog({ badge, isOpen, onClose, onSave, onDele
 						<span className='font-mono text-sm tabular-nums text-muted-foreground'>{color}</span>
 					</div>
 
-					<label htmlFor='badge-overlay' className='flex cursor-pointer items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:border-zinc-600'>
-						<input id='badge-overlay' type='checkbox' checked={isOverlay} onChange={(e) => setIsOverlay(e.target.checked)} className='h-4 w-4 shrink-0 accent-white' />
-						<span className='text-sm'>
-							Show on avatar
-							<span className='block text-xs text-muted-foreground'>Pins this badge as a small icon on the player&apos;s profile picture (e.g. Verified, Gold) instead of the badge row.</span>
-						</span>
-					</label>
+					<fieldset className='space-y-2'>
+						<legend className={cn(fieldLabel, 'mb-2')}>Where it shows</legend>
+						{BADGE_PLACEMENTS.map((key) => (
+							<label key={key} htmlFor={`badge-${key}`} className='flex cursor-pointer items-center gap-3 rounded-md border border-border bg-background p-3 transition-colors hover:border-neutral-600'>
+								<input
+									id={`badge-${key}`}
+									type='checkbox'
+									checked={placements[key]}
+									onChange={(e) => setPlacements((p) => ({ ...p, [key]: e.target.checked }))}
+									className='h-4 w-4 shrink-0 accent-white'
+								/>
+								<span className='text-sm'>
+									{BADGE_PLACEMENT_LABELS[key]}
+									<span className='block text-xs text-muted-foreground'>{PLACEMENT_HINTS[key]}</span>
+								</span>
+							</label>
+						))}
+						<p className='text-xs text-muted-foreground'>All off hides the badge everywhere; players keep the award.</p>
+					</fieldset>
 
 					<DialogFooter bar className='flex-wrap'>
 						{!isCreating && onDelete && (

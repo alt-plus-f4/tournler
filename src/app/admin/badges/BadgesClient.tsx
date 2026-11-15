@@ -15,6 +15,12 @@ import { Label } from '@/components/ui/label';
 import { adminTable as t } from '@/components/admin/table-styles';
 import { cn } from '@/lib/utils';
 import { AdminPage, AdminHeader, AdminToolbar } from '@/components/admin/AdminPage';
+import { BADGE_PLACEMENTS, BADGE_PLACEMENT_LABELS } from '@/lib/badges/placement';
+
+function placementSummary(badge: BadgeDefinition): string {
+	const shown = BADGE_PLACEMENTS.filter((p) => badge[p]).map((p) => BADGE_PLACEMENT_LABELS[p]);
+	return shown.length > 0 ? shown.join(', ') : 'Hidden';
+}
 
 export default function BadgesClient() {
 	const [badges, setBadges] = useState<BadgeDefinition[]>([]);
@@ -128,7 +134,7 @@ export default function BadgesClient() {
 										</div>
 									</td>
 									<td className={cn(t.td, 'max-w-[40ch] truncate text-neutral-300')}>{badge.description || <span className='text-muted-foreground'>—</span>}</td>
-									<td className={cn(t.td, 'whitespace-nowrap text-neutral-300')}>{badge.isOverlay ? 'Avatar' : 'Badge row'}</td>
+									<td className={cn(t.td, 'whitespace-nowrap text-neutral-300')}>{placementSummary(badge)}</td>
 									<td className={cn(t.td, t.num, 'text-right')}>{badge._count?.awards ?? 0}</td>
 								</tr>
 							))}

@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { AvatarStep } from '@/components/onboarding/AvatarStep';
 import { AccountDataSection } from '@/components/profile/AccountDataSection';
+import { ProfilePreferencesSection, type ProfilePreferences } from '@/components/profile/PreferencesSection';
 import { TrophyIcon } from '@/components/trophies/TrophyIcon';
 import { TrophySlider, type EventTrophyItem } from '@/components/trophies/TrophySlider';
 import { TeamLogo } from '@/components/TeamLogo';
@@ -46,17 +47,18 @@ export interface FaceitInfo {
 	faceitUrl: string | null;
 }
 
-interface ProfileBadge {
+export interface ProfileBadgeVisual {
+	id: number;
+	name: string;
+	description: string | null;
+	icon: string;
+	color: string;
+	imageUrl: string | null;
+}
+
+export interface ProfileBadge {
 	awardedAt: string;
-	badge: {
-		id: number;
-		name: string;
-		description: string | null;
-		icon: string;
-		color: string;
-		isOverlay: boolean;
-		imageUrl: string | null;
-	};
+	badge: ProfileBadgeVisual;
 }
 
 export interface PublicProfileData {
@@ -75,7 +77,12 @@ export interface PublicProfileData {
 	teams: Record<Game, ProfileTeamRef | null>;
 	/** Which game sections to show: games the player picked, or has a team/account for. */
 	plays: Record<Game, boolean>;
-	badges?: ProfileBadge[];
+	/** Awards for the trophy row (Badge.showInTrophyRow, minus any the player hid). */
+	trophies: ProfileBadge[];
+	/** The one badge in the avatar corner (src/lib/badges/placement.ts avatarAward). */
+	avatarBadge: ProfileBadgeVisual | null;
+	/** The badge mark after the name (Badge.showNextToName; Verified by default). */
+	nameBadge: ProfileBadgeVisual | null;
 	createdAt: string;
 }
 
@@ -262,6 +269,8 @@ interface ProfileViewProps {
 	isOwner: boolean;
 	/** Present only for the owner. */
 	visibility?: ProfileVisibility;
+	/** The owner's theme and badge display choices. Owner only. */
+	preferences?: ProfilePreferences;
 	/** The owner's Riot ID state, including an open verification challenge. Owner only. */
 	riotStatus?: RiotStatusResponse;
 	/** Whether the viewer has a session at all (distinct from isOwner). */
@@ -276,7 +285,22 @@ interface ProfileViewProps {
  * The interactive profile (editing, avatar, Steam link, tabs). Its data comes from the server page
  * as props; after a write, `refresh()` re-renders the server page and new props flow in.
  */
-export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, eventTrophies, isOwner, visibility, riotStatus, viewerSignedIn, friendStatus, friendCount, friends }: ProfileViewProps) {
+export function ProfileView({
+	profile,
+	stats,
+	recentMatches,
+	faceit,
+	lolRank,
+	eventTrophies,
+	isOwner,
+	visibility,
+	preferences,
+	riotStatus,
+	viewerSignedIn,
+	friendStatus,
+	friendCount,
+	friends,
+}: ProfileViewProps) {
 	const router = useRouter();
 	const [isRefreshing, startRefresh] = useTransition();
 	const fmt = useHydrated() ? VIEWER_FMT : SSR_FMT;
@@ -357,8 +381,7 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 	};
 
 	const activeGames = GAMES.filter((g) => profile.plays[g]);
-	const overlayBadges = (profile.badges ?? []).filter((b) => b.badge.isOverlay).slice(0, 2);
-	const trophies = (profile.badges ?? []).filter((b) => !b.badge.isOverlay);
+	const { trophies, avatarBadge, nameBadge } = profile;
 	const progress = faceit ? faceitLevelProgress(faceit.level, faceit.elo) : null;
 	const form = recentMatches.slice(0, 5);
 	const avgKills = stats && stats.matchesPlayed > 0 ? stats.kills / stats.matchesPlayed : 0;
@@ -449,28 +472,31 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 									)}
 								</div>
 								{profile.image && !avatarLoaded && <div className='absolute inset-0 animate-pulse rounded-md bg-neutral-800' />}
-								{faceit && (
-									<div className='absolute -bottom-2 -right-2 rounded-full bg-black p-0.5'>
-										<LevelBadge level={faceit.level} size='lg' />
-									</div>
-								)}
-								{overlayBadges.map(({ badge }, i) => (
+								{/* One badge in the avatar corner (admin placement + the player's own pick). */}
+								{avatarBadge && (
 									<span
-										key={badge.id}
-										title={badge.description ?? badge.name}
-										className='absolute -left-2 flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-black ring-2 ring-black'
-										style={{ top: `${-6 + i * 24}px`, zIndex: 10 - i }}
+										title={avatarBadge.description ? `${avatarBadge.name}: ${avatarBadge.description}` : avatarBadge.name}
+										className='absolute -bottom-2 -right-2 flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-black ring-4 ring-black'
 									>
-										<TrophyIcon badge={badge} size={24} priority />
+										<TrophyIcon badge={avatarBadge} size={36} priority />
 									</span>
-								))}
+								)}
 							</div>
 
 							<div className='min-w-0 flex-1'>
 								{!isEditing ? (
-									<h1 className='truncate text-3xl font-black uppercase leading-none tracking-wide text-white sm:text-5xl' title={profile.name}>
-										{profile.name}
-									</h1>
+									<div className='flex min-w-0 items-center gap-3'>
+										<h1 className='truncate text-3xl font-black uppercase leading-none tracking-wide text-white sm:text-5xl' title={profile.name}>
+											{profile.name}
+										</h1>
+										{/* Verified mark (or whichever badge shows next to names) + FACEIT level ring, after the name. */}
+										{nameBadge && (
+											<span role='img' aria-label={nameBadge.name} title={nameBadge.name} className='inline-flex shrink-0'>
+												<TrophyIcon badge={nameBadge} size={28} decorative />
+											</span>
+										)}
+										{faceit && <LevelBadge level={faceit.level} size='lg' />}
+									</div>
 								) : (
 									<Input value={editName} onChange={(e) => setEditName(e.target.value)} aria-label='Display name' className='h-11 max-w-sm border-white/15 bg-black/60 text-lg font-bold' />
 								)}
@@ -848,6 +874,8 @@ export function ProfileView({ profile, stats, recentMatches, faceit, lolRank, ev
 						/>
 					</div>
 				)}
+
+				{isOwner && preferences && <ProfilePreferencesSection preferences={preferences} onChanged={() => refresh()} />}
 
 				{isOwner && <AccountDataSection />}
 

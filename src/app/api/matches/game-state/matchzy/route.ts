@@ -5,6 +5,8 @@ import { MatchResultConflictError, goLiveFromServer } from '@/lib/tournaments/br
 import { applyGameStateUpdate } from '@/lib/tournaments/game-state';
 import { updateLiveScore } from '@/lib/tournaments/live-score';
 import { hostsGameServers } from '@/lib/tournaments/game-rules';
+import { GAME_LOG_EVENTS } from '@/lib/tournaments/game-log';
+import { recordGameLogEvent } from '@/lib/tournaments/game-log-store';
 
 /**
  * POST /api/matches/game-state/matchzy
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
 		}
 
 		const event = (body as Record<string, unknown>).event;
-		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end' && event !== 'series_start') {
+		if (event !== 'map_result' && event !== 'series_end' && event !== 'round_end' && event !== 'series_start' && !(typeof event === 'string' && GAME_LOG_EVENTS.has(event))) {
 			// Other MatchZy event types (player_connect, ...) carry nothing this pipeline needs.
 			return NextResponse.json({ success: true, ignored: typeof event === 'string' ? event : 'unknown' });
 		}
@@ -78,6 +80,13 @@ export async function POST(request: Request) {
 		}
 
 		if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+
+		// Live game log (kills, bomb events, round results): best effort, never allowed to fail the
+		// score/result handling below. round_end and map_result are logged here and handled further down.
+		if (typeof event === 'string' && GAME_LOG_EVENTS.has(event)) {
+			await recordGameLogEvent(matchId, body).catch((error) => console.error(`Failed to log MatchZy ${event} for match ${matchId}:`, error));
+			if (event !== 'round_end' && event !== 'map_result') return NextResponse.json({ success: true });
+		}
 
 		const data = body as Record<string, any>;
 

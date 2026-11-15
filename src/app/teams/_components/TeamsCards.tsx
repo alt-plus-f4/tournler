@@ -1,5 +1,4 @@
 import { TeamCard } from '@/components/TeamCard';
-import { TeamRosterList } from '@/components/TeamRosterList';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db } from '@/lib/db';
 import { cachedQuery, REVALIDATE } from '@/lib/cache/cached-query';
@@ -75,7 +74,7 @@ export async function TeamsCards({ game = null }: { game?: Game | null }) {
 	return (
 		<>
 			{teams.map((team) => (
-				<TeamCard key={team.id} team={team as unknown as ExtendedCs2Team} roster={<TeamRosterList members={team.members} captainId={team.capitanId} label={`${team.name} roster`} />} />
+				<TeamCard key={team.id} team={team as unknown as ExtendedCs2Team} />
 			))}
 		</>
 	);

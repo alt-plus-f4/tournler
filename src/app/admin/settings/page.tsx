@@ -1,117 +1,72 @@
 import type { Metadata } from 'next';
-import { CircleCheck, CircleX } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { AdminPage, AdminHeader, AdminPanel, StatusPill } from '@/components/admin/AdminPage';
+import { db } from '@/lib/db';
+import { getAuthSession } from '@/lib/auth';
+import { getUserRole, hasPermission } from '@/lib/helpers/permissions';
+import { AccessDenied } from '@/components/AccessDenied';
+import { AdminPage, AdminHeader } from '@/components/admin/AdminPage';
+import { SITE_SETTINGS_ID } from '@/lib/site-settings';
+import { DEFAULT_THEME, themeIdFromEnum } from '@/lib/theme';
+import { parseHomepageLayout } from '@/lib/home/layouts';
+import { buildIntegrationGroups } from './_lib/integrations';
+import { SettingsClient } from './_components/SettingsClient';
 
-// Reports the server's runtime environment; must not be frozen at build time.
+// Reports the server's runtime environment and live settings; must not be frozen at build time.
 export const dynamic = 'force-dynamic';
 
-interface StatusGroup {
-	title: string;
-	description: string;
-	checks: { label: string; configured: boolean }[];
-}
+export const metadata: Metadata = { title: 'Settings' };
 
-function envConfigured(name: string): boolean {
-	return Boolean(process.env[name]?.trim());
-}
+/**
+ * Admin settings: General (environment), Appearance (default theme, homepage layout), Badges
+ * (placement matrix, player choice), Integrations (env checks) and the Danger zone. Viewing needs
+ * admin:access; each section's controls are enabled per permission and every save re-checks on the API.
+ */
+export default async function AdminSettingsPage() {
+	const session = await getAuthSession();
+	const role = session ? await getUserRole(session.user.id) : null;
+	if (!hasPermission(role, 'admin:access')) return <AccessDenied resource='settings' />;
 
-function buildStatusGroups(): StatusGroup[] {
-	return [
-		{
-			title: 'Database',
-			description: 'Primary Postgres connection.',
-			checks: [{ label: 'DATABASE_URL', configured: envConfigured('DATABASE_URL') }],
-		},
-		{
-			title: 'Authentication',
-			description: 'NextAuth session signing and magic-link email.',
-			checks: [
-				{ label: 'NEXTAUTH_URL', configured: envConfigured('NEXTAUTH_URL') },
-				{ label: 'NEXTAUTH_SECRET', configured: envConfigured('NEXTAUTH_SECRET') },
-				{ label: 'EMAIL_SERVER_HOST', configured: envConfigured('EMAIL_SERVER_HOST') },
-				{ label: 'EMAIL_SERVER_PORT', configured: envConfigured('EMAIL_SERVER_PORT') },
-				{ label: 'EMAIL_FROM', configured: envConfigured('EMAIL_FROM') },
-			],
-		},
-		{
-			title: 'Discord',
-			description: 'Discord OAuth login and bot integration.',
-			checks: [
-				{ label: 'DISCORD_CLIENT_ID', configured: envConfigured('DISCORD_CLIENT_ID') },
-				{ label: 'DISCORD_CLIENT_SECRET', configured: envConfigured('DISCORD_CLIENT_SECRET') },
-				{ label: 'DISCORD_BOT_TOKEN', configured: envConfigured('DISCORD_BOT_TOKEN') },
-				{ label: 'DISCORD_GUILD_ID', configured: envConfigured('DISCORD_GUILD_ID') },
-			],
-		},
-		{
-			title: 'Steam',
-			description: 'Steam OpenID login.',
-			checks: [
-				{ label: 'STEAM_API_KEY', configured: envConfigured('STEAM_API_KEY') },
-				{ label: 'STEAM_REDIRECT_URI', configured: envConfigured('STEAM_REDIRECT_URI') },
-			],
-		},
-		{
-			title: 'Storage',
-			description: 'Avatar, team logo, and tournament banner uploads.',
-			checks: [{ label: 'BLOB_READ_WRITE_TOKEN', configured: envConfigured('BLOB_READ_WRITE_TOKEN') }],
-		},
-		{
-			title: 'CS2 Game Servers',
-			description: 'Dedicated server connect info and score-ingestion auth.',
-			checks: [
-				{ label: 'GAME_SERVER_IP', configured: envConfigured('GAME_SERVER_IP') },
-				{ label: 'GAME_SERVER_TOKEN', configured: envConfigured('GAME_SERVER_TOKEN') },
-			],
-		},
-		{
-			title: 'Cron / Automation',
-			description: 'External scheduler that auto-starts tournaments (see /api/tournaments/check-start).',
-			checks: [
-				{ label: 'CRON_API_KEY', configured: envConfigured('CRON_API_KEY') },
-				{ label: 'CRON_SECRET', configured: envConfigured('CRON_SECRET') },
-			],
-		},
-	];
-}
+	const [site, homepage, badges] = await Promise.all([
+		db.siteSettings.findUnique({ where: { id: SITE_SETTINGS_ID } }),
+		db.homepageSettings.findUnique({ where: { id: 1 }, select: { pageLayout: true } }),
+		db.badge.findMany({
+			orderBy: { createdAt: 'asc' },
+			select: {
+				id: true,
+				name: true,
+				description: true,
+				icon: true,
+				color: true,
+				imageUrl: true,
+				showInTrophyRow: true,
+				showOnAvatar: true,
+				showNextToName: true,
+				_count: { select: { awards: true } },
+			},
+		}),
+	]);
 
-export const metadata: Metadata = { title: 'System status' };
-
-export default function AdminSettingsPage() {
-	const groups = buildStatusGroups();
+	const vercelEnv = process.env.VERCEL_ENV;
+	const general = {
+		environment: vercelEnv ?? process.env.NODE_ENV ?? 'unknown',
+		siteUrl: process.env.NEXTAUTH_URL?.trim() || null,
+		signIn: [
+			{ label: 'Email magic link', enabled: Boolean(process.env.EMAIL_SERVER_HOST?.trim() && process.env.EMAIL_FROM?.trim()) },
+			{ label: 'Discord', enabled: Boolean(process.env.DISCORD_CLIENT_ID?.trim() && process.env.DISCORD_CLIENT_SECRET?.trim()) },
+			{ label: 'Steam', enabled: Boolean(process.env.STEAM_API_KEY?.trim()) },
+		],
+	};
 
 	return (
 		<AdminPage>
-			<AdminHeader title='System status' subtitle='Read-only view of which integrations are configured for this environment. Values are never shown, only whether each is set.' />
-
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-				{groups.map((group) => {
-					const missing = group.checks.filter((c) => !c.configured).length;
-					return (
-						<AdminPanel key={group.title} className='flex flex-col gap-4'>
-							<div className='flex items-start justify-between gap-3'>
-								<div className='min-w-0'>
-									<h2 className='text-sm font-black uppercase tracking-wide'>{group.title}</h2>
-									<p className='mt-1 text-sm text-muted-foreground'>{group.description}</p>
-								</div>
-								<StatusPill tone={missing === 0 ? 'ready' : 'hold'}>{missing === 0 ? 'Ready' : `${missing} missing`}</StatusPill>
-							</div>
-							<div className='space-y-2 border-t border-border pt-4'>
-								{group.checks.map((check) => (
-									<div key={check.label} className='flex items-center justify-between gap-3 text-sm'>
-										<span className='min-w-0 truncate font-mono text-xs'>{check.label}</span>
-										<span className={cn('inline-flex items-center gap-1.5 text-xs font-medium', check.configured ? 'text-signal-ready-text' : 'text-signal-live')}>
-											{check.configured ? <CircleCheck aria-hidden size='1em' /> : <CircleX aria-hidden size='1em' />}
-											{check.configured ? 'Set' : 'Missing'}
-										</span>
-									</div>
-								))}
-							</div>
-						</AdminPanel>
-					);
-				})}
-			</div>
+			<AdminHeader title='Settings' subtitle='Site-wide appearance, where badges show up, and which integrations this environment has configured.' />
+			<SettingsClient
+				general={general}
+				appearance={{ defaultTheme: themeIdFromEnum(site?.defaultTheme) ?? DEFAULT_THEME, pageLayout: parseHomepageLayout(homepage?.pageLayout) }}
+				badges={badges.map(({ _count, ...b }) => ({ ...b, holders: _count.awards }))}
+				playerBadgeChoice={site?.playerBadgeChoice ?? true}
+				integrations={buildIntegrationGroups()}
+				can={{ content: hasPermission(role, 'content:manage'), tournaments: hasPermission(role, 'tournaments:manage') }}
+			/>
 		</AdminPage>
 	);
 }

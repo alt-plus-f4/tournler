@@ -67,6 +67,8 @@ every `CS2_SERVER_2_*` reference to `CS2_SERVER_3_*`, add a matching `CS2_SERVER
 (§3) in the app's `.env`. Fewer than two works too — delete the `cs2-dedicated-02` block and its
 `CS2_SERVER_POOL` entry if you only want one server.
 
+> **Servers now live in the database.** Set `SERVER_SECRET_KEY` and add or import servers in Admin → Servers; `CS2_SERVER_POOL` below is the legacy env setup, still read while the registry is empty. To have the app create servers and share one game install between them, see `cs-docker/agent/README.md`.
+
 ## 3. Point the app at the pool
 
 In the Next.js app's `.env` (see `.examplenv` for the full list), set:
@@ -174,8 +176,7 @@ doesn't match that server's `CS2_SERVER_<N>_RCONPW` in `cs-docker/.env`.
    use" error, confirming the pool-exhaustion guard.
 
 I have not been able to run this walkthrough myself end-to-end (it needs real CS2 clients and
-live servers) — the automated test suite (`npx jest`) covers the veto engine and bracket logic
-in isolation, but steps 2–7 above need to be verified manually by someone with a CS2 install.
+live servers), so steps 2–7 above need to be verified manually by someone with a CS2 install.
 
 ## 7. Production
 

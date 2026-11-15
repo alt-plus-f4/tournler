@@ -15,6 +15,7 @@ import { formatAdminDate, adminTable as t } from '@/components/admin/table-style
 import { useToast } from '@/lib/hooks/use-toast';
 import { SETTING_DEFINITIONS, isWriteOnly, validateSettingValue } from '@/lib/cs2/server-settings';
 import { cn } from '@/lib/utils';
+import ManageSection from './ManageSection';
 import type { ServerDetail, ServerListItem } from './types';
 
 const QUICK_COMMANDS = ['status', 'stats', 'mp_restartgame 1', 'css_endmatch'];
@@ -437,7 +438,7 @@ export default function ServerDetailDialog({ serverId, summary, onClose, onChang
 			<DialogContent panel className='max-h-[90vh] max-w-3xl overflow-y-auto'>
 				<DialogHeader>
 					<DialogEyebrow>Game server</DialogEyebrow>
-					<DialogTitle className={dialogPanelTitle}>Server {serverId}</DialogTitle>
+					<DialogTitle className={dialogPanelTitle}>{detail?.server.name && detail.server.name !== serverId ? detail.server.name : `Server ${serverId}`}</DialogTitle>
 					<DialogDescription className='flex flex-wrap items-center gap-2'>
 						<span className={t.num}>{summary?.address ?? detail?.server.address}</span>
 						{detail && (detail.status.online ? <StatusPill tone='ready'>Online</StatusPill> : <StatusPill className='bg-signal-live/15 text-signal-live'>Offline</StatusPill>)}
@@ -463,11 +464,23 @@ export default function ServerDetailDialog({ serverId, summary, onClose, onChang
 						<Tabs defaultValue='overview'>
 							<TabsList>
 								<TabsTrigger value='overview'>Overview</TabsTrigger>
+								<TabsTrigger value='manage'>Manage</TabsTrigger>
 								<TabsTrigger value='console'>Console</TabsTrigger>
 								<TabsTrigger value='settings'>Settings</TabsTrigger>
 							</TabsList>
 							<TabsContent value='overview' className='mt-4'>
 								<OverviewTab detail={detail} retrying={loading} onRetry={() => serverId && load(serverId)} />
+							</TabsContent>
+							<TabsContent value='manage' className='mt-4'>
+								<ManageSection
+									server={detail.server}
+									inUse={detail.current !== null}
+									onChanged={refreshAll}
+									onRemoved={() => {
+										onChanged();
+										onClose();
+									}}
+								/>
 							</TabsContent>
 							<TabsContent value='console' className='mt-4'>
 								<ConsoleTab serverId={serverId} />

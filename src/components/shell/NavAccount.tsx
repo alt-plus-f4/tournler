@@ -20,18 +20,21 @@ const Notifications = dynamic(() => import('./NotificationsIsland'), {
 	loading: () => <span aria-hidden className='block h-10 w-10' />,
 });
 
-/** Right side of the navbar: sign-in buttons, or the signed-in account controls. */
-export function NavAccount() {
+/**
+ * Right side of the header: sign-in button, or the signed-in account controls. `compact` is the
+ * scrolled floating pill: bell + avatar only (no Admin link), and a pill-shaped Sign In.
+ */
+export function NavAccount({ compact = false }: { compact?: boolean }) {
 	const { session, ban, status } = useClientSession();
 
 	// Fixed-size placeholder so nothing shifts when the session arrives.
-	if (status === 'loading') return <span aria-hidden className='block h-9 w-[168px]' />;
+	if (status === 'loading') return <span aria-hidden className={compact ? 'block h-9 w-[88px]' : 'block h-9 w-[168px]'} />;
 	if (ban) return <SuspendedSignOut />;
-	if (!session?.user) return <LoginButtons className='flex flex-row sm:inline' />;
+	if (!session?.user) return <LoginButtons className='flex flex-row sm:inline' linkClassName={compact ? 'h-9 rounded-full px-[18px] sm:px-[18px] sm:py-0' : undefined} />;
 
 	return (
-		<div className='flex flex-row items-center justify-center space-x-4'>
-			{isAdminRole(session.user.role) && (
+		<div className={compact ? 'flex flex-row items-center justify-center space-x-2' : 'flex flex-row items-center justify-center space-x-4'}>
+			{!compact && isAdminRole(session.user.role) && (
 				<Link
 					href='/admin'
 					aria-label='Admin'

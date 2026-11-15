@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { notifyFriendRequest } from '@/lib/convex-server';
@@ -31,7 +31,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ use
 
 		const friendRequest = await db.friendRequest.create({ data: { senderId: session.user.id, receiverId: userId } });
 
-		await notifyFriendRequest(userId, session.user.id, session.user.name ?? 'Someone').catch((error) => console.error('Failed to send friend request notification:', error));
+		// Best-effort: send after the response so the request doesn't wait on Convex.
+		after(() => notifyFriendRequest(userId, session.user.id, session.user.name ?? 'Someone').catch((error) => console.error('Failed to send friend request notification:', error)));
 
 		return NextResponse.json({ friendRequest }, { status: 200 });
 	} catch (error) {

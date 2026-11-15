@@ -8,15 +8,7 @@ import { resolveRewatch } from '@/components/home/rewatch-config';
 import { UpcomingTournament } from '@/components/UpcomingTournament';
 import { ForumHomeBlock } from '@/components/forum/ForumHomeBlock';
 import { FeaturedSkeleton, ForumBlockSkeleton, UpcomingSkeleton, UpNextSkeleton } from '../home-skeletons';
-import {
-	UPCOMING_COUNT,
-	getCuratedFeaturedTournaments,
-	getFallbackFeaturedTournaments,
-	getFeaturedNews,
-	getHomepageSettings,
-	getRecentForumThreads,
-	getUpcomingTournaments,
-} from '@/lib/home/data';
+import { UPCOMING_COUNT, getCuratedFeaturedTournaments, getFallbackFeaturedTournaments, getFeaturedNews, getHomepageSettings, getRecentForumThreads, getUpcomingTournaments } from '@/lib/home/data';
 import { Hero, getLive } from './blocks';
 
 const FALLBACK_BANNER = '/info-image.png';

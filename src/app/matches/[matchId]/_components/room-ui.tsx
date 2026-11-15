@@ -49,7 +49,7 @@ export function SignalDot({ tone, pulse = false, className }: { tone: 'live' | '
 }
 
 /**
- * Dot · state word · mono timer — the Booth's signature readout, one per match state. It owns the
+ * State word · mono timer — the Booth's signature readout, one per match state. It owns the
  * 1s ticker, so only this readout re-renders every second, not the room. Not a live region: the
  * per-second timer would spam screen readers (RoomHeader announces status/score changes instead).
  */
@@ -60,8 +60,7 @@ export function StatusReadout({ match }: { match: Match }) {
 		const elapsed = match.startedAt ? Date.now() - new Date(match.startedAt).getTime() : 0;
 		return (
 			<span className='inline-flex items-center gap-2 text-sm font-bold text-white'>
-				<SignalDot tone='live' pulse />
-				LIVE
+				<span className='uppercase tracking-[0.12em] text-signal-live'>Live</span>
 				<span className='font-mono font-normal tabular-nums text-neutral-300'>{formatDuration(elapsed)}</span>
 			</span>
 		);
@@ -71,8 +70,7 @@ export function StatusReadout({ match }: { match: Match }) {
 		const elapsed = match.startedAt && match.pausedAt ? new Date(match.pausedAt).getTime() - new Date(match.startedAt).getTime() : 0;
 		return (
 			<span className='inline-flex items-center gap-2 text-sm font-bold text-signal-hold'>
-				<SignalDot tone='hold' />
-				PAUSED
+				<span className='uppercase tracking-[0.12em]'>Paused</span>
 				<span className='font-mono font-normal tabular-nums'>{formatDuration(elapsed)}</span>
 			</span>
 		);
@@ -98,7 +96,6 @@ export function StatusReadout({ match }: { match: Match }) {
 	if (match.gameServer?.matchConfigLoadedAt) {
 		return (
 			<span className='inline-flex items-center gap-2 text-sm font-bold text-white'>
-				<SignalDot tone='ready' pulse />
 				Server ready
 				<span className='font-mono font-normal tabular-nums text-neutral-300'>{msUntilStart > 0 ? `starts in ${formatDuration(msUntilStart)}` : 'starting soon'}</span>
 			</span>

@@ -123,3 +123,60 @@ export function TickerSkeleton() {
 export function TournamentCardSkeleton() {
 	return <div aria-hidden className='min-h-[300px] rounded-md border border-border bg-black' />;
 }
+
+/** MODERN "This week": pill tabs + a list of 4 match rows. */
+export function ModernWeekSkeleton() {
+	return (
+		<div aria-hidden className='flex flex-col gap-5'>
+			<div className='flex gap-1.5'>
+				{Array.from({ length: 4 }).map((_, i) => (
+					<div key={i} className='h-[34px] w-24 rounded-full border border-border' />
+				))}
+			</div>
+			<div className='divide-y divide-border overflow-hidden rounded-xl border border-border bg-black'>
+				{Array.from({ length: 4 }).map((_, i) => (
+					<div key={i} className='flex h-[60px] items-center gap-4 px-5'>
+						<Skeleton className={`h-4 w-12 ${sk}`} />
+						<Skeleton className={`h-4 flex-1 ${sk}`} />
+						<Skeleton className={`h-4 w-10 ${sk}`} />
+						<Skeleton className={`h-4 flex-1 ${sk}`} />
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+/** MODERN featured tournaments: one large card beside two stacked. */
+export function ModernFeaturedSkeleton() {
+	return (
+		<div aria-hidden className='grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'>
+			<div className='min-h-[360px] rounded-2xl border border-border bg-neutral-900 lg:min-h-[440px]' />
+			<div className='grid grid-cols-1 gap-5 lg:grid-rows-2'>
+				<div className='min-h-[210px] rounded-2xl border border-border bg-neutral-900' />
+				<div className='min-h-[210px] rounded-2xl border border-border bg-neutral-900' />
+			</div>
+		</div>
+	);
+}
+
+/** MODERN news: a 16:9 lead story beside a list of headlines. */
+export function ModernNewsSkeleton() {
+	return (
+		<div aria-hidden className='flex flex-wrap gap-10'>
+			<div className='flex min-w-0 flex-[999_1_520px] flex-col gap-4'>
+				<div className='aspect-video w-full rounded-xl bg-neutral-900' />
+				<Skeleton className={`h-3 w-16 ${sk}`} />
+				<Skeleton className={`h-7 w-3/4 ${sk}`} />
+			</div>
+			<div className='flex min-w-0 flex-[1_1_360px] flex-col'>
+				{Array.from({ length: 4 }).map((_, i) => (
+					<div key={i} className='space-y-2 border-t border-border py-5 last:border-b'>
+						<Skeleton className={`h-3 w-14 ${sk}`} />
+						<Skeleton className={`h-5 w-full ${sk}`} />
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}

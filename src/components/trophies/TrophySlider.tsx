@@ -9,7 +9,7 @@ import { TrophyIcon, type TrophyVisual } from '@/components/trophies/TrophyIcon'
 import { isOptimizable } from '@/lib/image-hosts';
 import { cn } from '@/lib/utils';
 
-/** A badge an admin awarded (non-overlay badges only). */
+/** A badge an admin awarded, set to show in the trophy row (Badge.showInTrophyRow, see src/lib/badges/placement.ts). */
 export interface TrophyAward {
 	awardedAt: string;
 	badge: TrophyVisual & { id: number; description: string | null };

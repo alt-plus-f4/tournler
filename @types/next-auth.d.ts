@@ -14,6 +14,8 @@ declare module 'next-auth' {
 			role?: UserRole;
 			/** Active suspension, if any (see src/lib/bans.ts). */
 			ban?: { id: number; reason: string; expiresAt: string | null; createdAt: string } | null;
+			/** The player's own theme id (src/lib/theme.ts), null = site default. */
+			theme?: import('@/lib/theme').ThemeId | null;
 		};
 	}
 }

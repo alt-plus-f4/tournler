@@ -26,13 +26,18 @@ const PUBLIC_USER_SELECT = {
 	showDiscord: true,
 	showSteam: true,
 	showRiot: true,
+	// Every award, newest first, with its placement flags and the player's own hidden flag; the page
+	// splits them into trophy row / avatar corner / next-to-name (src/lib/badges/placement.ts).
 	badges: {
 		orderBy: { awardedAt: 'desc' },
 		select: {
 			awardedAt: true,
-			badge: { select: { id: true, name: true, description: true, icon: true, color: true, isOverlay: true, imageUrl: true } },
+			hidden: true,
+			badge: { select: { id: true, name: true, description: true, icon: true, color: true, imageUrl: true, showInTrophyRow: true, showOnAvatar: true, showNextToName: true } },
 		},
 	},
+	// The player's pick for the avatar corner (null = automatic).
+	avatarBadgeId: true,
 	createdAt: true,
 } as const;
 

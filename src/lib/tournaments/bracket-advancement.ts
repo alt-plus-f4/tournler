@@ -8,6 +8,7 @@ import { getDraftState } from './draft';
 import { pushMatchConfigToServer, pushRconCommand, releaseGameServerAfterMatch } from '@/lib/cs2/provisioning';
 import { getMatchGame, hostsGameServers } from './game-rules';
 import { maybeAdvanceSwissRound } from './swiss';
+import { onServerReleased } from './match-queue';
 
 type Tx = DbTx;
 
@@ -180,6 +181,9 @@ export async function recordMatchResult(matchId: number, input: MatchResultInput
 		} catch (error) {
 			console.error(`Failed to release game server after match ${matchId} completed:`, error);
 		}
+		// A server just freed up: move a pending host update along and let the oldest queued match
+		// take it (both after the response).
+		onServerReleased(matchId);
 	}
 
 	return result;
@@ -211,6 +215,9 @@ export interface MatchActionResult {
 	 * RCON failed — the caller should surface this so an organizer can retry (via the RCON console or the
 	 * manual sync endpoint) instead of it only reaching a server log. */
 	configPushError: string | null;
+	/** True when every server was busy: the match stays SCHEDULED and was put in the queue, to start
+	 * automatically when a server frees up (see match-queue.ts). */
+	queued?: boolean;
 }
 
 /** Runs `command` against `matchId`'s assigned server after its DB write already committed, treating a failure as non-fatal (logged and returned as `configPushError`, never thrown) — the app-side state change already succeeded and shouldn't be rolled back over a flaky RCON connection. */
@@ -229,6 +236,7 @@ async function pushRconAfterCommit(matchId: number, match: Matches, command: str
 
 export async function startMatch(matchId: number): Promise<MatchActionResult> {
 	let hosted = true;
+	let queued = false;
 	const updated = await db.$transaction(async (tx) => {
 		const match = await tx.matches.findUniqueOrThrow({ where: { id: matchId }, include: { tournament: true, mapActions: true, participants: true, draftPicks: true } });
 		if (match.status !== 'SCHEDULED') {
@@ -259,18 +267,21 @@ export async function startMatch(matchId: number): Promise<MatchActionResult> {
 		if (vetoState.phase !== 'COMPLETE') {
 			throw new MatchLifecycleError('Map veto is not complete');
 		}
-		const updatedMatch = await tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date() } });
+		// Claim a server first: if the pool is full the match is queued instead of going live, so
+		// nothing has to be rolled back (and the match keeps its place in line if it was queued).
 		try {
 			await ensureGameServer(tx, matchId);
 		} catch (error) {
 			if (error instanceof NoAvailableGameServerError) {
-				throw new MatchLifecycleError(error.message);
+				queued = true;
+				return tx.matches.update({ where: { id: matchId }, data: { queuedAt: match.queuedAt ?? new Date() } });
 			}
 			throw error;
 		}
-		return updatedMatch;
+		return tx.matches.update({ where: { id: matchId }, data: { status: 'LIVE', startedAt: new Date(), queuedAt: null } });
 	});
 
+	if (queued) return { match: updated, configPushError: null, queued: true };
 	if (!hosted) return { match: updated, configPushError: null };
 
 	let configPushError: string | null = null;

@@ -95,13 +95,9 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 			<Link href={`/matches/${featured.id}`} className='block p-[0.725rem] transition-colors hover:bg-white/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
 				<div className='mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm'>
 					{isPaused ? (
-						<span className='inline-flex items-center gap-2 font-bold text-signal-hold'>
-							<span className='h-2 w-2 rounded-full bg-signal-hold' /> PAUSED
-						</span>
+						<span className='inline-flex items-center font-bold uppercase tracking-[0.12em] text-signal-hold'>Paused</span>
 					) : (
-						<span className='inline-flex items-center gap-2 font-bold text-white'>
-							<span className='h-2 w-2 rounded-full bg-signal-live motion-safe:animate-pulse' /> LIVE
-						</span>
+						<span className='inline-flex items-center font-bold uppercase tracking-[0.12em] text-signal-live'>Live</span>
 					)}
 					<span className='inline-flex min-w-0 items-center gap-2 truncate text-muted-foreground'>
 						<GameTag game={featured.tournament.game} showLabel={false} />
@@ -127,8 +123,10 @@ export function OnAirPanel({ matches }: { matches: LiveMatch[] }) {
 						return (
 							<li key={match.id} className='flex items-center'>
 								<Link href={`/matches/${match.id}`} className='flex min-w-0 flex-1 items-center gap-3 px-5 py-3 text-sm transition-colors hover:bg-white/[0.03] sm:px-8'>
-									<span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', match.status === 'PAUSED' ? 'bg-signal-hold' : 'bg-signal-live motion-safe:animate-pulse')} aria-hidden />
-									<span className='sr-only'>{match.status === 'PAUSED' ? 'Paused' : 'Live'}:</span>
+									<span className={cn('w-12 shrink-0 text-[10px] font-bold uppercase tracking-[0.12em]', match.status === 'PAUSED' ? 'text-signal-hold' : 'text-signal-live')}>
+										{match.status === 'PAUSED' ? 'Paused' : 'Live'}
+										<span className='sr-only'>:</span>
+									</span>
 									<GameTag game={match.tournament.game} showLabel={false} className='shrink-0' />
 									<span className='min-w-0 flex-1 truncate text-white'>
 										{a.name} <span className='text-muted-foreground'>vs</span> {b.name}

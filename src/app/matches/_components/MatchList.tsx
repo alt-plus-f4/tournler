@@ -117,15 +117,9 @@ function MatchRow({ match, timeZone }: { match: MatchListItem; timeZone: string 
 				{isOpen ? (
 					<span className={`${PILL} bg-white text-black`}>Open</span>
 				) : isLive ? (
-					<span className={`${PILL} bg-white/10 text-white`}>
-						<span aria-hidden className='h-1.5 w-1.5 animate-pulse rounded-full bg-signal-live' />
-						Live
-					</span>
+					<span className={`${PILL} bg-white/10 font-bold uppercase text-signal-live`}>Live</span>
 				) : isPaused ? (
-					<span className={`${PILL} bg-white/10 text-signal-hold`}>
-						<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-hold' />
-						Paused
-					</span>
+					<span className={`${PILL} bg-white/10 text-signal-hold`}>Paused</span>
 				) : isCompleted ? (
 					<span className={`${PILL} bg-white/5 text-muted-foreground`}>Final</span>
 				) : (

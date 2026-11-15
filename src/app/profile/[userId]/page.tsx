@@ -2,6 +2,8 @@ import type { Game } from '@prisma/client';
 import { getAuthSession } from '@/lib/auth';
 import { getRiotStatus } from '@/lib/riot/service';
 import { getFriendCount, getFriendsList, getFriendStatus } from '@/lib/helpers/friend-status';
+import { getSiteSettings } from '@/lib/site-settings';
+import { avatarAward, avatarCandidates, awardsFor } from '@/lib/badges/placement';
 import { getProfileUser, loadProfileExtras, type ProfileUser } from './_lib/load-profile';
 import { ProfileNotFound, ProfileView, type PublicProfileData } from './_components/ProfileView';
 
@@ -21,12 +23,13 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 	if (!user) return <ProfileNotFound />;
 
 	const isOwner = session?.user.id === user.id;
-	const [[stats, recentMatches, faceit, lolRank, eventTrophies], riotStatus, friendStatus, friendCount, friends] = await Promise.all([
+	const [[stats, recentMatches, faceit, lolRank, eventTrophies], riotStatus, friendStatus, friendCount, friends, siteSettings] = await Promise.all([
 		loadProfileExtras(user),
 		isOwner ? getRiotStatus(user.id) : Promise.resolve(undefined),
 		session && !isOwner ? getFriendStatus(session.user.id, user.id) : Promise.resolve<'NONE'>('NONE'),
 		getFriendCount(user.id),
 		getFriendsList(user.id),
+		getSiteSettings(),
 	]);
 
 	// Hidden linked accounts never reach a visitor's payload; the owner still sees them (flagged as hidden).
@@ -44,6 +47,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 		LOL: user.games.includes('LOL') || !!teams.LOL || !!user.riot?.verifiedAt || (isOwner && !!user.riot),
 	};
 
+	// Badge placements: admin flags per badge, minus awards the player hid (while the site allows it).
+	const playerChoice = siteSettings.playerBadgeChoice;
+	const awards = user.badges.map(({ awardedAt, hidden, badge }) => ({ awardedAt: awardedAt.toISOString(), hidden, badge }));
+	const visual = ({ id, name, description, icon, color, imageUrl }: (typeof awards)[number]['badge']) => ({ id, name, description, icon, color, imageUrl });
+	const avatar = avatarAward(awards, { playerChoice, avatarBadgeId: user.avatarBadgeId });
+	const nameAward = awardsFor(awards, 'showNextToName', { playerChoice })[0];
+	const avatarIds = new Set(avatarCandidates(awards, { playerChoice: false }).map((a) => a.badge.id));
+
 	const profile: PublicProfileData = {
 		id: user.id,
 		name: user.name ?? '',
@@ -55,7 +66,9 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 		riot,
 		teams,
 		plays,
-		badges: user.badges.map((b) => ({ ...b, awardedAt: b.awardedAt.toISOString() })),
+		trophies: awardsFor(awards, 'showInTrophyRow', { playerChoice }).map((a) => ({ awardedAt: a.awardedAt, badge: visual(a.badge) })),
+		avatarBadge: avatar ? visual(avatar.badge) : null,
+		nameBadge: nameAward ? visual(nameAward.badge) : null,
 		createdAt: user.createdAt.toISOString(),
 	};
 
@@ -69,6 +82,20 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 			eventTrophies={eventTrophies.map((t) => ({ ...t, wonAt: t.wonAt.toISOString() }))}
 			isOwner={isOwner}
 			visibility={isOwner ? { showDiscord: user.showDiscord, showSteam: user.showSteam, showRiot: user.showRiot } : undefined}
+			preferences={
+				isOwner
+					? {
+							theme: session?.user.theme ?? null,
+							siteTheme: siteSettings.defaultTheme,
+							badgeChoice: playerChoice,
+							avatarBadgeId: user.avatarBadgeId,
+							// Only badges an admin shows somewhere are worth a toggle; hidden-everywhere ones never display anyway.
+							awards: awards
+								.filter((a) => a.badge.showInTrophyRow || a.badge.showOnAvatar || a.badge.showNextToName)
+								.map((a) => ({ ...visual(a.badge), hidden: a.hidden, avatarEligible: avatarIds.has(a.badge.id) })),
+						}
+					: undefined
+			}
 			riotStatus={riotStatus}
 			viewerSignedIn={!!session}
 			friendStatus={friendStatus}

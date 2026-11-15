@@ -1,8 +1,12 @@
+import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { safeEqual } from '@/lib/helpers/safe-equal';
 import { checkAndStartTournaments } from '@/lib/tournaments/tournament-service';
 import { prewarmUpcomingMatches } from '@/lib/tournaments/prewarm';
+import { startQueuedMatches } from '@/lib/tournaments/match-queue';
+import { advanceHostUpdate } from '@/lib/admin/host-updates';
+import { checkFleetHealth } from '@/lib/cs2/health-check';
 import { NextResponse } from 'next/server';
 
 function isValidCronRequest(request: Request): boolean {
@@ -42,11 +46,22 @@ export async function GET(request: Request) {
 
 		const result = await checkAndStartTournaments();
 		const prewarmed = await prewarmUpcomingMatches();
+		// Keeps each server's last-known health fresh for the match allocator; never blocks the cron.
+		const fleet = await checkFleetHealth().catch(() => null);
+		// Safety net for "update CS2 when idle": normally a finishing match nudges its host along,
+		// but a stuck or just-finished agent update is only noticed here.
+		const pendingHosts = await db.serverHost.findMany({ where: { updateRequestedAt: { not: null } }, select: { id: true } }).catch(() => []);
+		for (const host of pendingHosts) await advanceHostUpdate(host.id).catch((error) => console.error(`Host update step failed for host ${host.id}:`, error));
+		// Safety net for the match queue: normally the next queued match starts when a match finishes,
+		// but a server that came back healthy, was enabled or was added also frees a slot.
+		const queuedStarted = await startQueuedMatches().catch(() => [] as number[]);
 
 		return NextResponse.json({
 			success: true,
 			...result,
 			prewarmed,
+			queuedStarted,
+			fleet: fleet && { checked: fleet.checked, online: fleet.online },
 		});
 	} catch (error) {
 		console.error('Error checking tournaments:', error);

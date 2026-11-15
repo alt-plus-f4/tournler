@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { userHasPermission } from '@/lib/helpers/permissions';
 import { pushMatchConfigToServer } from '@/lib/cs2/provisioning';
 import { withRcon } from '@/lib/cs2/rcon-client';
-import { findServerByConnect } from '@/lib/cs2/server-pool';
+import { resolveGameServerTarget } from '@/lib/cs2/server-pool';
 import { HostedServerUnsupportedError, hostsGameServers } from '@/lib/tournaments/game-rules';
 
 /**
@@ -50,8 +50,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ mat
 		const gameServer = await db.gameServer.findUnique({ where: { matchId: id } });
 		if (!gameServer) return NextResponse.json({ error: 'No game server found for this match' }, { status: 404 });
 
-		const server = findServerByConnect(gameServer.connectIp, gameServer.port);
-		if (!server) return NextResponse.json({ error: "No CS2_SERVER_POOL entry matches this match's assigned server" }, { status: 500 });
+		const server = await resolveGameServerTarget(gameServer);
+		if (!server) return NextResponse.json({ error: "No registered server matches this match's assigned server" }, { status: 500 });
 
 		const status = await withRcon({ host: server.rconHost, port: server.rconPort, password: server.rconPassword }, (rcon) => rcon.execute('status'));
 

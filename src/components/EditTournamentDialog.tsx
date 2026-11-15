@@ -6,6 +6,7 @@ import { fieldLabel, sectionLabel } from '@/components/ui/dialog-styles';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/lib/hooks/use-toast';
 import { Tournament } from '@/types/types';
@@ -49,7 +50,7 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 		}
 	}, [tournament]);
 
-	const handleChange = (field: keyof Tournament, value: string | number) => {
+	const handleChange = (field: keyof Tournament, value: string | number | boolean) => {
 		setEditingTournament((prev) => (prev ? { ...prev, [field]: value } : null));
 		setUpdatedFields((prev) => ({ ...prev, [field]: value }));
 	};
@@ -302,6 +303,10 @@ export default function EditTournamentDialog({ tournament, isOpen, onClose, onSa
 								</Select>
 							</div>
 						</div>
+						<label htmlFor='edit-predictionsEnabled' className='flex cursor-pointer items-center gap-2 text-sm'>
+							<Checkbox id='edit-predictionsEnabled' checked={editingTournament?.predictionsEnabled !== false} onCheckedChange={(checked) => handleChange('predictionsEnabled', checked === true)} />
+							Let viewers predict match winners
+						</label>
 					</div>
 
 					<DialogFooter bar className='flex-wrap'>

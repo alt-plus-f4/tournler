@@ -15,20 +15,10 @@ const HEADERS = ['Game', 'Match', 'Tournament', 'Round', 'Status', 'Score', 'Dat
 
 export function MatchStatusLabel({ status }: { status: string }) {
 	if (status === 'LIVE') {
-		return (
-			<span className='inline-flex items-center gap-1.5 font-medium text-foreground'>
-				<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-live' />
-				Live
-			</span>
-		);
+		return <span className='inline-flex items-center font-bold uppercase tracking-[0.1em] text-signal-live'>Live</span>;
 	}
 	if (status === 'PAUSED') {
-		return (
-			<span className='inline-flex items-center gap-1.5 text-foreground'>
-				<span aria-hidden className='h-1.5 w-1.5 rounded-full bg-signal-hold' />
-				Paused
-			</span>
-		);
+		return <span className='inline-flex items-center text-signal-hold'>Paused</span>;
 	}
 	return <span className={status === 'COMPLETED' ? 'text-muted-foreground' : 'text-neutral-300'}>{status === 'COMPLETED' ? 'Completed' : 'Scheduled'}</span>;
 }

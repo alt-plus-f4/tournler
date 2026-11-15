@@ -2,6 +2,7 @@ import type { HomepageLayoutValue } from '@/lib/home/layouts';
 import { CampusHome } from './CampusHome';
 import { ClassicHome } from './ClassicHome';
 import { DoorsHome } from './DoorsHome';
+import { ModernHome } from './ModernHome';
 import { SeasonHome } from './SeasonHome';
 import { WeekHome } from './WeekHome';
 
@@ -16,6 +17,8 @@ export function HomeLayoutView({ layout }: { layout: HomepageLayoutValue }) {
 			return <CampusHome />;
 		case 'WEEK':
 			return <WeekHome />;
+		case 'MODERN':
+			return <ModernHome />;
 		default:
 			return <ClassicHome />;
 	}

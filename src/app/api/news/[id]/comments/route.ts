@@ -12,18 +12,43 @@ const commentSchema = z.object({
 });
 
 /**
- * GET /api/news/:id/comments — public, oldest first.
+ * GET /api/news/:id/comments — public, oldest first, cursor-paginated: `?cursor=<comment id>&limit=`
+ * (default 50, max 100). Responds `{ comments, nextCursor, total }`; `nextCursor` is the id of the
+ * first comment of the next page (pass it back as `cursor`, inclusive) or null on the last page.
  * POST /api/news/:id/comments — any signed-in user; body `{ text }` (1–2000 chars).
  */
 
 const COMMENT_COOLDOWN_MS = 10_000;
-export async function GET(_request: Request, { params }: Params) {
+const DEFAULT_PAGE_SIZE = 50;
+const MAX_PAGE_SIZE = 100;
+
+export async function GET(request: Request, { params }: Params) {
 	const id = parseId((await params).id);
 	if (id === null) return NextResponse.json({ error: 'Invalid news post ID' }, { status: 400 });
 
+	const { searchParams } = new URL(request.url);
+	const rawCursor = searchParams.get('cursor');
+	const cursor = rawCursor === null ? null : parseId(rawCursor);
+	if (rawCursor !== null && cursor === null) return NextResponse.json({ error: 'Invalid cursor' }, { status: 400 });
+
+	const rawLimit = searchParams.get('limit');
+	const limit = rawLimit === null ? DEFAULT_PAGE_SIZE : Number.parseInt(rawLimit, 10);
+	if (!Number.isInteger(limit) || limit < 1) return NextResponse.json({ error: 'Invalid limit' }, { status: 400 });
+	const take = Math.min(limit, MAX_PAGE_SIZE);
+
 	try {
-		const comments = await db.newsComment.findMany({ where: { postId: id }, orderBy: { createdAt: 'asc' }, select: commentSelect });
-		return NextResponse.json({ comments });
+		const [rows, total] = await Promise.all([
+			db.newsComment.findMany({
+				where: { postId: id },
+				orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+				take: take + 1,
+				...(cursor !== null ? { cursor: { id: cursor } } : {}),
+				select: commentSelect,
+			}),
+			db.newsComment.count({ where: { postId: id } }),
+		]);
+		const comments = rows.slice(0, take);
+		return NextResponse.json({ comments, nextCursor: rows.length > take ? rows[take].id : null, total });
 	} catch (error) {
 		console.error('Error fetching news comments:', error);
 		return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -2,7 +2,7 @@ import { randomBytes } from 'crypto';
 import type Rcon from 'rcon-srcds';
 import { db } from '@/lib/db';
 import { withRcon } from './rcon-client';
-import { findServerByConnect, Cs2ServerConfig } from './server-pool';
+import { resolveGameServerTarget, type Cs2ServerConfig } from './server-pool';
 import { gameServerCallbackUrl } from './callback-url';
 import { buildMatchConfig } from './match-config';
 import { statusShowsMap } from './server-status';
@@ -88,9 +88,9 @@ async function kickAllHumans(rcon: Rcon): Promise<void> {
 /** Resolves the real CS2 server (pool entry) a match was assigned to, by its recorded GameServer row. */
 async function resolveMatchServer(matchId: number): Promise<Cs2ServerConfig> {
 	const gameServer = await db.gameServer.findUniqueOrThrow({ where: { matchId } });
-	const server = findServerByConnect(gameServer.connectIp, gameServer.port);
+	const server = await resolveGameServerTarget(gameServer);
 	if (!server) {
-		throw new Error(`No CS2_SERVER_POOL entry matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was the pool config changed after the match started?`);
+		throw new Error(`No registered server matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was it removed after the match started?`);
 	}
 	return server;
 }
@@ -137,9 +137,9 @@ export async function pushMatchConfigToServer(matchId: number, options: { bots?:
 	if (gameServer.match.status === 'COMPLETED') {
 		throw new Error(`Match ${matchId} is completed — its server is no longer reserved for it`);
 	}
-	const server = findServerByConnect(gameServer.connectIp, gameServer.port);
+	const server = await resolveGameServerTarget(gameServer);
 	if (!server) {
-		throw new Error(`No CS2_SERVER_POOL entry matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was the pool config changed after the match started?`);
+		throw new Error(`No registered server matches this match's assigned server (${gameServer.connectIp}:${gameServer.port}) — was it removed after the match started?`);
 	}
 
 	// The `bots` flag rides on the URL the server fetches (see buildMatchConfig's bots option),

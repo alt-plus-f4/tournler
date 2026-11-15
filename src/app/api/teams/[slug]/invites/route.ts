@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { notifyTeamInvite } from '@/lib/convex-server';
 import { db } from '@/lib/db';
 import { getAuthSession } from '@/lib/auth';
@@ -116,7 +116,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 		});
 
 		// Best effort: the invitation exists either way, and also shows on the invitee's profile.
-		await notifyTeamInvite(user.id, team.id, team.name).catch((error) => console.error('Failed to send invite notification:', error));
+		// Best-effort: send after the response so the request doesn't wait on Convex.
+		after(() => notifyTeamInvite(user.id, team.id, team.name).catch((error) => console.error('Failed to send invite notification:', error)));
 
 		return NextResponse.json({ teamInvitation }, { status: 200 });
 	} catch (error) {

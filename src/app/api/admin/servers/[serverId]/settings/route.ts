@@ -16,7 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ se
 		const guard = await guardServersRequest({ key: 'admin-servers-settings', limit: 20 });
 		if (!guard.ok) return guard.response;
 
-		const lookup = lookupPoolServer((await params).serverId);
+		const lookup = await lookupPoolServer((await params).serverId);
 		if (!lookup.ok) return lookup.response;
 		const { server } = lookup;
 

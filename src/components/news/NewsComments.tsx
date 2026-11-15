@@ -22,12 +22,26 @@ export interface NewsCommentData {
 interface NewsCommentsProps {
 	postId: number;
 	initialComments: NewsCommentData[];
+	/** Cursor for the next page, or null when initialComments is everything. */
+	initialNextCursor?: number | null;
+	/** Total comment count across all pages (defaults to the loaded count). */
+	initialTotal?: number;
 	/** null when signed out. */
 	viewer: { id: string; canModerate: boolean } | null;
 }
 
-export function NewsComments({ postId, initialComments, viewer }: NewsCommentsProps) {
+/** Merge pages by id (a comment posted here may also arrive in a later page), oldest first. */
+function mergeComments(current: NewsCommentData[], incoming: NewsCommentData[]) {
+	const byId = new Map(current.map((c) => [c.id, c]));
+	for (const c of incoming) byId.set(c.id, c);
+	return [...byId.values()].sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : a.id - b.id));
+}
+
+export function NewsComments({ postId, initialComments, initialNextCursor = null, initialTotal, viewer }: NewsCommentsProps) {
 	const [comments, setComments] = useState(initialComments);
+	const [nextCursor, setNextCursor] = useState<number | null>(initialNextCursor);
+	const [total, setTotal] = useState(initialTotal ?? initialComments.length);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const [text, setText] = useState('');
 	const [isPosting, setIsPosting] = useState(false);
 	const [pendingDelete, setPendingDelete] = useState<NewsCommentData | null>(null);
@@ -49,12 +63,30 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 			});
 			const body = await res.json().catch(() => null);
 			if (!res.ok) throw new Error(body?.error || 'Your comment was not posted.');
-			setComments((prev) => [...prev, body.comment]);
+			setComments((prev) => mergeComments(prev, [body.comment]));
+			setTotal((prev) => prev + 1);
 			setText('');
 		} catch (error) {
 			toast({ variant: 'destructive', title: 'Comment not posted', description: error instanceof Error ? error.message : 'Try again in a moment.' });
 		} finally {
 			setIsPosting(false);
+		}
+	}
+
+	async function loadMore() {
+		if (nextCursor === null) return;
+		setIsLoadingMore(true);
+		try {
+			const res = await fetch(`/api/news/${postId}/comments?cursor=${nextCursor}`);
+			const body = await res.json().catch(() => null);
+			if (!res.ok) throw new Error(body?.error || 'Could not load more comments.');
+			setComments((prev) => mergeComments(prev, body.comments));
+			setNextCursor(body.nextCursor ?? null);
+			if (typeof body.total === 'number') setTotal(body.total);
+		} catch (error) {
+			toast({ variant: 'destructive', title: 'Comments not loaded', description: error instanceof Error ? error.message : 'Try again in a moment.' });
+		} finally {
+			setIsLoadingMore(false);
 		}
 	}
 
@@ -65,6 +97,7 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 			const res = await fetch(`/api/news/${postId}/comments/${pendingDelete.id}`, { method: 'DELETE' });
 			if (!res.ok) throw new Error((await res.json().catch(() => null))?.error || 'Could not delete the comment.');
 			setComments((prev) => prev.filter((c) => c.id !== pendingDelete.id));
+			setTotal((prev) => Math.max(0, prev - 1));
 			setPendingDelete(null);
 		} catch (error) {
 			toast({ variant: 'destructive', title: 'Comment not deleted', description: error instanceof Error ? error.message : 'Try again in a moment.' });
@@ -76,7 +109,7 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 	return (
 		<section aria-labelledby='comments-heading' className='mt-12 border-t border-border pt-8'>
 			<h2 id='comments-heading' className='text-lg font-black uppercase tracking-wide'>
-				Comments <span className='font-mono text-base font-normal tabular-nums text-muted-foreground'>{comments.length}</span>
+				Comments <span className='font-mono text-base font-normal tabular-nums text-muted-foreground'>{total}</span>
 			</h2>
 
 			{comments.length === 0 ? (
@@ -108,6 +141,14 @@ export function NewsComments({ postId, initialComments, viewer }: NewsCommentsPr
 						);
 					})}
 				</ol>
+			)}
+
+			{nextCursor !== null && (
+				<div className='mt-4 flex justify-center'>
+					<Button type='button' variant='outline' size='sm' onClick={loadMore} isLoading={isLoadingMore} disabled={isLoadingMore}>
+						Load more comments
+					</Button>
+				</div>
 			)}
 
 			{viewer ? (

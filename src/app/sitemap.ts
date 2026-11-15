@@ -28,6 +28,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
 	const staticRoutes: MetadataRoute.Sitemap = [
 		{ url: base, changeFrequency: 'daily', priority: 1 },
+		{ url: `${base}/cs2`, changeFrequency: 'hourly', priority: 0.9 },
+		{ url: `${base}/lol`, changeFrequency: 'hourly', priority: 0.9 },
 		{ url: `${base}/tournaments`, changeFrequency: 'hourly', priority: 0.9 },
 		{ url: `${base}/matches`, changeFrequency: 'hourly', priority: 0.8 },
 		{ url: `${base}/teams`, changeFrequency: 'daily', priority: 0.7 },
